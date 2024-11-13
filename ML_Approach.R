@@ -13,6 +13,14 @@ library(visdat)
 
 setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
+
+
+
+
+# Presence/Absence --------------------------------------------------------
+
+
+
 # Step 1: Label Data and Prepare Text
 labeled_abstracts <- read_xlsx("Training_labeled_abs.xlsx") %>%
   clean_names()
@@ -65,7 +73,12 @@ train_dtm_df <- as.data.frame(train_dtm_matrix)
 train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model. takes a long time so beware before running.
-rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+#rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+#save(rf_model, file = "rf_model.RData")
+
+#Uncomment the above two code lines if I want to rerun the model. Takes foreeeeeeever so be careful. For testing for now, just reload the below model.
+
+load("rf_model.RData")
 
 # Step 6: Evaluate the Model on Test Data
 # Convert test DTM into a data frame and add labels
@@ -142,10 +155,13 @@ full_abstracts$predicted_label <- full_predictions
 # Save the results with predictions
 write.csv(full_abstracts, "full_predictions.csv", row.names = FALSE)
 
-full_abstracts %>%
+test <- full_abstracts %>%
   group_by(predicted_label)%>%
   summarize(n=n())
-#not bad. check out the negatives. 
+#not bad. check out the negatives.
+#Maybe print this out to show K + N.
+
+write.csv(test, "labels_results.csv", row.names = FALSE)
 
 full_abstracts %>%
   filter(predicted_label == "Both")
@@ -158,49 +174,101 @@ full_abstracts %>%
 
 # Trying to extract plant names -------------------------------------------
 
-library(udpipe)
-library(rgbif)
+# Load necessary libraries
+
+library(dplyr)
 library(quanteda)
+library(rgbif)
+library(purrr)
+library(janitor)
 
-# Example text that contains potential plant names
-text <- c("Acer rubrum and Quercus alba are common species in North America. Pinus sylvestris is also widely distributed.")
+set.seed(123)
 
-plant_candidates <- sapply(unlist(plant_names), function(name) {
-  gsub("_", " ", name)  # Replace underscores with spaces
-})
+# Load and sample 5 abstracts randomly
+labeled_abstracts <- read.csv("full_predictions.csv") %>%
+  clean_names() %>%
+  sample_n(size = 100)
 
-# Convert tokens to strings with correct capitalization (Genus uppercase, species lowercase)
+# Function to correct capitalization (Genus uppercase, species lowercase)
 correct_capitalization <- function(name) {
   words <- unlist(strsplit(name, " "))
   if (length(words) == 2) {
-    words[1] <- toupper(substring(words[1], 1, 1))  # Capitalize first letter of genus
-    words[1] <- tolower(substring(words[1], 2))     # Rest of genus lowercase
-    words[2] <- tolower(words[2])  # Ensure species is lowercase
+    words[1] <- paste0(toupper(substring(words[1], 1, 1)), tolower(substring(words[1], 2)))
+    words[2] <- tolower(words[2])
     return(paste(words, collapse = " "))
   }
   return(name)
 }
 
-# Apply the capitalization function
-plant_candidates <- sapply(plant_candidates, correct_capitalization)
-
-# Step 3: Query GBIF for species names without abbreviation
-get_full_species_name <- function(name) {
-  res <- name_backbone(name = name)
+# Function to query GBIF and get additional fields (batch processing)
+batch_validate_species <- function(names) {
+  res <- name_backbone_checklist(names)  # Batch query
   
-  # Return full scientific name without abbreviation
-  if (!is.null(res$scientificName) && !is.na(res$scientificName)) {
-    return(res$scientificName)
+  # Ensure columns exist before attempting to select
+  available_columns <- colnames(res)
+  required_columns <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
+                        "class", "order", "family", "genus", "species", 
+                        "key", "kingdomKey", "phylumKey", "classKey", "orderKey", 
+                        "familyKey", "genusKey", "speciesKey")
+  
+  # Select only available columns
+  valid_data <- res %>%
+    filter(status == "ACCEPTED" & (kingdom == "Plantae" | kingdom == "Fungi") & rank != "KINGDOM") %>%
+    select(any_of(required_columns))  # Select only the columns that exist
+  
+  
+  return(valid_data)
+}
+
+# Function to extract valid plant species from abstracts
+extract_plant_species <- function(text, abstract_id, predicted_label) {
+  # Tokenize text and create 2-word ngrams (potential genus-species combinations)
+  tokens <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
+    tokens_tolower()  # Convert to lowercase
+  
+  bigrams <- tokens %>%
+    tokens_ngrams(n = 2) %>%
+    as.list()
+  
+  # Convert ngrams to readable format (replace underscores with spaces)
+  plant_candidates <- sapply(unlist(bigrams), function(name) {
+    gsub("_", " ", name)  # Replace underscores with spaces
+  })
+  
+  # Correct capitalization
+  plant_candidates <- sapply(plant_candidates, correct_capitalization)
+  
+  # Validate genus-species combinations (batch processing)
+  valid_species <- batch_validate_species(unique(plant_candidates))  # Query GBIF once
+  
+  # Ensure id and predicted_label are character for consistency
+  abstract_id <- as.character(abstract_id)
+  predicted_label <- as.character(predicted_label)
+  
+  # Create a data frame with species, id, predicted label, and GBIF information
+  if (nrow(valid_species) > 0) {
+    valid_species <- valid_species %>%
+      mutate(id = abstract_id, predicted_label = predicted_label)  # Add abstract_id and predicted_label to valid_species
+    return(valid_species)
   } else {
-    return(NA)
+    return(data.frame(canonicalName = character(), rank = character(), confidence = numeric(), 
+                      matchType = character(), kingdom = character(), phylum = character(),
+                      class = character(), order = character(), family = character(),
+                      genus = character(), species = character(), 
+                      kingdomKey = character(), phylumKey = character(), classKey = character(),
+                      orderKey = character(), familyKey = character(), genusKey = character(),
+                      speciesKey = character(), id = character(), predicted_label = character(), 
+                      stringsAsFactors = FALSE))
   }
 }
 
-# Apply the function to each candidate name
-valid_species <- sapply(plant_candidates, get_full_species_name)
+# Apply the function to all abstracts in the dataset
+plant_species_df <- map2_dfr(labeled_abstracts$abstract, 
+                             labeled_abstracts$id, 
+                             ~extract_plant_species(.x, .y, labeled_abstracts$predicted_label[labeled_abstracts$id == .y]))
 
-# Filter out NAs to get valid plant names
-valid_species <- valid_species[!is.na(valid_species)]
+# View the result
+print(plant_species_df)
 
-# Print the valid species names found
-print(valid_species)
+# Save the result as a CSV
+write.csv(plant_species_df, "plant_species_results_with_keys.csv", row.names = FALSE)
