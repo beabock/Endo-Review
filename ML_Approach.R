@@ -165,33 +165,30 @@ library(quanteda)
 # Example text that contains potential plant names
 text <- c("Acer rubrum and Quercus alba are common species in North America. Pinus sylvestris is also widely distributed.")
 
-# Step 1: Tokenize the text more carefully, keeping two-word species names together
-tokens <- tokens(text, remove_punct = TRUE) %>%
-  tokens_tolower()
-
-# Step 2: Extract potential two-word species names (ngrams) and ensure correct capitalization
-plant_names <- tokens %>%
-  tokens_ngrams(n = 2) %>%
-  as.list()
+plant_candidates <- sapply(unlist(plant_names), function(name) {
+  gsub("_", " ", name)  # Replace underscores with spaces
+})
 
 # Convert tokens to strings with correct capitalization (Genus uppercase, species lowercase)
 correct_capitalization <- function(name) {
   words <- unlist(strsplit(name, " "))
   if (length(words) == 2) {
     words[1] <- toupper(substring(words[1], 1, 1))  # Capitalize first letter of genus
+    words[1] <- tolower(substring(words[1], 2))     # Rest of genus lowercase
     words[2] <- tolower(words[2])  # Ensure species is lowercase
     return(paste(words, collapse = " "))
   }
   return(name)
 }
 
-plant_candidates <- sapply(unlist(plant_names), correct_capitalization)
+# Apply the capitalization function
+plant_candidates <- sapply(plant_candidates, correct_capitalization)
 
-# Step 3: Query GBIF for species names
-get_valid_species <- function(name) {
+# Step 3: Query GBIF for species names without abbreviation
+get_full_species_name <- function(name) {
   res <- name_backbone(name = name)
   
-  # Check if a species is returned and handle the case where species is missing
+  # Return full scientific name without abbreviation
   if (!is.null(res$scientificName) && !is.na(res$scientificName)) {
     return(res$scientificName)
   } else {
@@ -200,7 +197,7 @@ get_valid_species <- function(name) {
 }
 
 # Apply the function to each candidate name
-valid_species <- sapply(plant_candidates, get_valid_species)
+valid_species <- sapply(plant_candidates, get_full_species_name)
 
 # Filter out NAs to get valid plant names
 valid_species <- valid_species[!is.na(valid_species)]
