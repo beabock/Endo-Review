@@ -91,11 +91,11 @@ train_dtm_df <- as.data.frame(train_dtm_matrix)
 train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
- rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
- #save(rf_model, file = "rf_model_no_Other.RData")
+ #rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ #save(rf_model, file = "rf_model_no_Other2.RData")
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model_no_Other.RData") #model with Other in it
+load("rf_model_no_Other2.RData") #model with Other in it
 
 # Step 6: Evaluate the Model on Test Data
 test_dtm_df <- as.data.frame(test_dtm_matrix)
@@ -111,6 +111,7 @@ confusionMatrix(predictions, test_data$label)
 
 #86% accurate with Other in it
 #90% accurate with Other not in it. 
+#up to 93%!!!
 
 #For now, use model without Other in it.
 
@@ -169,7 +170,9 @@ full_abstracts %>%
   group_by(predicted_label) %>%
   summarize(n = n())
 
-#No absences. Nice. 
+#check absences and both
+
+
 
 #write.csv(test_summary, "labels_results_with_metadata.csv", row.names = FALSE)
 
