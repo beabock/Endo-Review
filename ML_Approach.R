@@ -35,7 +35,8 @@ labeled_abstracts <- read.csv("Training_labeled_abs.csv") %>%
   clean_names()%>%
   mutate(predicted_label = NA,
          early_access_date = as.character(early_access_date))%>%
-  select(!any_of(c("x", "predicted_label", "id")))
+  select(!any_of(c("x", "predicted_label", "id")))%>%
+  filter(label != "Other")
 
 # Select relevant columns
 target <- "label"
@@ -90,11 +91,11 @@ train_dtm_df <- as.data.frame(train_dtm_matrix)
 train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
-# rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
-# save(rf_model, file = "rf_model.RData")
+ rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ #save(rf_model, file = "rf_model_no_Other.RData")
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model.RData")
+load("rf_model_no_Other.RData") #model with Other in it
 
 # Step 6: Evaluate the Model on Test Data
 test_dtm_df <- as.data.frame(test_dtm_matrix)
@@ -108,10 +109,20 @@ predictions <- factor(predictions, levels = train_levels)
 # Evaluate performance
 confusionMatrix(predictions, test_data$label)
 
+#86% accurate with Other in it
+#90% accurate with Other not in it. 
+
+#For now, use model without Other in it.
+
+
+
+
 # Step 8: Predict on the Full Dataset
 full_abstracts <- read.csv("wos-11-9-23_1000.csv") %>%
   clean_names() %>%
-  select(c(predictor, all_of(metadata_columns)))
+  select(c(predictor, all_of(metadata_columns)))%>%
+  anti_join(labeled_abstracts, by = "doi")
+
 
 # Step 8: Prepare Full Dataset for Prediction
 full_abstracts$id <- 1:nrow(full_abstracts)
@@ -153,48 +164,78 @@ full_abstracts$predicted_label <- full_predictions
 # Save the results with predictions and metadata
 write.csv(full_abstracts, "full_predictions_with_metadata.csv", row.names = FALSE)
 
-# Optional: View summary of results
-test_summary <- full_abstracts %>%
+# View summary of results
+full_abstracts %>%
   group_by(predicted_label) %>%
   summarize(n = n())
 
-write.csv(test_summary, "labels_results_with_metadata.csv", row.names = FALSE)
+#No absences. Nice. 
+
+#write.csv(test_summary, "labels_results_with_metadata.csv", row.names = FALSE)
+
+
+#Pull full_abstracts that do not have matching dois in labeled_abstrats
+
+# Checking on labels ------------------------------------------------------
+
+#Careful with running the below code. Adding labels to random samples within abstract subsets
+
 
 # Optionally filter by a specific predicted label
-filtered_results <- full_abstracts %>%
-  filter(predicted_label == "Both")
+subsample <- full_abstracts %>%
+  anti_join(labeled_abstracts, by = "doi") %>%  # Remove matching DOI rows
+  slice_sample(n = 10)
 
-filtered_results$id
+
+
+
+subsample$id
+
+#present: 1, 3, 4, 5, 7, 10
+#Review: 2, 6, 8, 9
 
 fixed_other <- full_abstracts %>%
-  filter(predicted_label == "Both" & id == 330) %>%
+  filter(id == 876) %>%
   mutate(label = "Other") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_both <- full_abstracts %>%
-  filter(predicted_label == "Both" & id %in% c(506, 618)) %>%  # Filter rows where predicted_label is "Both" and id is 506 or 618
+  filter(id %in% c(480, 506, 618)) %>%  
   mutate(label = "Both") %>%  # Add a new label column with "Both"
   relocate(label) %>%  # Relocate label to the first position
   relocate(id, .before = last_col())  # Move 'id' to the second-to-last position
 
 fixed_present <- full_abstracts %>%
-  filter(predicted_label == "Both") %>%
-  mutate(label = "Present", id = 983) %>%
+  filter(id %in% subsample$id[c(1, 3, 4, 5, 7, 10)]) %>%
+  mutate(label = "Presence") %>%
+  relocate(label) %>%
+  relocate(id, .before = last_col())
+
+fixed_review <- full_abstracts %>%
+  filter(id %in% subsample$id[c(2, 6, 8, 9)]) %>%
+  mutate(label = "Review")%>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 
 test <- labeled_abstracts %>%
-  mutate(id = NA,
-         predicted_label = NA)
-test <- rbind(test, fixed_other, fixed_both, fixed_present)
+  mutate(predicted_label = NA)
+
+test <- rbind(test, fixed_present, fixed_review)%>%
+  distinct()
+
+#Remove any duplicates by doi
+View(test %>%
+  filter(!is.na(doi))%>%
+  group_by(doi)%>%
+  filter(n()>1))
 
 write.csv(test, "Training_labeled_abs.csv")
 
 
 
-
+#Pull leaf info too.
 
 
 # Trying to extract plant names -------------------------------------------
