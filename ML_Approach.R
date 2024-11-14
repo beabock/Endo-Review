@@ -91,11 +91,11 @@ train_dtm_df <- as.data.frame(train_dtm_matrix)
 train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
- #rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
- #save(rf_model, file = "rf_model_no_Other2.RData")
+ rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ save(rf_model, file = "rf_model_no_Other3.RData")
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model_no_Other2.RData") #model with Other in it
+load("rf_model_no_Other.RData") #model with Other in it
 
 # Step 6: Evaluate the Model on Test Data
 test_dtm_df <- as.data.frame(test_dtm_matrix)
@@ -181,44 +181,50 @@ full_abstracts %>%
 
 # Checking on labels ------------------------------------------------------
 
+#Come back to this:: removed a bunch of abstracts from the labeled dataset. we don't want that.
+
+
+
 #Careful with running the below code. Adding labels to random samples within abstract subsets
+labeled_abstracts %>%
+  filter(doi != "")%>%
+  group_by(doi, authors)%>%
+  filter(n()>1)
+#Good, no duplicates
 
 
-# Optionally filter by a specific predicted label
+# Perform anti_join based on multiple columns, then filter and slice
 subsample <- full_abstracts %>%
-  anti_join(labeled_abstracts, by = "doi") %>%  # Remove matching DOI rows
-  filter(predicted_label == "Absence")%>%
+  anti_join(labeled_abstracts, by = "doi") %>% 
+  filter(predicted_label == "Review")%>%
   slice_sample(n = 10)
 
-
-#Present: 1, 2, 3, 7, 8
-#Other: 6
-#Review: 5, 4
-
-subsample$id
-
+subsample$abstract
+#Both: 4, 3, 
+#Present: 2, 1
+#Review: 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 
 
 fixed_other <- full_abstracts %>%
-  filter(id %in% subsample$id[c(6)]) %>%
+  filter(id %in% subsample$id[c(1)]) %>%
   mutate(label = "Other") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_both <- full_abstracts %>%
-  filter(id %in% c(480, 506, 618)) %>%  
+  filter(id %in% subsample$id[c(4, 3)]) %>%  
   mutate(label = "Both") %>%  # Add a new label column with "Both"
   relocate(label) %>%  # Relocate label to the first position
   relocate(id, .before = last_col())  # Move 'id' to the second-to-last position
 
 fixed_present <- full_abstracts %>%
-  filter(id %in% subsample$id[c(1, 2, 3, 7, 8)]) %>%
+  filter(id %in% subsample$id[c(1, 2)]) %>%
   mutate(label = "Presence") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_review <- full_abstracts %>%
-  filter(id %in% subsample$id[c(4, 5)]) %>%
+  filter(id %in% subsample$id[c(1:10)]) %>%
   mutate(label = "Review")%>%
   relocate(label) %>%
   relocate(id, .before = last_col())
@@ -227,14 +233,18 @@ fixed_review <- full_abstracts %>%
 test <- labeled_abstracts %>%
   mutate(predicted_label = NA)
 
-test <- rbind(test, fixed_present, fixed_review, fixed_other)%>%
-  distinct()
+# Combine data ensuring there are no duplicates in the DOI column
+test <- bind_rows(test, fixed_review) %>%
+  distinct(doi, .keep_all = TRUE)
 
-#Remove any duplicates by doi
-View(test %>%
-  filter(!is.na(doi))%>%
-  group_by(doi)%>%
-  filter(n()>1))
+
+# If there are any duplicates that should be manually resolved,
+# you can review the following:
+test %>%
+       filter(!is.na(doi)) %>%
+       filter(doi != "")%>%
+       group_by(doi) %>%
+       filter(n() > 1)
 
 write.csv(test, "Training_labeled_abs.csv")
 
@@ -258,7 +268,7 @@ set.seed(123)
 # Load and sample 5 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions.csv") %>%
   clean_names() %>%
-  sample_n(size = 500)
+  sample_n(size = 5)
 
 # Function to correct capitalization (Genus uppercase, species lowercase)
 correct_capitalization <- function(name) {
@@ -297,11 +307,31 @@ batch_validate_species <- function(names) {
 }
 
 # Function to extract valid plant species from abstracts
-extract_plant_species <- function(text, abstract_id, predicted_label) {
-  # Tokenize text and create 2-word ngrams (potential genus-species combinations)
+extract_plant_info <- function(text, abstract_id, predicted_label) {
+  # Keywords for plant parts
+  plant_parts_keywords <- c("fruit", "root", "rhizoid", "leaf", "twig", "branch", "bark", "stem", "flower", 
+                            "shoot", "seed", "node", "leaflet", "pistil", "anther", "carpel", "sepal", "petal", 
+                            "stigma", "style", "ovary", "calyx", "corolla", "peduncle", "rachis", "inflorescence", 
+                            "trunk", "cork", "bud", "pollen", "cone", "spore", "tuber", "bulb", "corm", "cladode", 
+                            "vascular bundle", "xylem", "phloem", "cortex", "endosperm", "cotyledon", "hypocotyl", 
+                            "epicotyl", "flowering stem", "internode", "leaf vein", "leaf blade", "palmate", "needle", 
+                            "fascicle", "cuticle", "stomata", "vascular cambium", "petiole", "axil", "phyllode", 
+                            "perianth", "rachilla", "pedicel", "lateral root", "taproot", "root cap", "root hair", 
+                            "mycorrhiza", "lignin", "pith", "pericycle", "parenchyma", "colleter", "scutellum", "coleoptile",
+                            "sporophyte", "gametophyte"
+  )
+  
+  # Tokenize text and convert to lowercase
   tokens <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
     tokens_tolower()  # Convert to lowercase
   
+  # Extract plant parts by checking if the tokens match any of the keywords
+  plant_parts_found <- tokens %>%
+    unlist() %>%
+    .[ . %in% plant_parts_keywords ] %>%
+    unique()
+  
+  # Tokenize text and create 2-word ngrams (potential genus-species combinations)
   bigrams <- tokens %>%
     tokens_ngrams(n = 2) %>%
     as.list()
@@ -341,10 +371,14 @@ extract_plant_species <- function(text, abstract_id, predicted_label) {
 # Apply the function to all abstracts in the dataset
 plant_species_df <- map2_dfr(labeled_abstracts$abstract, 
                              labeled_abstracts$id, 
-                             ~extract_plant_species(.x, .y, labeled_abstracts$predicted_label[labeled_abstracts$id == .y]))
+                             ~extract_plant_info(.x, .y, labeled_abstracts$predicted_label[labeled_abstracts$id == .y]))
+
 
 # View the result
 print(plant_species_df)
 
 # Save the result as a CSV
-write.csv(plant_species_df, "plant_species_results.csv", row.names = FALSE)
+write.csv(plant_info_df, "plant_info_results.csv", row.names = FALSE)
+
+
+#Maybe switch plant parts to a separate section. 
