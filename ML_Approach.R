@@ -187,18 +187,20 @@ full_abstracts %>%
 # Optionally filter by a specific predicted label
 subsample <- full_abstracts %>%
   anti_join(labeled_abstracts, by = "doi") %>%  # Remove matching DOI rows
+  filter(predicted_label == "Absence")%>%
   slice_sample(n = 10)
 
 
-
+#Present: 1, 2, 3, 7, 8
+#Other: 6
+#Review: 5, 4
 
 subsample$id
 
-#present: 1, 3, 4, 5, 7, 10
-#Review: 2, 6, 8, 9
+
 
 fixed_other <- full_abstracts %>%
-  filter(id == 876) %>%
+  filter(id %in% subsample$id[c(6)]) %>%
   mutate(label = "Other") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
@@ -210,13 +212,13 @@ fixed_both <- full_abstracts %>%
   relocate(id, .before = last_col())  # Move 'id' to the second-to-last position
 
 fixed_present <- full_abstracts %>%
-  filter(id %in% subsample$id[c(1, 3, 4, 5, 7, 10)]) %>%
+  filter(id %in% subsample$id[c(1, 2, 3, 7, 8)]) %>%
   mutate(label = "Presence") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_review <- full_abstracts %>%
-  filter(id %in% subsample$id[c(2, 6, 8, 9)]) %>%
+  filter(id %in% subsample$id[c(4, 5)]) %>%
   mutate(label = "Review")%>%
   relocate(label) %>%
   relocate(id, .before = last_col())
@@ -225,7 +227,7 @@ fixed_review <- full_abstracts %>%
 test <- labeled_abstracts %>%
   mutate(predicted_label = NA)
 
-test <- rbind(test, fixed_present, fixed_review)%>%
+test <- rbind(test, fixed_present, fixed_review, fixed_other)%>%
   distinct()
 
 #Remove any duplicates by doi
@@ -236,7 +238,7 @@ View(test %>%
 
 write.csv(test, "Training_labeled_abs.csv")
 
-
+#Check that no duplicates are in here. 
 
 #Pull leaf info too.
 
