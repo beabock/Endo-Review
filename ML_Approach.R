@@ -30,12 +30,20 @@ library(randomForest)
 library(readxl)
 library(openxlsx)
 
-# Step 1: Label Data and Prepare Text
-labeled_abstracts <- read.csv("Training_labeled_abs.csv") %>%
+
+# Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
+labeled_abstracts <- read.csv("Training_labeled_abs_ 2 .csv") %>%
   clean_names()%>%
   mutate(predicted_label = NA,
          early_access_date = as.character(early_access_date))%>%
   select(!any_of(c("x", "predicted_label", "id")))
+
+
+labeled_abstracts %>%
+  group_by(label)%>%
+  summarize(n = n())
+
+#20 more absent, 20 more both, 20 more review
 
 # Select relevant columns
 target <- "label"
@@ -91,8 +99,8 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
 
- #rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
-# save(rf_model, file = "rf_model_no_Other3.RData")
+ rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ save(rf_model, file = "rf_model_no_Other3.RData")
 
 # rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
 # save(rf_model, file = "rf_model.RData")
@@ -203,8 +211,10 @@ labeled_abstracts %>%
 
 # Perform anti_join based on multiple columns, then filter and slice
 subsample <- full_abstracts %>%
-  filter(predicted_label == "Absence")%>%
-  slice_sample(n = 10)
+ # filter(predicted_label == "Absence")%>%
+  slice_sample(n = 30)
+
+write.csv(subsample, "subsample.csv")
 
 subsample$abstract
 #Both: 
