@@ -50,8 +50,8 @@ labeled_abstracts %>%
 target <- "label"
 predictor <- "abstract"
 
-# Dynamically select metadata columns (exclude target and predictor)
-metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor))
+metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
+  .[!.%in% c("publication_type", "group_authors", "part_number", "web_of_science_index")]
 
 # Keep the target, predictor, and metadata columns
 labeled_abstracts <- labeled_abstracts %>%
@@ -125,15 +125,105 @@ confusionMatrix(predictions, test_data$label)
 #86% accurate with Other in it
 #90% accurate with Other not in it. 
 #up to 93%!!! (no Other cat)
-#Down to 85%
+#Down to 85%. retrain model again,...
 
 
 #For now, use model without Other in it.
 
 
 # Step 8: Predict on the Full Dataset
-full_abstracts <- read.csv("wos-11-9-23_1000.csv") %>%
-  clean_names() %>%
+full_abstracts <- read.csv("All_Abstracts.csv") %>%
+  clean_names() 
+
+colname_mapping <- c(
+  "title" = "article_title",                # 'title' to 'article_title'
+  "abstract" = "abstract",                  # 'abstract' matches
+  "authors" = "authors",                    # 'authors' matches
+  "book_authors" = "book_authors",          # 'book_authors' matches
+  "editors" = "book_editors",               # 'editors' to 'book_editors'
+  "group_authors" = "book_group_authors",   # 'group_authors' to 'book_group_authors'
+  "author_full_names" = "author_full_names",# 'author_full_names' matches
+  "book_full_names" = "book_author_full_names", # 'book_full_names' to 'book_author_full_names'
+  "conference_authors" = "conference_title", # 'conference_authors' to 'conference_title'
+  "source_title" = "source_title",          # 'source_title' matches
+  "series_title" = "book_series_title",     # 'series_title' to 'book_series_title'
+  "book_series" = "book_series_subtitle",   # 'book_series' to 'book_series_subtitle'
+  "language_of_original_document" = "language", # 'language_of_original_document' to 'language'
+  "conference_name" = "conference_title",   # 'conference_name' to 'conference_title'
+  "conference_date" = "conference_date",    # 'conference_date' matches
+  "conference_location" = "conference_location", # 'conference_location' matches
+  "sponsors" = "conference_sponsor",       # 'sponsors' to 'conference_sponsor'
+  "host" = "conference_host",               # 'host' to 'conference_host'
+  "author_keywords" = "author_keywords",    # 'author_keywords' matches
+  "index_keywords" = "keywords_plus",       # 'index_keywords' to 'keywords_plus'
+  "affiliations" = "affiliations",          # 'affiliations' matches
+  "authors_with_affiliations" = "addresses", # 'authors_with_affiliations' to 'addresses'
+  "correspondence_address" = "reprint_addresses", # 'correspondence_address' to 'reprint_addresses'
+  "email_address" = "email_addresses",      # 'email_address' to 'email_addresses'
+  "researcher_i_ds" = "researcher_ids",     # 'researcher_i_ds' to 'researcher_ids'
+  "orcid_i_ds" = "orci_ds",                 # 'orcid_i_ds' to 'orci_ds'
+  "funding_details" = "funding_text",       # 'funding_details' to 'funding_text'
+  "funding_programs" = "funding_orgs",      # 'funding_programs' to 'funding_orgs'
+  "funding_texts" = "funding_name_preferred", # 'funding_texts' to 'funding_name_preferred'
+  "references" = "cited_references",        # 'references' to 'cited_references'
+  "cited_references" = "cited_reference_count", # 'cited_references' to 'cited_reference_count'
+  "times_cited" = "times_cited_wo_s_core",  # 'times_cited' to 'times_cited_wo_s_core'
+  "total_times_cited" = "times_cited_all_databases", # 'total_times_cited' to 'times_cited_all_databases'
+  "usage_count_180_days" = "x180_day_usage_count", # 'usage_count_180_days' to 'x180_day_usage_count'
+  "usage_count_since_2013" = "since_2013_usage_count", # 'usage_count_since_2013' to 'since_2013_usage_count'
+  "publisher" = "publisher",                # 'publisher' matches
+  "publisher_city" = "publisher_city",      # 'publisher_city' matches
+  "publisher_address" = "publisher_address",# 'publisher_address' matches
+  "issn" = "issn",                          # 'issn' matches
+  "e_issn" = "e_issn",                      # 'e_issn' matches
+  "isbn" = "isbn",                          # 'isbn' matches
+  "abbreviated_source_title" = "journal_abbreviation", # 'abbreviated_source_title' to 'journal_abbreviation'
+  "journal_iso" = "journal_iso_abbreviation", # 'journal_iso' to 'journal_iso_abbreviation'
+  "publication_date" = "publication_date",  # 'publication_date' matches
+  "year" = "publication_year",              # 'year' to 'publication_year'
+  "volume" = "volume",                      # 'volume' matches
+  "issue" = "issue",                        # 'issue' matches
+  "supplement" = "supplement",              # 'supplement' matches
+  "special_issue" = "special_issue",        # 'special_issue' matches
+  "meeting_abstract" = "meeting_abstract",  # 'meeting_abstract' matches
+  "page_start" = "start_page",              # 'page_start' to 'start_page'
+  "page_end" = "end_page",                  # 'page_end' to 'end_page'
+  "doi" = "doi",                            # 'doi' matches
+  "doi_link" = "doi_link",                  # 'doi_link' matches
+  "secondary_doi" = "book_doi",             # 'secondary_doi' to 'book_doi'
+  "early_access_date" = "early_access_date",# 'early_access_date' matches
+  "page_count" = "number_of_pages",         # 'page_count' to 'number_of_pages'
+  "web_of_science_categories" = "wo_s_categories", # 'web_of_science_categories' to 'wo_s_categories'
+  "research_areas" = "research_areas",      # 'research_areas' matches
+  "subject_categories" = "wo_s_categories", # 'subject_categories' to 'wo_s_categories'
+  "document_delivery_number" = "ids_number", # 'document_delivery_number' to 'ids_number'
+  "pub_med_id" = "pubmed_id",               # 'pub_med_id' to 'pubmed_id'
+  "open_access" = "open_access_designations", # 'open_access' to 'open_access_designations'
+  "highly_cited_paper" = "highly_cited_status", # 'highly_cited_paper' to 'highly_cited_status'
+  "hot_paper" = "hot_paper_status",         # 'hot_paper' to 'hot_paper_status'
+  "date" = "date_of_export",                # 'date' to 'date_of_export'
+  "wos_id" = "ut_unique_wos_id",            # 'wos_id' to 'ut_unique_wos_id'
+  "author_s_id" = "web_of_science_record",  # 'author_s_id' to 'web_of_science_record'
+  "art_no" = "article_number",              # 'art_no' to 'article_number'
+  "cited_by" = "cited_by",                  # 'cited_by' matches
+  "link" = "link",                          # 'link' matches
+  "molecular_sequence_numbers" = "molecular_sequence_numbers", # 'molecular_sequence_numbers' matches
+  "chemicals_cas" = "chemicals_cas",        # 'chemicals_cas' matches
+  "tradenames" = "tradenames",              # 'tradenames' matches
+  "manufacturers" = "manufacturers",        # 'manufacturers' matches
+  "conference_code" = "conference_code",    # 'conference_code' matches
+  "coden" = "coden",                        # 'coden' matches
+  "document_type" = "document_type",        # 'document_type' matches
+  "publication_stage" = "publication_stage",# 'publication_stage' matches
+  "source" = "source",                      # 'source' matches
+  "eid" = "eid"                             # 'eid' matches
+)
+
+
+# Rename columns in full_abstracts using the mapping
+colnames(full_abstracts) <- colname_mapping[colnames(full_abstracts)]
+
+full_abstracts <- full_abstracts %>%
   select(c(predictor, all_of(metadata_columns)))
 
 
