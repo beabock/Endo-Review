@@ -32,7 +32,7 @@ library(openxlsx)
 
 
 # Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
-labeled_abstracts <- read.csv("Training_labeled_abs_ 2 .csv") %>%
+labeled_abstracts <- read.csv("Training_labeled_abs_3.csv") %>%
   clean_names()%>%
   mutate(predicted_label = NA,
          early_access_date = as.character(early_access_date))%>%
@@ -100,7 +100,7 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
 
-# rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
  #save(rf_model, file = "rf_model_no_Other3.RData")
 
 # rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
@@ -224,7 +224,8 @@ colname_mapping <- c(
 colnames(full_abstracts) <- colname_mapping[colnames(full_abstracts)]
 
 full_abstracts <- full_abstracts %>%
-  select(c(predictor, all_of(metadata_columns)))
+  select(c(predictor, all_of(metadata_columns)))%>%
+  mutate(volume = as.integer(volume))
 
 
 # Exclude empty strings and NA values from labeled_abstracts$doi
@@ -304,40 +305,40 @@ labeled_abstracts %>%
 
 # Perform anti_join based on multiple columns, then filter and slice
 subsample <- full_abstracts %>%
- # filter(predicted_label == "Absence")%>%
-  slice_sample(n = 30)
+  filter(predicted_label == "Absence")%>%
+  slice_sample(n = 30)%>%
+  mutate(volume = as.integer(volume))
 
 write.csv(subsample, "subsample.csv")
 
 subsample$abstract
-#Both: 
-#Present: 9, 10, 8, 7, 5, 4 
-#Review: 6, 2, 1
+#Both: 26, 12, 11
+#Present: 30, 28, 25, 24, 23, 22, 21, 20, 18, 17, 14, 13, 10
+#Review: 16
 #Absent:
-#Other: 3
+#Other: 29, 27, 19, 15
 
 
 fixed_other <- full_abstracts %>%
-  filter(id %in% subsample$id[c(3)]) %>%
+  filter(id %in% subsample$id[c(29, 27, 19, 15)]) %>%
   mutate(label = "Other") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_both <- full_abstracts %>%
-  filter(id %in% subsample$id[c(4, 3)]) %>%  
-  filter(predicted_label == "Both" & id %in% c(506, 618)) %>%  # Filter rows where predicted_label is "Both" and id is 506 or 618
+  filter(id %in% subsample$id[c(26, 12, 11)]) %>%  
   mutate(label = "Both") %>%  # Add a new label column with "Both"
   relocate(label) %>%  # Relocate label to the first position
   relocate(id, .before = last_col())  # Move 'id' to the second-to-last position
 
 fixed_present <- full_abstracts %>%
-  filter(id %in% subsample$id[c(9, 10, 8, 7, 5, 4)]) %>%
+  filter(id %in% subsample$id[c(30, 28, 25, 24, 23, 22, 21, 20, 18, 17, 14, 13, 10)]) %>%
   mutate(label = "Presence") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_review <- full_abstracts %>%
-  filter(id %in% subsample$id[c(6, 2, 1)]) %>%
+  filter(id %in% subsample$id[c(16)]) %>%
   mutate(label = "Review")%>%
   relocate(label) %>%
   relocate(id, .before = last_col())
@@ -347,7 +348,7 @@ test <- labeled_abstracts %>%
   mutate(predicted_label = NA)
 
 # Combine data ensuring there are no duplicates in the DOI column
-test <- bind_rows(test, fixed_present, fixed_other) 
+test <- bind_rows(test, fixed_present, fixed_other, fixed_both, fixed_review) 
 
 
 # If there are any duplicates that should be manually resolved,
@@ -359,13 +360,13 @@ test %>%
        filter(n() > 1)
 
 
-filepath <- "Training_labeled_abs_1.csv" 
+filepath <- "Training_labeled_abs_2.csv" 
 
 i <- as.numeric(gsub(".*_(\\d+)\\.csv$", "\\1", filepath))
 
 i <- i + 1
 
-newname <- paste("Training_labeled_abs_", i, ".csv")
+newname <- paste0("Training_labeled_abs_", i, ".csv")
 
 write.csv(test, newname)
 
