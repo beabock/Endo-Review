@@ -36,7 +36,8 @@ labeled_abstracts <- read.csv("Training_labeled_abs_ 2 .csv") %>%
   clean_names()%>%
   mutate(predicted_label = NA,
          early_access_date = as.character(early_access_date))%>%
-  select(!any_of(c("x", "predicted_label", "id")))
+  select(!any_of(c("x", "predicted_label", "id")))%>%
+  filter(label != "Other")
 
 
 labeled_abstracts %>%
@@ -99,8 +100,8 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
 
- rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
- save(rf_model, file = "rf_model_no_Other3.RData")
+# rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ #save(rf_model, file = "rf_model_no_Other3.RData")
 
 # rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
 # save(rf_model, file = "rf_model.RData")
@@ -119,11 +120,13 @@ predictions <- factor(predictions, levels = train_levels)
 
 # Evaluate performance
 confusionMatrix(predictions, test_data$label)
-
+#It's getting Presence and Review well. Not getting both very well, nor is it getting absence well.
 
 #86% accurate with Other in it
 #90% accurate with Other not in it. 
 #up to 93%!!! (no Other cat)
+#Down to 85%
+
 
 #For now, use model without Other in it.
 

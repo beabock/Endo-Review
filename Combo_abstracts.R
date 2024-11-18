@@ -23,17 +23,155 @@ wos8 <- read_tsv("All_Abstracts-11-18-24/savedrecs(7).txt")
 
 wos <- rbind(wos1, wos2, wos3, wos4, wos5, wos6, wos7, wos8)
 
-scop <- read.csv("scopus.csv")
+scop <- read.csv("All_Abstracts-11-18-24/scopus.csv")
 
-ds <- full_join(wos, scop)
+colnames(wos)
+colnames(scop)
+
+# Create a mapping of acronyms to full names
+colname_mapping <- c(
+  PT = "Document.Type",
+  AU = "Authors",
+  BA = "Book.Authors",
+  BE = "Editors",
+  GP = "Group.Authors",
+  AF = "Author.full.names",
+  BF = "Book.Full.Names",
+  CA = "Conference.Authors",
+  TI = "Title",
+  SO = "Source.title",
+  SE = "Series.Title",
+  BS = "Book.Series",
+  LA = "Language.of.Original.Document",
+  DT = "Document.Type",
+  CT = "Conference.name",
+  CY = "Conference.date",
+  CL = "Conference.location",
+  SP = "Sponsors",
+  HO = "Host",
+  DE = "Author.Keywords",
+  ID = "Index.Keywords",
+  AB = "Abstract",
+  C1 = "Affiliations",
+  C3 = "Authors.with.affiliations",
+  RP = "Correspondence.Address",
+  EM = "Email.Address",
+  RI = "Researcher.IDs",
+  OI = "ORCID.IDs",
+  FU = "Funding.Details",
+  FP = "Funding.Programs",
+  FX = "Funding.Texts",
+  CR = "References",
+  NR = "Cited.References",
+  TC = "Times.Cited",
+  Z9 = "Total.Times.Cited",
+  U1 = "Usage.Count.180.Days",
+  U2 = "Usage.Count.Since.2013",
+  PU = "Publisher",
+  PI = "Publisher.City",
+  PA = "Publisher.Address",
+  SN = "ISSN",
+  EI = "eISSN",
+  BN = "ISBN",
+  J9 = "Abbreviated.Source.Title",
+  JI = "Journal.ISO",
+  PD = "Publication.Date",
+  PY = "Year",
+  VL = "Volume",
+  IS = "Issue",
+  PN = "Art..No.",
+  SU = "Supplement",
+  SI = "Special.Issue",
+  MA = "Meeting.Abstract",
+  BP = "Page.start",
+  EP = "Page.end",
+  AR = "Art..No.",
+  DI = "DOI",
+  DL = "DOI.Link",
+  D2 = "Secondary.DOI",
+  EA = "Early.Access.Date",
+  PG = "Page.count",
+  WC = "Web.of.Science.Categories",
+  WE = "Research.Areas",
+  SC = "Subject.Categories",
+  GA = "Document.Delivery.Number",
+  PM = "PubMed.ID",
+  OA = "Open.Access",
+  HC = "Highly.Cited.Paper",
+  HP = "Hot.Paper",
+  DA = "Date",
+  UT = "WOS_ID"
+)
+
+unmapped_cols <- setdiff(colnames(wos), names(colname_mapping))
+
+
+# Rename columns in wos
+colnames(wos) <- ifelse(colnames(wos) %in% names(colname_mapping), 
+                        colname_mapping[colnames(wos)], 
+                        colnames(wos))
+
+
+wos <- wos %>%
+  select(
+    -Document.Type,
+    -Art..No.
+  )
+
+# View the updated column names
+colnames(wos)
+
+ds <- full_join(wos, scop)%>%
+  filter(Abstract != "[No abstract available]",
+         !is.na(Abstract))
 
 # Step 2: Count duplicated DOIs
-n_duplicates <- sum(duplicated(combined$doi))
+n_duplicates <- sum(duplicated(ds$DOI)) #6373 duplicated dois
 cat("Number of duplicated DOIs:", n_duplicates, "\n")
 
 # Step 3: Remove duplicates, keeping the first occurrence
-deduplicated <- combined %>% distinct(doi, .keep_all = TRUE)
+deduplicated <- ds %>% distinct(DOI, .keep_all = TRUE)
+#9814 now
 
-ds %>%
-  group_by()%>%#Check authors, titles, dois, and other info. Keep each check.
-  summarize(n=n())
+duplicated_titles <- deduplicated[duplicated(deduplicated$Title) | duplicated(deduplicated$Title, fromLast = TRUE), ]
+
+# View the rows with duplicated titles
+View(duplicated_titles) #61'
+
+deduplicated <- deduplicated %>%
+  group_by(Title) %>%
+  # Use row-wise logic to combine duplicates while prioritizing NA first
+  summarize(across(everything(), ~ {
+    if(any(is.na(.))) {
+      # Pick the first non-NA value, else pick the first available value
+      return(first(na.omit(.)))
+    } else {
+      return(first(.))
+    }
+  }))
+#9783
+
+duplicated_abs <- deduplicated[duplicated(deduplicated$Abstract) | duplicated(deduplicated$Abstract, fromLast = TRUE), ]
+
+deduplicated <- deduplicated %>%
+  group_by(Abstract) %>%
+  # Use row-wise logic to combine duplicates while prioritizing NA first
+  summarize(across(everything(), ~ {
+    if(any(is.na(.))) {
+      # Pick the first non-NA value, else pick the first available value
+      return(first(na.omit(.)))
+    } else {
+      return(first(.))
+    }
+  }))
+#9778
+
+duplicated_auth <- deduplicated[duplicated(deduplicated$Authors) | duplicated(deduplicated$Authors, fromLast = TRUE), ]
+#View this
+
+
+deduplicated <- deduplicated %>%
+  filter(!is.na(Authors)) #Not helpful without authors
+#9778 total
+
+write.csv(deduplicated, "All_Abstracts.csv")
