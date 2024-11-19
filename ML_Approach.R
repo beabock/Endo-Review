@@ -32,12 +32,21 @@ library(openxlsx)
 
 
 # Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
-labeled_abstracts <- read.csv("Training_labeled_abs_3.csv") %>%
+labeled_abstracts <- read.csv("Training_labeled_abs_4.csv") %>%
   clean_names()%>%
   mutate(predicted_label = NA,
          early_access_date = as.character(early_access_date))%>%
   select(!any_of(c("x", "predicted_label", "id")))%>%
   filter(label != "Other")
+
+other_abstracts <- read.csv("Training_labeled_abs_4.csv") %>%
+  clean_names()%>%
+  mutate(predicted_label = NA,
+         early_access_date = as.character(early_access_date))%>%
+  select(!any_of(c("x", "predicted_label", "id")))%>%
+  filter(label == "Other")
+
+#Problem to come back to: Other is getting removed every time. Add back in at end.
 
 
 labeled_abstracts %>%
@@ -100,14 +109,12 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
 
- rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
- #save(rf_model, file = "rf_model_no_Other3.RData")
-
 # rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
-# save(rf_model, file = "rf_model.RData")
+# save(rf_model, file = "rf_model_no_Other4.RData")
+
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model_no_Other2.RData")
+load("rf_model_no_Other3.RData") #3 seems best so far. 0 has other in it.
 
 # Step 6: Evaluate the Model on Test Data
 test_dtm_df <- as.data.frame(test_dtm_matrix)
@@ -125,7 +132,9 @@ confusionMatrix(predictions, test_data$label)
 #86% accurate with Other in it
 #90% accurate with Other not in it. 
 #up to 93%!!! (no Other cat)
-#Down to 85%. retrain model again,...
+
+#2 gets 80%, 3 is 89%, 4 is 85%
+# "Both" seems like hardest category
 
 
 #For now, use model without Other in it.
@@ -275,7 +284,7 @@ full_abstracts$predicted_label <- full_predictions
 write.csv(full_abstracts, "full_predictions_with_metadata.csv", row.names = FALSE)
 
 # Optional: View summary of results
-test_summary <- full_abstracts %>%
+full_abstracts %>%
   group_by(predicted_label) %>%
   summarize(n = n())
 
@@ -306,39 +315,39 @@ labeled_abstracts %>%
 # Perform anti_join based on multiple columns, then filter and slice
 subsample <- full_abstracts %>%
   filter(predicted_label == "Absence")%>%
-  slice_sample(n = 30)%>%
+  slice_sample(n = 100)%>%
   mutate(volume = as.integer(volume))
 
 write.csv(subsample, "subsample.csv")
 
 subsample$abstract
-#Both: 26, 12, 11
-#Present: 30, 28, 25, 24, 23, 22, 21, 20, 18, 17, 14, 13, 10
-#Review: 16
+#Both: 17
+#Present: 30, 29, 28, 27, 26, 24, 23, 22, 20, 18, 16, 14
+#Review: 
 #Absent:
-#Other: 29, 27, 19, 15
+#Other: 25, 21, 19, 15
 
 
 fixed_other <- full_abstracts %>%
-  filter(id %in% subsample$id[c(29, 27, 19, 15)]) %>%
+  filter(id %in% subsample$id[c(25, 21, 19, 15)]) %>%
   mutate(label = "Other") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_both <- full_abstracts %>%
-  filter(id %in% subsample$id[c(26, 12, 11)]) %>%  
+  filter(id %in% subsample$id[c(17)]) %>%  
   mutate(label = "Both") %>%  # Add a new label column with "Both"
   relocate(label) %>%  # Relocate label to the first position
   relocate(id, .before = last_col())  # Move 'id' to the second-to-last position
 
 fixed_present <- full_abstracts %>%
-  filter(id %in% subsample$id[c(30, 28, 25, 24, 23, 22, 21, 20, 18, 17, 14, 13, 10)]) %>%
+  filter(id %in% subsample$id[c(30, 29, 28, 27, 26, 24, 23, 22, 20, 18, 16, 14)]) %>%
   mutate(label = "Presence") %>%
   relocate(label) %>%
   relocate(id, .before = last_col())
 
 fixed_review <- full_abstracts %>%
-  filter(id %in% subsample$id[c(16)]) %>%
+  filter(id %in% subsample$id[c()]) %>%
   mutate(label = "Review")%>%
   relocate(label) %>%
   relocate(id, .before = last_col())
@@ -360,7 +369,7 @@ test %>%
        filter(n() > 1)
 
 
-filepath <- "Training_labeled_abs_2.csv" 
+filepath <- "Training_labeled_abs_3.csv" 
 
 i <- as.numeric(gsub(".*_(\\d+)\\.csv$", "\\1", filepath))
 
