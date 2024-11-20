@@ -10,11 +10,10 @@ library(rgbif)
 # Set your working directory
 setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
-# Load your dataset
-ds <- read.csv("plant_species_results.csv")
+# Load your dataset. Note that this is only a subset of the whole dataset. Will need to re-run this one the whole thing.
+ds <- read.csv("plant_info_results.csv")
 
-library(rgbif)
-library(dplyr)
+
 
 # Define a function to query GBIF and retrieve taxonomic info for plants
 get_gbif_taxonomy <- function(kingdom_key = 6, limit = 1000) {
@@ -81,3 +80,26 @@ for (category in names(missing_values_list)) {
   # Write the data frame to a CSV file
   write.csv(missing_df, paste0("missing_", tolower(category), ".csv"), row.names = FALSE)
 }
+
+ds %>%
+  filter(kingdom == "Fungi")%>%
+  group_by(phylum)%>%
+  summarize(n=n())
+
+total_rows <- nrow(ds %>% filter(kingdom == "Fungi"))
+ds %>%
+  filter(kingdom == "Fungi")%>%
+  group_by(genus)%>%
+  summarize(n=n(), total = total_rows)%>%
+  arrange(desc(n))
+
+ds %>%
+  filter(kingdom == "Fungi") %>%
+  pivot_longer(cols = c(colnames(ds)[21:92]), names_to = "plant_part", values_to = "presence") %>%
+  filter(!is.na(presence) & presence != 0) %>%  # Only count non-NA and non-zero values
+  group_by(plant_part) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+#Cool!
+
