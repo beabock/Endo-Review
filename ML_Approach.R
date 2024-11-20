@@ -37,7 +37,8 @@ labeled_abstracts <- read.csv("Training_labeled_abs_4.csv") %>%
   mutate(predicted_label = NA,
          early_access_date = as.character(early_access_date))%>%
   select(!any_of(c("x", "predicted_label", "id")))%>%
-  filter(label != "Other")
+  filter(label != "Other",
+         label != "")
 
 other_abstracts <- read.csv("Training_labeled_abs_4.csv") %>%
   clean_names()%>%
@@ -114,7 +115,7 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model_no_Other3.RData") #3 seems best so far. 0 has other in it.
+load("rf_model_no_Other4.RData") #3 seems best so far. 0 has other in it.
 
 # Step 6: Evaluate the Model on Test Data
 test_dtm_df <- as.data.frame(test_dtm_matrix)
@@ -357,7 +358,8 @@ test <- labeled_abstracts %>%
   mutate(predicted_label = NA)
 
 # Combine data ensuring there are no duplicates in the DOI column
-test <- bind_rows(test, fixed_present, fixed_other, fixed_both, fixed_review) 
+test <- bind_rows(test, other_abstracts)
+                  fixed_present, fixed_other, fixed_both, fixed_review) 
 
 
 # If there are any duplicates that should be manually resolved,
@@ -369,7 +371,7 @@ test %>%
        filter(n() > 1)
 
 
-filepath <- "Training_labeled_abs_3.csv" 
+filepath <- "Training_labeled_abs_4.csv" 
 
 i <- as.numeric(gsub(".*_(\\d+)\\.csv$", "\\1", filepath))
 
