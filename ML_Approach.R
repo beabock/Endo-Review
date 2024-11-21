@@ -12,6 +12,7 @@ library(text) # For embeddings, optional
 library(xgboost)
 library(recipes)
 library(themis)
+library(janitor)
 
 
 setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
@@ -189,18 +190,39 @@ test_features <- test_features[, train_cols]
 xgb_train <- xgb.DMatrix(data = as.matrix(xgb_train_data), label = as.numeric(balanced_train_data$label) - 1)
 xgb_test <- xgb.DMatrix(data = as.matrix(test_features), label = as.numeric(test_dtm_df$label) - 1)
 
-# Step 6: Train the XGBoost model
-xgb_model <- xgboost(
-  data = xgb_train,
-  max_depth = 6,          # Depth of trees
-  eta = 0.1,             # Learning rate
-  nrounds = 100,         # Number of boosting rounds
-  objective = "multi:softmax",   # Multi-class classification
-  num_class = length(unique(balanced_train_data$label))  # Number of classes
+# Step 2: Set the parameters for XGBoost
+params <- list(
+  objective = "multi:softmax",       # Multi-class classification
+  num_class = length(unique(balanced_train_data$label)),  # Number of classes
+  eta = 0.1,                         # Learning rate
+  max_depth = 6,                     # Max depth of trees
+  subsample = 0.8,                   # Fraction of samples for each tree
+  colsample_bytree = 0.8,            # Fraction of features for each tree
+  min_child_weight = 5,              # Minimum sum of instance weight for a child
+  gamma = 0.1                        # Regularization parameter
 )
+
+
+xgb_model <- xgb.train(
+  params = params,
+  data = xgb_train,
+  nrounds = 1000,  # Number of boosting rounds
+  watchlist = list(train = xgb_train),  # Keep track of training progress
+  verbose = 1,  # Show progress during training
+  early_stopping_rounds = 10
+)
+
+
+#Need to tune this better.
+
+
+save(xgb_model, file = "xgb_bigrams_1.RData")
 
 # Convert the predictions to a factor and ensure the levels match the actual labels
 original_levels <- levels(factor(train_dtm_df$label))
+
+
+predictions_xgb <- predict(xgb_model, xgb_test)
 
 # Map the numeric predictions back to the original class labels
 predictions_xgb_labels <- factor(predictions_xgb, levels = 0:(length(original_levels) - 1), labels = original_levels)
@@ -210,9 +232,16 @@ confusionMatrix(predictions_xgb_labels, factor(test_dtm_df$label))
 
 
 
+predicted_labels <- as.factor(predictions_xgb + 1)  # Convert predictions back to factor labels
+confusion_matrix <- table(predicted_labels, test_dtm_df$label)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste("Accuracy: ", accuracy))
 
 
 
+
+#Test different models and delete the worst ones.
 
 
 
