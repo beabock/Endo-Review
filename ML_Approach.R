@@ -6,15 +6,12 @@
 library(tidyverse)
 library(tidytext)
 library(caret)
-library(readxl)
-library(janitor)
-library(visdat)
-library(rgbif)
-library(tidytext)
-library(caret)
 library(randomForest)
-library(readxl)
-library(openxlsx)
+library(DMwR2)
+library(text) # For embeddings, optional
+library(xgboost)
+library(recipes)
+library(themis)
 
 
 setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
@@ -30,13 +27,16 @@ setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
 
 # Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
+
 labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
-  clean_names()%>%
-  mutate(predicted_label = NA,
-         early_access_date = as.character(early_access_date))%>%
-  select(!any_of(c("x", "predicted_label", "id")))%>%
-  filter(label != "Other",
-         label != "")
+  clean_names() %>%
+  filter(label != "Other" & label != "") %>%
+  mutate(
+    id = row_number(),
+    abstract_length = str_count(abstract, "\\S+"),  # Abstract length feature
+    absence_indicator = if_else(str_detect(abstract, "absent|lack|not found|absence"), 1, 0)  # Domain-specific feature
+  )
+
 
 other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   clean_names()%>%
@@ -66,23 +66,22 @@ labeled_abstracts <- labeled_abstracts %>%
 
 # Now, labeled_abstracts contains the target, predictor, and metadata columns
 
-# Assign ID
-labeled_abstracts$id <- 1:nrow(labeled_abstracts)
 
 # Step 2: Tokenize Text and Create Document-Term Matrix (DTM)
 # Tokenize and remove stop words for the entire dataset (before splitting)
 text_tokens <- labeled_abstracts %>%
-  unnest_tokens(word, abstract) %>%
+  unnest_tokens(word, abstract, token = "ngrams", n = 2) %>%
   anti_join(stop_words)
 
 # Create Document-Term Matrix (DTM) for the entire dataset
 dtm <- text_tokens %>%
   count(id, word) %>%
-  cast_dtm(id, word, n)
+  bind_tf_idf(word, id, n) %>%
+  cast_dtm(id, word, tf_idf)
 
 dtm_matrix <- as.matrix(dtm)
 
-# Step 3: Train-Test Split (80% training, 20% testing)
+# Step 3: Train-Test Split (80-20)
 set.seed(123)
 train_index <- createDataPartition(labeled_abstracts$label, p = 0.8, list = FALSE)
 train_data <- labeled_abstracts[train_index, ]
@@ -100,10 +99,26 @@ train_levels <- levels(train_data$label)
 
 test_data$label <- factor(test_data$label, levels = train_levels)
 
+
+test_data <- test_data %>%
+  mutate(abstract = iconv(abstract, from = "latin1", to = "UTF-8", sub = ""))
+
+# Now calculate abstract_length
+test_data <- test_data %>%
+  mutate(abstract_length = nchar(abstract))
+
+train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
+  bind_cols(train_data %>% select(label, abstract_length, absence_indicator))
+test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
+  bind_cols(test_data %>% select(label, abstract_length, absence_indicator))
+
+
+
 # Step 5: Train the Model (Random Forest)
 # Convert train DTM into a data frame and add labels
-train_dtm_df <- as.data.frame(train_dtm_matrix)
-train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
+train_dtm_df$label <- as.factor(train_dtm_df$label)
+test_dtm_df$label <- as.factor(test_dtm_df$label)
+
 
 # Train Random Forest model.
 
@@ -112,20 +127,96 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model_no_Other5.RData") #3 seems best so far. 0 has other in it.
+#load("rf_model_no_Other5.RData") #3 seems best so far. 0 has other in it.
 
-# Step 6: Evaluate the Model on Test Data
-test_dtm_df <- as.data.frame(test_dtm_matrix)
-test_data$label <- factor(test_data$label, levels = train_levels)  # Relevel test labels
 
-# Make predictions
-predictions <- predict(rf_model, newdata = test_dtm_df)
+smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
+  step_smote(label, over_ratio = 1) %>%
+  prep()
 
-predictions <- factor(predictions, levels = train_levels)
+balanced_train_data <- bake(smote_recipe, new_data = NULL)
 
-# Evaluate performance
-confusionMatrix(predictions, test_data$label)
-#It's getting Presence and Review well. Not getting both very well, nor is it getting absence well.
+rf_model <- train(
+label ~ ., data = balanced_train_data, method = "rf",
+trControl = trainControl(method = "cv", number = 5),
+tuneGrid = expand.grid(.mtry = c(2, 5, 10)),
+weights = ifelse(balanced_train_data$label == "Absence", 10, 1) #Might need to change these weights. Could increase the 3 number
+)
+#save(rf_model, file = "rf_model_no_Other8_balanced.RData")
+
+missing_features <- setdiff(names(balanced_train_data), names(test_dtm_df))
+#Comeback to thiss
+
+predictions_rf <- predict(rf_model, newdata = test_dtm_df)
+confusionMatrix(predictions_rf, test_dtm_df$label)
+
+
+
+
+# Step 6: Gradient Boosting with XGBoost
+
+# Step 1: Prepare the training data by removing the label column and converting to numeric
+# Step 1: Prepare the training data by removing the label column and converting to numeric
+xgb_train_data <- balanced_train_data[, -ncol(balanced_train_data)]  # Remove label column
+xgb_train_data <- as.data.frame(apply(xgb_train_data, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
+
+# Step 2: Prepare the test data by removing the label column and converting to numeric
+test_features <- test_dtm_df[, -ncol(test_dtm_df)]  # Remove label column
+test_features <- as.data.frame(apply(test_features, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
+
+# Step 3: Align the columns in the training and test datasets
+# Make sure both datasets have the same features
+train_cols <- colnames(xgb_train_data)
+test_cols <- colnames(test_features)
+
+# Add missing columns to the test data with 0 values if necessary
+missing_cols <- setdiff(train_cols, test_cols)
+if(length(missing_cols) > 0) {
+  test_features[missing_cols] <- 0
+}
+
+# Add missing columns to the train data with 0 values if necessary
+missing_cols <- setdiff(test_cols, train_cols)
+if(length(missing_cols) > 0) {
+  xgb_train_data[missing_cols] <- 0
+}
+
+# Step 4: Ensure column order matches in both training and test datasets
+xgb_train_data <- xgb_train_data[, train_cols]
+test_features <- test_features[, train_cols]
+
+# Step 5: Convert both datasets into DMatrix objects
+xgb_train <- xgb.DMatrix(data = as.matrix(xgb_train_data), label = as.numeric(balanced_train_data$label) - 1)
+xgb_test <- xgb.DMatrix(data = as.matrix(test_features), label = as.numeric(test_dtm_df$label) - 1)
+
+# Step 6: Train the XGBoost model
+xgb_model <- xgboost(
+  data = xgb_train,
+  max_depth = 6,          # Depth of trees
+  eta = 0.1,             # Learning rate
+  nrounds = 100,         # Number of boosting rounds
+  objective = "multi:softmax",   # Multi-class classification
+  num_class = length(unique(balanced_train_data$label))  # Number of classes
+)
+
+# Convert the predictions to a factor and ensure the levels match the actual labels
+original_levels <- levels(factor(train_dtm_df$label))
+
+# Map the numeric predictions back to the original class labels
+predictions_xgb_labels <- factor(predictions_xgb, levels = 0:(length(original_levels) - 1), labels = original_levels)
+
+# Now perform confusion matrix with consistent labels
+confusionMatrix(predictions_xgb_labels, factor(test_dtm_df$label))
+
+
+
+
+
+
+
+
+
+# Whole dataset -----------------------------------------------------------
 
 
 
