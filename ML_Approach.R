@@ -107,8 +107,8 @@ train_dtm_df$label <- train_data$label  # Add labels to the DTM for training
 
 # Train Random Forest model.
 
- #rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
- save(rf_model, file = "rf_model_no_Other5.RData")
+# rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+ #save(rf_model, file = "rf_model_no_Other6.RData")
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
@@ -295,9 +295,10 @@ labeled_abstracts %>%
 
 # Perform anti_join based on multiple columns, then filter and slice
 subsample <- full_abstracts %>%
-  filter(predicted_label == "Both" | predicted_label == "Absence")%>%
-  slice_sample(n = 200)%>%
+  filter(predicted_label == "Absence")%>%
+  slice_sample(n = 44)%>%
   mutate(volume = as.integer(volume))
+
 
 write.csv(subsample, "subsample.csv")
 
