@@ -71,7 +71,7 @@ labeled_abstracts <- labeled_abstracts %>%
 # Step 2: Tokenize Text and Create Document-Term Matrix (DTM)
 # Tokenize and remove stop words for the entire dataset (before splitting)
 text_tokens <- labeled_abstracts %>%
-  unnest_tokens(word, abstract, token = "ngrams", n = 2) %>%
+  unnest_tokens(word, abstract, token = "ngrams", n = 1) %>%
   anti_join(stop_words)
 
 # Create Document-Term Matrix (DTM) for the entire dataset
@@ -120,22 +120,34 @@ test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
 train_dtm_df$label <- as.factor(train_dtm_df$label)
 test_dtm_df$label <- as.factor(test_dtm_df$label)
 
+missing_features <- setdiff(names(train_dtm_df), names(test_dtm_df))
+
+setdiff(names(train_dtm_df), names(test_dtm_df))
+setdiff(names(test_dtm_df), names(train_dtm_df))
+
+for (col in setdiff(names(train_dtm_df), names(test_dtm_df))) {
+  test_dtm_df[[col]] <- 0
+}
+
+setdiff(train_data$id, rownames(train_dtm_matrix))
+setdiff(test_data$id, rownames(test_dtm_matrix))
+
 
 # Train Random Forest model.
 
 # rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
- #save(rf_model, file = "rf_model_no_Other6.RData")
+ #save(rf_model, file = "rf_model_no_Other2.RData")
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-#load("rf_model_no_Other5.RData") #3 seems best so far. 0 has other in it.
+load("rf_model_no_Other7_balanced.RData") #7 is best. others are trash?
 
 
-smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
-  step_smote(label, over_ratio = 1) %>%
-  prep()
-
-balanced_train_data <- bake(smote_recipe, new_data = NULL)
+# smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
+#   step_smote(label, over_ratio = 1) %>%
+#   prep()
+# 
+# balanced_train_data <- bake(smote_recipe, new_data = NULL)
 
 rf_model <- train(
 label ~ ., data = balanced_train_data, method = "rf",
@@ -143,15 +155,15 @@ trControl = trainControl(method = "cv", number = 5),
 tuneGrid = expand.grid(.mtry = c(2, 5, 10)),
 weights = ifelse(balanced_train_data$label == "Absence", 10, 1) #Might need to change these weights. Could increase the 3 number
 )
-#save(rf_model, file = "rf_model_no_Other8_balanced.RData")
+save(rf_model, file = "rf_model_no_Other8_balanced.RData")
 
-missing_features <- setdiff(names(balanced_train_data), names(test_dtm_df))
+#missing_features <- setdiff(names(balanced_train_data), names(test_dtm_df))
 #Comeback to thiss
 
 predictions_rf <- predict(rf_model, newdata = test_dtm_df)
 confusionMatrix(predictions_rf, test_dtm_df$label)
 
-
+#2 gets 17%, 3 does too. 80% at 7
 
 
 # Step 6: Gradient Boosting with XGBoost
