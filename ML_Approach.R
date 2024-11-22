@@ -143,16 +143,19 @@ setdiff(test_data$id, rownames(test_dtm_matrix))
 load("rf_model_no_Other7_balanced.RData") #7 is best. others are trash?
 
 
-# smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
-#   step_smote(label, over_ratio = 1) %>%
-#   prep()
-# 
-# balanced_train_data <- bake(smote_recipe, new_data = NULL)
-
+ smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
+   step_smote(label, over_ratio = 1) %>%
+   prep()
+ 
+ balanced_train_data <- bake(smote_recipe, new_data = NULL)
+dim(balanced_train_data)
+ 
+print(object.size(balanced_train_data), units = "auto")
+ 
 rf_model <- train(
 label ~ ., data = balanced_train_data, method = "rf",
-trControl = trainControl(method = "cv", number = 5),
-tuneGrid = expand.grid(.mtry = c(2, 5, 10)),
+trControl = trainControl(method = "cv", number = 2),
+tuneGrid = expand.grid(.mtry = c(5), ntree=100),
 weights = ifelse(balanced_train_data$label == "Absence", 10, 1) #Might need to change these weights. Could increase the 3 number
 )
 save(rf_model, file = "rf_model_no_Other8_balanced.RData")
