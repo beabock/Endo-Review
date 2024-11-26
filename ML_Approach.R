@@ -33,9 +33,7 @@ labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   clean_names() %>%
   filter(label != "Other" & label != "") %>%
   mutate(
-    id = row_number(),
-    abstract_length = str_count(abstract, "\\S+"),  # Abstract length feature
-    absence_indicator = if_else(str_detect(abstract, "absent|lack|not found|absence"), 1, 0)  # Domain-specific feature
+    id = row_number()  # Domain-specific feature
   )
 
 
@@ -101,18 +99,22 @@ train_levels <- levels(train_data$label)
 test_data$label <- factor(test_data$label, levels = train_levels)
 
 
-test_data <- test_data %>%
-  mutate(abstract = iconv(abstract, from = "latin1", to = "UTF-8", sub = ""))
+#test_data <- test_data %>%
+#  mutate(abstract = iconv(abstract, from = "latin1", to = "UTF-8", sub = ""))
 
 # Now calculate abstract_length
-test_data <- test_data %>%
-  mutate(abstract_length = nchar(abstract))
+#test_data <- test_data %>%
+#  mutate(abstract_length = nchar(abstract))
+
+# train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
+#   bind_cols(train_data %>% select(label, abstract_length, absence_indicator))
+# test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
+#   bind_cols(test_data %>% select(label, abstract_length, absence_indicator))
 
 train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
-  bind_cols(train_data %>% select(label, abstract_length, absence_indicator))
+  bind_cols(train_data %>% select(label))
 test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
-  bind_cols(test_data %>% select(label, abstract_length, absence_indicator))
-
+  bind_cols(test_data %>% select(label))
 
 
 # Step 5: Train the Model (Random Forest)
@@ -120,48 +122,46 @@ test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
 train_dtm_df$label <- as.factor(train_dtm_df$label)
 test_dtm_df$label <- as.factor(test_dtm_df$label)
 
-missing_features <- setdiff(names(train_dtm_df), names(test_dtm_df))
-
-setdiff(names(train_dtm_df), names(test_dtm_df))
-setdiff(names(test_dtm_df), names(train_dtm_df))
-
-for (col in setdiff(names(train_dtm_df), names(test_dtm_df))) {
-  test_dtm_df[[col]] <- 0
-}
-
-setdiff(train_data$id, rownames(train_dtm_matrix))
-setdiff(test_data$id, rownames(test_dtm_matrix))
-
 
 # Train Random Forest model.
 
-# rf_model <- train(label ~ ., data = train_dtm_df, method = "rf")
+rf_model <- train(
+  label ~ ., 
+  data = train_dtm_df, 
+  method = "rf",
+  trControl = trainControl(method = "cv", number = 2),
+  tuneGrid = expand.grid(mtry = c(5)),  # Only include mtry here
+  weights = ifelse(train_dtm_df$label == "Absence", 10, 1), # Set weights
+  ntree = 100 # Specify ntree here
+)
  #save(rf_model, file = "rf_model_no_Other2.RData")
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-load("rf_model_no_Other7_balanced.RData") #7 is best. others are trash?
 
 
- smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
-   step_smote(label, over_ratio = 1) %>%
-   prep()
- 
- balanced_train_data <- bake(smote_recipe, new_data = NULL)
-dim(balanced_train_data)
- 
-print(object.size(balanced_train_data), units = "auto")
- 
-rf_model <- train(
-label ~ ., data = balanced_train_data, method = "rf",
-trControl = trainControl(method = "cv", number = 2),
-tuneGrid = expand.grid(.mtry = c(5), ntree=100),
-weights = ifelse(balanced_train_data$label == "Absence", 10, 1) #Might need to change these weights. Could increase the 3 number
-)
-save(rf_model, file = "rf_model_no_Other8_balanced.RData")
+#  smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
+#    step_smote(label, over_ratio = 1) %>%
+#    prep()
+#  
+#  balanced_train_data <- bake(smote_recipe, new_data = NULL)
+# dim(balanced_train_data)
+#  
+# print(object.size(balanced_train_data), units = "auto")
+#  
+# rf_model <- train(
+# label ~ ., data = balanced_train_data, method = "rf",
+# trControl = trainControl(method = "cv", number = 2),
+# tuneGrid = expand.grid(.mtry = c(5), ntree=100),
+# weights = ifelse(balanced_train_data$label == "Absence", 10, 1) #Might need to change these weights. Could increase the 3 number
+# )
+# save(rf_model, file = "rf_model_no_Other8_balanced.RData")
 
 #missing_features <- setdiff(names(balanced_train_data), names(test_dtm_df))
 #Comeback to thiss
+
+load("rf_model_no_Other6.RData") #7 is best. others are trash?
+
 
 predictions_rf <- predict(rf_model, newdata = test_dtm_df)
 confusionMatrix(predictions_rf, test_dtm_df$label)
