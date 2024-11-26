@@ -129,12 +129,11 @@ rf_model <- train(
   label ~ ., 
   data = train_dtm_df, 
   method = "rf",
-  trControl = trainControl(method = "cv", number = 2),
-  tuneGrid = expand.grid(mtry = c(5)),  # Only include mtry here
-  weights = ifelse(train_dtm_df$label == "Absence", 10, 1), # Set weights
-  ntree = 100 # Specify ntree here
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = expand.grid(mtry = c(5, 10)),  # Only include mtry here
+  ntree = 200 # Specify ntree here
 )
- #save(rf_model, file = "rf_model_no_Other2.RData")
+ save(rf_model, file = "rf_model_no_Other8.RData")
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
@@ -171,9 +170,109 @@ confusionMatrix(predictions_rf, test_dtm_df$label)
 
 # Step 6: Gradient Boosting with XGBoost
 
+
+
+# Gradient boosting -------------------------------------------------------
+
+
+
+# Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
+
+labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
+  clean_names() %>%
+  filter(label != "Other" & label != "") %>%
+  mutate(
+    id = row_number()  # Domain-specific feature
+  )
+
+
+other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
+  clean_names()%>%
+  mutate(predicted_label = NA,
+         early_access_date = as.character(early_access_date))%>%
+  select(!any_of(c("x", "predicted_label", "id")))%>%
+  filter(label == "Other")
+
+#Make sure to add Others back in at end.
+
+labeled_abstracts %>%
+  group_by(label)%>%
+  summarize(n = n())
+
+#20 more absent, 20 more both, 20 more review
+
+# Select relevant columns
+target <- "label"
+predictor <- "abstract"
+
+metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
+  .[!.%in% c("publication_type", "group_authors", "part_number", "web_of_science_index")]
+
+# Keep the target, predictor, and metadata columns
+labeled_abstracts <- labeled_abstracts %>%
+  select(c(target, predictor, metadata_columns))
+
+# Now, labeled_abstracts contains the target, predictor, and metadata columns
+
+
+# Step 2: Tokenize Text and Create Document-Term Matrix (DTM)
+# Tokenize and remove stop words for the entire dataset (before splitting)
+# text_tokens <- labeled_abstracts %>%
+#   unnest_tokens(word, abstract, token = "ngrams", n = 1) %>%
+#   anti_join(stop_words)
+
+
+text_tokens <- labeled_abstracts %>%
+  unnest_tokens(word, abstract, token = "words") %>%
+  anti_join(stop_words) %>%
+  mutate(word = str_to_lower(word)) %>%
+  filter(!str_detect(word, "\\d"))
+
+# Create Document-Term Matrix (DTM) for the entire dataset
+dtm <- text_tokens %>%
+  count(id, word) %>%
+  bind_tf_idf(word, id, n) %>%
+  cast_dtm(id, word, tf_idf)
+
+dtm_matrix <- as.matrix(dtm)
+
+# Step 3: Train-Test Split (80-20)
+set.seed(123)
+train_index <- createDataPartition(labeled_abstracts$label, p = 0.8, list = FALSE)
+train_data <- labeled_abstracts[train_index, ]
+test_data <- labeled_abstracts[-train_index, ]
+
+# Create DTM for training and testing data (matching id)
+train_dtm_matrix <- dtm_matrix[train_data$id, , drop = FALSE]
+test_dtm_matrix <- dtm_matrix[test_data$id, , drop = FALSE]
+
+# Step 4: Ensure Factor Levels Match for Labels in Both Training and Test Data
+train_data$label <- as.factor(train_data$label)
+test_data$label <- as.factor(test_data$label)
+
+train_levels <- levels(train_data$label)
+
+test_data$label <- factor(test_data$label, levels = train_levels)
+
+
+
+train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
+  bind_cols(train_data %>% select(label))
+test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
+  bind_cols(test_data %>% select(label))
+
+
+# Step 5: Train the Model (Random Forest)
+# Convert train DTM into a data frame and add labels
+train_dtm_df$label <- as.factor(train_dtm_df$label)
+test_dtm_df$label <- as.factor(test_dtm_df$label)
+
+
+
+
 # Step 1: Prepare the training data by removing the label column and converting to numeric
 # Step 1: Prepare the training data by removing the label column and converting to numeric
-xgb_train_data <- balanced_train_data[, -ncol(balanced_train_data)]  # Remove label column
+xgb_train_data <- train_dtm_df[, -ncol(train_dtm_df)]  # Remove label column
 xgb_train_data <- as.data.frame(apply(xgb_train_data, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
 
 # Step 2: Prepare the test data by removing the label column and converting to numeric
@@ -202,49 +301,78 @@ xgb_train_data <- xgb_train_data[, train_cols]
 test_features <- test_features[, train_cols]
 
 # Step 5: Convert both datasets into DMatrix objects
-xgb_train <- xgb.DMatrix(data = as.matrix(xgb_train_data), label = as.numeric(balanced_train_data$label) - 1)
+xgb_train <- xgb.DMatrix(data = as.matrix(xgb_train_data), label = as.numeric(train_dtm_df$label) - 1)
 xgb_test <- xgb.DMatrix(data = as.matrix(test_features), label = as.numeric(test_dtm_df$label) - 1)
 
-# Step 2: Set the parameters for XGBoost
-params <- list(
-  objective = "multi:softmax",       # Multi-class classification
-  num_class = length(unique(balanced_train_data$label)),  # Number of classes
-  eta = 0.1,                         # Learning rate
-  max_depth = 6,                     # Max depth of trees
-  subsample = 0.8,                   # Fraction of samples for each tree
-  colsample_bytree = 0.8,            # Fraction of features for each tree
-  min_child_weight = 5,              # Minimum sum of instance weight for a child
-  gamma = 0.1                        # Regularization parameter
+# # Step 2: Set the parameters for XGBoost
+# params <- list(
+#   objective = "multi:softmax",       # Multi-class classification
+#   num_class = length(unique(train_dtm_df$label)),  # Number of classes
+#   eta = 0.1,                         # Learning rate
+#   max_depth = 6,                     # Max depth of trees
+#   subsample = 0.8,                   # Fraction of samples for each tree
+#   colsample_bytree = 0.8,            # Fraction of features for each tree
+#   min_child_weight = 5,              # Minimum sum of instance weight for a child
+#   gamma = 0.1                        # Regularization parameter
+# )
+
+
+# xgb_model <- xgb.train(
+#   params = params,
+#   data = xgb_train,
+#   nrounds = 1000,  # Number of boosting rounds
+#   watchlist = list(train = xgb_train),  # Keep track of training progress
+#   verbose = 1,  # Show progress during training
+#   early_stopping_rounds = 10
+# )
+
+
+xgb_grid <- expand.grid(
+  nrounds = c(100, 200),        # Fewer values for iterations
+  max_depth = c(4, 6),         # Only small and moderate tree depths
+  eta = c(0.1, 0.3),           # Common effective learning rates
+  gamma = c(0, 0.1),           # Regularization parameter
+  colsample_bytree = c(0.8),   # Fixed based on experience
+  min_child_weight = c(1, 3),  # Common values
+  subsample = c(0.8)           # Fixed subsample ratio
+)
+
+train_control <- trainControl(
+  method = "cv",
+  number = 3,  # 5-fold cross-validation
+  verboseIter = TRUE
+)
+
+xgb_tuned <- train(
+  x = as.matrix(xgb_train_data),
+  y = factor(train_dtm_df$label),
+  method = "xgbTree",
+  trControl = trainControl(
+    method = "cv",
+    number = 3,
+    verboseIter = T,
+    search = "random"  # Random search instead of exhaustive grid
+  ),
+  tuneLength = 1  # Test 20 random combinations
 )
 
 
-xgb_model <- xgb.train(
-  params = params,
-  data = xgb_train,
-  nrounds = 1000,  # Number of boosting rounds
-  watchlist = list(train = xgb_train),  # Keep track of training progress
-  verbose = 1,  # Show progress during training
-  early_stopping_rounds = 10
-)
-
-
-#Need to tune this better.
-
-
-save(xgb_model, file = "xgb_bigrams_1.RData")
+save(xgb_tuned, file = "xgb_monograms_3.RData")
 
 # Convert the predictions to a factor and ensure the levels match the actual labels
 original_levels <- levels(factor(train_dtm_df$label))
+# Ensure test data is a matrix
+xgb_test_matrix <- as.matrix(test_features)  # This is the correctly formatted matrix
+predictions_xgb <- predict(xgb_tuned, newdata = xgb_test_matrix)
 
 
-predictions_xgb <- predict(xgb_model, xgb_test)
 
 # Map the numeric predictions back to the original class labels
 predictions_xgb_labels <- factor(predictions_xgb, levels = 0:(length(original_levels) - 1), labels = original_levels)
 
 # Now perform confusion matrix with consistent labels
 confusionMatrix(predictions_xgb_labels, factor(test_dtm_df$label))
-
+#80%. not bad.
 
 
 predicted_labels <- as.factor(predictions_xgb + 1)  # Convert predictions back to factor labels
