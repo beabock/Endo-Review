@@ -36,6 +36,16 @@ labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
     id = row_number()  # Domain-specific feature
   )
 
+labeled_abstracts %>%
+  filter(label == "Presence")
+  
+rows_to_remove <- labeled_abstracts %>%
+  filter((is.na(doi) | doi == "" | doi == "<NA>" | doi == "NA") & label == "Presence" & (authors == "" | is.na(authors))) %>%
+  slice_sample(n = 90) # Randomly select 90 rows
+
+# Remove the selected rows from the dataset
+labeled_abstracts <- labeled_abstracts %>%
+  anti_join(rows_to_remove, by = "id")
 
 other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   clean_names()%>%
@@ -50,7 +60,9 @@ labeled_abstracts %>%
   group_by(label)%>%
   summarize(n = n())
 
-#20 more absent, 20 more both, 20 more review
+#Maybe try evening out the training dataset?
+
+
 
 # Select relevant columns
 target <- "label"
