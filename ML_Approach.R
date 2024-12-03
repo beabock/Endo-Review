@@ -28,124 +28,84 @@ setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
 
 # Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
-
+# Load and clean data
 labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   clean_names() %>%
   filter(label != "Other" & label != "") %>%
-  mutate(
-    id = row_number()  # Domain-specific feature
-  )
+  mutate(id = row_number())
 
-labeled_abstracts %>%
-  filter(label == "Presence")
-  
+# Remove rows with missing DOI and authors for "Presence" label
 rows_to_remove <- labeled_abstracts %>%
-  filter((is.na(doi) | doi == "" | doi == "<NA>" | doi == "NA") & label == "Presence" & (authors == "" | is.na(authors))) %>%
-  slice_sample(n = 90) # Randomly select 90 rows
+  filter(is.na(doi) | doi %in% c("", "<NA>", "NA"),
+         label == "Presence",
+         is.na(authors) | authors == "") %>%
+  slice_sample(n = 90)
 
-# Remove the selected rows from the dataset
 labeled_abstracts <- labeled_abstracts %>%
   anti_join(rows_to_remove, by = "id")
 
+# Balance the dataset by randomly selecting 117 rows per label
+even_sub <- labeled_abstracts %>%
+  slice_sample(n = 117, by = "label")
+
+# Process "Other" abstracts
 other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
-  clean_names()%>%
+  clean_names() %>%
   mutate(predicted_label = NA,
-         early_access_date = as.character(early_access_date))%>%
-  select(!any_of(c("x", "predicted_label", "id")))%>%
+         early_access_date = as.character(early_access_date)) %>%
+  select(-c(x, predicted_label, id)) %>%
   filter(label == "Other")
 
-#Make sure to add Others back in at end.
-
-labeled_abstracts %>%
-  group_by(label)%>%
-  summarize(n = n())
-
-#Maybe try evening out the training dataset?
-
-
-
-# Select relevant columns
+# Metadata columns
 target <- "label"
 predictor <- "abstract"
-
 metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
-  .[!.%in% c("publication_type", "group_authors", "part_number", "web_of_science_index")]
+  .[! . %in% c("publication_type", "group_authors", "part_number", "web_of_science_index")]
 
-# Keep the target, predictor, and metadata columns
 labeled_abstracts <- labeled_abstracts %>%
   select(c(target, predictor, metadata_columns))
 
-# Now, labeled_abstracts contains the target, predictor, and metadata columns
-
-
-# Step 2: Tokenize Text and Create Document-Term Matrix (DTM)
-# Tokenize and remove stop words for the entire dataset (before splitting)
-text_tokens <- labeled_abstracts %>%
-  unnest_tokens(word, abstract, token = "ngrams", n = 1) %>%
-  anti_join(stop_words)
-
-# Create Document-Term Matrix (DTM) for the entire dataset
-dtm <- text_tokens %>%
+# Tokenize and create Document-Term Matrix (DTM)
+dtm <- labeled_abstracts %>%
+  unnest_tokens(word, abstract, token = "words") %>%
+  anti_join(stop_words) %>%
+  mutate(word = str_to_lower(word)) %>%
+  filter(!str_detect(word, "\\d")) %>%
   count(id, word) %>%
   bind_tf_idf(word, id, n) %>%
   cast_dtm(id, word, tf_idf)
 
 dtm_matrix <- as.matrix(dtm)
 
-# Step 3: Train-Test Split (80-20)
+# Train-test split
 set.seed(123)
 train_index <- createDataPartition(labeled_abstracts$label, p = 0.8, list = FALSE)
 train_data <- labeled_abstracts[train_index, ]
 test_data <- labeled_abstracts[-train_index, ]
 
-# Create DTM for training and testing data (matching id)
-train_dtm_matrix <- dtm_matrix[train_data$id, , drop = FALSE]
-test_dtm_matrix <- dtm_matrix[test_data$id, , drop = FALSE]
+# Match DTM rows with train/test data
+train_dtm_matrix <- dtm_matrix[rownames(dtm_matrix) %in% train_data$id, , drop = FALSE]
+test_dtm_matrix <- dtm_matrix[rownames(dtm_matrix) %in% test_data$id, , drop = FALSE]
 
-# Step 4: Ensure Factor Levels Match for Labels in Both Training and Test Data
-train_data$label <- as.factor(train_data$label)
-test_data$label <- as.factor(test_data$label)
+# Ensure consistent factor levels
+train_data$label <- factor(train_data$label)
+test_data$label <- factor(test_data$label, levels = levels(train_data$label))
 
-train_levels <- levels(train_data$label)
-
-test_data$label <- factor(test_data$label, levels = train_levels)
-
-
-#test_data <- test_data %>%
-#  mutate(abstract = iconv(abstract, from = "latin1", to = "UTF-8", sub = ""))
-
-# Now calculate abstract_length
-#test_data <- test_data %>%
-#  mutate(abstract_length = nchar(abstract))
-
-# train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
-#   bind_cols(train_data %>% select(label, abstract_length, absence_indicator))
-# test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
-#   bind_cols(test_data %>% select(label, abstract_length, absence_indicator))
-
+# Convert DTM matrices to dataframes and bind labels
 train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
-  bind_cols(train_data %>% select(label))
+  bind_cols(select(train_data, label))
 test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
-  bind_cols(test_data %>% select(label))
+  bind_cols(select(test_data, label))
 
-
-# Step 5: Train the Model (Random Forest)
-# Convert train DTM into a data frame and add labels
-train_dtm_df$label <- as.factor(train_dtm_df$label)
-test_dtm_df$label <- as.factor(test_dtm_df$label)
-
-
-# Train Random Forest model.
-
+# Train Random Forest model
 rf_model <- train(
   label ~ ., 
   data = train_dtm_df, 
-  method = "rf",
-  trControl = trainControl(method = "cv", number = 5),
-  tuneGrid = expand.grid(mtry = c(5, 10)),  # Only include mtry here
-  ntree = 200 # Specify ntree here
+  method = "rf"
 )
- save(rf_model, file = "rf_model_no_Other8.RData")
+
+# Save the model
+save(rf_model, file = "rf_model_no_Other9.RData")
 
 
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
@@ -177,7 +137,118 @@ load("rf_model_no_Other6.RData") #7 is best. others are trash?
 predictions_rf <- predict(rf_model, newdata = test_dtm_df)
 confusionMatrix(predictions_rf, test_dtm_df$label)
 
-#2 gets 17%, 3 does too. 80% at 7
+
+## Same thing but gradient boosting
+
+train_dtm_matrix <- dtm_matrix[train_data$id, , drop = FALSE]
+test_dtm_matrix <- dtm_matrix[test_data$id, , drop = FALSE]
+
+# Step 4: Ensure Factor Levels Match for Labels in Both Training and Test Data
+train_data$label <- as.factor(train_data$label)
+test_data$label <- as.factor(test_data$label)
+
+
+
+
+train_levels <- levels(train_data$label)
+
+test_data$label <- factor(test_data$label, levels = train_levels)
+
+
+
+train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
+  bind_cols(train_data %>% select(label))
+test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
+  bind_cols(test_data %>% select(label))
+
+
+# Step 5: Train the Model (Random Forest)
+# Convert train DTM into a data frame and add labels
+
+train_dtm_df$label <- factor(train_dtm_df$label)
+test_dtm_df$label <- factor(test_dtm_df$label, levels = levels(train_dtm_df$label))
+
+
+
+# Step 1: Prepare the training data by removing the label column and converting to numeric
+# Step 1: Prepare the training data by removing the label column and converting to numeric
+xgb_train_data <- train_dtm_df[, -ncol(train_dtm_df)]  # Remove label column
+xgb_train_data <- as.data.frame(apply(xgb_train_data, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
+
+# Step 2: Prepare the test data by removing the label column and converting to numeric
+test_features <- test_dtm_df[, -ncol(test_dtm_df)]  # Remove label column
+test_features <- as.data.frame(apply(test_features, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
+
+# Step 3: Align the columns in the training and test datasets
+# Make sure both datasets have the same features
+train_cols <- colnames(xgb_train_data)
+test_cols <- colnames(test_features)
+
+# Add missing columns to the test data with 0 values if necessary
+missing_cols <- setdiff(train_cols, test_cols)
+if(length(missing_cols) > 0) {
+  test_features[missing_cols] <- 0
+}
+
+# Add missing columns to the train data with 0 values if necessary
+missing_cols <- setdiff(test_cols, train_cols)
+if(length(missing_cols) > 0) {
+  xgb_train_data[missing_cols] <- 0
+}
+
+# Step 4: Ensure column order matches in both training and test datasets
+xgb_train_data <- xgb_train_data[, train_cols]
+test_features <- test_features[, train_cols]
+
+# Step 5: Convert both datasets into DMatrix objects
+xgb_train <- xgb.DMatrix(data = as.matrix(xgb_train_data), label = as.numeric(train_dtm_df$label) - 1)
+xgb_test <- xgb.DMatrix(data = as.matrix(test_features), label = as.numeric(test_dtm_df$label) - 1)
+
+# Set parameters for XGBoost
+xgb_params <- list(
+  objective = "multi:softprob",  # Multiclass classification
+  eval_metric = "mlogloss",      # Log loss for evaluation
+  num_class = length(levels(train_data$label)),  # Number of classes
+  eta = 0.3,                     # Learning rate
+  max_depth = 6,                 # Depth of the trees
+  subsample = 0.8,               # Row sampling
+  colsample_bytree = 0.8         # Column sampling
+)
+
+# Train XGBoost model
+xgb_model <- xgb.train(
+  params = xgb_params,
+  data = train_matrix,
+  nrounds = 100,                 # Number of boosting rounds
+  watchlist = list(train = train_matrix, test = test_matrix),
+  print_every_n = 10,
+  early_stopping_rounds = 10     # Stop early if no improvement
+)
+
+# Save the model
+xgb.save(xgb_model, "xgb_monograms_4.model")
+
+original_levels <- levels(factor(train_dtm_df$label))
+# Ensure test data is a matrix
+xgb_test_matrix <- as.matrix(test_features)  # This is the correctly formatted matrix
+predictions_xgb <- predict(xgb_model, newdata = xgb_test_matrix)
+predicted_class_indices <- max.col(matrix(predictions_xgb, nrow = nrow(xgb_test_matrix), byrow = TRUE)) - 1  # Zero-based indexing
+predictions_xgb_labels <- factor(predicted_class_indices, levels = 0:(length(original_levels) - 1), labels = original_levels)
+
+# Now perform confusion matrix with consistent labels
+confusionMatrix(predictions_xgb_labels, factor(test_dtm_df$label))
+#78%!
+
+
+predicted_labels <- as.factor(predictions_xgb + 1)  # Convert predictions back to factor labels
+confusion_matrix <- table(predicted_labels, test_dtm_df$label)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste("Accuracy: ", accuracy))
+
+
+
+
 
 
 # Step 6: Gradient Boosting with XGBoost
