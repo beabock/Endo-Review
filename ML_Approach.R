@@ -140,113 +140,105 @@ confusionMatrix(predictions_rf, test_dtm_df$label)
 
 ## Same thing but gradient boosting
 
-train_dtm_matrix <- dtm_matrix[train_data$id, , drop = FALSE]
-test_dtm_matrix <- dtm_matrix[test_data$id, , drop = FALSE]
-
-# Step 4: Ensure Factor Levels Match for Labels in Both Training and Test Data
-train_data$label <- as.factor(train_data$label)
-test_data$label <- as.factor(test_data$label)
-
-
-
-
-train_levels <- levels(train_data$label)
-
-test_data$label <- factor(test_data$label, levels = train_levels)
-
-
-
-train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
-  bind_cols(train_data %>% select(label))
-test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
-  bind_cols(test_data %>% select(label))
-
-
-# Step 5: Train the Model (Random Forest)
-# Convert train DTM into a data frame and add labels
-
-train_dtm_df$label <- factor(train_dtm_df$label)
-test_dtm_df$label <- factor(test_dtm_df$label, levels = levels(train_dtm_df$label))
-
-
 
 # Step 1: Prepare the training data by removing the label column and converting to numeric
-# Step 1: Prepare the training data by removing the label column and converting to numeric
-xgb_train_data <- train_dtm_df[, -ncol(train_dtm_df)]  # Remove label column
-xgb_train_data <- as.data.frame(apply(xgb_train_data, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
+train_labels <- as.numeric(factor(train_data$label)) - 1
+test_labels <- as.numeric(factor(test_data$label)) - 1
 
-# Step 2: Prepare the test data by removing the label column and converting to numeric
-test_features <- test_dtm_df[, -ncol(test_dtm_df)]  # Remove label column
-test_features <- as.data.frame(apply(test_features, 2, function(x) as.numeric(as.character(x))))  # Convert all features to numeric and keep as data frame
+# Step 4: Prepare DMatrix for XGBoost
+xgb_train <- xgb.DMatrix(data = train_dtm_matrix, label = train_labels)
+xgb_test <- xgb.DMatrix(data = test_dtm_matrix, label = test_labels)
 
-# Step 3: Align the columns in the training and test datasets
-# Make sure both datasets have the same features
-train_cols <- colnames(xgb_train_data)
-test_cols <- colnames(test_features)
 
-# Add missing columns to the test data with 0 values if necessary
-missing_cols <- setdiff(train_cols, test_cols)
-if(length(missing_cols) > 0) {
-  test_features[missing_cols] <- 0
-}
-
-# Add missing columns to the train data with 0 values if necessary
-missing_cols <- setdiff(test_cols, train_cols)
-if(length(missing_cols) > 0) {
-  xgb_train_data[missing_cols] <- 0
-}
-
-# Step 4: Ensure column order matches in both training and test datasets
-xgb_train_data <- xgb_train_data[, train_cols]
-test_features <- test_features[, train_cols]
-
-# Step 5: Convert both datasets into DMatrix objects
-xgb_train <- xgb.DMatrix(data = as.matrix(xgb_train_data), label = as.numeric(train_dtm_df$label) - 1)
-xgb_test <- xgb.DMatrix(data = as.matrix(test_features), label = as.numeric(test_dtm_df$label) - 1)
-
-# Set parameters for XGBoost
-xgb_params <- list(
-  objective = "multi:softprob",  # Multiclass classification
-  eval_metric = "mlogloss",      # Log loss for evaluation
-  num_class = length(levels(train_data$label)),  # Number of classes
-  eta = 0.3,                     # Learning rate
-  max_depth = 6,                 # Depth of the trees
-  subsample = 0.8,               # Row sampling
-  colsample_bytree = 0.8         # Column sampling
+param_grid <- expand.grid(
+  eta = c(0.1, 0.3, 0.5),
+  max_depth = c(4, 6, 8),
+  subsample = c(0.6, 0.8, 1.0),
+  colsample_bytree = c(0.6, 0.8, 1.0)
 )
 
-# Train XGBoost model
-xgb_model <- xgb.train(
-  params = xgb_params,
-  data = train_matrix,
-  nrounds = 100,                 # Number of boosting rounds
-  watchlist = list(train = train_matrix, test = test_matrix),
+# Results storage
+cv_results <- data.frame()
+
+# Perform grid search
+param_grid <- expand.grid(
+  eta = c(0.1, 0.3, 0.5),
+  max_depth = c(4, 6, 8),
+  subsample = c(0.6, 0.8, 1.0),
+  colsample_bytree = c(0.6, 0.8, 1.0)
+)
+
+# Results storage
+cv_results <- data.frame()
+
+# Perform grid search
+for (i in 1:nrow(param_grid)) {
+  params <- list(
+    objective = "multi:softprob",
+    eval_metric = "mlogloss",
+    num_class = length(levels(train_data$label)),
+    eta = param_grid$eta[i],
+    max_depth = param_grid$max_depth[i],
+    subsample = param_grid$subsample[i],
+    colsample_bytree = param_grid$colsample_bytree[i]
+  )
+  try({
+    cv <- xgb.cv(
+      params = params,
+      data = xgb_train,
+      nrounds = 100,
+      nfold = 5,
+      early_stopping_rounds = 10,
+      print_every_n = 10,
+      verbose = T
+    )
+    logloss <- min(cv$evaluation_log$test_mlogloss_mean)
+    cv_results <- rbind(cv_results, cbind(param_grid[i, ], logloss = logloss))
+  }, silent = TRUE) # Skip problematic parameter sets
+}
+
+best_params <- cv_results %>%
+  arrange(logloss) %>%
+  slice(1)
+
+print("Best parameters:")
+print(best_params)
+
+save(best_params, file = "xgb_params.R")
+
+optimal_params <- list(
+  objective = "multi:softprob",
+  eval_metric = "mlogloss",
+  num_class = length(levels(train_data$label)),
+  eta = best_params$eta,
+  max_depth = best_params$max_depth,
+  subsample = best_params$subsample,
+  colsample_bytree = best_params$colsample_bytree
+)
+
+
+
+xgb_model_optimized <- xgb.train(
+  params = optimal_params,
+  data = xgb_train,
+  nrounds = 100,
+  watchlist = list(train = xgb_train, test = xgb_test),
   print_every_n = 10,
-  early_stopping_rounds = 10     # Stop early if no improvement
+  early_stopping_rounds = 10
 )
 
-# Save the model
+# Step 7: Predict and evaluate
+predictions <- predict(xgb_model, xgb_test)
+predicted_classes <- max.col(matrix(predictions, nrow = length(test_labels), byrow = TRUE)) - 1
+conf_matrix <- confusionMatrix(
+  factor(predicted_classes),
+  factor(test_labels)
+)
+
+print(conf_matrix)
+
+
 xgb.save(xgb_model, "xgb_monograms_4.model")
-
-original_levels <- levels(factor(train_dtm_df$label))
-# Ensure test data is a matrix
-xgb_test_matrix <- as.matrix(test_features)  # This is the correctly formatted matrix
-predictions_xgb <- predict(xgb_model, newdata = xgb_test_matrix)
-predicted_class_indices <- max.col(matrix(predictions_xgb, nrow = nrow(xgb_test_matrix), byrow = TRUE)) - 1  # Zero-based indexing
-predictions_xgb_labels <- factor(predicted_class_indices, levels = 0:(length(original_levels) - 1), labels = original_levels)
-
-# Now perform confusion matrix with consistent labels
-confusionMatrix(predictions_xgb_labels, factor(test_dtm_df$label))
-#78%!
-
-
-predicted_labels <- as.factor(predictions_xgb + 1)  # Convert predictions back to factor labels
-confusion_matrix <- table(predicted_labels, test_dtm_df$label)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-print(paste("Accuracy: ", accuracy))
-
-
 
 
 
