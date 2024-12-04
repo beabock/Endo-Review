@@ -13,6 +13,7 @@ library(xgboost)
 library(recipes)
 library(themis)
 library(janitor)
+library(ParBayesianOptimization)
 
 
 setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
@@ -47,6 +48,9 @@ labeled_abstracts <- labeled_abstracts %>%
 # Balance the dataset by randomly selecting 117 rows per label
 even_sub <- labeled_abstracts %>%
   slice_sample(n = 117, by = "label")
+
+# labeled_abstracts <- labeled_abstracts %>%
+#   slice_sample(n = 117, by = "label")
 
 # Process "Other" abstracts
 other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
@@ -150,97 +154,61 @@ xgb_train <- xgb.DMatrix(data = train_dtm_matrix, label = train_labels)
 xgb_test <- xgb.DMatrix(data = test_dtm_matrix, label = test_labels)
 
 
-param_grid <- expand.grid(
-  eta = c(0.1, 0.3, 0.5),
-  max_depth = c(4, 6, 8),
-  subsample = c(0.6, 0.8, 1.0),
-  colsample_bytree = c(0.6, 0.8, 1.0)
-)
+# bounds <- list(
+#   eta = c(0.001, 0.3),
+#   max_depth = c(3L, 15L), # Integer values
+#   subsample = c(0.3, 1),
+#   colsample_bytree = c(0.3, 1)
+# )
 
-# Results storage
-cv_results <- data.frame()
+#set.seed(123) # For reproducibility
 
-# Perform grid search
-param_grid <- expand.grid(
-  eta = c(0.1, 0.3, 0.5),
-  max_depth = c(4, 6, 8),
-  subsample = c(0.6, 0.8, 1.0),
-  colsample_bytree = c(0.6, 0.8, 1.0)
-)
+# opt_results <- bayesOpt(
+#   FUN = optimize_xgb,
+#   bounds = bounds,
+#   initPoints = 10,     # Number of random initial points
+#   iters.n = 30,        # Number of optimization iterations
+#   acq = "ei",          # Acquisition function: Expected Improvement
+#   verbose = 2
+# )
 
-# Results storage
-cv_results <- data.frame()
+# ss <- opt_results$scoreSummary
+# 
+# best_params <- ss[which.min(ss$Score), ]
+# max_score <- ss[which.max(ss$Score), ]
+# 
+# final_params <- list(
+#   objective = "multi:softprob",
+#   eval_metric = "mlogloss",
+#   num_class = length(levels(train_data$label)),
+#   eta = best_params$eta,
+#   max_depth = as.integer(best_params$max_depth),
+#   subsample = best_params$subsample,
+#   colsample_bytree = best_params$colsample_bytree
+# )
 
-# Perform grid search
-for (i in 1:nrow(param_grid)) {
-  params <- list(
-    objective = "multi:softprob",
-    eval_metric = "mlogloss",
-    num_class = length(levels(train_data$label)),
-    eta = param_grid$eta[i],
-    max_depth = param_grid$max_depth[i],
-    subsample = param_grid$subsample[i],
-    colsample_bytree = param_grid$colsample_bytree[i]
-  )
-  try({
-    cv <- xgb.cv(
-      params = params,
-      data = xgb_train,
-      nrounds = 100,
-      nfold = 5,
-      early_stopping_rounds = 10,
-      print_every_n = 10,
-      verbose = T
-    )
-    logloss <- min(cv$evaluation_log$test_mlogloss_mean)
-    cv_results <- rbind(cv_results, cbind(param_grid[i, ], logloss = logloss))
-  }, silent = TRUE) # Skip problematic parameter sets
-}
+#save(final_params, file = "xgb_params_bayes.R")
+load("xgb_params_bayes.R")
 
-best_params <- cv_results %>%
-  arrange(logloss) %>%
-  slice(1)
-
-print("Best parameters:")
-print(best_params)
-
-save(best_params, file = "xgb_params.R")
-
-optimal_params <- list(
-  objective = "multi:softprob",
-  eval_metric = "mlogloss",
-  num_class = length(levels(train_data$label)),
-  eta = best_params$eta,
-  max_depth = best_params$max_depth,
-  subsample = best_params$subsample,
-  colsample_bytree = best_params$colsample_bytree
-)
-
-
-
-xgb_model_optimized <- xgb.train(
-  params = optimal_params,
+xgb_model <- xgb.train(
+  params = final_params,
   data = xgb_train,
-  nrounds = 100,
-  watchlist = list(train = xgb_train, test = xgb_test),
-  print_every_n = 10,
-  early_stopping_rounds = 10
+  nrounds = best_params$nrounds, # Use the optimal number of rounds
+  verbose = TRUE
 )
 
 # Step 7: Predict and evaluate
 predictions <- predict(xgb_model, xgb_test)
 predicted_classes <- max.col(matrix(predictions, nrow = length(test_labels), byrow = TRUE)) - 1
-conf_matrix <- confusionMatrix(
+confusionMatrix(
   factor(predicted_classes),
   factor(test_labels)
 )
 
-print(conf_matrix)
-
 
 xgb.save(xgb_model, "xgb_monograms_4.model")
 
-
+#at 77%
 
 
 # Step 6: Gradient Boosting with XGBoost
