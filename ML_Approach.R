@@ -61,10 +61,6 @@ labeled_abstracts %>%
   summarize(n = n())
 
 
-# Balance the dataset by randomly selecting 117 rows per label
-# even_sub <- labeled_abstracts %>%
-#   slice_sample(n = 117, by = "label")
-
 
 # Process "Other" abstracts
 other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
@@ -124,36 +120,8 @@ test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
 # 
 # # Save the model
 # save(rf_model, file = "rf_model_no_Other9.RData")
-
-
 # Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-
-
-#  smote_recipe <- recipe(label ~ ., data = train_dtm_df) %>%
-#    step_smote(label, over_ratio = 1) %>%
-#    prep()
-#  
-#  balanced_train_data <- bake(smote_recipe, new_data = NULL)
-# dim(balanced_train_data)
-#  
-# print(object.size(balanced_train_data), units = "auto")
-#  
-# rf_model <- train(
-# label ~ ., data = balanced_train_data, method = "rf",
-# trControl = trainControl(method = "cv", number = 2),
-# tuneGrid = expand.grid(.mtry = c(5), ntree=100),
-# weights = ifelse(balanced_train_data$label == "Absence", 10, 1) #Might need to change these weights. Could increase the 3 number
-# )
-# save(rf_model, file = "rf_model_no_Other8_balanced.RData")
-
-#missing_features <- setdiff(names(balanced_train_data), names(test_dtm_df))
-#Comeback to thiss
-
-
-
 #load("rf_model_no_Other7_balanced.RData") #7 is best. others are trash?
-
-
 #predictions_rf <- predict(rf_model, newdata = test_dtm_df)
 #confusionMatrix(predictions_rf, test_dtm_df$label)
 
@@ -286,7 +254,7 @@ confusionMatrix(predicted_labels, true_labels)
 
 # Step 8: Predict on the Full Dataset
 full_abstracts <- read.csv("All_Abstracts.csv") %>%
-  clean_names() 
+  clean_names()
 
 colname_mapping <- c(
   "title" = "article_title",                # 'title' to 'article_title'
@@ -377,6 +345,7 @@ full_abstracts <- full_abstracts %>%
   rename_with(~ ifelse(. %in% names(colname_mapping), colname_mapping[.], .))
 
 
+
 metadata_columns <- metadata_columns[!metadata_columns %in% c("id", "predicted_label")]
 
 
@@ -403,7 +372,9 @@ dtm <- full_abstracts %>%
   bind_tf_idf(word, id, n) %>%
   cast_dtm(id, word, tf_idf)
 
+
 dtm_matrix <- as.matrix(dtm)
+
 
 trained_vocab <- colnames(train_dtm_matrix)  # Replace with your actual training matrix
 
@@ -429,10 +400,21 @@ dtm_matrix <- dtm_matrix[full_abstracts$id, , drop = FALSE]
 
 # Predict labels for the full dataset using the trained model
 full_predictions <- predict(xgb_model, newdata = dtm_matrix)
+#Full predictions seems fine. More rows bc more items.
+dim(dtm_matrix)
+length(full_predictions)
 
-#Come back to this.
+#Double check that we want byrow to equal False here
+predicted_classes <- max.col(matrix(full_predictions, ncol = 4, byrow = F)) - 1
 
-full_abstracts$predicted_label <- full_predictions
+
+original_class_labels <- levels(factor(train_data$label))
+
+# Convert numeric predictions back to original class names
+predicted_labels <- factor(original_class_labels[predicted_classes + 1], levels = original_class_labels)
+
+full_abstracts$predicted_label <- predicted_labels
+
 
 # Save the results with predictions and metadata
 write.csv(full_abstracts, "full_predictions_with_metadata.csv", row.names = FALSE)
@@ -459,234 +441,10 @@ labeled_abstracts %>%
 # Perform anti_join based on multiple columns, then filter and slice
 subsample <- full_abstracts %>%
   filter(predicted_label == "Absence")%>%
+  relocate(c(predicted_label))%>%
   slice_sample(n = 44)%>%
   mutate(volume = as.integer(volume))
 
 
 write.csv(subsample, "subsample.csv")
-
-subsample$abstract
-#Both: 17
-#Present: 30, 29, 28, 27, 26, 24, 23, 22, 20, 18, 16, 14
-#Review: 
-#Absent:
-#Other: 25, 21, 19, 15
-
-
-fixed_other <- full_abstracts %>%
-  filter(id %in% subsample$id[c(25, 21, 19, 15)]) %>%
-  mutate(label = "Other") %>%
-  relocate(label) %>%
-  relocate(id, .before = last_col())
-
-fixed_both <- full_abstracts %>%
-  filter(id %in% subsample$id[c(17)]) %>%  
-  mutate(label = "Both") %>%  # Add a new label column with "Both"
-  relocate(label) %>%  # Relocate label to the first position
-  relocate(id, .before = last_col())  # Move 'id' to the second-to-last position
-
-fixed_present <- full_abstracts %>%
-  filter(id %in% subsample$id[c(30, 29, 28, 27, 26, 24, 23, 22, 20, 18, 16, 14)]) %>%
-  mutate(label = "Presence") %>%
-  relocate(label) %>%
-  relocate(id, .before = last_col())
-
-fixed_review <- full_abstracts %>%
-  filter(id %in% subsample$id[c()]) %>%
-  mutate(label = "Review")%>%
-  relocate(label) %>%
-  relocate(id, .before = last_col())
-
-
-test <- labeled_abstracts %>%
-  mutate(predicted_label = NA)
-
-# Combine data ensuring there are no duplicates in the DOI column
-test <- bind_rows(test, other_abstracts)
-                  #fixed_present, fixed_other, fixed_both, fixed_review) 
-
-
-# If there are any duplicates that should be manually resolved,
-# you can review the following:
-test %>%
-       filter(!is.na(doi)) %>%
-       filter(doi != "")%>%
-       group_by(doi) %>%
-       filter(n() > 1)
-
-
-filepath <- "Training_labeled_abs_4.csv" 
-
-i <- as.numeric(gsub(".*_(\\d+)\\.csv$", "\\1", filepath))
-
-i <- i + 1
-
-newname <- paste0("Training_labeled_abs_", i, ".csv")
-
-write.csv(test, newname)
-
-#Nice. fixed the probs.
-
-
-
-
-# Trying to extract plant names -------------------------------------------
-
-# Load necessary libraries
-
-library(dplyr)
-library(quanteda)
-library(rgbif)
-library(purrr)
-library(janitor)
-library(tidyverse)
-library(furrr)
-
-
-set.seed(123)
-
-# Load and sample 5 abstracts randomly
-labeled_abstracts <- read.csv("full_predictions.csv") %>%
-  clean_names() %>%
-  sample_n(size = 100)
-
-plan(multisession)
-
-# Function to correct capitalization (Genus uppercase, species lowercase)
-correct_capitalization <- function(name) {
-  words <- unlist(strsplit(name, " "))
-  if (length(words) == 2) {
-    words[1] <- paste0(toupper(substring(words[1], 1, 1)), tolower(substring(words[1], 2)))
-    words[2] <- tolower(words[2])
-    return(paste(words, collapse = " "))
-  }
-  return(name)
-}
-
-# Function to query GBIF and get additional fields (batch processing)
-batch_validate_species <- function(names) {
-  res <- name_backbone_checklist(names)  # Batch query
-  
-  # Ensure required columns exist before selecting
-  required_columns <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
-                        "class", "order", "family", "genus", "species", 
-                        "kingdomKey", "phylumKey", "classKey", "orderKey", 
-                        "familyKey", "genusKey", "speciesKey")
-  
-  valid_data <- res %>%
-    filter(status == "ACCEPTED" & (kingdom == "Plantae" | kingdom == "Fungi") & rank != "KINGDOM") %>%
-    select(any_of(required_columns)) %>%
-    mutate(across(.cols = matches("Key$"), .fns = as.character))
-  
-  return(valid_data)
-}
-
-#Look into other options for premade dictionaries, in case I'm missing anything.
-plant_parts_keywords <- c(
-  "fruit", "fruits", "root", "roots", "rhizoid", "rhizoids", "leaf", "leaves", 
-  "twig", "twigs", "branch", "branches", "bark", "stems", "stem", "flowers", 
-  "flower", "shoot", "shoots", "seed", "seeds", "node", "nodes", "leaflet", 
-  "leaflets", "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
-  "sepal", "sepals", "petal", "petals", "stigma", "stigmas", "style", "styles", 
-  "ovary", "ovaries", "calyx", "calyces", "corolla", "corollas", "peduncle", 
-  "peduncles", "rachis", "rachises", "inflorescence", "inflorescences", "trunk", 
-  "trunks", "cork", "buds", "bud", "pollen", "cones", "cone", "tuber", "tubers", 
-  "bulb", "bulbs", "corm", "corms", "cladode", "cladodes", "vascular bundle", 
-  "vascular bundles", "xylem", "phloem", "cortex", "cortices", "endosperm", 
-  "cotyledon", "cotyledons", "hypocotyl", "hypocotyls", "epicotyl", "epicotyls", 
-  "flowering stem", "flowering stems", "internode", "internodes", "leaf vein", 
-  "leaf veins", "leaf blade", "leaf blades", "palmate", "palmatations", "needle", 
-  "needles", "fascicle", "fascicles", "cuticle", "cuticles", "stomata", "stoma", 
-  "vascular cambium", "vascular cambiums", "petiole", "petioles", "axil", "axils", 
-  "phyllode", "phyllodes", "perianth", "perianths", "rachilla", "rachillas", 
-  "pedicel", "pedicels", "lateral root", "lateral roots", "taproot", "taproots", 
-  "root cap", "root caps", "root hair", "root hairs", "lignin", "pith", "pericycle", 
-  "pericycles", "parenchyma", "colleter", "colleters", "scutellum", "scutella", 
-  "coleoptile", "coleoptiles", "sporophyte", "sporophytes", "gametophyte", "gametophytes"
-)
-
-# Function to extract plant info
-extract_plant_info <- function(text, abstract_id, predicted_label, valid_species_lookup) {
-  # Tokenize text
-  tokens <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
-    tokens_tolower()
-  
-  # Extract plant parts
-  plant_parts_found <- unlist(tokens) %>%
-    .[. %in% plant_parts_keywords] %>%
-    unique()
-  
-  # Create binary indicator for plant parts
-  plant_parts_indicator <- setNames(as.integer(plant_parts_keywords %in% plant_parts_found), plant_parts_keywords)
-  
-  # Generate ngrams and correct capitalization
-  plant_candidates <- tokens %>%
-    tokens_ngrams(n = 2) %>%
-    unlist() %>%
-    gsub("_", " ", .) %>%
-    sapply(correct_capitalization)
-  
-  # Validate genus-species combinations using precomputed lookup
-  valid_species <- valid_species_lookup %>%
-    filter(canonicalName %in% unique(plant_candidates))
-  
-  # Create the final output
-  if (nrow(valid_species) > 0) {
-    valid_species <- valid_species %>%
-      mutate(id = abstract_id, predicted_label = predicted_label)
-    final_df <- cbind(valid_species, as.data.frame(t(plant_parts_indicator)))
-  } else {
-    plant_parts_df <- as.data.frame(t(plant_parts_indicator))
-    plant_parts_df <- cbind(
-      data.frame(
-        canonicalName = NA, rank = NA, confidence = NA, matchType = NA, kingdom = NA,
-        phylum = NA, class = NA, order = NA, family = NA, genus = NA, species = NA,
-        kingdomKey = NA, phylumKey = NA, classKey = NA, orderKey = NA, familyKey = NA,
-        genusKey = NA, speciesKey = NA, id = abstract_id, predicted_label = predicted_label,
-        stringsAsFactors = FALSE
-      ),
-      plant_parts_df
-    )
-    final_df <- plant_parts_df
-  }
-  
-  return(final_df)
-}
-
-# Precompute ngrams and species validation
-presence_abstracts <- labeled_abstracts %>%
-  filter(predicted_label == "Presence") %>%
-  mutate(ngrams = map(abstract, ~ {
-    tokens(.x, remove_punct = TRUE, remove_numbers = TRUE) %>%
-      tokens_tolower() %>%
-      tokens_ngrams(n = 2) %>%
-      unlist() %>%
-      sapply(function(name) gsub("_", " ", name))
-  }))
-
-# Collect all unique candidate names for validation
-all_candidates <- presence_abstracts %>%
-  pull(ngrams) %>%
-  unlist() %>%
-  unique() %>%
-  sapply(correct_capitalization)
-
-# Batch validate candidates
-valid_species_lookup <- batch_validate_species(all_candidates)
-
-# Apply the extraction function in parallel
-plant_species_df <- future_pmap_dfr(
-  list(
-    presence_abstracts$abstract,
-    presence_abstracts$id,
-    presence_abstracts$predicted_label
-  ),
-  ~extract_plant_info(..1, ..2, ..3, valid_species_lookup)
-)
-
-# View the result
-print(plant_species_df)
-
-# Save the result as a CSV
-write.csv(plant_species_df, "plant_info_results.csv", row.names = FALSE)
 
