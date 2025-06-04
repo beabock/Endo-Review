@@ -3,21 +3,21 @@
 
 # Load necessary libraries
 
-library(dplyr)
+library(tidyverse)  
 library(quanteda)
 library(rgbif)
-library(purrr)
-library(janitor)
-library(tidyverse)
 library(furrr)
+library(janitor)
 
-
+#Need to go back and remove any abstracts that are just empty.
 set.seed(123)
 
-# Load and sample 5 abstracts randomly
-labeled_abstracts <- read.csv("full_predictions.csv") %>%
-  clean_names() %>%
-  sample_n(size = 100)
+getwd()
+
+# Load and sample 100 abstracts randomly
+labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
+  clean_names() #%>%
+  #sample_n(size = 100)
 
 plan(multisession)
 
@@ -122,9 +122,10 @@ extract_plant_info <- function(text, abstract_id, predicted_label, valid_species
   return(final_df)
 }
 
-# Precompute ngrams and species validation
-presence_abstracts <- labeled_abstracts %>%
-  filter(predicted_label == "Presence") %>%
+#This takes a while to run, have it go overnight.
+# Precompute ngrams and species validation, currently only pulling from Presence
+abs <- labeled_abstracts %>%
+ # filter(predicted_label == "Presence") %>%
   mutate(ngrams = map(abstract, ~ {
     tokens(.x, remove_punct = TRUE, remove_numbers = TRUE) %>%
       tokens_tolower() %>%
@@ -134,13 +135,13 @@ presence_abstracts <- labeled_abstracts %>%
   }))
 
 # Collect all unique candidate names for validation
-all_candidates <- presence_abstracts %>%
+all_candidates <- abs %>%
   pull(ngrams) %>%
   unlist() %>%
   unique() %>%
   sapply(correct_capitalization)
 
-# Batch validate candidates
+# Batch validate candidates. this part takes a while.
 valid_species_lookup <- batch_validate_species(all_candidates)
 
 # Apply the extraction function in parallel
@@ -157,5 +158,54 @@ plant_species_df <- future_pmap_dfr(
 print(plant_species_df)
 
 # Save the result as a CSV
-write.csv(plant_species_df, "plant_info_results.csv", row.names = FALSE)
+write.csv(plant_species_df, "plant_info_results_all.csv", row.names = FALSE)
 
+#plant_species_df <- read.csv("Results/plant_info_results.csv")
+
+#Look at representation across plant phyla
+expected_plant_phyla <- c(
+  "Anthophyta",        # flowering plants (aka Magnoliophyta)
+  "Pinophyta",         # conifers
+  "Pteridophyta",      # ferns
+  "Bryophyta",         # mosses
+  "Marchantiophyta",   # liverworts
+  "Lycopodiophyta",    # club mosses
+  "Gnetophyta",        # gnetophytes
+  "Cycadophyta",       # cycads
+  "Ginkgophyta",       # ginkgo
+  "Charophyta",        # green algae group most related to land plants
+  "Chlorophyta"        # other green algae
+)
+
+observed_phyla <- unique(plant_species_df$phylum[!is.na(plant_species_df$phylum)])
+
+missing_phyla <- setdiff(expected_plant_phyla, observed_phyla)
+
+print(missing_phyla)
+
+phylum_summary <- plant_species_df %>%
+  filter(kingdom == "Plantae")%>%
+  filter(!is.na(phylum)) %>%
+  count(phylum, sort = TRUE)
+
+phylum_summary %>%
+  ggplot(aes(x = reorder(phylum, n), y = n)) +
+  geom_col(fill = "forestgreen") +
+  coord_flip() +
+  labs(
+    title = "Phylum Representation",
+    x = "Phylum",
+    y = "Number of Abstracts"
+  ) +
+  theme_minimal()
+
+
+#Now for plant parts
+plant_parts_summary <- plant_species_df %>%
+  select(id, all_of(plant_parts_keywords)) %>%
+  distinct() %>%  # remove duplicates in case same abstract has multiple species hits
+  summarise(across(everything(), sum, na.rm = TRUE)) %>%
+  pivot_longer(cols = everything(), names_to = "plant_part", values_to = "n_abstracts")
+
+# View result
+print(plant_parts_summary %>% arrange(desc(n_abstracts)))

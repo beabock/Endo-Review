@@ -226,6 +226,7 @@ xgb.save(xgb_model, "xgb_model_2.model")
 
 xgb_model <- xgb.load("xgb_model.model")
 
+#Problem here...
 
 # Step 7: Predict and evaluate
 predictions <- predict(xgb_model, xgb_test)
