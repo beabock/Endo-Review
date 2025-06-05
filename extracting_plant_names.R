@@ -9,6 +9,8 @@ library(rgbif)
 library(furrr)
 library(janitor)
 
+theme_set(theme_bw())
+
 #Need to go back and remove any abstracts that are just empty.
 set.seed(123)
 
@@ -17,7 +19,7 @@ getwd()
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
   clean_names() #%>%
-  #sample_n(size = 100)
+  #sample_n(size = 5)
 
 plan(multisession)
 
@@ -32,15 +34,18 @@ correct_capitalization <- function(name) {
   return(name)
 }
 
+gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
+                 "class", "order", "family", "genus", "species", 
+                 "kingdomKey", "phylumKey", "classKey", "orderKey", 
+                 "familyKey", "genusKey", "speciesKey")
+
+
 # Function to query GBIF and get additional fields (batch processing)
 batch_validate_species <- function(names) {
   res <- name_backbone_checklist(names)  # Batch query
   
   # Ensure required columns exist before selecting
-  required_columns <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
-                        "class", "order", "family", "genus", "species", 
-                        "kingdomKey", "phylumKey", "classKey", "orderKey", 
-                        "familyKey", "genusKey", "speciesKey")
+  required_columns <- gbif_fields
   
   valid_data <- res %>%
     filter(status == "ACCEPTED" & (kingdom == "Plantae" | kingdom == "Fungi") & rank != "KINGDOM") %>%
@@ -75,7 +80,7 @@ plant_parts_keywords <- c(
 )
 
 # Function to extract plant info
-extract_plant_info <- function(text, abstract_id, predicted_label, valid_species_lookup) {
+extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup){
   # Tokenize text
   tokens <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
     tokens_tolower()
@@ -89,11 +94,7 @@ extract_plant_info <- function(text, abstract_id, predicted_label, valid_species
   plant_parts_indicator <- setNames(as.integer(plant_parts_keywords %in% plant_parts_found), plant_parts_keywords)
   
   # Generate ngrams and correct capitalization
-  plant_candidates <- tokens %>%
-    tokens_ngrams(n = 2) %>%
-    unlist() %>%
-    gsub("_", " ", .) %>%
-    sapply(correct_capitalization)
+  plant_candidates <- sapply(ngrams, correct_capitalization)
   
   # Validate genus-species combinations using precomputed lookup
   valid_species <- valid_species_lookup %>%
@@ -105,16 +106,17 @@ extract_plant_info <- function(text, abstract_id, predicted_label, valid_species
       mutate(id = abstract_id, predicted_label = predicted_label)
     final_df <- cbind(valid_species, as.data.frame(t(plant_parts_indicator)))
   } else {
-    plant_parts_df <- as.data.frame(t(plant_parts_indicator))
     plant_parts_df <- cbind(
       data.frame(
-        canonicalName = NA, rank = NA, confidence = NA, matchType = NA, kingdom = NA,
-        phylum = NA, class = NA, order = NA, family = NA, genus = NA, species = NA,
-        kingdomKey = NA, phylumKey = NA, classKey = NA, orderKey = NA, familyKey = NA,
-        genusKey = NA, speciesKey = NA, id = abstract_id, predicted_label = predicted_label,
+        setNames(
+          replicate(length(gbif_fields), NA, simplify = FALSE),
+          gbif_fields
+        ),
+        id = abstract_id,
+        predicted_label = predicted_label,
         stringsAsFactors = FALSE
       ),
-      plant_parts_df
+      as.data.frame(t(plant_parts_indicator))
     )
     final_df <- plant_parts_df
   }
@@ -141,17 +143,25 @@ all_candidates <- abs %>%
   unique() %>%
   sapply(correct_capitalization)
 
+force_refresh <- FALSE #Change to TRUE if i want to clear the cache of the valid_species_lookup
+
 # Batch validate candidates. this part takes a while.
-valid_species_lookup <- batch_validate_species(all_candidates)
+if (file.exists("valid_species_lookup.rds")) {
+  valid_species_lookup <- readRDS("valid_species_lookup.rds")
+} else {
+  valid_species_lookup <- batch_validate_species(all_candidates)
+  saveRDS(valid_species_lookup, "valid_species_lookup.rds")
+}
 
 # Apply the extraction function in parallel
 plant_species_df <- future_pmap_dfr(
   list(
-    presence_abstracts$abstract,
-    presence_abstracts$id,
-    presence_abstracts$predicted_label
+    abs$abstract,
+    abs$id,
+    abs$predicted_label,
+    abs$ngrams
   ),
-  ~extract_plant_info(..1, ..2, ..3, valid_species_lookup)
+  ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup), .options = furrr_options(seed = TRUE)
 )
 
 # View the result
@@ -160,52 +170,90 @@ print(plant_species_df)
 # Save the result as a CSV
 write.csv(plant_species_df, "plant_info_results_all.csv", row.names = FALSE)
 
-#plant_species_df <- read.csv("Results/plant_info_results.csv")
+#Only did 147 abstracts
 
-#Look at representation across plant phyla
-expected_plant_phyla <- c(
-  "Anthophyta",        # flowering plants (aka Magnoliophyta)
-  "Pinophyta",         # conifers
-  "Pteridophyta",      # ferns
-  "Bryophyta",         # mosses
-  "Marchantiophyta",   # liverworts
-  "Lycopodiophyta",    # club mosses
-  "Gnetophyta",        # gnetophytes
-  "Cycadophyta",       # cycads
-  "Ginkgophyta",       # ginkgo
-  "Charophyta",        # green algae group most related to land plants
-  "Chlorophyta"        # other green algae
+#plant_species_df <- read.csv("plant_info_results.csv")
+
+
+
+plantae_key <- name_backbone(name = "Plantae")$usageKey
+
+phyla <- name_lookup(
+  higherTaxonKey = plantae_key,
+  rank = "PHYLUM",
+  limit = 5000
 )
+expected_plant_phyla <- unique(phyla$data$canonicalName)
 
-observed_phyla <- unique(plant_species_df$phylum[!is.na(plant_species_df$phylum)])
+fungi_key <- name_backbone(name = "Fungi")$usageKey
 
-missing_phyla <- setdiff(expected_plant_phyla, observed_phyla)
+phyla_f <- name_lookup(
+  higherTaxonKey = fungi_key,
+  rank = "PHYLUM",
+  limit = 5000
+)
+expected_fung_phyla <- unique(phyla_f$data$canonicalName)
 
-print(missing_phyla)
+summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae") {
+  # Filter by kingdom and keep only phyla with abstract IDs
+  df_filtered <- df %>%
+    filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
+    distinct(id, phylum, predicted_label)  # unique per abstract, phylum, and label
+  
+  # Observed and missing phyla
+  obs <- unique(df_filtered$phylum)
+  missing <- setdiff(expected_phyla, obs)
+  
+  cat("\nMissing phyla:\n")
+  print(missing)
+  cat("\nObserved phyla:\n")
+  print(obs)
+  
+  total_abstracts <- df %>% distinct(id) %>% nrow()
+  cat("Total abstracts:", total_abstracts, "\n")
+  
+  # Count abstracts per phylum and predicted_label
+  phylum_counts <- df_filtered %>%
+    count(phylum, predicted_label, sort = TRUE)
+  
+  # Plot
+  ggplot(phylum_counts, aes(x = reorder(phylum, n), y = n)) +
+    geom_col(fill = ifelse(kingdom_filter == "Plantae", "forestgreen", "darkorchid")) +
+    coord_flip() +
+    facet_wrap(~predicted_label) +
+    labs(
+      title = paste("Phylum Representation in", kingdom_filter, "Abstracts"),
+      x = "Phylum",
+      y = "Number of Abstracts"
+    ) 
+}
 
-phylum_summary <- plant_species_df %>%
-  filter(kingdom == "Plantae")%>%
-  filter(!is.na(phylum)) %>%
-  count(phylum, sort = TRUE)
 
-phylum_summary %>%
-  ggplot(aes(x = reorder(phylum, n), y = n)) +
-  geom_col(fill = "forestgreen") +
+summarize_phyla(plant_species_df, expected_plant_phyla)
+
+summarize_phyla(plant_species_df, expected_fung_phyla, kingdom_filter = "Fungi")
+
+#Now for plant parts
+plant_parts_summary_by_label <- plant_species_df %>%
+  select(id, predicted_label, all_of(plant_parts_keywords)) %>%
+  distinct() %>%
+  group_by(predicted_label) %>%
+  summarise(across(all_of(plant_parts_keywords), ~sum(.x, na.rm = TRUE)), .groups = "drop") %>%
+  pivot_longer(
+    cols = all_of(plant_parts_keywords),
+    names_to = "plant_part",
+    values_to = "n_abstracts"
+  )
+
+# View result
+print(plant_parts_summary_by_label %>% arrange(predicted_label, desc(n_abstracts)))
+
+ggplot(plant_parts_summary_by_label, aes(x = reorder(plant_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
+  geom_col(position = "dodge") +
   coord_flip() +
   labs(
-    title = "Phylum Representation",
-    x = "Phylum",
+    title = "Mentions of Plant Parts by Predicted Label",
+    x = "Plant Part",
     y = "Number of Abstracts"
   ) +
   theme_minimal()
-
-
-#Now for plant parts
-plant_parts_summary <- plant_species_df %>%
-  select(id, all_of(plant_parts_keywords)) %>%
-  distinct() %>%  # remove duplicates in case same abstract has multiple species hits
-  summarise(across(everything(), sum, na.rm = TRUE)) %>%
-  pivot_longer(cols = everything(), names_to = "plant_part", values_to = "n_abstracts")
-
-# View result
-print(plant_parts_summary %>% arrange(desc(n_abstracts)))
