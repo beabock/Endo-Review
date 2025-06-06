@@ -8,6 +8,7 @@ library(quanteda)
 library(rgbif)
 library(furrr)
 library(janitor)
+library(vroom)
 
 theme_set(theme_bw())
 
@@ -15,6 +16,22 @@ theme_set(theme_bw())
 set.seed(123)
 
 getwd()
+
+#download all accepted species from backbone because their api is overwhelmbed by this code
+backbone <- vroom("gbif_backbone/Taxon.tsv", 
+                  delim = "\t",
+                  col_select = c("taxonRank", "taxonomicStatus", "canonicalName", 
+                                 "kingdom", "phylum", "class", "order", 
+                                 "family", "genus"))
+
+if (!file.exists("accepted_species.rds")) {
+  accepted_species <- backbone %>%
+    filter(taxonRank == "species", taxonomicStatus == "accepted") %>%
+    select(canonicalName, kingdom, phylum, class, order, family, genus)
+  saveRDS(accepted_species, "accepted_species.rds")
+} else {
+  accepted_species <- readRDS("accepted_species.rds")
+}
 
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
@@ -34,10 +51,15 @@ correct_capitalization <- function(name) {
   return(name)
 }
 
+#Might need to go back above to include all of these cols. 
+# gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
+#                  "class", "order", "family", "genus", "species", 
+#                  "kingdomKey", "phylumKey", "classKey", "orderKey", 
+#                  "familyKey", "genusKey", "speciesKey")
+
 gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
-                 "class", "order", "family", "genus", "species", 
-                 "kingdomKey", "phylumKey", "classKey", "orderKey", 
-                 "familyKey", "genusKey", "speciesKey")
+                 "class", "order", "family", "genus")
+
 
 
 # Function to query GBIF and get additional fields (batch processing)
@@ -141,15 +163,17 @@ all_candidates <- abs %>%
   pull(ngrams) %>%
   unlist() %>%
   unique() %>%
-  sapply(correct_capitalization)
+#  str_subset("^[A-Z][a-z]+ [a-z]+$") %>% 
+  sapply(correct_capitalization) #Might be causing problems.
 
 force_refresh <- FALSE #Change to TRUE if i want to clear the cache of the valid_species_lookup
 
 # Batch validate candidates. this part takes a while.
-if (file.exists("valid_species_lookup.rds")) {
+if (file.exists("valid_species_lookup.rds") & !force_refresh) {
   valid_species_lookup <- readRDS("valid_species_lookup.rds")
 } else {
-  valid_species_lookup <- batch_validate_species(all_candidates)
+  valid_species_lookup <- accepted_species %>%
+    filter(canonicalName %in% all_candidates & kingdom %in% c("Plantae", "Fungi"))
   saveRDS(valid_species_lookup, "valid_species_lookup.rds")
 }
 
@@ -170,10 +194,13 @@ print(plant_species_df)
 # Save the result as a CSV
 write.csv(plant_species_df, "plant_info_results_all.csv", row.names = FALSE)
 
-#Only did 147 abstracts
 
 #plant_species_df <- read.csv("plant_info_results.csv")
 
+plant_species_df %>%
+  filter(kingdom == "Plantae")%>%
+  group_by(phylum)%>%
+  summarize(n = n())
 
 
 plantae_key <- name_backbone(name = "Plantae")$usageKey
@@ -218,9 +245,8 @@ summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae") {
   
   # Plot
   ggplot(phylum_counts, aes(x = reorder(phylum, n), y = n)) +
-    geom_col(fill = ifelse(kingdom_filter == "Plantae", "forestgreen", "darkorchid")) +
+    geom_col(aes(fill = predicted_label)) +
     coord_flip() +
-    facet_wrap(~predicted_label) +
     labs(
       title = paste("Phylum Representation in", kingdom_filter, "Abstracts"),
       x = "Phylum",
@@ -246,14 +272,14 @@ plant_parts_summary_by_label <- plant_species_df %>%
   )
 
 # View result
-print(plant_parts_summary_by_label %>% arrange(predicted_label, desc(n_abstracts)))
 
-ggplot(plant_parts_summary_by_label, aes(x = reorder(plant_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
+plant_parts_summary_by_label%>%
+  filter(n_abstracts >25)%>%
+  ggplot(aes(x = reorder(plant_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
   geom_col(position = "dodge") +
   coord_flip() +
   labs(
     title = "Mentions of Plant Parts by Predicted Label",
     x = "Plant Part",
     y = "Number of Abstracts"
-  ) +
-  theme_minimal()
+  ) 
