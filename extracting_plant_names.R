@@ -206,11 +206,12 @@ plant_species_df %>%
 plantae_key <- name_backbone(name = "Plantae")$usageKey
 
 phyla <- name_lookup(
-  higherTaxonKey = plantae_key,
+  higherTaxonKey = plantae_key, #Might switch this to kingdom_key at some point
   rank = "PHYLUM",
   limit = 5000
-)
-expected_plant_phyla <- unique(phyla$data$canonicalName)
+)$data
+
+expected_plant_phyla <- unique(phyla$canonicalName)
 
 fungi_key <- name_backbone(name = "Fungi")$usageKey
 
@@ -221,43 +222,70 @@ phyla_f <- name_lookup(
 )
 expected_fung_phyla <- unique(phyla_f$data$canonicalName)
 
-summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae") {
-  # Filter by kingdom and keep only phyla with abstract IDs
-  df_filtered <- df %>%
-    filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
-    distinct(id, phylum, predicted_label)  # unique per abstract, phylum, and label
-  
-  # Observed and missing phyla
-  obs <- unique(df_filtered$phylum)
-  missing <- setdiff(expected_phyla, obs)
-  
-  cat("\nMissing phyla:\n")
-  print(missing)
-  cat("\nObserved phyla:\n")
-  print(obs)
-  
-  total_abstracts <- df %>% distinct(id) %>% nrow()
-  cat("Total abstracts:", total_abstracts, "\n")
-  
-  # Count abstracts per phylum and predicted_label
-  phylum_counts <- df_filtered %>%
-    count(phylum, predicted_label, sort = TRUE)
-  
-  # Plot
-  ggplot(phylum_counts, aes(x = reorder(phylum, n), y = n)) +
-    geom_col(aes(fill = predicted_label)) +
-    coord_flip() +
-    labs(
-      title = paste("Phylum Representation in", kingdom_filter, "Abstracts"),
-      x = "Phylum",
-      y = "Number of Abstracts"
-    ) 
+#Curious about total number of species per phylum.
+
+name_lookup(higherTaxonKey = 9, rank = "SPECIES", status = "ACCEPTED", limit = 0)
+
+get_species_count <- function(phylum_key) {
+  tryCatch({
+    res <- name_lookup(
+      higherTaxonKey = phylum_key,
+      rank = "SPECIES",
+      status = "ACCEPTED",
+      limit = 0
+    )
+    return(res$meta$count)
+  }, error = function(e) {
+    return(NA_integer_)
+  })
 }
 
 
-summarize_phyla(plant_species_df, expected_plant_phyla)
+phylum_species_counts <- phyla %>%
+  mutate(total_species = map_int(key, get_species_count))
 
-summarize_phyla(plant_species_df, expected_fung_phyla, kingdom_filter = "Fungi")
+phylum_species_counts_fungi <- phyla_f$data %>%
+  mutate(total_species = map_int(key, get_species_count))
+
+summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae", phylum_species_counts) {
+  # Step 1: Filter the data
+  df_filtered <- df %>%
+    filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
+    distinct(id, phylum, predicted_label)
+  
+  # Step 2: Count abstracts per phylum and predicted_label
+  phylum_counts <- df_filtered %>%
+    count(phylum, predicted_label, name = "abstracts_with_label")
+  
+  # Step 3: Merge with species totals
+  counts_joined <- phylum_counts %>%
+    left_join(phylum_species_counts %>% select(canonicalName, total_species),
+              by = c("phylum" = "canonicalName")) %>%
+    mutate(
+      ratio = abstracts_with_label / total_species
+    )
+  
+  # Step 4: Plot
+  ggplot(counts_joined, aes(x = reorder(phylum, ratio), y = ratio)) +
+    geom_col(aes(fill = predicted_label)) +
+    coord_flip() +
+    labs(
+      title = paste("Abstract Mentions per Total Species in", kingdom_filter, "Phyla"),
+      x = "Phylum",
+      y = "Ratio: Abstracts Mentioned / Total Known Species"
+    )
+}
+
+summarize_phyla(plant_species_df, expected_plant_phyla, kingdom_filter = "Plantae", phylum_species_counts)
+
+#Adjusting for total number of species
+summarize_phyla(
+  df = plant_species_df,              
+  expected_phyla = expected_fung_phyla,
+  kingdom_filter = "Fungi",
+  phylum_species_counts = phylum_species_counts_fungi
+)
+
 
 #Now for plant parts
 plant_parts_summary_by_label <- plant_species_df %>%
@@ -273,13 +301,89 @@ plant_parts_summary_by_label <- plant_species_df %>%
 
 # View result
 
-plant_parts_summary_by_label%>%
-  filter(n_abstracts >25)%>%
-  ggplot(aes(x = reorder(plant_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
+# Create a named vector where each plural maps to a singular form
+plant_part_groups <- c(
+  "roots" = "root",
+  "leaves" = "leaf",
+  "twigs" = "twig",
+  "branches" = "branch",
+  "stems" = "stem",
+  "flowers" = "flower",
+  "shoots" = "shoot",
+  "seeds" = "seed",
+  "nodes" = "node",
+  "leaflets" = "leaflet",
+  "pistils" = "pistil",
+  "anthers" = "anther",
+  "carpels" = "carpel",
+  "sepals" = "sepal",
+  "petals" = "petal",
+  "stigmas" = "stigma",
+  "styles" = "style",
+  "ovaries" = "ovary",
+  "calyces" = "calyx",
+  "corollas" = "corolla",
+  "peduncles" = "peduncle",
+  "rachises" = "rachis",
+  "inflorescences" = "inflorescence",
+  "trunks" = "trunk",
+  "buds" = "bud",
+  "cones" = "cone",
+  "tubers" = "tuber",
+  "bulbs" = "bulb",
+  "corms" = "corm",
+  "cladodes" = "cladode",
+  "vascular bundles" = "vascular bundle",
+  "cotyledons" = "cotyledon",
+  "hypocotyls" = "hypocotyl",
+  "epicotyls" = "epicotyl",
+  "flowering stems" = "flowering stem",
+  "internodes" = "internode",
+  "leaf veins" = "leaf vein",
+  "leaf blades" = "leaf blade",
+  "palmatations" = "palmate",
+  "needles" = "needle",
+  "fascicles" = "fascicle",
+  "cuticles" = "cuticle",
+  "stomata" = "stoma",
+  "vascular cambiums" = "vascular cambium",
+  "petioles" = "petiole",
+  "axils" = "axil",
+  "phyllodes" = "phyllode",
+  "perianths" = "perianth",
+  "rachillas" = "rachilla",
+  "pedicels" = "pedicel",
+  "lateral roots" = "lateral root",
+  "taproots" = "taproot",
+  "root caps" = "root cap",
+  "root hairs" = "root hair",
+  "pericycles" = "pericycle",
+  "colleters" = "colleter",
+  "scutella" = "scutellum",
+  "coleoptiles" = "coleoptile",
+  "sporophytes" = "sporophyte",
+  "gametophytes" = "gametophyte"
+)
+
+plant_parts_grouped <- plant_parts_summary_by_label %>%
+  mutate(
+    grouped_part = recode(plant_part, !!!plant_part_groups, .default = plant_part)
+  ) %>%
+  group_by(predicted_label, grouped_part) %>%
+  summarise(n_abstracts = sum(n_abstracts), .groups = "drop")
+
+top_parts <- plant_parts_grouped %>%
+  group_by(grouped_part) %>%
+  summarise(total = sum(n_abstracts)) %>%
+  filter(total > 75)
+
+plant_parts_grouped %>%
+  filter(grouped_part %in% top_parts$grouped_part) %>%
+  ggplot(aes(x = reorder(grouped_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
   geom_col(position = "dodge") +
   coord_flip() +
   labs(
-    title = "Mentions of Plant Parts by Predicted Label",
+    title = "Mentions of Plant Parts (Grouped Singular/Plural)",
     x = "Plant Part",
     y = "Number of Abstracts"
-  ) 
+  )
