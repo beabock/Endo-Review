@@ -1,5 +1,9 @@
 
 # Trying to extract plant names -------------------------------------------
+#BB
+#June 2025
+#Extracting information from the labeled dataset of abstracts, including plant taxonomy, fungal taxonomy, and part of plant
+
 
 # Load necessary libraries
 
@@ -10,12 +14,29 @@ library(furrr)
 library(janitor)
 library(vroom)
 
-theme_set(theme_bw())
+custom_theme <- theme_bw(base_size = 18)
+
+theme_set(custom_theme)
 
 #Need to go back and remove any abstracts that are just empty.
 set.seed(123)
 
 getwd()
+
+cus_pal <- c(
+  "#A1C181",  # soft sage green — for plants
+  "#619B8A",  # muted teal — evokes moss or lichens
+  "#C97E7E",  # dusty rose — for fungi like Russula or Hygrophoropsis
+  "#D9AE94"   # pale mushroom beige — for caps and forest floor tones
+)
+
+save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...) {
+  ggsave(filename, plot, width = width, height = height, units = units, ...)
+}
+
+# Code --------------------------------------------------------------------
+
+
 
 #download all accepted species from backbone because their api is overwhelmbed by this code
 backbone <- vroom("gbif_backbone/Taxon.tsv", 
@@ -147,7 +168,7 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
 }
 
 #This takes a while to run, have it go overnight.
-# Precompute ngrams and species validation, currently only pulling from Presence
+# Precompute ngrams and species validation
 abs <- labeled_abstracts %>%
  # filter(predicted_label == "Presence") %>%
   mutate(ngrams = map(abstract, ~ {
@@ -192,15 +213,20 @@ plant_species_df <- future_pmap_dfr(
 print(plant_species_df)
 
 # Save the result as a CSV
-write.csv(plant_species_df, "plant_info_results_all.csv", row.names = FALSE)
+#write.csv(plant_species_df, "plant_info_results_all.csv", row.names = FALSE)
 
 
-#plant_species_df <- read.csv("plant_info_results.csv")
+#Can just read the above csv instead of running the above code
+
+
+# Start here --------------------------------------------------------------
+
+plant_species_df <- read.csv("plant_info_results_all.csv")
 
 plant_species_df %>%
   filter(kingdom == "Plantae")%>%
   group_by(phylum)%>%
-  summarize(n = n())
+  tally()
 
 
 plantae_key <- name_backbone(name = "Plantae")$usageKey
@@ -247,6 +273,8 @@ phylum_species_counts <- phyla %>%
 phylum_species_counts_fungi <- phyla_f$data %>%
   mutate(total_species = map_int(key, get_species_count))
 
+
+#Plot raw first
 summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae", phylum_species_counts) {
   # Step 1: Filter the data
   df_filtered <- df %>%
@@ -261,25 +289,52 @@ summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae", phyl
   counts_joined <- phylum_counts %>%
     left_join(phylum_species_counts %>% select(canonicalName, total_species),
               by = c("phylum" = "canonicalName")) %>%
-    mutate(
-      ratio = abstracts_with_label / total_species
-    )
+    mutate(ratio = abstracts_with_label / total_species)
   
-  # Step 4: Plot
-  ggplot(counts_joined, aes(x = reorder(phylum, ratio), y = ratio)) +
+  # Plot 1: Raw counts
+  plot_raw <- ggplot(phylum_counts, aes(x = reorder(phylum, abstracts_with_label), y = abstracts_with_label)) +
+    geom_col(aes(fill = predicted_label)) +
+    coord_flip() +
+    labs(
+      title = paste("Abstract Mentions in", kingdom_filter, "Phyla"),
+      x = "Phylum",
+      y = "Abstracts Mentioned"
+    ) +
+    scale_fill_manual(values = cus_pal)
+  
+  # Plot 2: Normalized by species richness
+  plot_ratio <- ggplot(counts_joined, aes(x = reorder(phylum, ratio), y = ratio)) +
     geom_col(aes(fill = predicted_label)) +
     coord_flip() +
     labs(
       title = paste("Abstract Mentions per Total Species in", kingdom_filter, "Phyla"),
       x = "Phylum",
-      y = "Ratio: Abstracts Mentioned / Total Known Species"
-    )
+      y = "Ratio: Abstracts / Known Species"
+    ) +
+    scale_fill_manual(values = cus_pal)
+  
+  # Option 1: return as a named list
+  return(list(raw_plot = plot_raw, ratio_plot = plot_ratio))
+  
 }
 
-summarize_phyla(plant_species_df, expected_plant_phyla, kingdom_filter = "Plantae", phylum_species_counts)
+plant_phyla_counts <- summarize_phyla(plant_species_df, expected_plant_phyla, kingdom_filter = "Plantae", phylum_species_counts)
 
-#Adjusting for total number of species
-summarize_phyla(
+plant_phyla_counts$raw_plot
+plant_phyla_counts$ratio_plot
+
+
+save_plot("plant_raw_species_counts.png", plant_phyla_counts$raw_plot)
+
+save_plot("plant_norm_species_counts.png", plant_phyla_counts$ratio_plot)
+
+
+saveRDS(plant_phyla_counts, file = "phylum_species_counts.rds")
+
+#Think about this more
+
+#now fungi
+fung_phyla_counts <- summarize_phyla(
   df = plant_species_df,              
   expected_phyla = expected_fung_phyla,
   kingdom_filter = "Fungi",
@@ -287,23 +342,35 @@ summarize_phyla(
 )
 
 
+fung_phyla_counts$raw_plot
+fung_phyla_counts$ratio_plot
+
+
+save_plot("fung_raw_species_counts.png", fung_phyla_counts$raw_plot)
+save_plot("fung_norm_species_counts.png", fung_phyla_counts$ratio_plot)
+
+
+
 #Now for plant parts
 plant_parts_summary_by_label <- plant_species_df %>%
-  select(id, predicted_label, all_of(plant_parts_keywords)) %>%
+  select(id, predicted_label, any_of(plant_parts_keywords)) %>% #fix this later back to all_of, need to rerun all code so that the plant_parts_keywords is updated when making plant_species_df
   distinct() %>%
   group_by(predicted_label) %>%
-  summarise(across(all_of(plant_parts_keywords), ~sum(.x, na.rm = TRUE)), .groups = "drop") %>%
+  summarise(across(any_of(plant_parts_keywords), ~sum(.x, na.rm = TRUE)), .groups = "drop") %>%
   pivot_longer(
-    cols = all_of(plant_parts_keywords),
+    cols = any_of(plant_parts_keywords),
     names_to = "plant_part",
     values_to = "n_abstracts"
   )
+
+#Need to use whatever keywords I used for the training unfort
 
 # View result
 
 # Create a named vector where each plural maps to a singular form
 plant_part_groups <- c(
   "roots" = "root",
+  "fruits" = "fruit",
   "leaves" = "leaf",
   "twigs" = "twig",
   "branches" = "branch",
@@ -372,18 +439,35 @@ plant_parts_grouped <- plant_parts_summary_by_label %>%
   group_by(predicted_label, grouped_part) %>%
   summarise(n_abstracts = sum(n_abstracts), .groups = "drop")
 
+
+saveRDS(plant_parts_grouped, file = "plant_parts_grouped.rds")
+
+
 top_parts <- plant_parts_grouped %>%
   group_by(grouped_part) %>%
   summarise(total = sum(n_abstracts)) %>%
   filter(total > 75)
 
-plant_parts_grouped %>%
+plant_parts_plot <- plant_parts_grouped %>%
   filter(grouped_part %in% top_parts$grouped_part) %>%
   ggplot(aes(x = reorder(grouped_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
-  geom_col(position = "dodge") +
+  geom_col() +
   coord_flip() +
   labs(
     title = "Mentions of Plant Parts (Grouped Singular/Plural)",
     x = "Plant Part",
     y = "Number of Abstracts"
-  )
+  )+
+  scale_fill_manual(values = cus_pal)
+
+save_plot("plant_parts.png", plant_parts_plot)
+
+# Outputs -----------------------------------------------------------------
+
+phylum_species_counts <- readRDS("phylum_species_counts.rds")
+
+phylum_species_counts
+
+plant_parts_grouped <- readRDS("plant_parts_grouped.rds")
+
+#think about if glomeromycota come up with the root plant part
