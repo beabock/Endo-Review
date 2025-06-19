@@ -1,16 +1,14 @@
 #B. Bock
-#3/7/25
-#ML Approach: changed from words to trigrams
+#6/19/25
+#ML Approach: this is adapted from ML_bigger.R. 
+#This time, I want to subset my training dataset, and compare different ML approaches on them. See what works best then run those on bigger training datasets and run again.
 
-#Could try stacking models too. Maybe try that next.
+
+# Library loading ---------------------------------------------------------
+
+
 
 # Load necessary libraries
-
-packages <- c("tidyverse", "tidytext", "caret", "randomForest", "DMwR2", "text", 
-              "xgboost", "recipes", "themis", "janitor", 
-              "ParBayesianOptimization", "rBayesianOptimization")
-
-install.packages(setdiff(packages, installed.packages()[,"Package"]))
 
 library(tidyverse)
 library(tidytext)
@@ -25,231 +23,193 @@ library(themis)
 library(janitor)
 library(ParBayesianOptimization)
 library(rBayesianOptimization)
+library(tictoc)
 
 getwd()
 
 #setwd("Endo_Review")
 
+cus_pal <- c(
+  "#A1C181",  # soft sage green — for plants
+  "#619B8A",  # muted teal — evokes moss or lichens
+  "#C97E7E",  # dusty rose — for fungi like Russula or Hygrophoropsis
+  "#D9AE94"   # pale mushroom beige — for caps and forest floor tones
+)
 
+# Functions ---------------------------------------------------------------
 
+train_and_evaluate <- function(train_df, test_df, method_name, tune_len = 10, ...) {
+  train_control <- trainControl(
+    method = "repeatedcv",
+    number = 5,
+    repeats = 3,
+    classProbs = TRUE,
+    summaryFunction = multiClassSummary,
+    savePredictions = "final"
+  )
+  
+  model <- train(
+    label ~ ., 
+    data = train_df,
+    method = method_name,
+    trControl = train_control,
+    tuneLength = tune_len,
+    ...
+  )
+  
+  predictions <- predict(model, newdata = test_df)
+  cm <- confusionMatrix(predictions, test_df$label)
+  
+  list(
+    model = model,
+    confusion_matrix = cm,
+    accuracy = cm$overall["Accuracy"]
+  )
+}
 
 
 # Presence/Absence --------------------------------------------------------
 
 
+set.seed(1998)
 
-
-
-# Step 1: Label Data and Prepare Text. mmake sure to update with every nerw version of training ds
-# Load and clean data
 labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   clean_names() %>%
-  filter(label != "Other" & label != "") %>%
-  mutate(id = row_number()) #This is a bit flawed if we're using the first column as row number because there are duplicates. Double check this.
+  filter(label != "Other", label != "") %>%
+  mutate(id = row_number())
 
-# Remove rows with missing DOI and authors for "Presence" label
+# Remove artificial or duplicate Presence examples
 rows_to_remove <- labeled_abstracts %>%
-  filter(is.na(doi) | doi %in% c("", "<NA>", "NA"),
-         label == "Presence",
-         is.na(authors) | authors == "") %>%
-  slice_sample(n = 90)
+  filter(
+    is.na(doi) | doi %in% c("", "<NA>", "NA"),
+    label == "Presence",
+    is.na(authors) | authors == ""
+  )
 
 labeled_abstracts <- labeled_abstracts %>%
-  anti_join(rows_to_remove, by = "id")
+  anti_join(rows_to_remove, by = "id") %>%
+  group_by(label) %>%
+ # slice_sample(n = 100) %>%
+  ungroup()
 
-
+# Check label balance
 labeled_abstracts %>%
-  group_by(label)%>%
-  summarize(n = n())
-
-
-
-# Process "Other" abstracts
-other_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
-  clean_names() %>%
-  mutate(predicted_label = NA,
-         early_access_date = as.character(early_access_date)) %>%
-  select(-c(x, predicted_label, id)) %>%
-  filter(label == "Other")
+  count(label) %>%
+  print()
 
 # Metadata columns
 target <- "label"
 predictor <- "abstract"
 metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
-  .[! . %in% c("publication_type", "group_authors", "part_number", "web_of_science_index")]
+  discard(~ .x %in% c("publication_type", "group_authors", "part_number", "web_of_science_index"))
 
 labeled_abstracts <- labeled_abstracts %>%
-  select(c(target, predictor, metadata_columns))
+  select(all_of(c(target, predictor, metadata_columns, "id")))
 
-# Tokenize and create Document-Term Matrix (DTM)
 dtm <- labeled_abstracts %>%
-  unnest_tokens(word, abstract, token = "ngrams", n = 3) %>%
-  anti_join(stop_words) %>%
+  unnest_tokens(word, abstract, token = "ngrams", n=2) %>%
+  anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
   count(id, word) %>%
   bind_tf_idf(word, id, n) %>%
-  cast_dtm(id, word, tf_idf)
+  cast_dtm(document = id, term = word, value = tf_idf)
 
 dtm_matrix <- as.matrix(dtm)
 
 # Train-test split
-set.seed(123)
+
+
 train_index <- createDataPartition(labeled_abstracts$label, p = 0.8, list = FALSE)
 train_data <- labeled_abstracts[train_index, ]
 test_data <- labeled_abstracts[-train_index, ]
 
-# Match DTM rows with train/test data
-train_dtm_matrix <- dtm_matrix[rownames(dtm_matrix) %in% train_data$id, , drop = FALSE]
-test_dtm_matrix <- dtm_matrix[rownames(dtm_matrix) %in% test_data$id, , drop = FALSE]
+# Make sure rownames match for DTM alignment
+rownames(dtm_matrix) <- labeled_abstracts$id %>% as.character()
+train_ids <- train_data$id %>% as.character()
+test_ids <- test_data$id %>% as.character()
 
-# Ensure consistent factor levels
+train_dtm_matrix <- dtm_matrix[train_ids, , drop = FALSE]
+test_dtm_matrix <- dtm_matrix[test_ids, , drop = FALSE]
+
+# Ensure consistent label factor levels
 train_data$label <- factor(train_data$label)
 test_data$label <- factor(test_data$label, levels = levels(train_data$label))
 
-# Convert DTM matrices to dataframes and bind labels
+# Convert to data frames and attach labels
 train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
-  bind_cols(select(train_data, label))
+  mutate(label = train_data$label)
 test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
-  bind_cols(select(test_data, label))
-
-# # Train Random Forest model
-# rf_model <- train(
-#   label ~ ., 
-#   data = train_dtm_df, 
-#   method = "rf"
-# )
-# 
-# # Save the model
-# save(rf_model, file = "rf_model_no_Other9.RData")
-# Uncomment the above two code lines if you want to rerun the model. For now, load the saved model.
-#load("rf_model_no_Other7_balanced.RData") #7 is best. others are trash?
-#predictions_rf <- predict(rf_model, newdata = test_dtm_df)
-#confusionMatrix(predictions_rf, test_dtm_df$label)
+  mutate(label = test_data$label)
 
 
-## Same thing but gradient boosting
+# Testing models ----------------------------------------------------------
 
 
-# Step 1: Prepare the training data by removing the label column and converting to numeric
-train_labels <- as.numeric(factor(train_data$label)) - 1
-test_labels <- as.numeric(factor(test_data$label)) - 1
+#glmnet and svmLinear are super fast.
 
-# Step 4: Prepare DMatrix for XGBoost
-xgb_train <- xgb.DMatrix(data = train_dtm_matrix, label = train_labels)
-xgb_test <- xgb.DMatrix(data = test_dtm_matrix, label = test_labels)
-
-
-bounds <- list(
-  eta = c(0.001, 0.3),
-  max_depth = c(3L, 15L),
-  subsample = c(0.3, 1),
-  colsample_bytree = c(0.3, 1),
-  min_child_weight = c(1, 10),
-  gamma = c(0, 10),
-  nrounds = c(100, 1000) # Add rounds as an optimization parameter
+models_to_try <- c(
+  "glmnet",
+  "svmLinear"
+ # "rf"
+ # "xgbTree", #Took 17 minutes for 30 abstracts
+ # "nb", #Wouldnt run on 10 abstracts
+ # "gbm",#Wouldnt run on 10 abstracts
+ # "lda",#Wouldnt run on 10 abstracts
+ # "rda" #Takes friggin forevertoo.
+  #"treebag"#Wouldnt run on 10 abstracts
 )
 
-set.seed(123) # For reproducibility
+results <- list()
 
-optimize_xgb <- function(eta, max_depth, gamma, colsample_bytree, min_child_weight, subsample, nrounds) {
-  params <- list(
-    objective = "multi:softmax",
-    num_class = length(unique(train_labels)), 
-    eval_metric = "mlogloss",
-    eta = eta,
-    max_depth = as.integer(max_depth),
-    gamma = gamma,
-    colsample_bytree = colsample_bytree,
-    min_child_weight = min_child_weight,
-    subsample = subsample
-  )
+for (method in models_to_try) {
+  cat("\nTraining:", method, "\n")
   
-  cv_results <- xgb.cv(
-    params = params,
-    data = xgb_train,
-    nrounds = nrounds,
-    nfold = 5,
-    early_stopping_rounds = 10,
-    verbose = FALSE
-  )
+  tic(paste("Time for", method))
+  result <- tryCatch({
+    train_and_evaluate(train_dtm_df, test_dtm_df, method, tune_len = 10)
+  }, error = function(e) {
+    message("Model ", method, " failed: ", e$message)
+    return(NULL)
+  })
+  toc()
   
-  best_accuracy <- max(1 - cv_results$evaluation_log$test_mlogloss_mean)  
-  return(list(Score = best_accuracy, Pred = 0))
+  results[[method]] <- result
 }
 
-#Don't run the below locally
-# opt_results <- bayesOpt(
-#   FUN = optimize_xgb,
-#   bounds = bounds,
-#   initPoints = 10,     # Number of random initial points
-#   iters.n = 30,        # Number of optimization iterations
-#   acq = "ei",          # Acquisition function: Expected Improvement
-#   verbose = 2
-# )
+
+successful_results <- results[!sapply(results, is.null)]
+
+accuracy_table <- tibble(
+  model = names(successful_results),
+  accuracy = sapply(successful_results, function(x) x$accuracy)
+) %>% arrange(desc(accuracy))
+
+print(accuracy_table)
 
 
-#Ran until here 2/12/25
+accuracy_table %>%
+  ggplot(aes(x = reorder(model, accuracy), y = accuracy)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Model Accuracy Comparison",
+    x = "Model",
+    y = "Accuracy"
+  ) +
+  theme_minimal(base_size = 14)
 
- ss <- opt_results$scoreSummary
-
-best_params <- ss[which.min(ss$Score), ]
-max_score <- ss[which.max(ss$Score), ]
-
-final_params <- list(
-  objective = "multi:softprob",
-  eval_metric = "mlogloss",
-  num_class = length(levels(train_data$label)),
-  eta = best_params$eta,
-  max_depth = as.integer(best_params$max_depth),
-  subsample = best_params$subsample,
-  colsample_bytree = best_params$colsample_bytree
-)
-
-#save(final_params, file = "xgb_params_bayes.R")
-
-
-#Run until here
-
-load("xgb_params_bayes.R")
-
-xgb_model <- xgb.train(
-  params = final_params,
-  data = xgb_train,
-  nrounds = 300,
-  nthread = parallel::detectCores(), # Use all available cores
-  tree_method = "hist", # Faster training for large datasets
-  verbosity = 1
-)
-
-xgb.save(xgb_model, "xgb_model_2.model")
-
-xgb_model <- xgb.load("xgb_model.model")
-
-#Problem here...
-
-#Could test different models on subset of data, then choose from those.
-
-# Step 7: Predict and evaluate
-predictions <- predict(xgb_model, xgb_test)
-predicted_classes <- max.col(matrix(predictions, nrow = length(test_labels), byrow = TRUE)) - 1
-
-original_class_labels <- levels(factor(train_data$label))
-
-# Convert numeric predictions back to original class names
-predicted_labels <- factor(original_class_labels[predicted_classes + 1], levels = original_class_labels)
-true_labels <- factor(original_class_labels[test_labels + 1], levels = original_class_labels)
-
-# Generate the confusion matrix with original labels
-confusionMatrix(predicted_labels, true_labels)
-
-#at 80%. trigrams is worse right now
-
-
-
-
-#Test different models and delete the worst ones.
-
+if (!is.null(results$glmnet)) {
+  cat("\nChecking for overfitting on glmnet model:\n")
+  
+  train_preds <- predict(results$glmnet$model, newdata = train_dtm_df)
+  train_cm <- confusionMatrix(train_preds, train_dtm_df$label)
+  cat("Training accuracy:", round(train_cm$overall['Accuracy'], 4), "\n")
+  
+  test_preds <- predict(results$glmnet$model, newdata = test_dtm_df)
+  test_cm <- confusionMatrix(test_preds, test_dtm_df$label)
+  cat("Test accuracy:", round(test_cm$overall['Accuracy'], 4), "\n")
+}
 
 
 # Whole dataset -----------------------------------------------------------

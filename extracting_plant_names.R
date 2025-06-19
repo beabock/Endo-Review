@@ -223,6 +223,11 @@ print(plant_species_df)
 
 plant_species_df <- read.csv("plant_info_results_all.csv")
 
+plant_species_df%>%
+  group_by(predicted_label)%>%
+  tally()
+
+
 plant_species_df %>%
   filter(kingdom == "Plantae")%>%
   group_by(phylum)%>%
@@ -471,3 +476,5 @@ phylum_species_counts
 plant_parts_grouped <- readRDS("plant_parts_grouped.rds")
 
 #think about if glomeromycota come up with the root plant part
+
+#Create a list of all plant species and see what's missing. 
