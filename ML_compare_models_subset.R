@@ -13,16 +13,12 @@
 library(tidyverse)
 library(tidytext)
 library(caret)
-library(randomForest)
-library(DMwR2)
-library(text) # For embeddings, optional
-library(xgboost)
+library(Matrix)
+library(text)
 library(tm)
 library(recipes)
 library(themis)
 library(janitor)
-library(ParBayesianOptimization)
-library(rBayesianOptimization)
 library(tictoc)
 
 getwd()
@@ -75,8 +71,9 @@ set.seed(1998)
 
 labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   clean_names() %>%
-  filter(label != "Other", label != "") %>%
+  filter(label %in% c("Presence", "Absence")) %>%
   mutate(id = row_number())
+
 
 # Remove artificial or duplicate Presence examples
 rows_to_remove <- labeled_abstracts %>%
@@ -87,60 +84,68 @@ rows_to_remove <- labeled_abstracts %>%
   )
 
 labeled_abstracts <- labeled_abstracts %>%
-  anti_join(rows_to_remove, by = "id") %>%
-  group_by(label) %>%
- # slice_sample(n = 100) %>%
+  anti_join(rows_to_remove, by = "id")%>%
+  group_by(label)%>%
+ # slice_sample(n=30)%>%
   ungroup()
 
 # Check label balance
 labeled_abstracts %>%
-  count(label) %>%
-  print()
+  count(label) 
 
-# Metadata columns
-target <- "label"
-predictor <- "abstract"
-metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
-  discard(~ .x %in% c("publication_type", "group_authors", "part_number", "web_of_science_index"))
-
-labeled_abstracts <- labeled_abstracts %>%
-  select(all_of(c(target, predictor, metadata_columns, "id")))
+# # Metadata columns
+# target <- "label"
+# predictor <- "abstract"
+# metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
+#   discard(~ .x %in% c("publication_type", "group_authors", "part_number", "web_of_science_index"))
+# 
+# labeled_abstracts <- labeled_abstracts %>%
+#   select(all_of(c(target, predictor, metadata_columns, "id")))
 
 dtm <- labeled_abstracts %>%
-  unnest_tokens(word, abstract, token = "ngrams", n=2) %>%
+  unnest_tokens(word, abstract, token = "words") %>%
   anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
-  count(id, word) %>%
-  bind_tf_idf(word, id, n) %>%
-  cast_dtm(document = id, term = word, value = tf_idf)
+  count(id, word, sort = TRUE) %>%
+  ungroup() %>%
+  mutate(id = as.character(id)) %>%  # Ensure IDs are character
+  cast_dtm(document = id, term = word, value = n)
 
+# Preserve row names BEFORE converting
+rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
+
+# Convert to sparse matrix and assign row names
 dtm_matrix <- as.matrix(dtm)
 
+valid_ids <- as.integer(rownames_dtm)  # convert back to integer
+
+labeled_abstracts <- labeled_abstracts %>%
+  filter(id %in% valid_ids) %>%
+  mutate(id = as.character(id)) %>%         # match rownames (character)
+  arrange(match(id, rownames_dtm))  
+
+
+rownames(dtm_matrix) <- rownames_dtm
+
+labeled_abstracts <- labeled_abstracts %>%
+  filter(id %in% rownames(dtm_matrix)) %>%
+  mutate(label = factor(label))
+
 # Train-test split
-
-
 train_index <- createDataPartition(labeled_abstracts$label, p = 0.8, list = FALSE)
 train_data <- labeled_abstracts[train_index, ]
 test_data <- labeled_abstracts[-train_index, ]
 
-# Make sure rownames match for DTM alignment
-rownames(dtm_matrix) <- labeled_abstracts$id %>% as.character()
-train_ids <- train_data$id %>% as.character()
-test_ids <- test_data$id %>% as.character()
+train_ids <- as.character(train_data$id)
+test_ids <- as.character(test_data$id)
 
-train_dtm_matrix <- dtm_matrix[train_ids, , drop = FALSE]
-test_dtm_matrix <- dtm_matrix[test_ids, , drop = FALSE]
+train_matrix <- dtm_matrix[train_ids, ]
+test_matrix <- dtm_matrix[test_ids, ]
 
-# Ensure consistent label factor levels
-train_data$label <- factor(train_data$label)
-test_data$label <- factor(test_data$label, levels = levels(train_data$label))
-
-# Convert to data frames and attach labels
-train_dtm_df <- as.data.frame(train_dtm_matrix) %>%
-  mutate(label = train_data$label)
-test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
-  mutate(label = test_data$label)
+# Convert to data frame for caret
+train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(label = train_data$label)
+test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(label = test_data$label)
 
 
 # Testing models ----------------------------------------------------------
@@ -148,45 +153,74 @@ test_dtm_df <- as.data.frame(test_dtm_matrix) %>%
 
 #glmnet and svmLinear are super fast.
 
-models_to_try <- c(
-  "glmnet",
-  "svmLinear"
- # "rf"
- # "xgbTree", #Took 17 minutes for 30 abstracts
- # "nb", #Wouldnt run on 10 abstracts
- # "gbm",#Wouldnt run on 10 abstracts
- # "lda",#Wouldnt run on 10 abstracts
- # "rda" #Takes friggin forevertoo.
-  #"treebag"#Wouldnt run on 10 abstracts
+train_recipe <- recipe(label ~ ., data = train_df) %>%
+  step_smote(label) %>%
+  prep()
+balanced_train <- juice(train_recipe)
+
+# Train Control
+train_control <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 3,
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  savePredictions = "final"
 )
 
+# Models to compare
+models_to_try <- c("glmnet", "svmLinear", "rf")
 results <- list()
 
 for (method in models_to_try) {
   cat("\nTraining:", method, "\n")
-  
   tic(paste("Time for", method))
   result <- tryCatch({
-    train_and_evaluate(train_dtm_df, test_dtm_df, method, tune_len = 10)
+    train(
+      label ~ ., 
+      data = balanced_train,
+      method = method,
+      metric = "ROC",
+      trControl = train_control,
+      tuneLength = 10
+    )
   }, error = function(e) {
     message("Model ", method, " failed: ", e$message)
     return(NULL)
   })
   toc()
-  
   results[[method]] <- result
 }
 
+#Ran on whole training dataset this time.
 
-successful_results <- results[!sapply(results, is.null)]
-
+confusion_matrices <- list() 
+# Evaluate
 accuracy_table <- tibble(
-  model = names(successful_results),
-  accuracy = sapply(successful_results, function(x) x$accuracy)
-) %>% arrange(desc(accuracy))
+  model = names(results),
+  accuracy = sapply(names(results), function(m) {
+    model <- results[[m]]
+    if (is.null(model)) return(NA)
+    
+    preds <- predict(model, newdata = test_df)
+    cm <- confusionMatrix(preds, test_df$label)
+    
+    # Save confusion matrix to list for later inspection
+    confusion_matrices[[m]] <<- cm
+    
+    cm$overall["Accuracy"]
+  })
+) %>% filter(!is.na(accuracy)) %>% arrange(desc(accuracy))
 
 print(accuracy_table)
 
+for (m in names(confusion_matrices)) {
+  cat("\nConfusion Matrix for model:", m, "\n")
+  print(confusion_matrices[[m]]$table)  # Just the table
+  cat("\nDetailed stats:\n")
+  print(confusion_matrices[[m]]$byClass)  # Per-class metrics (Sensitivity, Specificity, etc.)
+  cat("\n")
+}
 
 accuracy_table %>%
   ggplot(aes(x = reorder(model, accuracy), y = accuracy)) +
@@ -199,17 +233,11 @@ accuracy_table %>%
   ) +
   theme_minimal(base_size = 14)
 
-if (!is.null(results$glmnet)) {
-  cat("\nChecking for overfitting on glmnet model:\n")
-  
-  train_preds <- predict(results$glmnet$model, newdata = train_dtm_df)
-  train_cm <- confusionMatrix(train_preds, train_dtm_df$label)
-  cat("Training accuracy:", round(train_cm$overall['Accuracy'], 4), "\n")
-  
-  test_preds <- predict(results$glmnet$model, newdata = test_dtm_df)
-  test_cm <- confusionMatrix(test_preds, test_dtm_df$label)
-  cat("Test accuracy:", round(test_cm$overall['Accuracy'], 4), "\n")
-}
+# Save best model
+best_model <- results[[accuracy_table$model[1]]]
+saveRDS(best_model, file = paste0("best_model_", accuracy_table$model[1], ".rds"))
+
+
 
 
 # Whole dataset -----------------------------------------------------------
