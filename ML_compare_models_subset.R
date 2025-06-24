@@ -33,6 +33,9 @@ cus_pal <- c(
 )
 
 # Functions ---------------------------------------------------------------
+save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...) {
+  ggsave(filename, plot, width = width, height = height, units = units, ...)
+}
 
 train_and_evaluate <- function(train_df, test_df, method_name, tune_len = 10, ...) {
   train_control <- trainControl(
@@ -143,6 +146,8 @@ test_ids <- as.character(test_data$id)
 train_matrix <- dtm_matrix[train_ids, ]
 test_matrix <- dtm_matrix[test_ids, ]
 
+train_dtm_matrix <- train_matrix
+
 # Convert to data frame for caret
 train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(label = train_data$label)
 test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(label = test_data$label)
@@ -169,7 +174,7 @@ train_control <- trainControl(
 )
 
 # Models to compare
-models_to_try <- c("glmnet", "svmLinear", "rf")
+models_to_try <- c("glmnet", "svmLinear") #Can add rf back in but it kind of sucks
 results <- list()
 
 for (method in models_to_try) {
@@ -214,6 +219,8 @@ accuracy_table <- tibble(
 
 print(accuracy_table)
 
+#98%!!!! holy hell!!!
+
 for (m in names(confusion_matrices)) {
   cat("\nConfusion Matrix for model:", m, "\n")
   print(confusion_matrices[[m]]$table)  # Just the table
@@ -233,21 +240,71 @@ accuracy_table %>%
   ) +
   theme_minimal(base_size = 14)
 
+
 # Save best model
 best_model <- results[[accuracy_table$model[1]]]
-saveRDS(best_model, file = paste0("best_model_", accuracy_table$model[1], ".rds"))
+#saveRDS(best_model, file = paste0("best_model_", accuracy_table$model[1], ".rds"))
 
 
+best_model
+#svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+#Doing some pca stuff here
+library(irlba)
+
+# Use training matrix (only rownames with labels)
+svd_result <- irlba(train_matrix, nv = 2)  # 2 PCs for plotting
+
+# Project into PC space
+pca_coords <- svd_result$u %*% diag(svd_result$d)
+
+# Recreate labels
+train_labels <- train_data$label
+
+# Data frame for plotting
+pca_df <- data.frame(
+  PC1 = pca_coords[, 1],
+  PC2 = pca_coords[, 2],
+  label = train_labels
+)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = label)) +
+  geom_point(alpha = 0.5) +
+  labs(
+    title = "PCA of Abstract Word Features (Training Set)",
+    x = "Principal Component 1",
+    y = "Principal Component 2"
+  ) +
+  scale_color_manual(values = c("Presence" = "#0072B2", "Absence" = "#D55E00"))
+
+save_plot(plot = last_plot(), "PCA_Label.png")
+
+preds <- predict(best_model, newdata = train_df)
+
+# Add prediction info to PCA plot
+pca_df$predicted <- preds
+pca_df$correct <- ifelse(pca_df$label == pca_df$predicted, "Correct", "Incorrect")
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = correct)) +
+  geom_point(alpha = 0.6) +
+  labs(
+    title = "SVM Classification Accuracy in PCA Space",
+    x = "PC1", y = "PC2"
+  ) +
+  scale_color_manual(values = c("Correct" = "forestgreen", "Incorrect" = "firebrick")) 
+
+save_plot(plot = last_plot(), "PCA_correct.png")
 
 # Whole dataset -----------------------------------------------------------
 
 
-
-
+best_model <- readRDS("best_model_svmLinear.rds")
 # Step 8: Predict on the Full Dataset
 full_abstracts <- read.csv("All_Abstracts.csv") %>%
   clean_names()
+
+
 
 colname_mapping <- c(
   "title" = "article_title",                # 'title' to 'article_title'
@@ -338,7 +395,6 @@ full_abstracts <- full_abstracts %>%
   rename_with(~ ifelse(. %in% names(colname_mapping), colname_mapping[.], .))
 
 
-
 metadata_columns <- metadata_columns[!metadata_columns %in% c("id", "predicted_label")]
 
 
@@ -346,98 +402,98 @@ full_abstracts <- full_abstracts %>%
   select(c(predictor, all_of(metadata_columns)))
 
 
-# Exclude empty strings and NA values from labeled_abstracts$doi
 filtered_dois <- labeled_abstracts$doi[!is.na(labeled_abstracts$doi) & labeled_abstracts$doi != ""]
-
-# Remove matching rows from full_abstracts
 full_abstracts <- full_abstracts[!full_abstracts$doi %in% filtered_dois, ]
-full_abstracts <- full_abstracts[!full_abstracts$doi %in% other_abstracts$doi, ]
 
-# Step 8: Prepare Full Dataset for Prediction
+# Add ID column for consistent row tracking
 full_abstracts$id <- 1:nrow(full_abstracts)
 
 dtm <- full_abstracts %>%
-  unnest_tokens(word, abstract, token = "ngrams", n = 3) %>%
-  anti_join(stop_words) %>%
+  unnest_tokens(word, abstract, token = "words") %>%
+  anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
-  count(id, word) %>%
-  bind_tf_idf(word, id, n) %>%
-  cast_dtm(id, word, tf_idf)
+  count(id, word, sort = TRUE) %>%
+  ungroup() %>%
+  mutate(id = as.character(id)) %>%  # Ensure IDs are character
+  cast_dtm(document = id, term = word, value = n)
 
 
 dtm_matrix <- as.matrix(dtm)
+rownames(dtm_matrix) <- dtm$dimnames$Docs  # Ensure IDs as rownames
 
+# Load vocabulary from training data (should already exist in your script)
+trained_vocab <- colnames(train_dtm_matrix)
 
-trained_vocab <- colnames(train_dtm_matrix)  # Replace with your actual training matrix
-
-# Identify missing words in dtm_matrix
+# Add missing words (zero columns) to full DTM
 missing_words <- setdiff(trained_vocab, colnames(dtm_matrix))
-
-extra_words <- setdiff(colnames(dtm_matrix), trained_vocab)
-
-# Create a zero matrix for missing words
 if (length(missing_words) > 0) {
   zero_matrix <- matrix(0, nrow = nrow(dtm_matrix), ncol = length(missing_words),
                         dimnames = list(rownames(dtm_matrix), missing_words))
-  
-  # Combine existing matrix with zero matrix
   dtm_matrix <- cbind(dtm_matrix, zero_matrix)
 }
 
-# Ensure columns are in the same order as train_vocab
+# Reorder columns to match training vocab
 dtm_matrix <- dtm_matrix[, trained_vocab, drop = FALSE]
 
-dtm_matrix <- dtm_matrix[full_abstracts$id, , drop = FALSE]
+# Predict labels using best model
+# Ensure model is loaded and ready
+train_vars <- setdiff(colnames(train_df), "label")
 
+# 2. Convert DTM to dataframe
+full_df <- as.data.frame(dtm_matrix)
 
-# Predict labels for the full dataset using the trained model
-full_predictions <- predict(xgb_model, newdata = dtm_matrix)
-#Full predictions seems fine. More rows bc more items.
-dim(dtm_matrix)
-length(full_predictions)
+missing_cols <- setdiff(train_vars, colnames(full_df))
 
-#Double check that we want byrow to equal False here
-predicted_classes <- max.col(matrix(full_predictions, ncol = 4, byrow = F)) - 1
+if (length(missing_cols) > 0) {
+  full_df <- bind_cols(
+    full_df,
+    missing_cols %>%
+      set_names() %>%
+      purrr::map_dfc(~ rep(0, nrow(full_df)))
+  )
+}
 
+# 4. Reorder to match training variable order
+full_df <- full_df %>% select(all_of(train_vars))
 
-original_class_labels <- levels(factor(train_data$label))
+probs <- predict(best_model, newdata = full_df, type = "prob")
 
-# Convert numeric predictions back to original class names
-predicted_labels <- factor(original_class_labels[predicted_classes + 1], levels = original_class_labels)
+full_abstracts <- full_abstracts %>%
+  bind_cols(probs)
 
-full_abstracts$predicted_label <- predicted_labels
+# Define thresholds
+loose_thresh <- 0.5   # more willing to classify
+medium_thresh <- 0.6  # balanced
+strict_thresh <- 0.8  # only classify with strong certainty
 
+# Apply each thresholding scheme
+full_abstracts <- full_abstracts %>%
+  mutate(
+    label_loose = case_when(
+      Presence >= loose_thresh ~ "Presence",
+      Absence >= loose_thresh ~ "Absence",
+      TRUE ~ "Uncertain"
+    ),
+    label_medium = case_when(
+      Presence >= medium_thresh ~ "Presence",
+      Absence >= medium_thresh ~ "Absence",
+      TRUE ~ "Uncertain"
+    ),
+    label_strict = case_when(
+      Presence >= strict_thresh ~ "Presence",
+      Absence >= strict_thresh ~ "Absence",
+      TRUE ~ "Uncertain"
+    )
+  )
 
-# Save the results with predictions and metadata
+full_abstracts %>%
+  select(label_loose, label_medium, label_strict) %>%
+  pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
+  count(threshold, label)
+
+# Save the results
 write.csv(full_abstracts, "full_predictions_with_metadata.csv", row.names = FALSE)
 
-# Optional: View summary of results. Would have to look through 600 abtracts here.
-full_abstracts %>%
-  group_by(predicted_label) %>%
-  summarize(n = n())
 
-
-#When make final output, remember to include training dataset.
-
-# Checking on labels ------------------------------------------------------
-
-
-#Careful with running the below code. Adding labels to random samples within abstract subsets
-labeled_abstracts %>%
-  filter(doi != "")%>%
-  group_by(doi, authors)%>%
-  filter(n()>1)
-#Good, no duplicates
-
-
-# Perform anti_join based on multiple columns, then filter and slice
-subsample <- full_abstracts %>%
-  filter(predicted_label == "Absence")%>%
-  relocate(c(predicted_label))%>%
-  slice_sample(n = 44)%>%
-  mutate(volume = as.integer(volume))
-
-
-write.csv(subsample, "subsample.csv")
 

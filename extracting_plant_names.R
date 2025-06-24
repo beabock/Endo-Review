@@ -13,6 +13,7 @@ library(rgbif)
 library(furrr)
 library(janitor)
 library(vroom)
+library(irlba)
 
 custom_theme <- theme_bw(base_size = 18)
 
@@ -41,9 +42,17 @@ save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...)
 #download all accepted species from backbone because their api is overwhelmbed by this code
 backbone <- vroom("gbif_backbone/Taxon.tsv", 
                   delim = "\t",
-                  col_select = c("taxonRank", "taxonomicStatus", "canonicalName", 
-                                 "kingdom", "phylum", "class", "order", 
-                                 "family", "genus"))
+                  col_select = c(
+                    "taxonRank",       # rank, to filter species
+                    "taxonomicStatus", # accepted/synonym status
+                    "canonicalName",   # scientific name
+                    "kingdom",
+                    "phylum",
+                    "class",
+                    "order",
+                    "family",
+                    "genus"          # logical extinct flag (TRUE/FALSE)
+                  ))
 
 if (!file.exists("accepted_species.rds")) {
   accepted_species <- backbone %>%
@@ -54,12 +63,57 @@ if (!file.exists("accepted_species.rds")) {
   accepted_species <- readRDS("accepted_species.rds")
 }
 
+accepted_genera <- accepted_species %>%
+  select(genus, family) %>%
+  distinct() %>%
+  filter(!is.na(genus))
+
+accepted_families <- accepted_species %>%
+  select(family) %>%
+  distinct() %>%
+  filter(!is.na(family))
+
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
   clean_names() #%>%
   #sample_n(size = 5)
 
-plan(multisession)
+abstracts_long <- labeled_abstracts %>%
+  pivot_longer(
+    cols = c(label_loose, label_medium, label_strict),
+    names_to = "threshold",
+    values_to = "predicted_label"
+  ) %>%
+  filter(predicted_label %in% c("Presence", "Absence"))
+
+#threshold_levels <- c("label_loose", "label_medium", "label_strict")
+threshold_levels <- c("label_loose") #Just doing loose for now
+
+training_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
+  clean_names() %>%
+  filter(!is.na(doi), authors != "", label %in% c("Presence", "Absence")) %>%
+  crossing(threshold = threshold_levels) %>%  # duplicate across thresholds
+  mutate(predicted_label = label,
+         volume = as.character(volume))
+
+labeled_abstracts <- bind_rows(training_abstracts, abstracts_long) %>%
+  mutate(id = row_number()) %>%
+  relocate(id)
+
+labeled_abstracts %>%
+  count(threshold, predicted_label)
+
+
+any(duplicated(labeled_abstracts$id))
+
+absences <- labeled_abstracts %>%
+  filter(threshold == "label_loose")%>%
+  filter(predicted_label == "Absence")
+
+#write.csv(absences, "absences.csv", row.names = F)
+
+# Making a pca plot rq ----------------------------------------------------
+
 
 # Function to correct capitalization (Genus uppercase, species lowercase)
 correct_capitalization <- function(name) {
@@ -78,7 +132,7 @@ correct_capitalization <- function(name) {
 #                  "kingdomKey", "phylumKey", "classKey", "orderKey", 
 #                  "familyKey", "genusKey", "speciesKey")
 
-gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
+gbif_fields <- c("canonicalName", "resolved_name", "rank", "confidence", "matchType", "kingdom", "phylum", 
                  "class", "order", "family", "genus")
 
 
@@ -87,15 +141,27 @@ gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", 
 batch_validate_species <- function(names) {
   res <- name_backbone_checklist(names)  # Batch query
   
-  # Ensure required columns exist before selecting
   required_columns <- gbif_fields
   
-  valid_data <- res %>%
-    filter(status == "ACCEPTED" & (kingdom == "Plantae" | kingdom == "Fungi") & rank != "KINGDOM") %>%
-    select(any_of(required_columns)) %>%
-    mutate(across(.cols = matches("Key$"), .fns = as.character))
+  res_cleaned <- res %>%
+    filter((kingdom %in% c("Plantae", "Fungi")) & rank != "KINGDOM") %>%
+    mutate(
+      across(.cols = matches("Key$"), .fns = as.character),
+      resolved_name = case_when(
+        status == "SYNONYM" & !is.na(acceptedUsage) ~ acceptedUsage,
+        TRUE ~ canonicalName
+      )
+    ) %>%
+    select(
+      user_supplied_name = verbatimName, 
+      status, 
+      acceptedUsageKey,
+      acceptedScientificName = acceptedUsage, 
+      resolved_name,
+      any_of(required_columns)
+    )
   
-  return(valid_data)
+  return(res_cleaned)
 }
 
 #Look into other options for premade dictionaries, in case I'm missing anything.
@@ -119,143 +185,202 @@ plant_parts_keywords <- c(
   "pedicel", "pedicels", "lateral root", "lateral roots", "taproot", "taproots", 
   "root cap", "root caps", "root hair", "root hairs", "lignin", "pith", "pericycle", 
   "pericycles", "parenchyma", "colleter", "colleters", "scutellum", "scutella", 
-  "coleoptile", "coleoptiles", "sporophyte", "sporophytes", "gametophyte", "gametophytes"
+  "coleoptile", "coleoptiles", "sporophyte", "sporophytes", "gametophyte", "gametophytes", # Reproductive Structures
+  "ovule", "ovules", "filament", "filaments", "receptacle", "receptacles",
+  "floret", "florets", "spikelet", "spikelets", "glume", "glumes", 
+  "lemma", "lemmas", "palea", "paleae",
+  
+  # Photosynthetic/Leaf-related
+  "mesophyll", "lamina", "laminae", "stipule", "stipules",
+  
+  # Anatomical/Structural Features
+  "meristem", "meristems", "epidermis", "endodermis", 
+  "trichome", "trichomes", "resin duct", "resin ducts",
+  
+  # Specialized Roots/Stems
+  "aerial root", "aerial roots", "adventitious root", "adventitious roots",
+  "haustorium", "haustoria", "tendril", "tendrils", "rhizome", "rhizomes",
+  
+  # Tissue Types
+  "sclerenchyma", "collenchyma",
+  
+  # Seed-Related
+  "hilum", "micropyle", "testa", "seed coat", "seed coats", 
+  "aleurone", "embryo", "embryos",
+  
+  # Developmental
+  "callus", "calluses", "primordium", "primordia", "apex", "apices",
+  "procambium", "protoplast", "protoplasts"
 )
 
 # Function to extract plant info
-extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup){
-  # Tokenize text
-  tokens <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
-    tokens_tolower()
+extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup) {
+  tokens_vec <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
+    tokens_tolower() %>%
+    unlist()
   
   # Extract plant parts
-  plant_parts_found <- unlist(tokens) %>%
-    .[. %in% plant_parts_keywords] %>%
-    unique()
-  
-  # Create binary indicator for plant parts
+  plant_parts_found <- tokens_vec[tokens_vec %in% plant_parts_keywords] %>% unique()
   plant_parts_indicator <- setNames(as.integer(plant_parts_keywords %in% plant_parts_found), plant_parts_keywords)
   
-  # Generate ngrams and correct capitalization
   plant_candidates <- sapply(ngrams, correct_capitalization)
-  
-  # Validate genus-species combinations using precomputed lookup
   valid_species <- valid_species_lookup %>%
-    filter(canonicalName %in% unique(plant_candidates))
+    filter(resolved_name %in% unique(plant_candidates) | canonicalName %in% unique(plant_candidates))
   
-  # Create the final output
+  # Genus/family mentions
+  genus_mentions <- unique(tokens_vec[tokens_vec %in% tolower(accepted_genera$genus)])
+  family_mentions <- unique(tokens_vec[tokens_vec %in% tolower(accepted_families$family)])
+  
+  genus_only_mention <- length(genus_mentions) > 0 && nrow(valid_species) == 0
+  family_only_mention <- length(family_mentions) > 0 && nrow(valid_species) == 0
+  
   if (nrow(valid_species) > 0) {
     valid_species <- valid_species %>%
       mutate(id = abstract_id, predicted_label = predicted_label)
     final_df <- cbind(valid_species, as.data.frame(t(plant_parts_indicator)))
+    final_df$genus_only_mention <- genus_only_mention
+    final_df$family_only_mention <- family_only_mention
   } else {
-    plant_parts_df <- cbind(
-      data.frame(
-        setNames(
-          replicate(length(gbif_fields), NA, simplify = FALSE),
-          gbif_fields
-        ),
-        id = abstract_id,
-        predicted_label = predicted_label,
-        stringsAsFactors = FALSE
-      ),
-      as.data.frame(t(plant_parts_indicator))
+    placeholder <- data.frame(
+      setNames(replicate(length(gbif_fields), NA, simplify = FALSE), gbif_fields),
+      id = abstract_id,
+      predicted_label = predicted_label,
+      stringsAsFactors = FALSE
     )
-    final_df <- plant_parts_df
+    final_df <- cbind(placeholder, as.data.frame(t(plant_parts_indicator)))
+    final_df$genus_only_mention <- genus_only_mention
+    final_df$family_only_mention <- family_only_mention
   }
+  
+  # Add genus/family mentions
+  final_df$mentioned_genera <- paste(genus_mentions, collapse = "; ")
+  final_df$mentioned_families <- paste(family_mentions, collapse = "; ")
+  
   
   return(final_df)
 }
 
-#This takes a while to run, have it go overnight.
-# Precompute ngrams and species validation
-abs <- labeled_abstracts %>%
- # filter(predicted_label == "Presence") %>%
-  mutate(ngrams = map(abstract, ~ {
-    tokens(.x, remove_punct = TRUE, remove_numbers = TRUE) %>%
-      tokens_tolower() %>%
-      tokens_ngrams(n = 2) %>%
-      unlist() %>%
-      sapply(function(name) gsub("_", " ", name))
-  }))
 
-# Collect all unique candidate names for validation
-all_candidates <- abs %>%
-  pull(ngrams) %>%
-  unlist() %>%
-  unique() %>%
-#  str_subset("^[A-Z][a-z]+ [a-z]+$") %>% 
-  sapply(correct_capitalization) #Might be causing problems.
-
-force_refresh <- FALSE #Change to TRUE if i want to clear the cache of the valid_species_lookup
-
-# Batch validate candidates. this part takes a while.
-if (file.exists("valid_species_lookup.rds") & !force_refresh) {
-  valid_species_lookup <- readRDS("valid_species_lookup.rds")
-} else {
-  valid_species_lookup <- accepted_species %>%
-    filter(canonicalName %in% all_candidates & kingdom %in% c("Plantae", "Fungi"))
-  saveRDS(valid_species_lookup, "valid_species_lookup.rds")
-}
-
-# Apply the extraction function in parallel
-plant_species_df <- future_pmap_dfr(
-  list(
-    abs$abstract,
-    abs$id,
-    abs$predicted_label,
-    abs$ngrams
-  ),
-  ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup), .options = furrr_options(seed = TRUE)
-)
-
-# View the result
-print(plant_species_df)
-
-# Save the result as a CSV
-#write.csv(plant_species_df, "plant_info_results_all.csv", row.names = FALSE)
-
+for (i in seq_along(threshold_levels)) {
+  
+  threshold_name <- threshold_levels[i]
+  message("Processing threshold: ", threshold_name)
+  
+  # Filter abstracts for the current threshold
+  abs <- labeled_abstracts %>%
+    filter(threshold == threshold_name) %>%
+    mutate(ngrams = map(abstract, ~ {
+      tokens(.x, remove_punct = TRUE, remove_numbers = TRUE) %>%
+        tokens_tolower() %>%
+        tokens_ngrams(n = 2) %>%
+        unlist() %>%
+        sapply(function(name) gsub("_", " ", name))
+    }))
+  
+  # Collect all unique candidate names
+  all_candidates <- abs %>%
+    pull(ngrams) %>%
+    unlist() %>%
+    unique() %>%
+    sapply(correct_capitalization)
+  
+  # Load or generate GBIF validation lookup
+  valid_species_lookup <- if (file.exists("valid_species_lookup.rds") && !force_refresh) {
+    valid_species_lookup <- readRDS("valid_species_lookup.rds")
+  } else {
+    valid_species_lookup <- batch_validate_species(all_candidates)
+    saveRDS(valid_species_lookup, "valid_species_lookup.rds")
+  }
+  
+  stopifnot("resolved_name" %in% names(valid_species_lookup))
+  
+  # Extract plant and fungal info in parallel
+  plant_species_df <- future_pmap_dfr(
+    list(
+      abs$abstract,
+      abs$id,
+      abs$predicted_label,
+      abs$ngrams
+    ),
+    ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup),
+    .options = furrr_options(seed = TRUE)
+  )
+  
+  # Save results with threshold in name
+  out_name <- paste0("taxa_info_results_", threshold_name, ".csv")
+  write.csv(plant_species_df, out_name, row.names = FALSE)
+  }
 
 #Can just read the above csv instead of running the above code
-
+#check that id is actually distinct.
 
 # Start here --------------------------------------------------------------
-
-plant_species_df <- read.csv("plant_info_results_all.csv")
-
-plant_species_df%>%
-  group_by(predicted_label)%>%
-  tally()
-
-
-plant_species_df %>%
-  filter(kingdom == "Plantae")%>%
-  group_by(phylum)%>%
-  tally()
-
-
+#threshold_levels <- c("label_loose", "label_medium", "label_strict")
+threshold_levels <- c("label_loose")
 plantae_key <- name_backbone(name = "Plantae")$usageKey
 
 phyla <- name_lookup(
   higherTaxonKey = plantae_key, #Might switch this to kingdom_key at some point
   rank = "PHYLUM",
+  status = "ACCEPTED",
+  isExtinct = FALSE,
   limit = 5000
 )$data
 
 expected_plant_phyla <- unique(phyla$canonicalName)
+
+plant_species_df%>%
+  filter(is.na(phylum))
+
 
 fungi_key <- name_backbone(name = "Fungi")$usageKey
 
 phyla_f <- name_lookup(
   higherTaxonKey = fungi_key,
   rank = "PHYLUM",
+  status = "ACCEPTED",
   limit = 5000
 )
 expected_fung_phyla <- unique(phyla_f$data$canonicalName)
 
-#Curious about total number of species per phylum.
+phylum_order_fungi <- sort(expected_fung_phyla)
 
-name_lookup(higherTaxonKey = 9, rank = "SPECIES", status = "ACCEPTED", limit = 0)
+# Define phylum_order once using alphabetical or desired order
+phylum_order <- sort(expected_plant_phyla)
+
+
+for (i in seq_along(threshold_levels)) {
+
+  threshold_name <- threshold_levels[i]
+  
+plant_species_df <- read.csv(paste0("taxa_info_results_", threshold_name, ".csv"))
+
+fungi_phyla_per_abstract <- plant_species_df %>%
+  filter(kingdom == "Fungi") %>%
+  group_by(id) %>%
+  summarise(phyla = list(unique(phylum)), .groups = "drop")
+
+# Step 2: Find abstracts where fungi mentioned are ONLY Glomeromycota
+only_glom_abstracts <- fungi_phyla_per_abstract %>%
+  filter(
+    map_lgl(phyla, ~ {
+      clean <- na.omit(.x)
+      length(clean) > 0 &&
+        all(clean == "Glomeromycota")
+    })
+  ) %>%
+  pull(id)
+
+plant_species_df <- plant_species_df %>%
+  filter(!id %in% only_glom_abstracts) %>%
+  filter(predicted_label %in% c("Absence", "Presence")) %>%
+  group_by(id) %>%
+  filter(!(any(predicted_label == "Presence") & all(is.na(phylum)))) %>%
+  ungroup()
+
+plant_species_df <- plant_species_df %>%
+  filter(!is.na(phylum)) 
+
 
 get_species_count <- function(phylum_key) {
   tryCatch({
@@ -280,70 +405,99 @@ phylum_species_counts_fungi <- phyla_f$data %>%
 
 
 #Plot raw first
-summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae", phylum_species_counts) {
+summarize_phyla <- function(df, expected_phyla, kingdom_filter = "Plantae", phylum_species_counts, threshold_name = "", phylum_order = NULL) {
   # Step 1: Filter the data
   df_filtered <- df %>%
     filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
     distinct(id, phylum, predicted_label)
   
   # Step 2: Count abstracts per phylum and predicted_label
-  phylum_counts <- df_filtered %>%
+  observed_counts <- df_filtered %>%
     count(phylum, predicted_label, name = "abstracts_with_label")
+  
+  full_phyla_grid <- expand_grid(
+    phylum = expected_phyla,
+    predicted_label = c("Presence", "Absence")
+  )
+  
+  phylum_counts <- full_phyla_grid %>%
+    left_join(observed_counts, by = c("phylum", "predicted_label")) %>%
+    mutate(abstracts_with_label = replace_na(abstracts_with_label, 0))
+  
+  
+  phylum_counts$phylum <- factor(phylum_counts$phylum, levels = phylum_order)
+  
+  phylum_counts$predicted_label <- factor(phylum_counts$predicted_label, levels = c("Absence", "Presence"))
   
   # Step 3: Merge with species totals
   counts_joined <- phylum_counts %>%
     left_join(phylum_species_counts %>% select(canonicalName, total_species),
               by = c("phylum" = "canonicalName")) %>%
-    mutate(ratio = abstracts_with_label / total_species)
+    mutate(ratio = abstracts_with_label / total_species)%>%
+    filter(!is.na(phylum))
+  
+  # Ensure the phylum order is consistent in the second plot
+  counts_joined$phylum <- factor(counts_joined$phylum, levels = phylum_order)
+  
+  counts_joined$predicted_label <- factor(counts_joined$predicted_label, levels = c("Absence", "Presence"))
+  
+  phylum_counts <- phylum_counts %>%
+    arrange(phylum, predicted_label) %>%
+    filter(!is.na(phylum))
   
   # Plot 1: Raw counts
-  plot_raw <- ggplot(phylum_counts, aes(x = reorder(phylum, abstracts_with_label), y = abstracts_with_label)) +
+  plot_raw <- ggplot(phylum_counts, aes(x = phylum, y = abstracts_with_label)) +
     geom_col(aes(fill = predicted_label)) +
+    # geom_text(
+    #   aes(label = abstracts_with_label),
+    #   position = position_stack(vjust = 0.5),  # centers text in stacked segment
+    #   size = 5,
+    #   show.legend = FALSE
+    # ) +
+    scale_color_manual(values = cus_pal)+
     coord_flip() +
     labs(
-      title = paste("Abstract Mentions in", kingdom_filter, "Phyla"),
+      title = paste("Abstract Mentions in", kingdom_filter, "Phyla", "(", threshold_name, ")"),
       x = "Phylum",
       y = "Abstracts Mentioned"
     ) +
-    scale_fill_manual(values = cus_pal)
+    scale_fill_manual(values = cus_pal) +
+    expand_limits(y = max(phylum_counts$abstracts_with_label) * 1.1)
   
   # Plot 2: Normalized by species richness
-  plot_ratio <- ggplot(counts_joined, aes(x = reorder(phylum, ratio), y = ratio)) +
+  plot_ratio <- ggplot(counts_joined, aes(x = phylum, y = ratio)) +
     geom_col(aes(fill = predicted_label)) +
     coord_flip() +
     labs(
-      title = paste("Abstract Mentions per Total Species in", kingdom_filter, "Phyla"),
+      title = paste("Abstract Mentions per Total Species in", kingdom_filter, "Phyla", "(", threshold_name, ")"),
       x = "Phylum",
       y = "Ratio: Abstracts / Known Species"
     ) +
-    scale_fill_manual(values = cus_pal)
+    scale_fill_manual(values = cus_pal)+
+    scale_y_continuous(labels = scales::percent_format(accuracy = 0.1))
   
-  # Option 1: return as a named list
   return(list(raw_plot = plot_raw, ratio_plot = plot_ratio))
-  
 }
 
-plant_phyla_counts <- summarize_phyla(plant_species_df, expected_plant_phyla, kingdom_filter = "Plantae", phylum_species_counts)
+plant_phyla_counts <- summarize_phyla(plant_species_df, expected_plant_phyla, kingdom_filter = "Plantae", phylum_species_counts, threshold_name = threshold_name, phylum_order = phylum_order)
 
 plant_phyla_counts$raw_plot
 plant_phyla_counts$ratio_plot
 
 
-save_plot("plant_raw_species_counts.png", plant_phyla_counts$raw_plot)
+save_plot(paste0("Results/", threshold_name, "/plant_raw_species_counts_", threshold_name, ".png"), plant_phyla_counts$raw_plot)
 
-save_plot("plant_norm_species_counts.png", plant_phyla_counts$ratio_plot)
+save_plot(paste0("Results/", threshold_name, "/plant_norm_species_counts_", threshold_name, ".png"), plant_phyla_counts$ratio_plot)
 
-
-saveRDS(plant_phyla_counts, file = "phylum_species_counts.rds")
-
-#Think about this more
 
 #now fungi
 fung_phyla_counts <- summarize_phyla(
   df = plant_species_df,              
   expected_phyla = expected_fung_phyla,
   kingdom_filter = "Fungi",
-  phylum_species_counts = phylum_species_counts_fungi
+  phylum_species_counts = phylum_species_counts_fungi,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order_fungi
 )
 
 
@@ -351,8 +505,8 @@ fung_phyla_counts$raw_plot
 fung_phyla_counts$ratio_plot
 
 
-save_plot("fung_raw_species_counts.png", fung_phyla_counts$raw_plot)
-save_plot("fung_norm_species_counts.png", fung_phyla_counts$ratio_plot)
+save_plot(paste0("Results/", threshold_name, "/fung_raw_species_counts_", threshold_name, ".png"), fung_phyla_counts$raw_plot)
+save_plot(paste0("Results/", threshold_name, "/fung_norm_species_counts_", threshold_name, ".png"), fung_phyla_counts$ratio_plot)
 
 
 
@@ -374,67 +528,49 @@ plant_parts_summary_by_label <- plant_species_df %>%
 
 # Create a named vector where each plural maps to a singular form
 plant_part_groups <- c(
-  "roots" = "root",
-  "fruits" = "fruit",
-  "leaves" = "leaf",
-  "twigs" = "twig",
-  "branches" = "branch",
-  "stems" = "stem",
-  "flowers" = "flower",
-  "shoots" = "shoot",
-  "seeds" = "seed",
-  "nodes" = "node",
-  "leaflets" = "leaflet",
-  "pistils" = "pistil",
-  "anthers" = "anther",
-  "carpels" = "carpel",
-  "sepals" = "sepal",
-  "petals" = "petal",
-  "stigmas" = "stigma",
-  "styles" = "style",
-  "ovaries" = "ovary",
-  "calyces" = "calyx",
-  "corollas" = "corolla",
-  "peduncles" = "peduncle",
-  "rachises" = "rachis",
-  "inflorescences" = "inflorescence",
-  "trunks" = "trunk",
-  "buds" = "bud",
-  "cones" = "cone",
-  "tubers" = "tuber",
-  "bulbs" = "bulb",
-  "corms" = "corm",
-  "cladodes" = "cladode",
-  "vascular bundles" = "vascular bundle",
-  "cotyledons" = "cotyledon",
-  "hypocotyls" = "hypocotyl",
-  "epicotyls" = "epicotyl",
-  "flowering stems" = "flowering stem",
-  "internodes" = "internode",
-  "leaf veins" = "leaf vein",
-  "leaf blades" = "leaf blade",
-  "palmatations" = "palmate",
-  "needles" = "needle",
-  "fascicles" = "fascicle",
-  "cuticles" = "cuticle",
-  "stomata" = "stoma",
-  "vascular cambiums" = "vascular cambium",
-  "petioles" = "petiole",
-  "axils" = "axil",
-  "phyllodes" = "phyllode",
-  "perianths" = "perianth",
-  "rachillas" = "rachilla",
-  "pedicels" = "pedicel",
-  "lateral roots" = "lateral root",
-  "taproots" = "taproot",
-  "root caps" = "root cap",
-  "root hairs" = "root hair",
-  "pericycles" = "pericycle",
-  "colleters" = "colleter",
-  "scutella" = "scutellum",
-  "coleoptiles" = "coleoptile",
-  "sporophytes" = "sporophyte",
-  "gametophytes" = "gametophyte"
+  # Common structures
+  "fruits" = "fruit", "roots" = "root", "rhizoids" = "rhizoid", "leaves" = "leaf",
+  "twigs" = "twig", "branches" = "branch", "stems" = "stem", "flowers" = "flower",
+  "shoots" = "shoot", "seeds" = "seed", "nodes" = "node", "leaflets" = "leaflet",
+  "pistils" = "pistil", "anthers" = "anther", "carpels" = "carpel", "sepals" = "sepal",
+  "petals" = "petal", "stigmas" = "stigma", "styles" = "style", "ovaries" = "ovary",
+  "calyces" = "calyx", "corollas" = "corolla", "peduncles" = "peduncle", "rachises" = "rachis",
+  "inflorescences" = "inflorescence", "trunks" = "trunk", "buds" = "bud", "cones" = "cone",
+  "tubers" = "tuber", "bulbs" = "bulb", "corms" = "corm", "cladodes" = "cladode",
+  "vascular bundles" = "vascular bundle", "cotyledons" = "cotyledon", "hypocotyls" = "hypocotyl",
+  "epicotyls" = "epicotyl", "flowering stems" = "flowering stem", "internodes" = "internode",
+  "leaf veins" = "leaf vein", "leaf blades" = "leaf blade", "palmatations" = "palmate",
+  "needles" = "needle", "fascicles" = "fascicle", "cuticles" = "cuticle", "stomata" = "stoma",
+  "vascular cambiums" = "vascular cambium", "petioles" = "petiole", "axils" = "axil",
+  "phyllodes" = "phyllode", "perianths" = "perianth", "rachillas" = "rachilla",
+  "pedicels" = "pedicel", "lateral roots" = "lateral root", "taproots" = "taproot",
+  "root caps" = "root cap", "root hairs" = "root hair", "pericycles" = "pericycle",
+  "colleters" = "colleter", "scutella" = "scutellum", "coleoptiles" = "coleoptile",
+  "sporophytes" = "sporophyte", "gametophytes" = "gametophyte",
+  
+  # Reproductive
+  "ovules" = "ovule", "filaments" = "filament", "receptacles" = "receptacle",
+  "florets" = "floret", "spikelets" = "spikelet", "glumes" = "glume", "lemmas" = "lemma",
+  "paleae" = "palea",
+  
+  # Photosynthetic
+  "laminae" = "lamina", "stipules" = "stipule",
+  
+  # Anatomical
+  "meristems" = "meristem", "trichomes" = "trichome", "resin ducts" = "resin duct",
+  
+  # Specialized roots/stems
+  "aerial roots" = "aerial root", "adventitious roots" = "adventitious root",
+  "haustoria" = "haustorium", "tendrils" = "tendril", "rhizomes" = "rhizome",
+  
+  # Seed-related
+  "seed coats" = "seed coat", "embryos" = "embryo",
+  
+  # Developmental
+  "calluses" = "callus", "primordia" = "primordium", "apices" = "apex",
+  
+  # Protoplasmic
+  "protoplasts" = "protoplast"
 )
 
 plant_parts_grouped <- plant_parts_summary_by_label %>%
@@ -445,13 +581,31 @@ plant_parts_grouped <- plant_parts_summary_by_label %>%
   summarise(n_abstracts = sum(n_abstracts), .groups = "drop")
 
 
-saveRDS(plant_parts_grouped, file = "plant_parts_grouped.rds")
-
-
 top_parts <- plant_parts_grouped %>%
   group_by(grouped_part) %>%
   summarise(total = sum(n_abstracts)) %>%
   filter(total > 75)
+
+bottom_parts <- plant_parts_grouped %>%
+  group_by(grouped_part) %>%
+  summarise(total = sum(n_abstracts)) %>%
+  filter(total < 5)
+
+plant_parts_plot_bottom <- plant_parts_grouped %>%
+  filter(grouped_part %in% bottom_parts$grouped_part) %>%
+  ggplot(aes(x = reorder(grouped_part, n_abstracts), y = n_abstracts, fill = predicted_label)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = paste0("Least Represented Plant Parts (Grouped Singular/Plural) (", threshold_name, ")"),
+    x = "Plant Part",
+    y = "Number of Abstracts"
+  )+
+  scale_fill_manual(values = cus_pal)
+
+
+
+save_plot(paste0("Results/", threshold_name, "/plant_parts_bottom_", threshold_name, ".png"), plant_parts_plot_bottom)
 
 plant_parts_plot <- plant_parts_grouped %>%
   filter(grouped_part %in% top_parts$grouped_part) %>%
@@ -459,22 +613,143 @@ plant_parts_plot <- plant_parts_grouped %>%
   geom_col() +
   coord_flip() +
   labs(
-    title = "Mentions of Plant Parts (Grouped Singular/Plural)",
+    title = paste0("Mentions of Plant Parts (Grouped Singular/Plural) (", threshold_name, ")"),
     x = "Plant Part",
     y = "Number of Abstracts"
   )+
   scale_fill_manual(values = cus_pal)
 
-save_plot("plant_parts.png", plant_parts_plot)
+save_plot(paste0("Results/", threshold_name, "/plant_parts_", threshold_name, ".png"), plant_parts_plot)
 
-# Outputs -----------------------------------------------------------------
+# Plant families now ------------------------------------------------------
 
-phylum_species_counts <- readRDS("phylum_species_counts.rds")
+plant_families_backbone <- backbone %>%
+  filter(
+    kingdom == "Plantae",
+    taxonRank == "family",
+    taxonomicStatus == "accepted",
+    !is.na(phylum),
+    !is.na(family) #Could add a filter here for extinct if I want to
+  ) %>%
+  distinct(phylum, family)
 
-phylum_species_counts
+total_families_per_phylum <- plant_families_backbone %>%
+  group_by(phylum) %>%
+  summarise(total_families = n_distinct(family), .groups = "drop")
 
-plant_parts_grouped <- readRDS("plant_parts_grouped.rds")
+# Extract families present in your dataset
+dataset_families <- plant_species_df %>%
+  filter(kingdom == "Plantae", !is.na(phylum), !is.na(family)) %>%
+  distinct(phylum, family)
 
-#think about if glomeromycota come up with the root plant part
+# Count dataset families per phylum (observed)
+families_in_dataset <- dataset_families %>%
+  group_by(phylum) %>%
+  summarise(n_families_found = n_distinct(family), .groups = "drop")
 
-#Create a list of all plant species and see what's missing. 
+# Join and calculate missing families
+families_coverage <- total_families_per_phylum %>%
+  left_join(families_in_dataset, by = "phylum") %>%
+  mutate(
+    n_families_found = replace_na(n_families_found, 0),
+    n_families_missing = total_families - n_families_found
+  ) %>%
+  arrange(phylum)
+
+families_coverage$phylum <- factor(families_coverage$phylum, levels = phylum_order)
+
+# Output coverage summary
+print(families_coverage)
+write.csv(families_coverage, paste0("Results/", threshold_name, "/plant_families_coverage_", threshold_name, ".csv"), row.names = FALSE)
+
+# Optional: list of families present in backbone but missing from dataset
+missing_families <- plant_families_backbone %>%
+  anti_join(dataset_families, by = c("phylum", "family")) %>%
+  arrange(phylum, family)
+
+missing_fams_tracheo <- plant_families_backbone %>%
+  anti_join(dataset_families, by = c("phylum", "family")) %>%
+  filter(phylum == "Tracheophyta")%>%
+  arrange(phylum, family)
+
+print(missing_families)
+write.csv(missing_families, paste0("Results/", threshold_name, "/missing_plant_families_", threshold_name, ".csv"), row.names = FALSE)
+
+write.csv(missing_fams_tracheo, paste0("Results/", threshold_name, "/tracheo_missing_plant_families_", threshold_name, ".csv"), row.names = FALSE)
+
+# Prepare for plotting
+families_long <- families_coverage %>%
+  filter(!is.na(phylum))%>%
+  select(phylum, n_families_found, n_families_missing) %>%
+  pivot_longer(cols = c(n_families_found, n_families_missing),
+               names_to = "status",
+               values_to = "count") %>%
+  mutate(
+    status = recode(status,
+                    n_families_found = "Found",
+                    n_families_missing = "Missing"),
+    phylum = factor(phylum, levels = phylum_order)  # preserve order
+  )
+
+
+family_pal <- c(
+  "Found" = "#A1C181",   # calm sage green — presence, success
+  "Missing" = "#C97E7E"  # dusty rose — subtle red tone for absence
+)
+
+
+# Plot: Found vs Missing families by phylum
+fams <- ggplot(families_long, aes(x = phylum, y = count, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = paste0("Plant Family Coverage (", threshold_name, ")"),
+    x = "Phylum",
+    y = "Number of Families",
+    fill = "Coverage Status"
+  ) +
+  scale_fill_manual(values = family_pal)
+
+
+save_plot(paste0("Results/", threshold_name, "/families_missing_present_", threshold_name, ".png"), fams)
+
+families_coverage_prop <- families_coverage %>%
+  filter(!is.na(phylum))%>%
+  mutate(
+    prop_found = n_families_found / total_families,
+    prop_missing = n_families_missing / total_families
+  )
+
+families_long_prop <- families_coverage_prop %>%
+  select(phylum, prop_found, prop_missing) %>%
+  pivot_longer(cols = c(prop_found, prop_missing),
+               names_to = "status",
+               values_to = "proportion") %>%
+  mutate(
+    status = recode(status,
+                    prop_found = "Found",
+                    prop_missing = "Missing"),
+    phylum = factor(phylum, levels = phylum_order)
+  )
+
+fams_prop <- ggplot(families_long_prop, aes(x = phylum, y = proportion, fill = status)) +
+  geom_col() +
+  geom_text(
+    aes(label = scales::percent(proportion, accuracy = 1)),
+    position = position_stack(vjust = 0.5),
+    size = 4,
+    color = "black"
+  ) +
+  coord_flip() +
+  labs(
+    title = paste0("Proportional Plant Family Coverage (", threshold_name, ")"),
+    x = "Phylum",
+    y = "Proportion of Families",
+    fill = "Coverage Status"
+  ) +
+  scale_fill_manual(values = family_pal) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+
+save_plot(paste0("Results/", threshold_name, "/families_missing_present_prop_", threshold_name, ".png"), fams_prop)
+
+} #End loop
