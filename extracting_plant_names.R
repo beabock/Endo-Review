@@ -100,11 +100,6 @@ labeled_abstracts <- bind_rows(training_abstracts, abstracts_long) %>%
   mutate(id = row_number()) %>%
   relocate(id)
 
-labeled_abstracts %>%
-  count(threshold, predicted_label)
-
-
-any(duplicated(labeled_abstracts$id))
 
 absences <- labeled_abstracts %>%
   filter(threshold == "label_loose")%>%
@@ -113,57 +108,6 @@ absences <- labeled_abstracts %>%
 #write.csv(absences, "absences.csv", row.names = F)
 
 # Making a pca plot rq ----------------------------------------------------
-
-
-# Function to correct capitalization (Genus uppercase, species lowercase)
-correct_capitalization <- function(name) {
-  words <- unlist(strsplit(name, " "))
-  if (length(words) == 2) {
-    words[1] <- paste0(toupper(substring(words[1], 1, 1)), tolower(substring(words[1], 2)))
-    words[2] <- tolower(words[2])
-    return(paste(words, collapse = " "))
-  }
-  return(name)
-}
-
-#Might need to go back above to include all of these cols. 
-# gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
-#                  "class", "order", "family", "genus", "species", 
-#                  "kingdomKey", "phylumKey", "classKey", "orderKey", 
-#                  "familyKey", "genusKey", "speciesKey")
-
-gbif_fields <- c("canonicalName", "resolved_name", "rank", "confidence", "matchType", "kingdom", "phylum", 
-                 "class", "order", "family", "genus")
-
-
-
-# Function to query GBIF and get additional fields (batch processing)
-batch_validate_species <- function(names) {
-  res <- name_backbone_checklist(names)  # Batch query
-  
-  required_columns <- gbif_fields
-  
-  res_cleaned <- res %>%
-    filter((kingdom %in% c("Plantae", "Fungi")) & rank != "KINGDOM") %>%
-    mutate(
-      across(.cols = matches("Key$"), .fns = as.character),
-      resolved_name = case_when(
-        status == "SYNONYM" & !is.na(acceptedUsage) ~ acceptedUsage,
-        TRUE ~ canonicalName
-      )
-    ) %>%
-    select(
-      user_supplied_name = verbatimName, 
-      status, 
-      acceptedUsageKey,
-      acceptedScientificName = acceptedUsage, 
-      resolved_name,
-      any_of(required_columns)
-    )
-  
-  return(res_cleaned)
-}
-
 #Look into other options for premade dictionaries, in case I'm missing anything.
 plant_parts_keywords <- c(
   "fruit", "fruits", "root", "roots", "rhizoid", "rhizoids", "leaf", "leaves", 
@@ -213,6 +157,44 @@ plant_parts_keywords <- c(
   "procambium", "protoplast", "protoplasts"
 )
 
+# Function to correct capitalization (Genus uppercase, species lowercase)
+correct_capitalization <- function(name) {
+  words <- unlist(strsplit(name, " "))
+  if (length(words) == 2) {
+    words[1] <- paste0(toupper(substring(words[1], 1, 1)), tolower(substring(words[1], 2)))
+    words[2] <- tolower(words[2])
+    return(paste(words, collapse = " "))
+  }
+  return(name)
+}
+
+#Might need to go back above to include all of these cols. 
+# gbif_fields <- c("canonicalName", "rank", "confidence", "matchType", "kingdom", "phylum", 
+#                  "class", "order", "family", "genus", "species", 
+#                  "kingdomKey", "phylumKey", "classKey", "orderKey", 
+#                  "familyKey", "genusKey", "speciesKey")
+
+gbif_fields <- c("canonicalName", "resolved_name", "rank", "confidence", "matchType", "kingdom", "phylum", 
+                 "class", "order", "family", "genus")
+
+
+
+batch_validate_species <- function(names, backbone_df = accepted_species) {
+  names <- unique(names)
+  names <- sapply(names, correct_capitalization)
+  
+  validated <- tibble(user_supplied_name = names) %>%
+    left_join(backbone_df, by = c("user_supplied_name" = "canonicalName")) %>%
+    mutate(
+      resolved_name = user_supplied_name,
+      status = ifelse(!is.na(kingdom), "ACCEPTED", "NO_MATCH"),
+      acceptedScientificName = ifelse(status == "ACCEPTED", user_supplied_name, NA)
+    )
+  
+  return(validated)
+}
+
+
 # Function to extract plant info
 extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup) {
   tokens_vec <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
@@ -225,7 +207,7 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
   
   plant_candidates <- sapply(ngrams, correct_capitalization)
   valid_species <- valid_species_lookup %>%
-    filter(resolved_name %in% unique(plant_candidates) | canonicalName %in% unique(plant_candidates))
+    filter(user_supplied_name %in% unique(plant_candidates))
   
   # Genus/family mentions
   genus_mentions <- unique(tokens_vec[tokens_vec %in% tolower(accepted_genera$genus)])
@@ -247,6 +229,39 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
       predicted_label = predicted_label,
       stringsAsFactors = FALSE
     )
+    
+    # Try to fill in using genus mention
+    if (genus_only_mention && length(genus_mentions) > 0) {
+      genus_info <- accepted_genera %>%
+        filter(tolower(genus) %in% genus_mentions) %>%
+        left_join(accepted_species, by = "genus") %>%
+        slice(1)  # Take the first match
+      
+      if (nrow(genus_info) > 0) {
+        for (field in gbif_fields) {
+          if (field %in% names(genus_info)) {
+            placeholder[[field]] <- genus_info[[field]][1]
+          }
+        }
+      }
+    }
+    
+    # Try to fill in using family mention (if no genus info was found)
+    if (family_only_mention && is.na(placeholder$phylum) && length(family_mentions) > 0) {
+      family_info <- accepted_families %>%
+        filter(tolower(family) %in% family_mentions) %>%
+        left_join(accepted_species, by = "family") %>%
+        slice(1)
+      
+      if (nrow(family_info) > 0) {
+        for (field in gbif_fields) {
+          if (field %in% names(family_info)) {
+            placeholder[[field]] <- family_info[[field]][1]
+          }
+        }
+      }
+    }
+    
     final_df <- cbind(placeholder, as.data.frame(t(plant_parts_indicator)))
     final_df$genus_only_mention <- genus_only_mention
     final_df$family_only_mention <- family_only_mention
@@ -260,6 +275,8 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
   return(final_df)
 }
 
+
+force_refresh = F
 
 for (i in seq_along(threshold_levels)) {
   
@@ -285,14 +302,17 @@ for (i in seq_along(threshold_levels)) {
     sapply(correct_capitalization)
   
   # Load or generate GBIF validation lookup
-  valid_species_lookup <- if (file.exists("valid_species_lookup.rds") && !force_refresh) {
+  if (file.exists("valid_species_lookup.rds") && !force_refresh) {
     valid_species_lookup <- readRDS("valid_species_lookup.rds")
   } else {
     valid_species_lookup <- batch_validate_species(all_candidates)
     saveRDS(valid_species_lookup, "valid_species_lookup.rds")
   }
   
-  stopifnot("resolved_name" %in% names(valid_species_lookup))
+  # Ensure column exists
+  if (!"resolved_name" %in% names(valid_species_lookup)) {
+    stop("The 'resolved_name' column is missing from valid_species_lookup. Check batch_validate_species() output.")
+  }
   
   # Extract plant and fungal info in parallel
   plant_species_df <- future_pmap_dfr(
@@ -672,7 +692,8 @@ missing_fams_tracheo <- plant_families_backbone %>%
   filter(phylum == "Tracheophyta")%>%
   arrange(phylum, family)
 
-print(missing_families)
+print(missing_fams_tracheo)
+
 write.csv(missing_families, paste0("Results/", threshold_name, "/missing_plant_families_", threshold_name, ".csv"), row.names = FALSE)
 
 write.csv(missing_fams_tracheo, paste0("Results/", threshold_name, "/tracheo_missing_plant_families_", threshold_name, ".csv"), row.names = FALSE)
@@ -710,6 +731,7 @@ fams <- ggplot(families_long, aes(x = phylum, y = count, fill = status)) +
   ) +
   scale_fill_manual(values = family_pal)
 
+fams
 
 save_plot(paste0("Results/", threshold_name, "/families_missing_present_", threshold_name, ".png"), fams)
 
@@ -749,6 +771,8 @@ fams_prop <- ggplot(families_long_prop, aes(x = phylum, y = proportion, fill = s
   ) +
   scale_fill_manual(values = family_pal) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+
+fams_prop
 
 save_plot(paste0("Results/", threshold_name, "/families_missing_present_prop_", threshold_name, ".png"), fams_prop)
 

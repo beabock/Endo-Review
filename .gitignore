@@ -13,3 +13,6 @@ All_Abstracts-11-18-24/savedrecs.txt
 All_Abstracts-11-18-24/scopus.csv
 gbif_backbone
 dataset
+Results
+valid_species_lookup.rds
+taxa_info_results_label_loose.csv
