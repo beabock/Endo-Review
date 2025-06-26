@@ -35,6 +35,105 @@ save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...)
   ggsave(filename, plot, width = width, height = height, units = units, ...)
 }
 
+
+
+# Plant parts -------------------------------------------------------------
+
+plant_parts_keywords <- c(
+  "fruit", "fruits", "root", "roots", "rhizoid", "rhizoids", "leaf", "leaves", 
+  "twig", "twigs", "branch", "branches", "bark", "stems", "stem", "flowers", 
+  "flower", "shoot", "shoots", "seed", "seeds", "node", "nodes", "leaflet", 
+  "leaflets", "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
+  "sepal", "sepals", "petal", "petals", "stigma", "stigmas", "style", "styles", 
+  "ovary", "ovaries", "calyx", "calyces", "corolla", "corollas", "peduncle", 
+  "peduncles", "rachis", "rachises", "inflorescence", "inflorescences", "trunk", 
+  "trunks", "cork", "buds", "bud", "pollen", "cones", "cone", "tuber", "tubers", 
+  "bulb", "bulbs", "corm", "corms", "cladode", "cladodes", "vascular bundle", 
+  "vascular bundles", "xylem", "phloem", "cortex", "cortices", "endosperm", 
+  "cotyledon", "cotyledons", "hypocotyl", "hypocotyls", "epicotyl", "epicotyls", 
+  "flowering stem", "flowering stems", "internode", "internodes", "leaf vein", 
+  "leaf veins", "leaf blade", "leaf blades", "palmate", "palmatations", "needle", 
+  "needles", "fascicle", "fascicles", "cuticle", "cuticles", "stomata", "stoma", 
+  "vascular cambium", "vascular cambiums", "petiole", "petioles", "axil", "axils", 
+  "phyllode", "phyllodes", "perianth", "perianths", "rachilla", "rachillas", 
+  "pedicel", "pedicels", "lateral root", "lateral roots", "taproot", "taproots", 
+  "root cap", "root caps", "root hair", "root hairs", "lignin", "pith", "pericycle", 
+  "pericycles", "parenchyma", "colleter", "colleters", "scutellum", "scutella", 
+  "coleoptile", "coleoptiles", "sporophyte", "sporophytes", "gametophyte", "gametophytes", # Reproductive Structures
+  "ovule", "ovules", "filament", "filaments", "receptacle", "receptacles",
+  "floret", "florets", "spikelet", "spikelets", "glume", "glumes", 
+  "lemma", "lemmas", "palea", "paleae",
+  
+  # Photosynthetic/Leaf-related
+  "mesophyll", "lamina", "laminae", "stipule", "stipules",
+  
+  # Anatomical/Structural Features
+  "meristem", "meristems", "epidermis", "endodermis", 
+  "trichome", "trichomes", "resin duct", "resin ducts",
+  
+  # Specialized Roots/Stems
+  "aerial root", "aerial roots", "adventitious root", "adventitious roots",
+  "haustorium", "haustoria", "tendril", "tendrils", "rhizome", "rhizomes",
+  
+  # Tissue Types
+  "sclerenchyma", "collenchyma",
+  
+  # Seed-Related
+  "hilum", "micropyle", "testa", "seed coat", "seed coats", 
+  "aleurone", "embryo", "embryos",
+  
+  # Developmental
+  "callus", "calluses", "primordium", "primordia", "apex", "apices",
+  "procambium", "protoplast", "protoplasts"
+)
+
+# Create a named vector where each plural maps to a singular form
+plant_part_groups <- c(
+  # Common structures
+  "fruits" = "fruit", "roots" = "root", "rhizoids" = "rhizoid", "leaves" = "leaf",
+  "twigs" = "twig", "branches" = "branch", "stems" = "stem", "flowers" = "flower",
+  "shoots" = "shoot", "seeds" = "seed", "nodes" = "node", "leaflets" = "leaflet",
+  "pistils" = "pistil", "anthers" = "anther", "carpels" = "carpel", "sepals" = "sepal",
+  "petals" = "petal", "stigmas" = "stigma", "styles" = "style", "ovaries" = "ovary",
+  "calyces" = "calyx", "corollas" = "corolla", "peduncles" = "peduncle", "rachises" = "rachis",
+  "inflorescences" = "inflorescence", "trunks" = "trunk", "buds" = "bud", "cones" = "cone",
+  "tubers" = "tuber", "bulbs" = "bulb", "corms" = "corm", "cladodes" = "cladode",
+  "vascular bundles" = "vascular bundle", "cotyledons" = "cotyledon", "hypocotyls" = "hypocotyl",
+  "epicotyls" = "epicotyl", "flowering stems" = "flowering stem", "internodes" = "internode",
+  "leaf veins" = "leaf vein", "leaf blades" = "leaf blade", "palmatations" = "palmate",
+  "needles" = "needle", "fascicles" = "fascicle", "cuticles" = "cuticle", "stomata" = "stoma",
+  "vascular cambiums" = "vascular cambium", "petioles" = "petiole", "axils" = "axil",
+  "phyllodes" = "phyllode", "perianths" = "perianth", "rachillas" = "rachilla",
+  "pedicels" = "pedicel", "lateral roots" = "lateral root", "taproots" = "taproot",
+  "root caps" = "root cap", "root hairs" = "root hair", "pericycles" = "pericycle",
+  "colleters" = "colleter", "scutella" = "scutellum", "coleoptiles" = "coleoptile",
+  "sporophytes" = "sporophyte", "gametophytes" = "gametophyte",
+  
+  # Reproductive
+  "ovules" = "ovule", "filaments" = "filament", "receptacles" = "receptacle",
+  "florets" = "floret", "spikelets" = "spikelet", "glumes" = "glume", "lemmas" = "lemma",
+  "paleae" = "palea",
+  
+  # Photosynthetic
+  "laminae" = "lamina", "stipules" = "stipule",
+  
+  # Anatomical
+  "meristems" = "meristem", "trichomes" = "trichome", "resin ducts" = "resin duct",
+  
+  # Specialized roots/stems
+  "aerial roots" = "aerial root", "adventitious roots" = "adventitious root",
+  "haustoria" = "haustorium", "tendrils" = "tendril", "rhizomes" = "rhizome",
+  
+  # Seed-related
+  "seed coats" = "seed coat", "embryos" = "embryo",
+  
+  # Developmental
+  "calluses" = "callus", "primordia" = "primordium", "apices" = "apex",
+  
+  # Protoplasmic
+  "protoplasts" = "protoplast"
+)
+
 # Code --------------------------------------------------------------------
 
 
@@ -104,8 +203,7 @@ if (!file.exists("genera.rds")) {
 
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
-  clean_names() #%>%
-  #sample_n(size = 5)
+  clean_names() 
 
 abstracts_long <- labeled_abstracts %>%
   pivot_longer(
@@ -136,65 +234,16 @@ absences <- labeled_abstracts %>%
 
 #write.csv(absences, "absences.csv", row.names = F)
 
-# Making a pca plot rq ----------------------------------------------------
-#Look into other options for premade dictionaries, in case I'm missing anything.
-plant_parts_keywords <- c(
-  "fruit", "fruits", "root", "roots", "rhizoid", "rhizoids", "leaf", "leaves", 
-  "twig", "twigs", "branch", "branches", "bark", "stems", "stem", "flowers", 
-  "flower", "shoot", "shoots", "seed", "seeds", "node", "nodes", "leaflet", 
-  "leaflets", "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
-  "sepal", "sepals", "petal", "petals", "stigma", "stigmas", "style", "styles", 
-  "ovary", "ovaries", "calyx", "calyces", "corolla", "corollas", "peduncle", 
-  "peduncles", "rachis", "rachises", "inflorescence", "inflorescences", "trunk", 
-  "trunks", "cork", "buds", "bud", "pollen", "cones", "cone", "tuber", "tubers", 
-  "bulb", "bulbs", "corm", "corms", "cladode", "cladodes", "vascular bundle", 
-  "vascular bundles", "xylem", "phloem", "cortex", "cortices", "endosperm", 
-  "cotyledon", "cotyledons", "hypocotyl", "hypocotyls", "epicotyl", "epicotyls", 
-  "flowering stem", "flowering stems", "internode", "internodes", "leaf vein", 
-  "leaf veins", "leaf blade", "leaf blades", "palmate", "palmatations", "needle", 
-  "needles", "fascicle", "fascicles", "cuticle", "cuticles", "stomata", "stoma", 
-  "vascular cambium", "vascular cambiums", "petiole", "petioles", "axil", "axils", 
-  "phyllode", "phyllodes", "perianth", "perianths", "rachilla", "rachillas", 
-  "pedicel", "pedicels", "lateral root", "lateral roots", "taproot", "taproots", 
-  "root cap", "root caps", "root hair", "root hairs", "lignin", "pith", "pericycle", 
-  "pericycles", "parenchyma", "colleter", "colleters", "scutellum", "scutella", 
-  "coleoptile", "coleoptiles", "sporophyte", "sporophytes", "gametophyte", "gametophytes", # Reproductive Structures
-  "ovule", "ovules", "filament", "filaments", "receptacle", "receptacles",
-  "floret", "florets", "spikelet", "spikelets", "glume", "glumes", 
-  "lemma", "lemmas", "palea", "paleae",
-  
-  # Photosynthetic/Leaf-related
-  "mesophyll", "lamina", "laminae", "stipule", "stipules",
-  
-  # Anatomical/Structural Features
-  "meristem", "meristems", "epidermis", "endodermis", 
-  "trichome", "trichomes", "resin duct", "resin ducts",
-  
-  # Specialized Roots/Stems
-  "aerial root", "aerial roots", "adventitious root", "adventitious roots",
-  "haustorium", "haustoria", "tendril", "tendrils", "rhizome", "rhizomes",
-  
-  # Tissue Types
-  "sclerenchyma", "collenchyma",
-  
-  # Seed-Related
-  "hilum", "micropyle", "testa", "seed coat", "seed coats", 
-  "aleurone", "embryo", "embryos",
-  
-  # Developmental
-  "callus", "calluses", "primordium", "primordia", "apex", "apices",
-  "procambium", "protoplast", "protoplasts"
-)
 
 # Function to correct capitalization (Genus uppercase, species lowercase)
 correct_capitalization <- function(name) {
-  words <- unlist(strsplit(name, " "))
-  if (length(words) == 2) {
-    words[1] <- paste0(toupper(substring(words[1], 1, 1)), tolower(substring(words[1], 2)))
-    words[2] <- tolower(words[2])
-    return(paste(words, collapse = " "))
-  }
-  return(name)
+  words <- strsplit(name, " ")[[1]]
+  words <- tolower(words)
+  
+  # Capitalize first word (genus), leave others lowercase
+  words[1] <- str_to_title(words[1])
+  
+  paste(words, collapse = " ")
 }
 
 #Might need to go back above to include all of these cols. 
@@ -203,12 +252,27 @@ correct_capitalization <- function(name) {
 #                  "kingdomKey", "phylumKey", "classKey", "orderKey", 
 #                  "familyKey", "genusKey", "speciesKey")
 
-gbif_fields <- c("canonicalName", "resolved_name", "rank", "confidence", "matchType", "kingdom", "phylum", 
-                 "class", "order", "family", "genus")
+gbif_fields <- c("taxonRank",       # rank, to filter species
+                 "taxonomicStatus", # accepted/synonym status
+                 "canonicalName",   # scientific name
+                 "genericName", #new
+                 #   "scientificName", #scientific has more info than canonical name. don't use
+                 "acceptedNameUsageID",
+                 "originalNameUsageID",
+                 "nomenclaturalStatus",
+                 "taxonID",
+                 "parentNameUsageID",
+                 
+                 "kingdom",
+                 "phylum",
+                 "class",
+                 "order",
+                 "family",
+                 "genus" )
 
 #valid_species_lookup <- batch_validate_species(all_candidates)
 
-test <- all_candidates[1:20] #Whats up with the quotes around things?
+#test <- all_candidates[1:20] #Whats up with the quotes around things?
 
 #Is parentName ID the thing to look at?
 
@@ -223,35 +287,77 @@ test <- species %>%
 
 #Okay got it. If something is a synonym, the value in acceptedNameID will match the taxonID in the accepted column. They will share parentNameUsageIDs.
 
-accepted_names <- species %>%
-  filter(taxonomicStatus == "accepted")%>%
+accepted_names <- backbone %>%
+  filter(taxonomicStatus == "accepted") %>%
   select(-acceptedNameUsageID)
 
-batch_validate_species <- function(names, backbone_df = species) {
+
+#valid_species_lookup <- batch_validate_species(all_candidates)
+#saveRDS(valid_species_lookup, "valid_species_lookup.rds")
+batch_validate_names <- function(names, backbone_df = backbone, genera_raw = genera, families_raw = families) {
   names <- unique(names)
   
-  # Step 1: Direct matches
-  validated <- tibble(user_supplied_name = names) %>%
-    left_join(backbone_df, by = c("user_supplied_name" = "canonicalName")) %>%
-    rename(canonicalName = user_supplied_name)
+    # Prepare corrected genera
   
-  # Step 2: Pull synonyms and connect to accepted names
+  accepted_genera <- genera_raw %>% filter(taxonomicStatus == "accepted")
+  synonym_genera <- genera_raw %>% filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID))
+  
+  genera_corrected <- accepted_genera %>%
+    mutate(canonicalName = canonicalName) %>%
+    bind_rows(
+      synonym_genera %>%
+        left_join(
+          accepted_genera %>% select(accepted_genus = canonicalName, taxonID),
+          by = c("acceptedNameUsageID" = "taxonID")
+        ) %>%
+        mutate(canonicalName = coalesce(accepted_genus, canonicalName))
+    ) %>%
+    select(-accepted_genus)
+  
+
+  # Prepare corrected families
+ 
+  accepted_families <- families_raw %>% filter(taxonomicStatus == "accepted")
+  synonym_families <- families_raw %>% filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID))
+  
+  families_corrected <- accepted_families %>%
+    mutate(canonicalName = canonicalName) %>%
+    bind_rows(
+      synonym_families %>%
+        left_join(
+          accepted_families %>% select(accepted_family = canonicalName, taxonID),
+          by = c("acceptedNameUsageID" = "taxonID")
+        ) %>%
+        mutate(canonicalName = coalesce(accepted_family, canonicalName))
+    ) %>%
+    select(-accepted_family)
+  
+ 
+  # Step 1: Direct species matches
+
+  validated <- tibble(user_supplied_name = names) %>%
+    left_join(backbone_df, by = c("user_supplied_name" = "canonicalName"), keep = TRUE)
+  
+  accepted_names <- backbone_df %>%
+    filter(taxonomicStatus == "accepted") %>%
+    select(taxonID, canonicalName) %>%
+    rename(canonicalName_accepted = canonicalName)
+  
   syns <- validated %>%
     filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID)) %>%
     left_join(
       accepted_names,
-      by = c("acceptedNameUsageID" = "taxonID", "parentNameUsageID"),
-      suffix = c("", "_accepted")
+      by = c("acceptedNameUsageID" = "taxonID")
     ) %>%
-    mutate(canonicalName = canonicalName_accepted) %>%
-    select(-ends_with("_accepted"))
+    mutate(
+      canonicalName = coalesce(canonicalName_accepted, user_supplied_name)
+    ) %>%
+    select(-canonicalName_accepted)
   
-  # Step 3: Keep accepted names as-is
   reals <- validated %>%
     filter(taxonomicStatus == "accepted")
   
-  # Step 4: Combine and finalize
-  final <- bind_rows(syns, reals) %>%
+  resolved <- bind_rows(syns, reals) %>%
     filter(!is.na(canonicalName)) %>%
     mutate(
       resolved_name = canonicalName,
@@ -259,8 +365,38 @@ batch_validate_species <- function(names, backbone_df = species) {
       acceptedScientificName = ifelse(status == "ACCEPTED", canonicalName, NA)
     )
   
+ 
+  # Step 2: Higher-level fallback matches
+
+  unresolved <- tibble(user_supplied_name = names) %>%
+    filter(!user_supplied_name %in% resolved$user_supplied_name) %>%
+    mutate(first_word = word(user_supplied_name, 1))
+  
+  genus_matches <- unresolved %>%
+    inner_join(genera_corrected, by = c("first_word" = "canonicalName"))
+  
+  family_matches <- unresolved %>%
+    inner_join(families_corrected, by = c("first_word" = "canonicalName"))
+  
+  fallback <- bind_rows(genus_matches, family_matches) %>%
+    mutate(
+      canonicalName = first_word,
+      resolved_name = first_word,
+      status = "HIGHER_RANK_MATCH",
+      acceptedScientificName = NA
+    )
+  
+
+  # Final output
+
+  final <- bind_rows(resolved, fallback) %>%
+    distinct(canonicalName, .keep_all = TRUE)
+  
   return(final)
 }
+
+
+
 
 
 
@@ -273,92 +409,110 @@ batch_validate_species <- function(names, backbone_df = species) {
 # ),
 # ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup),
 
-# Function to extract plant info
 extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup) {
-  # Tokenize abstract
+  
   tokens_vec <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
     tokens_tolower() %>%
     unlist()
   
-  # Identify plant part mentions
+  # Detect plant parts
   plant_parts_found <- unique(tokens_vec[tokens_vec %in% plant_parts_keywords])
   plant_parts_indicator <- setNames(as.integer(plant_parts_keywords %in% plant_parts_found), plant_parts_keywords)
   
-  # Candidate species names
+  # Candidate ngrams with corrected capitalization
   plant_candidates <- sapply(ngrams, correct_capitalization)
   
-  # Species match
+  # Use lowercase genus/family names for matching
+  genus_names_lower <- tolower(genera_corrected$canonicalName)
+  family_names_lower <- tolower(families_corrected$canonicalName)
+  
+  genus_mentions <- unique(tokens_vec[tokens_vec %in% genus_names_lower])
+  family_mentions <- unique(tokens_vec[tokens_vec %in% family_names_lower])
+  
+  mentions_species <- FALSE
+  mentions_genus <- length(genus_mentions) > 0
+  mentions_family <- length(family_mentions) > 0
+  
+  all_rows <- list()
+  
+  # Species matches
   valid_species <- valid_species_lookup %>%
-    filter(canonicalName %in% plant_candidates)
+    filter(resolved_name %in% plant_candidates)
   
-  # Genus/family mentions (always tracked)
-  genus_mentions <- unique(tokens_vec[tokens_vec %in% tolower(genera$canonicalName)])
-  family_mentions <- unique(tokens_vec[tokens_vec %in% tolower(families$canonicalName)])
-  
-  # These flags are now independent (not mutually exclusive)
-  mentions_species <- nrow(valid_species) > 0
-  mentions_genus   <- length(genus_mentions) > 0
-  mentions_family  <- length(family_mentions) > 0
-  
-  # Main result block
-  if (mentions_species) {
-    final_df <- valid_species %>%
-      mutate(id = abstract_id, predicted_label = predicted_label)
-    final_df <- cbind(final_df, as.data.frame(t(plant_parts_indicator)))
-  } else {
-    # Fallback placeholder
-    placeholder <- data.frame(
-      setNames(replicate(length(gbif_fields), NA, simplify = FALSE), gbif_fields),
-      id = abstract_id,
-      predicted_label = predicted_label,
-      stringsAsFactors = FALSE
-    )
-    
-    # Backfill from genus
-    if (mentions_genus) {
-      genus_info <- genera %>%
-        filter(tolower(canonicalName) %in% genus_mentions) %>%
-        left_join(species, by = "genus", relationship = "many-to-many") %>%
-        filter(!is.na(family)) %>%
-        slice(1)
-      
-      if (nrow(genus_info) > 0) {
-        for (field in gbif_fields) {
-          if (field %in% names(genus_info)) {
-            placeholder[[field]] <- genus_info[[field]]
-          }
-        }
-      }
-    }
-    
-    # Backfill from family if no phylum yet
-    if (mentions_family && is.na(placeholder$phylum)) {
-      family_info <- families %>%
-        filter(tolower(canonicalName) %in% family_mentions) %>%
-        left_join(species, by = "family", relationship = "many-to-many") %>%
-        slice(1)
-      
-      if (nrow(family_info) > 0) {
-        for (field in gbif_fields) {
-          if (field %in% names(family_info)) {
-            placeholder[[field]] <- family_info[[field]]
-          }
-        }
-      }
-    }
-    
-    final_df <- cbind(placeholder, as.data.frame(t(plant_parts_indicator)))
+  if (nrow(valid_species) > 0) {
+    mentions_species <- TRUE
+    species_df <- valid_species %>%
+      mutate(
+        id = abstract_id[1],
+        predicted_label = predicted_label[1],
+        match_type = "species"
+      )
+    all_rows <- append(all_rows, list(species_df))
   }
   
-  # Add metadata
+  # Genus matches
+  if (mentions_genus) {
+    genus_df <- genera_corrected %>%
+      filter(tolower(canonicalName) %in% genus_mentions) %>%
+      filter(!is.na(phylum)) %>%
+      select(any_of(gbif_fields)) %>%
+      mutate(
+        id = abstract_id[1],
+        predicted_label = predicted_label[1],
+        match_type = "genus"
+      )
+    all_rows <- append(all_rows, list(genus_df))
+  }
+  
+  # Family matches
+  if (mentions_family) {
+    family_df <- families_corrected %>%
+      filter(tolower(canonicalName) %in% family_mentions) %>%
+      filter(!is.na(phylum)) %>%
+      select(any_of(gbif_fields)) %>%
+      mutate(
+        id = abstract_id[1],
+        predicted_label = predicted_label[1],
+        match_type = "family"
+      )
+    all_rows <- append(all_rows, list(family_df))
+  }
+  
+  # If nothing matched, return a placeholder row
+  if (length(all_rows) == 0) {
+    placeholder <- valid_species_lookup[0, ] %>% add_row()
+    placeholder$id <- abstract_id
+    placeholder$predicted_label <- predicted_label
+    placeholder$match_type <- "none"
+    all_rows <- list(placeholder)
+  }
+  
+  # Combine all rows into one final data frame
+  final_df <- bind_rows(all_rows)
+  
+  # Add plant parts info (repeat across rows)
+  plant_parts_df <- as.data.frame(t(plant_parts_indicator))
+  final_df <- bind_cols(final_df, plant_parts_df[rep(1, nrow(final_df)), , drop = FALSE])
+  
+  # Add mention summaries
   final_df$mentions_species <- mentions_species
-  final_df$mentions_genus   <- mentions_genus
-  final_df$mentions_family  <- mentions_family
+  final_df$mentions_genus <- mentions_genus
+  final_df$mentions_family <- mentions_family
   final_df$mentioned_genera <- paste(genus_mentions, collapse = "; ")
   final_df$mentioned_families <- paste(family_mentions, collapse = "; ")
   
+  # Ensure all gbif_fields are present
+  missing_fields <- setdiff(gbif_fields, names(final_df))
+  final_df[missing_fields] <- NA
+  
   return(final_df)
 }
+
+
+
+
+
+
 
 
 force_refresh = F
@@ -390,7 +544,7 @@ for (i in seq_along(threshold_levels)) {
   if (file.exists("valid_species_lookup.rds") && !force_refresh) {
     valid_species_lookup <- readRDS("valid_species_lookup.rds")
   } else {
-    valid_species_lookup <- batch_validate_species(all_candidates)
+    valid_species_lookup <- batch_validate_names(all_candidates)
     saveRDS(valid_species_lookup, "valid_species_lookup.rds")
   }
   
@@ -410,6 +564,9 @@ for (i in seq_along(threshold_levels)) {
     ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup),
     .options = furrr_options(seed = TRUE)
   )
+  if (!"phylum" %in% names(plant_species_df)) {
+    stop("Missing 'phylum' column in plant_species_df.")
+  }
   
   # Save results with threshold in name
   out_name <- paste0("taxa_info_results_", threshold_name, ".csv")
@@ -483,6 +640,7 @@ plant_species_df <- plant_species_df %>%
 
 plant_species_df <- plant_species_df %>%
   filter(!is.na(phylum)) 
+
 
 
 get_species_count <- function(phylum_key) {
@@ -629,52 +787,6 @@ plant_parts_summary_by_label <- plant_species_df %>%
 
 # View result
 
-# Create a named vector where each plural maps to a singular form
-plant_part_groups <- c(
-  # Common structures
-  "fruits" = "fruit", "roots" = "root", "rhizoids" = "rhizoid", "leaves" = "leaf",
-  "twigs" = "twig", "branches" = "branch", "stems" = "stem", "flowers" = "flower",
-  "shoots" = "shoot", "seeds" = "seed", "nodes" = "node", "leaflets" = "leaflet",
-  "pistils" = "pistil", "anthers" = "anther", "carpels" = "carpel", "sepals" = "sepal",
-  "petals" = "petal", "stigmas" = "stigma", "styles" = "style", "ovaries" = "ovary",
-  "calyces" = "calyx", "corollas" = "corolla", "peduncles" = "peduncle", "rachises" = "rachis",
-  "inflorescences" = "inflorescence", "trunks" = "trunk", "buds" = "bud", "cones" = "cone",
-  "tubers" = "tuber", "bulbs" = "bulb", "corms" = "corm", "cladodes" = "cladode",
-  "vascular bundles" = "vascular bundle", "cotyledons" = "cotyledon", "hypocotyls" = "hypocotyl",
-  "epicotyls" = "epicotyl", "flowering stems" = "flowering stem", "internodes" = "internode",
-  "leaf veins" = "leaf vein", "leaf blades" = "leaf blade", "palmatations" = "palmate",
-  "needles" = "needle", "fascicles" = "fascicle", "cuticles" = "cuticle", "stomata" = "stoma",
-  "vascular cambiums" = "vascular cambium", "petioles" = "petiole", "axils" = "axil",
-  "phyllodes" = "phyllode", "perianths" = "perianth", "rachillas" = "rachilla",
-  "pedicels" = "pedicel", "lateral roots" = "lateral root", "taproots" = "taproot",
-  "root caps" = "root cap", "root hairs" = "root hair", "pericycles" = "pericycle",
-  "colleters" = "colleter", "scutella" = "scutellum", "coleoptiles" = "coleoptile",
-  "sporophytes" = "sporophyte", "gametophytes" = "gametophyte",
-  
-  # Reproductive
-  "ovules" = "ovule", "filaments" = "filament", "receptacles" = "receptacle",
-  "florets" = "floret", "spikelets" = "spikelet", "glumes" = "glume", "lemmas" = "lemma",
-  "paleae" = "palea",
-  
-  # Photosynthetic
-  "laminae" = "lamina", "stipules" = "stipule",
-  
-  # Anatomical
-  "meristems" = "meristem", "trichomes" = "trichome", "resin ducts" = "resin duct",
-  
-  # Specialized roots/stems
-  "aerial roots" = "aerial root", "adventitious roots" = "adventitious root",
-  "haustoria" = "haustorium", "tendrils" = "tendril", "rhizomes" = "rhizome",
-  
-  # Seed-related
-  "seed coats" = "seed coat", "embryos" = "embryo",
-  
-  # Developmental
-  "calluses" = "callus", "primordia" = "primordium", "apices" = "apex",
-  
-  # Protoplasmic
-  "protoplasts" = "protoplast"
-)
 
 plant_parts_grouped <- plant_parts_summary_by_label %>%
   mutate(
