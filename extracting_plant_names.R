@@ -140,27 +140,27 @@ plant_part_groups <- c(
 
 #download all accepted species from backbone because their api is overwhelmbed by this code
 backbone <- vroom("gbif_backbone/Taxon.tsv", 
-                  delim = "\t",
-                  col_select = c(
-                    "taxonRank",       # rank, to filter species
-                    "taxonomicStatus", # accepted/synonym status
-                    "canonicalName",   # scientific name
-                    "genericName", #new
-                 #   "scientificName", #scientific has more info than canonical name. don't use
-                 "acceptedNameUsageID",
-                 "originalNameUsageID",
-                 "nomenclaturalStatus",
-                 "taxonID",
-                 "parentNameUsageID",
-                 
-                    "kingdom",
-                    "phylum",
-                    "class",
-                    "order",
-                    "family",
-                    "genus"          # logical extinct flag (TRUE/FALSE)
-                 
-                  )) #Could use acceptedNameUsageID
+                  delim = "\t")#,
+                 #  col_select = c(
+                 #    "taxonRank",       # rank, to filter species
+                 #    "taxonomicStatus", # accepted/synonym status
+                 #    "canonicalName",   # scientific name
+                 #    "genericName", #new
+                 # #   "scientificName", #scientific has more info than canonical name. don't use
+                 # "acceptedNameUsageID",
+                 # "originalNameUsageID",
+                 # "nomenclaturalStatus",
+                 # "taxonID",
+                 # "parentNameUsageID",
+                 # 
+                 #    "kingdom",
+                 #    "phylum",
+                 #    "class",
+                 #    "order",
+                 #    "family",
+                 #    "genus"          # logical extinct flag (TRUE/FALSE)
+                 # 
+                 #  )) #Could use acceptedNameUsageID
 
 if (!file.exists("species.rds")) {
   species <- backbone %>%
@@ -176,30 +176,10 @@ if (!file.exists("species.rds")) {
 #Important!
 #On a synonym, the accepted ID matches to original name usage ID
 
-#e.g. see below.
-test <- species %>%
-  filter(originalNameUsageID == 2512800)
 
-
-if (!file.exists("families.rds")) {
-  families <- backbone %>%
-    filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "family") 
-  saveRDS(families, "families.rds")
-} else {
-  families <- readRDS("families.rds")
-}
 #TaxonID seems to work for families.
 
-
-#Does genera need to be specific to the families they are in?
-if (!file.exists("genera.rds")) {
-  genera <- backbone %>%
-    filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "genus") 
-  saveRDS(genera, "genera.rds")
-} else {
-  genera <- readRDS("genera.rds")
-}
-
+test <- species %>% filter(genus == "Acer")%>% slice_sample(n=30)
 
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
@@ -252,23 +232,7 @@ correct_capitalization <- function(name) {
 #                  "kingdomKey", "phylumKey", "classKey", "orderKey", 
 #                  "familyKey", "genusKey", "speciesKey")
 
-gbif_fields <- c("taxonRank",       # rank, to filter species
-                 "taxonomicStatus", # accepted/synonym status
-                 "canonicalName",   # scientific name
-                 "genericName", #new
-                 #   "scientificName", #scientific has more info than canonical name. don't use
-                 "acceptedNameUsageID",
-                 "originalNameUsageID",
-                 "nomenclaturalStatus",
-                 "taxonID",
-                 "parentNameUsageID",
-                 
-                 "kingdom",
-                 "phylum",
-                 "class",
-                 "order",
-                 "family",
-                 "genus" )
+gbif_fields <- colnames(backbone)
 
 #valid_species_lookup <- batch_validate_species(all_candidates)
 
@@ -294,61 +258,21 @@ accepted_names <- backbone %>%
 
 #valid_species_lookup <- batch_validate_species(all_candidates)
 #saveRDS(valid_species_lookup, "valid_species_lookup.rds")
-batch_validate_names <- function(names, backbone_df = backbone, genera_raw = genera, families_raw = families) {
+batch_validate_names <- function(names, species_df = species) {
   names <- unique(names)
   
-    # Prepare corrected genera
-  
-  accepted_genera <- genera_raw %>% filter(taxonomicStatus == "accepted")
-  synonym_genera <- genera_raw %>% filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID))
-  
-  genera_corrected <- accepted_genera %>%
-    mutate(canonicalName = canonicalName) %>%
-    bind_rows(
-      synonym_genera %>%
-        left_join(
-          accepted_genera %>% select(accepted_genus = canonicalName, taxonID),
-          by = c("acceptedNameUsageID" = "taxonID")
-        ) %>%
-        mutate(canonicalName = coalesce(accepted_genus, canonicalName))
-    ) %>%
-    select(-accepted_genus)
-  
-
-  # Prepare corrected families
- 
-  accepted_families <- families_raw %>% filter(taxonomicStatus == "accepted")
-  synonym_families <- families_raw %>% filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID))
-  
-  families_corrected <- accepted_families %>%
-    mutate(canonicalName = canonicalName) %>%
-    bind_rows(
-      synonym_families %>%
-        left_join(
-          accepted_families %>% select(accepted_family = canonicalName, taxonID),
-          by = c("acceptedNameUsageID" = "taxonID")
-        ) %>%
-        mutate(canonicalName = coalesce(accepted_family, canonicalName))
-    ) %>%
-    select(-accepted_family)
-  
- 
-  # Step 1: Direct species matches
-
+  # Step 1: Direct species match
   validated <- tibble(user_supplied_name = names) %>%
-    left_join(backbone_df, by = c("user_supplied_name" = "canonicalName"), keep = TRUE)
+    left_join(species_df, by = c("user_supplied_name" = "canonicalName"), keep = TRUE)
   
-  accepted_names <- backbone_df %>%
+  accepted_species <- species_df %>%
     filter(taxonomicStatus == "accepted") %>%
     select(taxonID, canonicalName) %>%
     rename(canonicalName_accepted = canonicalName)
   
   syns <- validated %>%
     filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID)) %>%
-    left_join(
-      accepted_names,
-      by = c("acceptedNameUsageID" = "taxonID")
-    ) %>%
+    left_join(accepted_species, by = c("acceptedNameUsageID" = "taxonID")) %>%
     mutate(
       canonicalName = coalesce(canonicalName_accepted, user_supplied_name)
     ) %>%
@@ -365,18 +289,26 @@ batch_validate_names <- function(names, backbone_df = backbone, genera_raw = gen
       acceptedScientificName = ifelse(status == "ACCEPTED", canonicalName, NA)
     )
   
- 
-  # Step 2: Higher-level fallback matches
-
+  # Step 2: Higher-rank fallback using species-derived genus/family lists
   unresolved <- tibble(user_supplied_name = names) %>%
     filter(!user_supplied_name %in% resolved$user_supplied_name) %>%
     mutate(first_word = word(user_supplied_name, 1))
   
+  genus_list <- species_df %>%
+    filter(taxonomicStatus == "accepted", !is.na(genus)) %>%
+    distinct(genus) %>%
+    rename(canonicalName = genus)
+  
+  family_list <- species_df %>%
+    filter(taxonomicStatus == "accepted", !is.na(family)) %>%
+    distinct(family) %>%
+    rename(canonicalName = family)
+  
   genus_matches <- unresolved %>%
-    inner_join(genera_corrected, by = c("first_word" = "canonicalName"))
+    inner_join(genus_list, by = c("first_word" = "canonicalName"))
   
   family_matches <- unresolved %>%
-    inner_join(families_corrected, by = c("first_word" = "canonicalName"))
+    inner_join(family_list, by = c("first_word" = "canonicalName"))
   
   fallback <- bind_rows(genus_matches, family_matches) %>%
     mutate(
@@ -386,9 +318,7 @@ batch_validate_names <- function(names, backbone_df = backbone, genera_raw = gen
       acceptedScientificName = NA
     )
   
-
-  # Final output
-
+  # Final result
   final <- bind_rows(resolved, fallback) %>%
     distinct(canonicalName, .keep_all = TRUE)
   
@@ -397,20 +327,21 @@ batch_validate_names <- function(names, backbone_df = backbone, genera_raw = gen
 
 
 
+accepted_species <- species %>%
+  filter(taxonomicStatus == "accepted", !is.na(phylum), !is.na(family), !is.na(genus))
 
+genera_from_species <- accepted_species %>%
+  distinct(genus, phylum, family, kingdom) %>%
+  rename(canonicalName = genus)
 
+families_from_species <- accepted_species %>%
+  distinct(family, phylum, kingdom) %>%
+  rename(canonicalName = family)
 
-
-#Refine this more. I think it's still not doing a great job.
-# abs$abstract,
-# abs$id,
-# abs$predicted_label,
-# abs$ngrams
-# ),
-# ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup),
-
-extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup) {
-  
+extract_plant_info <- function(
+    text, abstract_id, predicted_label, ngrams, valid_species_lookup,
+    genera_lookup, families_lookup
+) {
   tokens_vec <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
     tokens_tolower() %>%
     unlist()
@@ -419,12 +350,10 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
   plant_parts_found <- unique(tokens_vec[tokens_vec %in% plant_parts_keywords])
   plant_parts_indicator <- setNames(as.integer(plant_parts_keywords %in% plant_parts_found), plant_parts_keywords)
   
-  # Candidate ngrams with corrected capitalization
   plant_candidates <- sapply(ngrams, correct_capitalization)
   
-  # Use lowercase genus/family names for matching
-  genus_names_lower <- tolower(genera_corrected$canonicalName)
-  family_names_lower <- tolower(families_corrected$canonicalName)
+  genus_names_lower <- tolower(genera_lookup$canonicalName)
+  family_names_lower <- tolower(families_lookup$canonicalName)
   
   genus_mentions <- unique(tokens_vec[tokens_vec %in% genus_names_lower])
   family_mentions <- unique(tokens_vec[tokens_vec %in% family_names_lower])
@@ -452,7 +381,7 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
   
   # Genus matches
   if (mentions_genus) {
-    genus_df <- genera_corrected %>%
+    genus_df <- genera_lookup %>%
       filter(tolower(canonicalName) %in% genus_mentions) %>%
       filter(!is.na(phylum)) %>%
       select(any_of(gbif_fields)) %>%
@@ -466,7 +395,7 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
   
   # Family matches
   if (mentions_family) {
-    family_df <- families_corrected %>%
+    family_df <- families_lookup %>%
       filter(tolower(canonicalName) %in% family_mentions) %>%
       filter(!is.na(phylum)) %>%
       select(any_of(gbif_fields)) %>%
@@ -478,7 +407,7 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
     all_rows <- append(all_rows, list(family_df))
   }
   
-  # If nothing matched, return a placeholder row
+  # No matches
   if (length(all_rows) == 0) {
     placeholder <- valid_species_lookup[0, ] %>% add_row()
     placeholder$id <- abstract_id
@@ -487,31 +416,23 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
     all_rows <- list(placeholder)
   }
   
-  # Combine all rows into one final data frame
   final_df <- bind_rows(all_rows)
   
-  # Add plant parts info (repeat across rows)
+  # Add plant parts info
   plant_parts_df <- as.data.frame(t(plant_parts_indicator))
-  final_df <- bind_cols(final_df, plant_parts_df[rep(1, nrow(final_df)), , drop = FALSE])
+  final_df <- bind_cols(final_df[rep(1, nrow(final_df)), , drop = FALSE], plant_parts_df)
   
-  # Add mention summaries
   final_df$mentions_species <- mentions_species
   final_df$mentions_genus <- mentions_genus
   final_df$mentions_family <- mentions_family
   final_df$mentioned_genera <- paste(genus_mentions, collapse = "; ")
   final_df$mentioned_families <- paste(family_mentions, collapse = "; ")
   
-  # Ensure all gbif_fields are present
   missing_fields <- setdiff(gbif_fields, names(final_df))
   final_df[missing_fields] <- NA
   
   return(final_df)
 }
-
-
-
-
-
 
 
 
@@ -555,15 +476,23 @@ for (i in seq_along(threshold_levels)) {
   
   # Extract plant and fungal info in parallel
   plant_species_df <- future_pmap_dfr(
-    list(
-      abs$abstract,
-      abs$id,
-      abs$predicted_label,
-      abs$ngrams
-    ),
-    ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup),
-    .options = furrr_options(seed = TRUE)
-  )
+      list(
+        abs$abstract,
+        abs$id,
+        abs$predicted_label,
+        abs$ngrams
+      ),
+      ~extract_plant_info(
+        text = ..1,
+        abstract_id = ..2,
+        predicted_label = ..3,
+        ngrams = ..4,
+        valid_species_lookup = valid_species_lookup,
+        genera_lookup = genera_from_species,
+        families_lookup = families_from_species
+      ),
+      .options = furrr_options(seed = TRUE)
+    )
   if (!"phylum" %in% names(plant_species_df)) {
     stop("Missing 'phylum' column in plant_species_df.")
   }
@@ -837,32 +766,86 @@ plant_parts_plot <- plant_parts_grouped %>%
 save_plot(paste0("Results/", threshold_name, "/plant_parts_", threshold_name, ".png"), plant_parts_plot)
 
 # Plant families now ------------------------------------------------------
+# 1. Build plant family backbone from accepted species
 
-plant_families_backbone <- backbone %>%
-  filter(
-    kingdom == "Plantae",
-    taxonRank == "family",
-    taxonomicStatus == "accepted",
-    !is.na(phylum),
-    !is.na(family) #Could add a filter here for extinct if I want to
+extinct_taxa <- read.csv("pbdb_all.csv", skip = 16)%>%
+  filter(is_extant == "extinct")%>%
+  mutate(across(taxon_name:genus, tolower))
+
+extinct_species <- extinct_taxa %>%
+  filter(taxon_rank == "species") %>%
+  distinct(taxon_name) %>%
+  pull(taxon_name)
+
+extinct_genera <- extinct_taxa %>%
+  filter(taxon_rank == "genus") %>%
+  distinct(genus) %>%
+  pull(genus)
+
+extinct_families <- extinct_taxa %>%
+  filter(taxon_rank == "family") %>%
+  distinct(family) %>%
+  pull(family)
+
+species_no_ext <- species %>%
+  mutate(
+    species_lower = tolower(canonicalName),
+    genus_lower = tolower(genus),
+    family_lower = tolower(family)
   ) %>%
+  filter(
+    !(species_lower %in% extinct_species),
+    !(genus_lower %in% extinct_genera),
+    !(family_lower %in% extinct_families)
+  ) %>%
+  select(-species_lower, -genus_lower, -family_lower)
+
+plant_families_backbone <- species_no_ext %>%
+  filter(kingdom == "Plantae", taxonomicStatus == "accepted") %>%
+  filter(!is.na(family), !is.na(phylum)) %>%
   distinct(phylum, family)
 
+# 2. Count total accepted families per phylum
 total_families_per_phylum <- plant_families_backbone %>%
   group_by(phylum) %>%
   summarise(total_families = n_distinct(family), .groups = "drop")
 
-# Extract families present in your dataset
-dataset_families <- plant_species_df %>%
-  filter(kingdom == "Plantae", !is.na(phylum), !is.na(family)) %>%
+
+plant_species_df <- plant_species_df %>%
+  mutate(
+    species_lower = tolower(canonicalName),
+    genus_lower = tolower(genus)
+  ) %>%
+  filter(
+    !(species_lower %in% extinct_species),
+    !(genus_lower %in% extinct_genera)
+  ) %>%
+  select(-species_lower, -genus_lower)
+
+# 3. Pick one accepted family per genus from your dataset
+family_per_genus <- plant_species_df %>%
+  filter(kingdom == "Plantae", !is.na(genus), !is.na(family)) %>%
+  group_by(genus, family) %>%
+  tally(name = "n") %>%
+  slice_max(n, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+# 4. Overwrite families in your dataset with one consistent value per genus
+plant_species_df_clean <- plant_species_df %>%
+  filter(kingdom == "Plantae", !is.na(phylum), !is.na(genus)) %>%
+  select(-family) %>%
+  left_join(family_per_genus %>% select(genus, family), by = "genus")
+
+# 5. Extract distinct families observed in your cleaned dataset
+dataset_families <- plant_species_df_clean %>%
   distinct(phylum, family)
 
-# Count dataset families per phylum (observed)
+# 6. Count number of observed families per phylum
 families_in_dataset <- dataset_families %>%
   group_by(phylum) %>%
   summarise(n_families_found = n_distinct(family), .groups = "drop")
 
-# Join and calculate missing families
+# 7. Join with backbone and compute missing families
 families_coverage <- total_families_per_phylum %>%
   left_join(families_in_dataset, by = "phylum") %>%
   mutate(
@@ -871,50 +854,52 @@ families_coverage <- total_families_per_phylum %>%
   ) %>%
   arrange(phylum)
 
+# 8. Set factor levels for consistent phylum ordering in plots
 families_coverage$phylum <- factor(families_coverage$phylum, levels = phylum_order)
 
-# Output coverage summary
+# 9. Save results
 print(families_coverage)
 write.csv(families_coverage, paste0("Results/", threshold_name, "/plant_families_coverage_", threshold_name, ".csv"), row.names = FALSE)
 
-# Optional: list of families present in backbone but missing from dataset
+# 10. Identify families in backbone but not in dataset
 missing_families <- plant_families_backbone %>%
   anti_join(dataset_families, by = c("phylum", "family")) %>%
   arrange(phylum, family)
 
-missing_fams_tracheo <- plant_families_backbone %>%
-  anti_join(dataset_families, by = c("phylum", "family")) %>%
-  filter(phylum == "Tracheophyta")%>%
-  arrange(phylum, family)
+missing_fams_tracheo <- missing_families %>%
+  filter(phylum == "Tracheophyta")
 
 print(missing_fams_tracheo)
 
 write.csv(missing_families, paste0("Results/", threshold_name, "/missing_plant_families_", threshold_name, ".csv"), row.names = FALSE)
-
 write.csv(missing_fams_tracheo, paste0("Results/", threshold_name, "/tracheo_missing_plant_families_", threshold_name, ".csv"), row.names = FALSE)
 
-# Prepare for plotting
+# Reorder phylum as factor with custom order
+families_coverage$phylum <- factor(families_coverage$phylum, levels = phylum_order)
+
+# Prepare long-format data for raw count plot
 families_long <- families_coverage %>%
-  filter(!is.na(phylum))%>%
+  filter(!is.na(phylum)) %>%
   select(phylum, n_families_found, n_families_missing) %>%
-  pivot_longer(cols = c(n_families_found, n_families_missing),
-               names_to = "status",
-               values_to = "count") %>%
+  pivot_longer(
+    cols = c(n_families_found, n_families_missing),
+    names_to = "status",
+    values_to = "count"
+  ) %>%
   mutate(
     status = recode(status,
                     n_families_found = "Found",
                     n_families_missing = "Missing"),
-    phylum = factor(phylum, levels = phylum_order)  # preserve order
+    phylum = factor(phylum, levels = phylum_order)
   )
 
-
+# Color palette
 family_pal <- c(
-  "Found" = "#A1C181",   # calm sage green — presence, success
-  "Missing" = "#C97E7E"  # dusty rose — subtle red tone for absence
+  "Found" = "#A1C181",   # calm sage green — presence
+  "Missing" = "#C97E7E"  # dusty rose — absence
 )
 
-
-# Plot: Found vs Missing families by phylum
+# Plot: Raw family counts found vs missing
 fams <- ggplot(families_long, aes(x = phylum, y = count, fill = status)) +
   geom_col() +
   coord_flip() +
@@ -926,22 +911,26 @@ fams <- ggplot(families_long, aes(x = phylum, y = count, fill = status)) +
   ) +
   scale_fill_manual(values = family_pal)
 
-fams
+print(fams)
 
 save_plot(paste0("Results/", threshold_name, "/families_missing_present_", threshold_name, ".png"), fams)
 
+# Proportional coverage data
 families_coverage_prop <- families_coverage %>%
-  filter(!is.na(phylum))%>%
+  filter(!is.na(phylum)) %>%
   mutate(
     prop_found = n_families_found / total_families,
     prop_missing = n_families_missing / total_families
   )
 
+# Long format for proportional coverage
 families_long_prop <- families_coverage_prop %>%
   select(phylum, prop_found, prop_missing) %>%
-  pivot_longer(cols = c(prop_found, prop_missing),
-               names_to = "status",
-               values_to = "proportion") %>%
+  pivot_longer(
+    cols = c(prop_found, prop_missing),
+    names_to = "status",
+    values_to = "proportion"
+  ) %>%
   mutate(
     status = recode(status,
                     prop_found = "Found",
@@ -949,6 +938,7 @@ families_long_prop <- families_coverage_prop %>%
     phylum = factor(phylum, levels = phylum_order)
   )
 
+# Plot: Proportional family coverage
 fams_prop <- ggplot(families_long_prop, aes(x = phylum, y = proportion, fill = status)) +
   geom_col() +
   geom_text(
@@ -967,8 +957,9 @@ fams_prop <- ggplot(families_long_prop, aes(x = phylum, y = proportion, fill = s
   scale_fill_manual(values = family_pal) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1))
 
-fams_prop
+print(fams_prop)
 
 save_plot(paste0("Results/", threshold_name, "/families_missing_present_prop_", threshold_name, ".png"), fams_prop)
+
 
 } #End loop
