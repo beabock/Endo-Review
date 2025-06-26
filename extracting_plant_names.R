@@ -176,7 +176,6 @@ if (!file.exists("species.rds")) {
 #Important!
 #On a synonym, the accepted ID matches to original name usage ID
 
-
 #TaxonID seems to work for families.
 
 test <- species %>% filter(genus == "Acer")%>% slice_sample(n=30)
@@ -768,6 +767,8 @@ save_plot(paste0("Results/", threshold_name, "/plant_parts_", threshold_name, ".
 # Plant families now ------------------------------------------------------
 # 1. Build plant family backbone from accepted species
 
+plant_df <- plant_species_df #So i dont have to remake it if i mess up
+
 extinct_taxa <- read.csv("pbdb_all.csv", skip = 16)%>%
   filter(is_extant == "extinct")%>%
   mutate(across(taxon_name:genus, tolower))
@@ -779,26 +780,33 @@ extinct_species <- extinct_taxa %>%
 
 extinct_genera <- extinct_taxa %>%
   filter(taxon_rank == "genus") %>%
-  distinct(genus) %>%
-  pull(genus)
+  distinct(taxon_name) %>%
+  pull(taxon_name)
 
 extinct_families <- extinct_taxa %>%
   filter(taxon_rank == "family") %>%
-  distinct(family) %>%
-  pull(family)
+  distinct(taxon_name) %>%
+  pull(taxon_name)
+
+extinct_orders<- extinct_taxa %>%
+  filter(taxon_rank == "order") %>%
+  distinct(taxon_name) %>%
+  pull(taxon_name)
+
 
 species_no_ext <- species %>%
   mutate(
     species_lower = tolower(canonicalName),
     genus_lower = tolower(genus),
-    family_lower = tolower(family)
+    family_lower = tolower(family),
+    order_lower = tolower(order)
   ) %>%
   filter(
     !(species_lower %in% extinct_species),
     !(genus_lower %in% extinct_genera),
-    !(family_lower %in% extinct_families)
-  ) %>%
-  select(-species_lower, -genus_lower, -family_lower)
+    !(family_lower %in% extinct_families),
+    !(order_lower %in% extinct_orders))%>%
+  select(-species_lower, -genus_lower, -family_lower, -order_lower)
 
 plant_families_backbone <- species_no_ext %>%
   filter(kingdom == "Plantae", taxonomicStatus == "accepted") %>%
@@ -811,19 +819,20 @@ total_families_per_phylum <- plant_families_backbone %>%
   summarise(total_families = n_distinct(family), .groups = "drop")
 
 
-plant_species_df <- plant_species_df %>%
+plant_df <- plant_df %>%
   mutate(
-    species_lower = tolower(canonicalName),
-    genus_lower = tolower(genus)
+    canonical_lower = tolower(canonicalName)
   ) %>%
   filter(
-    !(species_lower %in% extinct_species),
-    !(genus_lower %in% extinct_genera)
+    !(match_type == "species" & canonical_lower %in% extinct_species),
+    !(match_type == "genus" & canonical_lower %in% extinct_genera),
+    !(match_type == "family" & canonical_lower %in% extinct_families),
+    !(match_type == "order" & canonical_lower %in% extinct_orders)
   ) %>%
-  select(-species_lower, -genus_lower)
+  select(-canonical_lower)
 
 # 3. Pick one accepted family per genus from your dataset
-family_per_genus <- plant_species_df %>%
+family_per_genus <- plant_df %>%
   filter(kingdom == "Plantae", !is.na(genus), !is.na(family)) %>%
   group_by(genus, family) %>%
   tally(name = "n") %>%
@@ -831,7 +840,7 @@ family_per_genus <- plant_species_df %>%
   ungroup()
 
 # 4. Overwrite families in your dataset with one consistent value per genus
-plant_species_df_clean <- plant_species_df %>%
+plant_species_df_clean <- plant_df %>%
   filter(kingdom == "Plantae", !is.na(phylum), !is.na(genus)) %>%
   select(-family) %>%
   left_join(family_per_genus %>% select(genus, family), by = "genus")
