@@ -113,13 +113,22 @@ dtm <- labeled_abstracts %>%
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
   mutate(id = as.character(id)) %>%  # Ensure IDs are character
-  cast_dtm(document = id, term = word, value = n)
+  cast_dtm(document = id, term = word, value = n) #Think about this more.
 
 # Preserve row names BEFORE converting
 rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
 
-# Convert to sparse matrix and assign row names
 dtm_matrix <- as.matrix(dtm)
+dtm_df <- as.data.frame(dtm_matrix)
+
+# Get column names ordered by decreasing column sum
+order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
+
+# Reorder the columns
+dtm_df <- dtm_df[, order_cols]
+
+dtm_df <- dtm_df[1:20,1:15]
+write.csv(dtm_df, "msa_dtm_preview.csv")
 
 valid_ids <- as.integer(rownames_dtm)  # convert back to integer
 
@@ -495,5 +504,10 @@ full_abstracts %>%
 # Save the results
 write.csv(full_abstracts, "full_predictions_with_metadata.csv", row.names = FALSE)
 
+full_abstracts <- read.csv("full_predictions_with_metadata.csv")
 
+full_abstracts %>%
+  select(label_loose, label_medium, label_strict) %>%
+  pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
+  count(threshold, label)
 

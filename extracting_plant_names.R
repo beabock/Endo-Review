@@ -46,32 +46,61 @@ backbone <- vroom("gbif_backbone/Taxon.tsv",
                     "taxonRank",       # rank, to filter species
                     "taxonomicStatus", # accepted/synonym status
                     "canonicalName",   # scientific name
+                    "genericName", #new
+                 #   "scientificName", #scientific has more info than canonical name. don't use
+                 "acceptedNameUsageID",
+                 "originalNameUsageID",
+                 "nomenclaturalStatus",
+                 "taxonID",
+                 "parentNameUsageID",
+                 
                     "kingdom",
                     "phylum",
                     "class",
                     "order",
                     "family",
                     "genus"          # logical extinct flag (TRUE/FALSE)
-                  ))
+                 
+                  )) #Could use acceptedNameUsageID
 
-if (!file.exists("accepted_species.rds")) {
-  accepted_species <- backbone %>%
-    filter(taxonRank == "species", taxonomicStatus == "accepted") %>%
-    select(canonicalName, kingdom, phylum, class, order, family, genus)
-  saveRDS(accepted_species, "accepted_species.rds")
+if (!file.exists("species.rds")) {
+  species <- backbone %>%
+    filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "species") 
+  saveRDS(species, "species.rds")
 } else {
-  accepted_species <- readRDS("accepted_species.rds")
+  species <- readRDS("species.rds")
+}
+#This file, species, is now all species, regardless of if they are valid. Can connect invalid species to valid ones. 
+
+#Some full names are not listed as species but rather as subspecies or varieties. Think on this.
+
+#Important!
+#On a synonym, the accepted ID matches to original name usage ID
+
+#e.g. see below.
+test <- species %>%
+  filter(originalNameUsageID == 2512800)
+
+
+if (!file.exists("families.rds")) {
+  families <- backbone %>%
+    filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "family") 
+  saveRDS(families, "families.rds")
+} else {
+  families <- readRDS("families.rds")
+}
+#TaxonID seems to work for families.
+
+
+#Does genera need to be specific to the families they are in?
+if (!file.exists("genera.rds")) {
+  genera <- backbone %>%
+    filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "genus") 
+  saveRDS(genera, "genera.rds")
+} else {
+  genera <- readRDS("genera.rds")
 }
 
-accepted_genera <- accepted_species %>%
-  select(genus, family) %>%
-  distinct() %>%
-  filter(!is.na(genus))
-
-accepted_families <- accepted_species %>%
-  select(family) %>%
-  distinct() %>%
-  filter(!is.na(family))
 
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
@@ -177,52 +206,107 @@ correct_capitalization <- function(name) {
 gbif_fields <- c("canonicalName", "resolved_name", "rank", "confidence", "matchType", "kingdom", "phylum", 
                  "class", "order", "family", "genus")
 
+#valid_species_lookup <- batch_validate_species(all_candidates)
 
+test <- all_candidates[1:20] #Whats up with the quotes around things?
 
-batch_validate_species <- function(names, backbone_df = accepted_species) {
+#Is parentName ID the thing to look at?
+
+species %>%
+  group_by(parentNameUsageID)%>%
+  tally()%>%
+  arrange()%>%
+  slice_sample(n=2)
+
+test <- species %>%
+  filter(parentNameUsageID== 7293439)
+
+#Okay got it. If something is a synonym, the value in acceptedNameID will match the taxonID in the accepted column. They will share parentNameUsageIDs.
+
+accepted_names <- species %>%
+  filter(taxonomicStatus == "accepted")%>%
+  select(-acceptedNameUsageID)
+
+batch_validate_species <- function(names, backbone_df = species) {
   names <- unique(names)
-  names <- sapply(names, correct_capitalization)
   
+  # Step 1: Direct matches
   validated <- tibble(user_supplied_name = names) %>%
     left_join(backbone_df, by = c("user_supplied_name" = "canonicalName")) %>%
+    rename(canonicalName = user_supplied_name)
+  
+  # Step 2: Pull synonyms and connect to accepted names
+  syns <- validated %>%
+    filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID)) %>%
+    left_join(
+      accepted_names,
+      by = c("acceptedNameUsageID" = "taxonID", "parentNameUsageID"),
+      suffix = c("", "_accepted")
+    ) %>%
+    mutate(canonicalName = canonicalName_accepted) %>%
+    select(-ends_with("_accepted"))
+  
+  # Step 3: Keep accepted names as-is
+  reals <- validated %>%
+    filter(taxonomicStatus == "accepted")
+  
+  # Step 4: Combine and finalize
+  final <- bind_rows(syns, reals) %>%
+    filter(!is.na(canonicalName)) %>%
     mutate(
-      resolved_name = user_supplied_name,
+      resolved_name = canonicalName,
       status = ifelse(!is.na(kingdom), "ACCEPTED", "NO_MATCH"),
-      acceptedScientificName = ifelse(status == "ACCEPTED", user_supplied_name, NA)
+      acceptedScientificName = ifelse(status == "ACCEPTED", canonicalName, NA)
     )
   
-  return(validated)
+  return(final)
 }
 
 
+
+
+#Refine this more. I think it's still not doing a great job.
+# abs$abstract,
+# abs$id,
+# abs$predicted_label,
+# abs$ngrams
+# ),
+# ~extract_plant_info(..1, ..2, ..3, ..4, valid_species_lookup),
+
 # Function to extract plant info
 extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid_species_lookup) {
+  # Tokenize abstract
   tokens_vec <- tokens(text, remove_punct = TRUE, remove_numbers = TRUE) %>%
     tokens_tolower() %>%
     unlist()
   
-  # Extract plant parts
-  plant_parts_found <- tokens_vec[tokens_vec %in% plant_parts_keywords] %>% unique()
+  # Identify plant part mentions
+  plant_parts_found <- unique(tokens_vec[tokens_vec %in% plant_parts_keywords])
   plant_parts_indicator <- setNames(as.integer(plant_parts_keywords %in% plant_parts_found), plant_parts_keywords)
   
+  # Candidate species names
   plant_candidates <- sapply(ngrams, correct_capitalization)
+  
+  # Species match
   valid_species <- valid_species_lookup %>%
-    filter(user_supplied_name %in% unique(plant_candidates))
+    filter(canonicalName %in% plant_candidates)
   
-  # Genus/family mentions
-  genus_mentions <- unique(tokens_vec[tokens_vec %in% tolower(accepted_genera$genus)])
-  family_mentions <- unique(tokens_vec[tokens_vec %in% tolower(accepted_families$family)])
+  # Genus/family mentions (always tracked)
+  genus_mentions <- unique(tokens_vec[tokens_vec %in% tolower(genera$canonicalName)])
+  family_mentions <- unique(tokens_vec[tokens_vec %in% tolower(families$canonicalName)])
   
-  genus_only_mention <- length(genus_mentions) > 0 && nrow(valid_species) == 0
-  family_only_mention <- length(family_mentions) > 0 && nrow(valid_species) == 0
+  # These flags are now independent (not mutually exclusive)
+  mentions_species <- nrow(valid_species) > 0
+  mentions_genus   <- length(genus_mentions) > 0
+  mentions_family  <- length(family_mentions) > 0
   
-  if (nrow(valid_species) > 0) {
-    valid_species <- valid_species %>%
+  # Main result block
+  if (mentions_species) {
+    final_df <- valid_species %>%
       mutate(id = abstract_id, predicted_label = predicted_label)
-    final_df <- cbind(valid_species, as.data.frame(t(plant_parts_indicator)))
-    final_df$genus_only_mention <- genus_only_mention
-    final_df$family_only_mention <- family_only_mention
+    final_df <- cbind(final_df, as.data.frame(t(plant_parts_indicator)))
   } else {
+    # Fallback placeholder
     placeholder <- data.frame(
       setNames(replicate(length(gbif_fields), NA, simplify = FALSE), gbif_fields),
       id = abstract_id,
@@ -230,47 +314,48 @@ extract_plant_info <- function(text, abstract_id, predicted_label, ngrams, valid
       stringsAsFactors = FALSE
     )
     
-    # Try to fill in using genus mention
-    if (genus_only_mention && length(genus_mentions) > 0) {
-      genus_info <- accepted_genera %>%
-        filter(tolower(genus) %in% genus_mentions) %>%
-        left_join(accepted_species, by = "genus") %>%
-        slice(1)  # Take the first match
+    # Backfill from genus
+    if (mentions_genus) {
+      genus_info <- genera %>%
+        filter(tolower(canonicalName) %in% genus_mentions) %>%
+        left_join(species, by = "genus", relationship = "many-to-many") %>%
+        filter(!is.na(family)) %>%
+        slice(1)
       
       if (nrow(genus_info) > 0) {
         for (field in gbif_fields) {
           if (field %in% names(genus_info)) {
-            placeholder[[field]] <- genus_info[[field]][1]
+            placeholder[[field]] <- genus_info[[field]]
           }
         }
       }
     }
     
-    # Try to fill in using family mention (if no genus info was found)
-    if (family_only_mention && is.na(placeholder$phylum) && length(family_mentions) > 0) {
-      family_info <- accepted_families %>%
-        filter(tolower(family) %in% family_mentions) %>%
-        left_join(accepted_species, by = "family") %>%
+    # Backfill from family if no phylum yet
+    if (mentions_family && is.na(placeholder$phylum)) {
+      family_info <- families %>%
+        filter(tolower(canonicalName) %in% family_mentions) %>%
+        left_join(species, by = "family", relationship = "many-to-many") %>%
         slice(1)
       
       if (nrow(family_info) > 0) {
         for (field in gbif_fields) {
           if (field %in% names(family_info)) {
-            placeholder[[field]] <- family_info[[field]][1]
+            placeholder[[field]] <- family_info[[field]]
           }
         }
       }
     }
     
     final_df <- cbind(placeholder, as.data.frame(t(plant_parts_indicator)))
-    final_df$genus_only_mention <- genus_only_mention
-    final_df$family_only_mention <- family_only_mention
   }
   
-  # Add genus/family mentions
+  # Add metadata
+  final_df$mentions_species <- mentions_species
+  final_df$mentions_genus   <- mentions_genus
+  final_df$mentions_family  <- mentions_family
   final_df$mentioned_genera <- paste(genus_mentions, collapse = "; ")
   final_df$mentioned_families <- paste(family_mentions, collapse = "; ")
-  
   
   return(final_df)
 }
@@ -309,7 +394,7 @@ for (i in seq_along(threshold_levels)) {
     saveRDS(valid_species_lookup, "valid_species_lookup.rds")
   }
   
-  # Ensure column exists
+  # double check that valid species loopup isn't getting rid of any info I need
   if (!"resolved_name" %in% names(valid_species_lookup)) {
     stop("The 'resolved_name' column is missing from valid_species_lookup. Check batch_validate_species() output.")
   }
@@ -337,7 +422,9 @@ for (i in seq_along(threshold_levels)) {
 # Start here --------------------------------------------------------------
 #threshold_levels <- c("label_loose", "label_medium", "label_strict")
 threshold_levels <- c("label_loose")
-plantae_key <- name_backbone(name = "Plantae")$usageKey
+#plantae_key <- name_backbone(name = "Plantae")$usageKey
+plantae_key <- 6
+
 
 phyla <- name_lookup(
   higherTaxonKey = plantae_key, #Might switch this to kingdom_key at some point
@@ -348,10 +435,6 @@ phyla <- name_lookup(
 )$data
 
 expected_plant_phyla <- unique(phyla$canonicalName)
-
-plant_species_df%>%
-  filter(is.na(phylum))
-
 
 fungi_key <- name_backbone(name = "Fungi")$usageKey
 
