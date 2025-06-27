@@ -178,8 +178,6 @@ if (!file.exists("species.rds")) {
 
 #TaxonID seems to work for families.
 
-test <- species %>% filter(genus == "Acer")%>% slice_sample(n=30)
-
 # Load and sample 100 abstracts randomly
 labeled_abstracts <- read.csv("full_predictions_with_metadata.csv") %>%
   clean_names() 
@@ -233,20 +231,7 @@ correct_capitalization <- function(name) {
 
 gbif_fields <- colnames(backbone)
 
-#valid_species_lookup <- batch_validate_species(all_candidates)
 
-#test <- all_candidates[1:20] #Whats up with the quotes around things?
-
-#Is parentName ID the thing to look at?
-
-species %>%
-  group_by(parentNameUsageID)%>%
-  tally()%>%
-  arrange()%>%
-  slice_sample(n=2)
-
-test <- species %>%
-  filter(parentNameUsageID== 7293439)
 
 #Okay got it. If something is a synonym, the value in acceptedNameID will match the taxonID in the accepted column. They will share parentNameUsageIDs.
 
@@ -435,7 +420,7 @@ extract_plant_info <- function(
 
 
 
-force_refresh = F
+force_refresh = T
 
 for (i in seq_along(threshold_levels)) {
   
@@ -970,5 +955,410 @@ print(fams_prop)
 
 save_plot(paste0("Results/", threshold_name, "/families_missing_present_prop_", threshold_name, ".png"), fams_prop)
 
+# GENUS COVERAGE ----------------------------------------------
+
+# 1. Build backbone
+plant_genera_backbone <- species_no_ext %>%
+  filter(kingdom == "Plantae", taxonomicStatus == "accepted") %>%
+  filter(!is.na(genus), !is.na(phylum)) %>%
+  distinct(phylum, genus)
+
+total_genera_per_phylum <- plant_genera_backbone %>%
+  group_by(phylum) %>%
+  summarise(total_genera = n_distinct(genus), .groups = "drop")
+
+# 2. Clean dataset
+plant_df <- plant_df %>%
+  mutate(canonical_lower = tolower(canonicalName)) %>%
+  filter(
+    !(match_type == "species" & canonical_lower %in% extinct_species),
+    !(match_type == "genus" & canonical_lower %in% extinct_genera),
+    !(match_type == "family" & canonical_lower %in% extinct_families),
+    !(match_type == "order" & canonical_lower %in% extinct_orders)
+  ) %>%
+  select(-canonical_lower)
+
+plant_species_df_clean <- plant_df %>%
+  filter(kingdom == "Plantae", !is.na(phylum), !is.na(genus))
+
+dataset_genera <- plant_species_df_clean %>%
+  distinct(phylum, genus)
+
+genera_in_dataset <- dataset_genera %>%
+  group_by(phylum) %>%
+  summarise(n_genera_found = n_distinct(genus), .groups = "drop")
+
+genera_coverage <- total_genera_per_phylum %>%
+  left_join(genera_in_dataset, by = "phylum") %>%
+  mutate(
+    n_genera_found = replace_na(n_genera_found, 0),
+    n_genera_missing = total_genera - n_genera_found
+  ) %>%
+  arrange(phylum)
+
+genera_coverage$phylum <- factor(genera_coverage$phylum, levels = phylum_order)
+
+write.csv(genera_coverage, paste0("Results/", threshold_name, "/plant_genera_coverage_", threshold_name, ".csv"), row.names = FALSE)
+
+missing_genera <- plant_genera_backbone %>%
+  anti_join(dataset_genera, by = c("phylum", "genus")) %>%
+  arrange(phylum, genus)
+
+write.csv(missing_genera, paste0("Results/", threshold_name, "/missing_plant_genera_", threshold_name, ".csv"), row.names = FALSE)
+
+# Plot raw counts
+genera_long <- genera_coverage %>%
+  filter(!is.na(phylum)) %>%
+  select(phylum, n_genera_found, n_genera_missing) %>%
+  pivot_longer(cols = starts_with("n_"), names_to = "status", values_to = "count") %>%
+  mutate(
+    status = recode(status, n_genera_found = "Found", n_genera_missing = "Missing"),
+    phylum = factor(phylum, levels = phylum_order)
+  )
+
+gen_pal <- c("Found" = "#A1C181", "Missing" = "#C97E7E")
+
+gens <- ggplot(genera_long, aes(x = phylum, y = count, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = paste0("Plant Genus Coverage (", threshold_name, ")"),
+    x = "Phylum", y = "Number of Genera", fill = "Coverage Status"
+  ) +
+  scale_fill_manual(values = gen_pal)
+
+save_plot(paste0("Results/", threshold_name, "/genera_missing_present_", threshold_name, ".png"), gens)
+
+# Plot proportional
+genera_coverage_prop <- genera_coverage %>%
+  mutate(
+    prop_found = n_genera_found / total_genera,
+    prop_missing = n_genera_missing / total_genera
+  )
+
+genera_long_prop <- genera_coverage_prop %>%
+  pivot_longer(cols = starts_with("prop_"), names_to = "status", values_to = "proportion") %>%
+  mutate(
+    status = recode(status, prop_found = "Found", prop_missing = "Missing"),
+    phylum = factor(phylum, levels = phylum_order)
+  )
+
+gens_prop <- ggplot(genera_long_prop, aes(x = phylum, y = proportion, fill = status)) +
+  geom_col() +
+  geom_text(aes(label = percent(proportion, accuracy = 1)),
+            position = position_stack(vjust = 0.5),
+            size = 4, color = "black") +
+  coord_flip() +
+  labs(
+    title = paste0("Proportional Plant Genus Coverage (", threshold_name, ")"),
+    x = "Phylum", y = "Proportion of Genera", fill = "Coverage Status"
+  ) +
+  scale_fill_manual(values = gen_pal) +
+  scale_y_continuous(labels = percent_format(accuracy = 1))
+
+save_plot(paste0("Results/", threshold_name, "/genera_missing_present_prop_", threshold_name, ".png"), gens_prop)
+
+
+# SPECIES COVERAGE ----------------------------------------------
+
+plant_species_backbone <- species_no_ext %>%
+  filter(kingdom == "Plantae", taxonomicStatus == "accepted") %>%
+  filter(!is.na(canonicalName), !is.na(phylum)) %>%
+  distinct(phylum, canonicalName)
+
+total_species_per_phylum <- plant_species_backbone %>%
+  group_by(phylum) %>%
+  summarise(total_species = n_distinct(canonicalName), .groups = "drop")
+
+plant_df <- plant_df %>%
+  mutate(canonical_lower = tolower(canonicalName)) %>%
+  filter(
+    !(match_type == "species" & canonical_lower %in% extinct_species),
+    !(match_type == "genus" & canonical_lower %in% extinct_genera),
+    !(match_type == "family" & canonical_lower %in% extinct_families),
+    !(match_type == "order" & canonical_lower %in% extinct_orders)
+  ) %>%
+  select(-canonical_lower)
+
+plant_species_df_clean <- plant_df %>%
+  filter(kingdom == "Plantae", !is.na(phylum), !is.na(canonicalName))
+
+dataset_species <- plant_species_df_clean %>%
+  distinct(phylum, canonicalName)
+
+species_in_dataset <- dataset_species %>%
+  group_by(phylum) %>%
+  summarise(n_species_found = n_distinct(canonicalName), .groups = "drop")
+
+species_coverage <- total_species_per_phylum %>%
+  left_join(species_in_dataset, by = "phylum") %>%
+  mutate(
+    n_species_found = replace_na(n_species_found, 0),
+    n_species_missing = total_species - n_species_found
+  ) %>%
+  arrange(phylum)
+
+species_coverage$phylum <- factor(species_coverage$phylum, levels = phylum_order)
+
+write.csv(species_coverage, paste0("Results/", threshold_name, "/plant_species_coverage_", threshold_name, ".csv"), row.names = FALSE)
+
+missing_species <- plant_species_backbone %>%
+  anti_join(dataset_species, by = c("phylum", "canonicalName")) %>%
+  arrange(phylum, canonicalName)
+
+write.csv(missing_species, paste0("Results/", threshold_name, "/missing_plant_species_", threshold_name, ".csv"), row.names = FALSE)
+
+# Plot raw counts
+species_long <- species_coverage %>%
+  select(phylum, n_species_found, n_species_missing) %>%
+  pivot_longer(cols = starts_with("n_"), names_to = "status", values_to = "count") %>%
+  mutate(
+    status = recode(status, n_species_found = "Found", n_species_missing = "Missing"),
+    phylum = factor(phylum, levels = phylum_order)
+  )
+
+species_pal <- c("Found" = "#A1C181", "Missing" = "#C97E7E")
+
+specs <- ggplot(species_long, aes(x = phylum, y = count, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = paste0("Plant Species Coverage (", threshold_name, ")"),
+    x = "Phylum", y = "Number of Species", fill = "Coverage Status"
+  ) +
+  scale_fill_manual(values = species_pal)
+
+save_plot(paste0("Results/", threshold_name, "/species_missing_present_", threshold_name, ".png"), specs)
+
+# Proportional coverage
+species_coverage_prop <- species_coverage %>%
+  mutate(
+    prop_found = n_species_found / total_species,
+    prop_missing = n_species_missing / total_species
+  )
+
+species_long_prop <- species_coverage_prop %>%
+  pivot_longer(cols = starts_with("prop_"), names_to = "status", values_to = "proportion") %>%
+  mutate(
+    status = recode(status, prop_found = "Found", prop_missing = "Missing"),
+    phylum = factor(phylum, levels = phylum_order)
+  )
+
+specs_prop <- ggplot(species_long_prop, aes(x = phylum, y = proportion, fill = status)) +
+  geom_col() +
+  geom_text(aes(label = percent(proportion, accuracy = 1)),
+            position = position_stack(vjust = 0.5),
+            size = 4, color = "black") +
+  coord_flip() +
+  labs(
+    title = paste0("Proportional Plant Species Coverage (", threshold_name, ")"),
+    x = "Phylum", y = "Proportion of Species", fill = "Coverage Status"
+  ) +
+  scale_fill_manual(values = species_pal) +
+  scale_y_continuous(labels = percent_format(accuracy = 1))
+
+save_plot(paste0("Results/", threshold_name, "/species_missing_present_prop_", threshold_name, ".png"), specs_prop)
 
 } #End loop
+
+
+# Loop version ------------------------------------------------------------
+
+
+#Trying it as a loop now
+
+generate_species_coverage <- function(
+    extinct_taxa,
+    plant_df,
+    species_no_ext,
+    threshold_name,
+    phylum_order
+) {
+  require(dplyr)
+  require(tidyr)
+  require(ggplot2)
+  require(scales)
+  
+  name_sym <- sym("canonicalName")
+  
+  plant_backbone <- species_no_ext %>%
+    filter(kingdom == "Plantae", taxonomicStatus == "accepted", taxonRank == "species") %>%
+    filter(!is.na(canonicalName), !is.na(phylum)) %>%
+    distinct(phylum, canonicalName) %>%
+    rename(name = canonicalName)
+  
+  total_taxa_per_phylum <- plant_backbone %>%
+    group_by(phylum) %>%
+    summarise(total = n_distinct(name), .groups = "drop")
+  
+  plant_df <- plant_df %>%
+    mutate(canonical_lower = tolower(canonicalName)) %>%
+    filter(!(match_type == "species" & canonical_lower %in% extinct_taxa$extinct_species)) %>%
+    select(-canonical_lower)
+  
+  dataset_taxa <- plant_df %>%
+    filter(taxonRank == "species", !is.na(canonicalName), !is.na(phylum)) %>%
+    distinct(phylum, canonicalName) %>%
+    rename(name = canonicalName)
+  
+  found_per_phylum <- dataset_taxa %>%
+    group_by(phylum) %>%
+    summarise(n_found = n_distinct(name), .groups = "drop")
+  
+  coverage <- total_taxa_per_phylum %>%
+    left_join(found_per_phylum, by = "phylum") %>%
+    mutate(
+      n_found = replace_na(n_found, 0),
+      n_missing = total - n_found
+    ) %>%
+    arrange(phylum)
+  
+  coverage$phylum <- factor(coverage$phylum, levels = phylum_order)
+  
+  write.csv(coverage, paste0("Results/", threshold_name, "/plant_species_coverage_", threshold_name, ".csv"), row.names = FALSE)
+  
+  missing_taxa <- plant_backbone %>%
+    anti_join(dataset_taxa, by = c("phylum", "name")) %>%
+    arrange(phylum, name)
+  
+  write.csv(missing_taxa, paste0("Results/", threshold_name, "/missing_plant_species_", threshold_name, ".csv"), row.names = FALSE)
+  
+  long_data <- coverage %>%
+    filter(!is.na(phylum)) %>%
+    select(phylum, n_found, n_missing) %>%
+    pivot_longer(cols = starts_with("n_"), names_to = "status", values_to = "count") %>%
+    mutate(
+      status = recode(status, n_found = "Found", n_missing = "Missing"),
+      phylum = factor(phylum, levels = phylum_order)
+    )
+  
+  pal <- c("Found" = "#A1C181", "Missing" = "#C97E7E")
+  
+  raw_plot <- ggplot(long_data, aes(x = phylum, y = count, fill = status)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      title = paste0("Plant ", tools::toTitleCase(rank), " Coverage (", threshold_name, ")"),
+      x = "Phylum",
+      y = paste0("Number of ", tools::toTitleCase(rank), "s"),
+      fill = "Coverage Status"
+    ) +
+    scale_fill_manual(values = pal)
+  
+  save_plot(paste0("Results/", threshold_name, "/", rank, "s_missing_present_", threshold_name, ".png"), raw_plot)
+  
+  # Proportional plot
+  prop_data <- coverage %>%
+    filter(!is.na(phylum)) %>%
+    mutate(
+      prop_found = n_found / total,
+      prop_missing = n_missing / total
+    ) %>%
+    pivot_longer(cols = starts_with("prop_"), names_to = "status", values_to = "proportion") %>%
+    mutate(
+      status = recode(status, prop_found = "Found", prop_missing = "Missing"),
+      phylum = factor(phylum, levels = phylum_order)
+    )
+  
+  prop_plot <- ggplot(prop_data, aes(x = phylum, y = proportion, fill = status)) +
+    geom_col() +
+    geom_text(aes(label = scales::percent(proportion, accuracy = 1)),
+              position = position_stack(vjust = 0.5),
+              size = 4, color = "black") +
+    coord_flip() +
+    labs(
+      title = paste0("Proportional Plant ", tools::toTitleCase(rank), " Coverage (", threshold_name, ")"),
+      x = "Phylum",
+      y = paste0("Proportion of ", tools::toTitleCase(rank), "s"),
+      fill = "Coverage Status"
+    ) +
+    scale_fill_manual(values = pal) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+  
+  save_plot(paste0("Results/", threshold_name, "/", rank, "s_missing_present_prop_", threshold_name, ".png"), prop_plot)
+}
+
+generate_species_coverage(
+  extinct_taxa = list(
+    extinct_species = extinct_species,
+    extinct_genera = extinct_genera,
+    extinct_families = extinct_families,
+    extinct_orders = extinct_orders
+  ),
+  plant_df = plant_species_df,
+  species_no_ext = species_no_ext,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order
+)
+
+generate_taxon_coverage(
+  rank = "family",
+  extinct_taxa = list(
+    extinct_species = extinct_species,
+    extinct_genera = extinct_genera,
+    extinct_families = extinct_families,
+    extinct_orders = extinct_orders
+  ),
+  plant_df = plant_species_df,
+  species_no_ext = species_no_ext,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order
+)
+
+generate_taxon_coverage(
+  rank = "genus",
+  extinct_taxa = list(
+    extinct_species = extinct_species,
+    extinct_genera = extinct_genera,
+    extinct_families = extinct_families,
+    extinct_orders = extinct_orders
+  ),
+  plant_df = plant_species_df,
+  species_no_ext = species_no_ext,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order
+)
+
+
+
+generate_species_coverage(
+  extinct_taxa = list(
+    extinct_species = extinct_species,
+    extinct_genera = extinct_genera,
+    extinct_families = extinct_families,
+    extinct_orders = extinct_orders
+  ),
+  plant_df = plant_species_df,
+  species_no_ext = species_no_ext,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order
+)
+
+generate_taxon_coverage(
+  rank = "family",
+  extinct_taxa = list(
+    extinct_species = extinct_species,
+    extinct_genera = extinct_genera,
+    extinct_families = extinct_families,
+    extinct_orders = extinct_orders
+  ),
+  plant_df = plant_species_df,
+  species_no_ext = species_no_ext,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order
+)
+
+generate_taxon_coverage(
+  rank = "genus",
+  extinct_taxa = list(
+    extinct_species = extinct_species,
+    extinct_genera = extinct_genera,
+    extinct_families = extinct_families,
+    extinct_orders = extinct_orders
+  ),
+  plant_df = plant_species_df,
+  species_no_ext = species_no_ext,
+  threshold_name = threshold_name,
+  phylum_order = phylum_order
+)
+
