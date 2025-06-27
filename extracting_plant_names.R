@@ -200,10 +200,11 @@ training_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
   mutate(predicted_label = label,
          volume = as.character(volume))
 
+
+
 labeled_abstracts <- bind_rows(training_abstracts, abstracts_long) %>%
   mutate(id = row_number()) %>%
   relocate(id)
-
 
 absences <- labeled_abstracts %>%
   filter(threshold == "label_loose")%>%
@@ -487,7 +488,7 @@ for (i in seq_along(threshold_levels)) {
   }
 
 #Can just read the above csv instead of running the above code
-#check that id is actually distinct.
+
 
 # Start here --------------------------------------------------------------
 #threshold_levels <- c("label_loose", "label_medium", "label_strict")
@@ -754,6 +755,18 @@ save_plot(paste0("Results/", threshold_name, "/plant_parts_", threshold_name, ".
 
 plant_df <- plant_species_df #So i dont have to remake it if i mess up
 
+plant_df <- plant_df %>%
+  mutate(
+    family = case_when(
+      is.na(family) & match_type == "family" ~ canonicalName,
+      TRUE ~ family
+    ),
+    genus = case_when(
+      is.na(genus) & match_type == "genus" ~ canonicalName,
+      TRUE ~ genus
+    )
+  )
+
 extinct_taxa <- read.csv("pbdb_all.csv", skip = 16)%>%
   filter(is_extant == "extinct")%>%
   mutate(across(taxon_name:genus, tolower))
@@ -777,6 +790,18 @@ extinct_orders<- extinct_taxa %>%
   filter(taxon_rank == "order") %>%
   distinct(taxon_name) %>%
   pull(taxon_name)
+
+unique(extinct_taxa$taxon_rank)
+
+species_no_ext %>%
+  filter(phylum == "Charophyta" & taxonRank == "species")%>%
+  distinct(canonicalName)%>%
+  tally()
+
+species_no_ext %>%
+  filter(phylum == "Glaucophyta" & taxonRank == "species")%>%
+  distinct(canonicalName)%>%
+  tally()
 
 
 species_no_ext <- species %>%
@@ -816,10 +841,19 @@ plant_df <- plant_df %>%
   ) %>%
   select(-canonical_lower)
 
-# 3. Pick one accepted family per genus from your dataset
-family_per_genus <- plant_df %>%
-  filter(kingdom == "Plantae", !is.na(genus), !is.na(family)) %>%
-  group_by(genus, family) %>%
+
+
+test <- plant_df %>%
+  filter(is.na(genus))
+
+plant_df %>%
+  filter(kingdom == "Plantae")%>%
+  distinct(phylum, family)%>%
+  tally()
+
+family_per_genus_phylum <- plant_df %>%
+  filter(kingdom == "Plantae", !is.na(genus), !is.na(family), !is.na(phylum)) %>%
+  group_by(phylum, genus, family) %>%
   tally(name = "n") %>%
   slice_max(n, n = 1, with_ties = FALSE) %>%
   ungroup()
@@ -828,11 +862,14 @@ family_per_genus <- plant_df %>%
 plant_species_df_clean <- plant_df %>%
   filter(kingdom == "Plantae", !is.na(phylum), !is.na(genus)) %>%
   select(-family) %>%
-  left_join(family_per_genus %>% select(genus, family), by = "genus")
+  left_join(family_per_genus_phylum %>% select(phylum, genus, family),
+            by = c("phylum", "genus"))
 
-# 5. Extract distinct families observed in your cleaned dataset
+# 5. Extract distinct families observed in your cleaned dataset. 393 vs. 194
 dataset_families <- plant_species_df_clean %>%
   distinct(phylum, family)
+
+dim(dataset_families)
 
 # 6. Count number of observed families per phylum
 families_in_dataset <- dataset_families %>%
@@ -1045,7 +1082,7 @@ genera_long_prop <- genera_coverage_prop %>%
 
 gens_prop <- ggplot(genera_long_prop, aes(x = phylum, y = proportion, fill = status)) +
   geom_col() +
-  geom_text(aes(label = percent(proportion, accuracy = 1)),
+  geom_text(aes(label = scales::percent(proportion, accuracy = 1)),
             position = position_stack(vjust = 0.5),
             size = 4, color = "black") +
   coord_flip() +
@@ -1054,7 +1091,7 @@ gens_prop <- ggplot(genera_long_prop, aes(x = phylum, y = proportion, fill = sta
     x = "Phylum", y = "Proportion of Genera", fill = "Coverage Status"
   ) +
   scale_fill_manual(values = gen_pal) +
-  scale_y_continuous(labels = percent_format(accuracy = 1))
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))
 
 save_plot(paste0("Results/", threshold_name, "/genera_missing_present_prop_", threshold_name, ".png"), gens_prop)
 
@@ -1070,15 +1107,6 @@ total_species_per_phylum <- plant_species_backbone %>%
   group_by(phylum) %>%
   summarise(total_species = n_distinct(canonicalName), .groups = "drop")
 
-plant_df <- plant_df %>%
-  mutate(canonical_lower = tolower(canonicalName)) %>%
-  filter(
-    !(match_type == "species" & canonical_lower %in% extinct_species),
-    !(match_type == "genus" & canonical_lower %in% extinct_genera),
-    !(match_type == "family" & canonical_lower %in% extinct_families),
-    !(match_type == "order" & canonical_lower %in% extinct_orders)
-  ) %>%
-  select(-canonical_lower)
 
 plant_species_df_clean <- plant_df %>%
   filter(kingdom == "Plantae", !is.na(phylum), !is.na(canonicalName))
@@ -1146,7 +1174,7 @@ species_long_prop <- species_coverage_prop %>%
 
 specs_prop <- ggplot(species_long_prop, aes(x = phylum, y = proportion, fill = status)) +
   geom_col() +
-  geom_text(aes(label = percent(proportion, accuracy = 1)),
+  geom_text(aes(label = scales::percent(proportion, accuracy = 1)),
             position = position_stack(vjust = 0.5),
             size = 4, color = "black") +
   coord_flip() +
@@ -1155,7 +1183,7 @@ specs_prop <- ggplot(species_long_prop, aes(x = phylum, y = proportion, fill = s
     x = "Phylum", y = "Proportion of Species", fill = "Coverage Status"
   ) +
   scale_fill_manual(values = species_pal) +
-  scale_y_continuous(labels = percent_format(accuracy = 1))
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))
 
 save_plot(paste0("Results/", threshold_name, "/species_missing_present_prop_", threshold_name, ".png"), specs_prop)
 
@@ -1164,6 +1192,9 @@ save_plot(paste0("Results/", threshold_name, "/species_missing_present_prop_", t
 
 # Loop version ------------------------------------------------------------
 
+test <- species %>%
+  filter(phylum == "Charophyta")%>%
+  slice_sample(n=30)
 
 #Trying it as a loop now
 

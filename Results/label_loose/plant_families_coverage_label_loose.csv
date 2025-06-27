@@ -1,9 +1,9 @@
 "phylum","total_families","n_families_found","n_families_missing"
 "Anthocerotophyta",4,1,3
-"Bryophyta",123,1,122
+"Bryophyta",123,3,120
 "Charophyta",18,0,18
-"Chlorophyta",100,2,98
+"Chlorophyta",100,4,96
 "Glaucophyta",1,0,1
-"Marchantiophyta",71,1,70
+"Marchantiophyta",71,3,68
 "Rhodophyta",107,2,105
-"Tracheophyta",462,187,275
+"Tracheophyta",462,197,265
