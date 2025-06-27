@@ -659,9 +659,9 @@ plant_phyla_counts$raw_plot
 plant_phyla_counts$ratio_plot
 
 
-save_plot(paste0("Results/", threshold_name, "/plant_raw_species_counts_", threshold_name, ".png"), plant_phyla_counts$raw_plot)
+save_plot(paste0("Results/", threshold_name, "/phyla_raw_", threshold_name, ".png"), plant_phyla_counts$raw_plot)
 
-save_plot(paste0("Results/", threshold_name, "/plant_norm_species_counts_", threshold_name, ".png"), plant_phyla_counts$ratio_plot)
+save_plot(paste0("Results/", threshold_name, "/phyla_norm_", threshold_name, ".png"), plant_phyla_counts$ratio_plot)
 
 
 #now fungi
