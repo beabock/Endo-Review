@@ -140,27 +140,7 @@ plant_part_groups <- c(
 
 #download all accepted species from backbone because their api is overwhelmbed by this code
 backbone <- vroom("gbif_backbone/Taxon.tsv", 
-                  delim = "\t")#,
-                 #  col_select = c(
-                 #    "taxonRank",       # rank, to filter species
-                 #    "taxonomicStatus", # accepted/synonym status
-                 #    "canonicalName",   # scientific name
-                 #    "genericName", #new
-                 # #   "scientificName", #scientific has more info than canonical name. don't use
-                 # "acceptedNameUsageID",
-                 # "originalNameUsageID",
-                 # "nomenclaturalStatus",
-                 # "taxonID",
-                 # "parentNameUsageID",
-                 # 
-                 #    "kingdom",
-                 #    "phylum",
-                 #    "class",
-                 #    "order",
-                 #    "family",
-                 #    "genus"          # logical extinct flag (TRUE/FALSE)
-                 # 
-                 #  )) #Could use acceptedNameUsageID
+                  delim = "\t")
 
 if (!file.exists("species.rds")) {
   species <- backbone %>%
@@ -206,6 +186,8 @@ labeled_abstracts <- bind_rows(training_abstracts, abstracts_long) %>%
   mutate(id = row_number()) %>%
   relocate(id)
 
+write.csv("labeled_and_predicted_abstracts.csv", labeled_abstracts)
+
 absences <- labeled_abstracts %>%
   filter(threshold == "label_loose")%>%
   filter(predicted_label == "Absence")
@@ -233,27 +215,59 @@ correct_capitalization <- function(name) {
 gbif_fields <- colnames(backbone)
 
 
-
-#Okay got it. If something is a synonym, the value in acceptedNameID will match the taxonID in the accepted column. They will share parentNameUsageIDs.
-
+# Taxon vectors
 accepted_names <- backbone %>%
-  filter(taxonomicStatus == "accepted") %>%
+  filter(taxonomicStatus == "accepted" & kingdom == "Plantae") %>%
   select(-acceptedNameUsageID)
 
 
+
+# Old approach ------------------------------------------------------------
+
 #valid_species_lookup <- batch_validate_species(all_candidates)
 #saveRDS(valid_species_lookup, "valid_species_lookup.rds")
-batch_validate_names <- function(names, species_df = species) {
+
+species_df <- species %>%
+  mutate(canonicalName_lower = tolower(canonicalName))
+
+genera_from_species <- accepted_species %>%
+  distinct(genus, phylum, family, kingdom) %>%
+  rename(canonicalName = genus) %>%
+  mutate(canonicalName_lower = tolower(canonicalName))
+
+families_from_species <- accepted_species %>%
+  distinct(family, phylum, kingdom) %>%
+  rename(canonicalName = family) %>%
+  mutate(canonicalName_lower = tolower(canonicalName))
+
+
+
+accepted_species <- species_df %>%
+  filter(taxonomicStatus == "accepted") %>%
+  select(taxonID, canonicalName) %>%
+  rename(canonicalName_accepted = canonicalName)
+
+genus_list <- species_df %>%
+  filter(taxonomicStatus == "accepted", !is.na(genus)) %>%
+  distinct(genus) %>%
+  rename(canonicalName = genus) %>%
+  mutate(canonicalName_lower = tolower(canonicalName))
+
+family_list <- species_df %>%
+  filter(taxonomicStatus == "accepted", !is.na(family)) %>%
+  distinct(family) %>%
+  rename(canonicalName = family) %>%
+  mutate(canonicalName_lower = tolower(canonicalName))
+
+batch_validate_names <- function(names, species_df) {
+  
   names <- unique(names)
   
   # Step 1: Direct species match
   validated <- tibble(user_supplied_name = names) %>%
-    left_join(species_df, by = c("user_supplied_name" = "canonicalName"), keep = TRUE)
+    mutate(user_supplied_name_lower = tolower(user_supplied_name)) %>%
+    left_join(species_df, by = c("user_supplied_name_lower" = "canonicalName_lower"), keep = TRUE)
   
-  accepted_species <- species_df %>%
-    filter(taxonomicStatus == "accepted") %>%
-    select(taxonID, canonicalName) %>%
-    rename(canonicalName_accepted = canonicalName)
   
   syns <- validated %>%
     filter(taxonomicStatus != "accepted" & !is.na(acceptedNameUsageID)) %>%
@@ -265,6 +279,12 @@ batch_validate_names <- function(names, species_df = species) {
   
   reals <- validated %>%
     filter(taxonomicStatus == "accepted")
+  
+  syns <- syns %>%
+    mutate(canonicalName_lower = as.character(canonicalName_lower))
+  
+  reals <- reals %>%
+    mutate(canonicalName_lower = as.character(canonicalName_lower))
   
   resolved <- bind_rows(syns, reals) %>%
     filter(!is.na(canonicalName)) %>%
@@ -279,21 +299,11 @@ batch_validate_names <- function(names, species_df = species) {
     filter(!user_supplied_name %in% resolved$user_supplied_name) %>%
     mutate(first_word = word(user_supplied_name, 1))
   
-  genus_list <- species_df %>%
-    filter(taxonomicStatus == "accepted", !is.na(genus)) %>%
-    distinct(genus) %>%
-    rename(canonicalName = genus)
-  
-  family_list <- species_df %>%
-    filter(taxonomicStatus == "accepted", !is.na(family)) %>%
-    distinct(family) %>%
-    rename(canonicalName = family)
-  
   genus_matches <- unresolved %>%
-    inner_join(genus_list, by = c("first_word" = "canonicalName"))
+    inner_join(genus_list, by = c("first_word" = "canonicalName_lower"))
   
   family_matches <- unresolved %>%
-    inner_join(family_list, by = c("first_word" = "canonicalName"))
+    inner_join(family_list, by = c("first_word" = "canonicalName_lower"))
   
   fallback <- bind_rows(genus_matches, family_matches) %>%
     mutate(
@@ -303,7 +313,22 @@ batch_validate_names <- function(names, species_df = species) {
       acceptedScientificName = NA
     )
   
-  # Final result
+  fallback <- fallback %>%
+    mutate(acceptedScientificName = as.character(acceptedScientificName))
+  
+  ensure_cols <- function(df, template) {
+    if (nrow(df) == 0) {
+      # Create zero-row tibble with template's columns and classes
+      df <- template[0, ]
+    }
+    return(df)
+  }
+  
+  # Use resolved as template because it should have the full structure
+  fallback <- ensure_cols(fallback, resolved)
+  resolved <- ensure_cols(resolved, fallback) # in case resolved is empty too
+  
+  # Now bind safely
   final <- bind_rows(resolved, fallback) %>%
     distinct(canonicalName, .keep_all = TRUE)
   
@@ -343,6 +368,8 @@ extract_plant_info <- function(
   genus_mentions <- unique(tokens_vec[tokens_vec %in% genus_names_lower])
   family_mentions <- unique(tokens_vec[tokens_vec %in% family_names_lower])
   
+  
+  
   mentions_species <- FALSE
   mentions_genus <- length(genus_mentions) > 0
   mentions_family <- length(family_mentions) > 0
@@ -351,7 +378,8 @@ extract_plant_info <- function(
   
   # Species matches
   valid_species <- valid_species_lookup %>%
-    filter(resolved_name %in% plant_candidates)
+    mutate(resolved_name_lower = tolower(resolved_name)) %>%
+    filter(resolved_name_lower %in% tolower(plant_candidates))
   
   if (nrow(valid_species) > 0) {
     mentions_species <- TRUE
@@ -423,8 +451,9 @@ extract_plant_info <- function(
 
 force_refresh = T
 
-for (i in seq_along(threshold_levels)) {
-  
+#for (i in seq_along(threshold_levels)) {
+
+  i <-1
   threshold_name <- threshold_levels[i]
   message("Processing threshold: ", threshold_name)
   
@@ -432,34 +461,36 @@ for (i in seq_along(threshold_levels)) {
   abs <- labeled_abstracts %>%
     filter(threshold == threshold_name) %>%
     mutate(ngrams = map(abstract, ~ {
-      tokens(.x, remove_punct = TRUE, remove_numbers = TRUE) %>%
-        tokens_tolower() %>%
+      toks <- tokens(.x, remove_punct = TRUE, remove_numbers = TRUE) %>%
+        tokens_tolower()
+      
+      unigrams <- toks %>% unlist()
+      bigrams <- toks %>%
         tokens_ngrams(n = 2) %>%
         unlist() %>%
         sapply(function(name) gsub("_", " ", name))
+      
+      unique(c(unigrams, bigrams))
     }))
   
   # Collect all unique candidate names
   all_candidates <- abs %>%
     pull(ngrams) %>%
     unlist() %>%
-    unique() %>%
-    sapply(correct_capitalization)
+    tolower() %>% unique()
   
   # Load or generate GBIF validation lookup
   if (file.exists("valid_species_lookup.rds") && !force_refresh) {
     valid_species_lookup <- readRDS("valid_species_lookup.rds")
   } else {
-    valid_species_lookup <- batch_validate_names(all_candidates)
+    valid_species_lookup <- batch_validate_names(all_candidates, species_df = species_df)
     saveRDS(valid_species_lookup, "valid_species_lookup.rds")
   }
   
-  # double check that valid species loopup isn't getting rid of any info I need
   if (!"resolved_name" %in% names(valid_species_lookup)) {
-    stop("The 'resolved_name' column is missing from valid_species_lookup. Check batch_validate_species() output.")
+    stop("The 'resolved_name' column is missing from valid_species_lookup.")
   }
   
-  # Extract plant and fungal info in parallel
   plant_species_df <- future_pmap_dfr(
       list(
         abs$abstract,
@@ -467,30 +498,39 @@ for (i in seq_along(threshold_levels)) {
         abs$predicted_label,
         abs$ngrams
       ),
-      ~extract_plant_info(
-        text = ..1,
-        abstract_id = ..2,
-        predicted_label = ..3,
-        ngrams = ..4,
-        valid_species_lookup = valid_species_lookup,
-        genera_lookup = genera_from_species,
-        families_lookup = families_from_species
-      ),
+      ~{
+        
+        extract_plant_info(
+          text = ..1,
+          abstract_id = ..2,
+          predicted_label = ..3,
+          ngrams = ..4,
+          valid_species_lookup = valid_species_lookup,
+          genera_lookup = genera_from_species,
+          families_lookup = families_from_species
+        )
+      },
       .options = furrr_options(seed = TRUE)
     )
+  
   if (!"phylum" %in% names(plant_species_df)) {
     stop("Missing 'phylum' column in plant_species_df.")
   }
   
-  # Save results with threshold in name
-  out_name <- paste0("taxa_info_results_", threshold_name, ".csv")
+  # Save results
+  out_name <- paste0("taxa_info_results_", threshold_name, "2.csv")
   write.csv(plant_species_df, out_name, row.names = FALSE)
-  }
+ # }
 
 #Can just read the above csv instead of running the above code
 
 
 # Start here --------------------------------------------------------------
+test <- read.csv("taxa_info_results_label_loose.csv")
+
+test %>%
+  filter(canonicalName == "Acer macrophyllum" | user_supplied_name == "Acer macrophyllum" | resolved_name == "Acer macrophyllum" | acceptedScientificName == "Acer macrophyllum")
+
 #threshold_levels <- c("label_loose", "label_medium", "label_strict")
 threshold_levels <- c("label_loose")
 #plantae_key <- name_backbone(name = "Plantae")$usageKey
@@ -523,8 +563,8 @@ phylum_order_fungi <- sort(expected_fung_phyla)
 phylum_order <- sort(expected_plant_phyla)
 
 
-for (i in seq_along(threshold_levels)) {
-
+#for (i in seq_along(threshold_levels)) {
+i <-1 #Sets it to loose. Can change back to loop later.
   threshold_name <- threshold_levels[i]
   
 plant_species_df <- read.csv(paste0("taxa_info_results_", threshold_name, ".csv"))
