@@ -37,59 +37,84 @@ save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...)
 
 # PLANT PARTS CONFIGURATION -----------------------------------------------
 
-# Consolidated plant parts keywords with better organization
-plant_parts_keywords <- c(
+  # Consolidated plant parts keywords with better organization
+  #Might want to add more plant parts here.
+  plant_parts_keywords <- c(
   # Basic structures
-  "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
+  "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems",
   "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
   "twig", "twigs", "shoot", "shoots", "bud", "buds", "trunk", "trunks",
-  
+  "culm", "culms", "rachis", "rachises", "phyllode", "phyllodes",
+  "caudex", "caudices", "sucker", "suckers", "scion", "scions",
+  "adventitious root", "adventitious roots",
+
   # Reproductive structures
-  "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
-  "sepal", "sepals", "petal", "petals", "stigma", "stigmas", 
+  "pistil", "pistils", "anther", "anthers", "carpel", "carpels",
+  "sepal", "sepals", "petal", "petals", "stigma", "stigmas",
   "style", "styles", "ovary", "ovaries", "ovule", "ovules",
   "calyx", "calyces", "corolla", "corollas", "pollen",
   "inflorescence", "inflorescences", "floret", "florets",
-  
+  "receptacle", "receptacles", "bract", "bracts", "glume", "glumes",
+  "lemma", "lemmas", "palea", "paleae", "awn", "awns",
+  "sporophyll", "sporophylls", "megaspore", "megaspores",
+  "microspore", "microspores", "sporangium", "sporangia",
+  "gametangium", "gametangia", "archegonium", "archegonia",
+  "antheridium", "antheridia", "prothallus", "prothalli",
+  "sorus", "sori", "cone", "cones",
+
   # Specialized structures
-  "rhizome", "rhizomes", "tuber", "tubers", "bulb", "bulbs", 
+  "rhizome", "rhizomes", "tuber", "tubers", "bulb", "bulbs",
   "corm", "corms", "tendril", "tendrils", "thorn", "thorns",
-  "cone", "cones", "needle", "needles",
-  
+  "needle", "needles", "spine", "spines", "scale", "scales",
+  "keel", "keels", "ligule", "ligules", "pulvinus", "pulvini",
+  "lenticel", "lenticels", "haustorium", "haustoria", "tiller", "tillers",
+
   # Anatomical features
   "xylem", "phloem", "cortex", "cortices", "epidermis", "endodermis",
   "mesophyll", "parenchyma", "sclerenchyma", "collenchyma",
-  "stomata", "stoma", "cuticle", "cuticles", "trichome", "trichomes",
-  
+  "stoma", "stomata", "cuticle", "cuticles", "trichome", "trichomes",
+  "meristem", "meristems", "pericycle", "cambium", "cambia",
+  "resin duct", "resin ducts", "vascular bundle", "vascular bundles",
+  "pith", "guard cell", "guard cells", "lumen", "lumens",
+  "plasmodesma", "plasmodesmata", "chloroplast", "chloroplasts",
+  "amyloplast", "amyloplasts", "idioblast", "idioblasts",
+  "laticifer", "laticifers",
+
   # Leaf parts
   "petiole", "petioles", "lamina", "laminae", "stipule", "stipules",
   "leaflet", "leaflets", "node", "nodes", "internode", "internodes",
-  
-  # Seed/embryo parts
+  "sheath", "sheaths", "midrib", "midribs", "vein", "veins",
+  "margin", "margins", "blade", "blades", "abaxial surface", "adaxial surface",
+
+  # Seed/embryo/dispersal structures
   "cotyledon", "cotyledons", "endosperm", "embryo", "embryos",
-  "testa", "hilum", "micropyle", "aleurone"
+  "testa", "hilum", "micropyle", "aleurone", "placenta", "placentas",
+  "funiculus", "funiculi", "raphe", "raphes", "aril", "arils",
+  "elaiosome", "elaiosomes", "hypocotyl", "hypocotyls", "radicle", "radicles",
+  "plumule", "plumules", "scutellum", "scutella", "coleoptile", "coleoptiles",
+  "coleorhiza", "coleorhizae", "perisperm", "perisperms"
 )
 
-# Create mapping for plural/singular normalization
-create_plant_part_groups <- function(keywords) {
-  groups <- character()
-  for (word in keywords) {
-    if (str_ends(word, "s") && !word %in% c("cortex", "xylem", "phloem")) {
-      singular <- str_remove(word, "s$")
-      if (singular %in% keywords) {
-        groups[word] <- singular
+  # Create mapping for plural/singular normalization
+  create_plant_part_groups <- function(keywords) {
+    groups <- character()
+    for (word in keywords) {
+      if (str_ends(word, "s") && !word %in% c("cortex", "xylem", "phloem")) {
+        singular <- str_remove(word, "s$")
+        if (singular %in% keywords) {
+          groups[word] <- singular
+        }
       }
     }
+    # Add special cases
+    groups["calyces"] <- "calyx"
+    groups["cortices"] <- "cortex"
+    groups["stomata"] <- "stoma"
+    groups["laminae"] <- "lamina"
+    groups["paleae"] <- "palea"
+    
+    return(groups)
   }
-  # Add special cases
-  groups["calyces"] <- "calyx"
-  groups["cortices"] <- "cortex"
-  groups["stomata"] <- "stoma"
-  groups["laminae"] <- "lamina"
-  groups["paleae"] <- "palea"
-  
-  return(groups)
-}
 
 plant_part_groups <- create_plant_part_groups(plant_parts_keywords)
 
@@ -199,6 +224,8 @@ batch_validate_names <- function(names, lookup_tables) {
   # Filter out invalid names and limit to a reasonable number to process
   names <- unique(names[!is.na(names) & names != ""])
   
+  #How does the below handle bigrams? 
+
   # Skip processing if too many names (likely noise)
   if (length(names) > 200) {
     message("Large number of candidate names (", length(names), "), filtering to most likely candidates")
@@ -804,7 +831,7 @@ analyze_taxonomic_coverage <- function(plant_species_df, threshold_name) {
     higherTaxonKey = plantae_key,
     rank = "PHYLUM",
     status = "ACCEPTED",
-    isExtinct = FALSE,
+    isExtinct = FALSE, #I'm not sure this argument works for this function.
     limit = 5000
   )$data
   
@@ -1095,7 +1122,7 @@ create_phylum_plots <- function(plant_species_df, threshold_name) {
     higherTaxonKey = plantae_key,
     rank = "PHYLUM",
     status = "ACCEPTED",
-    isExtinct = FALSE,
+    isExtinct = FALSE,  #I'm not sure this argument works for this function.
     limit = 5000
   )$data
   
