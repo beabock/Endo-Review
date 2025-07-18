@@ -45,6 +45,10 @@ bad <- labeled %>%
   filter(label=="Presence", is.na(doi) | doi=="", is.na(authors) | authors=="")
 labeled <- anti_join(labeled, bad, by="id")
 
+labeled %>%
+  group_by(label) %>%
+  summarise(count = n())
+
 # Create a two-stage classification approach -----------------------------
 # First, create a binary relevance label (Relevant vs. Irrelevant)
 labeled <- labeled %>%
@@ -289,7 +293,8 @@ train_and_eval <- function(data, test_data, method, tune_len=10, weights=NULL,
 
 # Compare models for Stage 1: Relevance Classification -------------------
 cat("\n--- STAGE 1: RELEVANCE CLASSIFICATION (Relevant vs. Irrelevant) ---\n")
-models <- c("glmnet", "svmLinear")
+# Add more models for Stage 1
+models <- c("glmnet", "svmLinear", "rf", "xgbTree")
 
 # More aggressive feature selection for relevance classification
 # Use different upsampling ratios for different classes to penalize false negatives
@@ -304,14 +309,19 @@ balanced_relevance <- juice(rec_relevance)
 
 # Train all models for relevance classification
 results_relevance <- list()
+# Try multiple thresholds for best recall
+thresholds <- c(0.4, 0.3, 0.25)
 for (m in models) {
-  cat("Training model:", m, "\n")
-  results_relevance[[m]] <- train_and_eval(
-    balanced_relevance, test_df, m, tune_len = 5,
-    weights = NULL,  # No weights needed since we handled class imbalance in the recipe
-    optimize_metric = "F2",  # Use F2 score to prioritize recall
-    threshold = 0.4  # Lower threshold to favor "Relevant" predictions
-  )
+  for (thresh in thresholds) {
+    cat("Training model:", m, "with threshold", thresh, "\n")
+    res <- train_and_eval(
+      balanced_relevance, test_df, m, tune_len = 5,
+      weights = NULL,
+      optimize_metric = "F2",
+      threshold = thresh
+    )
+    results_relevance[[paste0(m, "_thr", thresh)]] <- res
+  }
 }
 
 # Now train models for Stage 2: Presence vs. Absence classification ------
@@ -454,7 +464,48 @@ plot_confusion_matrix <- function(cm, model_name, stage_name, normalized = FALSE
 
 # Create plots for Stage 1: Relevance Classification
 cat("\n--- EVALUATING STAGE 1: RELEVANCE CLASSIFICATION ---\n")
+# Automated model and threshold selection based on F2 score
+f2_scores <- sapply(results$relevance, function(res) {
+  if (!is.null(res$class_metrics) && "Relevant" %in% res$class_metrics$Class) {
+    idx <- which(res$class_metrics$Class == "Relevant")
+    # Use F2 from custom_summary if available, else fallback to Sensitivity
+    if (!is.null(res$model$results$F2)) {
+      return(max(res$model$results$F2, na.rm = TRUE))
+    } else {
+      return(res$class_metrics$Sensitivity[idx])
+    }
+  } else {
+    return(NA)
+  }
+})
+best_idx <- which.max(f2_scores)
+best_model_name <- names(results$relevance)[best_idx]
+cat("\nBest relevance model (by F2):", best_model_name, "F2=", f2_scores[best_idx], "\n")
 stage1_results <- create_accuracy_plots(results$relevance, "Relevance Classification")
+
+# Error analysis: show misclassified abstracts for best model
+best_model_preds <- results$relevance[[best_model_name]]$cm$table
+cat("\nError analysis for best relevance model:", best_model_name, "\n")
+# Get predictions and actuals
+preds <- predict(results$relevance[[best_model_name]]$model, newdata = test_df)
+actuals <- test_df$label
+misclassified_idx <- which(preds != actuals)
+if (length(misclassified_idx) > 0) {
+  cat("Misclassified abstracts (first 10):\n")
+  print(test_lab[misclassified_idx[1:min(10, length(misclassified_idx))], c("id", "abstract", "label", "original_label")])
+} else {
+  cat("No misclassifications found.\n")
+}
+
+# Active learning: show least confident predictions for manual review
+if ("prob" %in% methods(class(results$relevance[[best_model_name]]$model))) {
+  probs <- predict(results$relevance[[best_model_name]]$model, newdata = test_df, type = "prob")
+  # Get confidence for predicted class
+  conf <- apply(probs, 1, max)
+  low_conf_idx <- order(conf)[1:10]
+  cat("\nActive learning candidates (lowest confidence, first 10):\n")
+  print(test_lab[low_conf_idx, c("id", "abstract", "label", "original_label")])
+}
 
 # Create plots for Stage 2: Presence vs. Absence
 cat("\n--- EVALUATING STAGE 2: PRESENCE vs. ABSENCE CLASSIFICATION ---\n")
@@ -492,9 +543,16 @@ cat("\nBest model for Stage 1 (Relevance):", stage1_results$best_name, "\n")
 best_cm_relevance <- results$relevance[[stage1_results$best_name]]$cm
 print(best_cm_relevance)
 
+saveRDS(list(model_name = stage1_results$best_name, threshold = stage1_results$best_model$results$threshold),
+        file = paste0("best_model_relevance_", stage1_results$best_name, ".rds"))
+
+
 cat("\nBest model for Stage 2 (Presence vs. Absence):", stage2_results$best_name, "\n")
 best_cm_presence_absence <- results$presence_absence[[stage2_results$best_name]]$cm
 print(best_cm_presence_absence)
+
+saveRDS(list(model_name = stage2_results$best_name, threshold = stage2_results$best_model$results$threshold),
+        file = paste0("best_model_presence_absence_", stage2_results$best_name, ".rds"))
 
 # Note: Feature importance extraction was attempted but removed due to compatibility issues with these models
 
