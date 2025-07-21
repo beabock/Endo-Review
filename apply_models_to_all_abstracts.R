@@ -252,78 +252,18 @@ if (length(needed_terms) == 0) {
 
 # Combine unigrams and bigrams and create DTM (memory-efficient version)
 dtm_combined <- time_operation({
-  # Combine while keeping only relevant terms
-  relevance_terms <- extract_model_terms(model_relevance)
-  presence_terms <- extract_model_terms(model_presence_absence)
-  needed_terms <- unique(c(relevance_terms, presence_terms))
-  
-  # Remove .outcome from needed_terms as it's not a text feature
-  needed_terms <- needed_terms[needed_terms != ".outcome"]
-  cat("Number of needed terms after removing .outcome:", length(needed_terms), "\n")
-  
-  # Filter terms before combining to save memory
-  combined_df <- bind_rows(
-    dtm_unigrams %>% filter(word %in% needed_terms),
-    dtm_bigrams %>% filter(word %in% needed_terms)
-  )
-  
-  # Debug output
-  cat("Number of rows in combined_df:", nrow(combined_df), "\n")
-  cat("Number of unique terms in combined_df:", length(unique(combined_df$word)), "\n")
-  cat("Sample of terms found:", paste(head(unique(combined_df$word)), collapse=", "), "\n")
-  
-  # Apply TF-IDF weighting and create DTM
-  dtm <- combined_df %>%
+  # Combine unigrams and bigrams, apply TF-IDF, and use cast_dtm for DTM construction (to match training)
+  dtm <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
     bind_tf_idf(word, id, n) %>%
-    select(id, word, tf_idf)
-  
-  # Debug output before cast_dtm
-  cat("Dimensions before cast_dtm:", nrow(dtm), "x", length(unique(dtm$word)), "\n")
-  
-  # Create sparse matrix directly instead of using cast_dtm
-  # First, ensure we have data for all abstracts
-  all_ids <- as.character(all_abstracts$id)
-  
-  # Make sure we have entries for all abstracts (fill with zero if missing)
-  if (nrow(dtm) > 0) {
-    # Get all unique document IDs from the DTM data
-    dtm_ids <- unique(dtm$id)
-    missing_ids <- setdiff(all_ids, as.character(dtm_ids))
-    
-    if (length(missing_ids) > 0) {
-      cat("Adding", length(missing_ids), "missing abstracts with zero values\n")
-      # Add missing abstracts with zero values for a common term
-      if (length(unique(dtm$word)) > 0) {
-        dummy_term <- unique(dtm$word)[1]
-        missing_data <- data.frame(
-          id = as.numeric(missing_ids),
-          word = dummy_term,
-          tf_idf = 0
-        )
-        dtm <- bind_rows(dtm, missing_data)
-      }
-    }
-  }
-  
-  sparse_matrix <- sparseMatrix(
-    i = as.numeric(factor(dtm$id, levels = all_ids)),
-    j = as.numeric(factor(dtm$word)),
-    x = dtm$tf_idf,
-    dims = c(length(all_ids), length(unique(dtm$word))),
-    dimnames = list(
-      all_ids,
-      levels(factor(dtm$word))
-    )
-  )
-  
-  # Debug output after creating sparse matrix
-  cat("Final DTM dimensions:", nrow(sparse_matrix), "x", ncol(sparse_matrix), "\n")
-  cat("Sample of column names:", paste(head(colnames(sparse_matrix)), collapse=", "), "\n")
-  
-  sparse_matrix
+    select(id, word, tf_idf) %>%
+    cast_dtm(document = id, term = word, value = tf_idf)
+  # Convert to matrix and set rownames to IDs (as in training)
+  dtm_mat <- as.matrix(dtm)
+  rownames(dtm_mat) <- dtm$dimnames$Docs
+  dtm_mat
 }, "Creating document-term matrix")
 
-# Keep result as sparse matrix
+# Keep result as dense matrix (to match training)
 dtm_mat <- dtm_combined
 
 # Verify the matrix structure
@@ -483,6 +423,38 @@ if (length(missing_required) > 0) {
 cat("\nPreparing prediction data frames...\n")
 cat("Number of abstracts to process:", nrow(all_abstracts), "\n")
 
+# Helper function to align columns for prediction
+prepare_for_prediction <- function(df, model) {
+  required_cols <- NULL
+  if (!is.null(model$preProcess) && !is.null(model$preProcess$mean)) {
+    required_cols <- names(model$preProcess$mean)
+  } else if (!is.null(model$trainingData)) {
+    required_cols <- colnames(model$trainingData)[-ncol(model$trainingData)]
+  } else if (!is.null(model$finalModel$xNames)) {
+    required_cols <- model$finalModel$xNames
+  } else if (!is.null(model$xNames)) {
+    required_cols <- model$xNames
+  }
+  if (is.null(required_cols)) {
+    stop("Could not determine required columns for prediction from model")
+  }
+  required_cols <- setdiff(required_cols, ".outcome")
+  # Only keep columns that are in both the model and the data frame
+  common_cols <- intersect(required_cols, colnames(df))
+  df <- df[, common_cols, drop = FALSE]
+  # Add missing columns as zeros
+  missing_cols <- setdiff(required_cols, colnames(df))
+  if (length(missing_cols) > 0) {
+    for (col in missing_cols) {
+      df[[col]] <- 0
+    }
+  }
+  # Ensure final column order matches model terms (for those present)
+  final_cols <- intersect(required_cols, colnames(df))
+  df <- df[, final_cols, drop = FALSE]
+  return(df)
+}
+
 # Create prediction data frames
 relevance_df <- time_operation({
   df <- create_prediction_df(dtm_mat_processed, model_relevance)
@@ -490,6 +462,7 @@ relevance_df <- time_operation({
     stop("Relevance prediction matrix has ", nrow(df), " rows but there are ", 
          nrow(all_abstracts), " abstracts")
   }
+  df <- prepare_for_prediction(df, model_relevance)
   df
 }, "Creating relevance data frame")
 
@@ -499,6 +472,7 @@ presence_absence_df <- time_operation({
     stop("Presence/absence prediction matrix has ", nrow(df), " rows but there are ", 
          nrow(all_abstracts), " abstracts")
   }
+  df <- prepare_for_prediction(df, model_presence_absence)
   df
 }, "Creating presence/absence data frame")
 
@@ -507,20 +481,6 @@ cat("Applying Stage 1: Relevance Classification...\n")
 # Use tryCatch to handle potential errors
 relevance_result <- time_operation({
   tryCatch({
-    # Add any missing columns required by the model
-    if (!is.null(model_relevance$preProcess) && !is.null(model_relevance$preProcess$mean)) {
-      missing_cols <- setdiff(names(model_relevance$preProcess$mean), colnames(relevance_df))
-      if (length(missing_cols) > 0) {
-        cat("Adding missing columns for relevance prediction:", 
-            paste(missing_cols, collapse=", "), "\n")
-        for (col in missing_cols) {
-          if (!col %in% c(".outcome", "fungal_endophyte")) {  # Skip problematic columns
-            relevance_df[[col]] <- 0
-          }
-        }
-      }
-    }
-    
     # Process in batches for large datasets
     batch_size <- 5000
     n_batches <- ceiling(nrow(relevance_df) / batch_size)
@@ -535,25 +495,15 @@ relevance_result <- time_operation({
         cat("  Processing batch", i, "of", n_batches, "(rows", start_idx, "to", end_idx, ")\n")
         
         batch_df <- relevance_df[start_idx:end_idx, , drop = FALSE]
-        # Ensure all required columns are present
-        if (!is.null(model_relevance$preProcess) && !is.null(model_relevance$preProcess$mean)) {
-          missing_cols <- setdiff(names(model_relevance$preProcess$mean), colnames(batch_df))
-          if (length(missing_cols) > 0) {
-            for (col in missing_cols) {
-              if (!col %in% c(".outcome", "fungal_endophyte")) {  # Skip problematic columns
-                batch_df[[col]] <- 0
-              }
-            }
-          }
-        }
-        
+        batch_df <- prepare_for_prediction(batch_df, model_relevance)
         batch_probs <- predict(model_relevance, newdata = batch_df, type = "prob")
         all_probs[[i]] <- batch_probs
       }
       
       relevance_probs <- do.call(rbind, all_probs)
     } else {
-      relevance_probs <- predict(model_relevance, newdata = relevance_df, type = "prob")
+      batch_df <- prepare_for_prediction(relevance_df, model_relevance)
+      relevance_probs <- predict(model_relevance, newdata = batch_df, type = "prob")
     }
     
     # Verify we have predictions for all rows
@@ -584,21 +534,6 @@ cat("Applying Stage 2: Presence vs. Absence Classification...\n")
 # Use tryCatch to handle potential errors
 presence_absence_result <- time_operation({
   tryCatch({
-    # Add any missing columns required by the model
-    if (!is.null(model_presence_absence$preProcess) && !is.null(model_presence_absence$preProcess$mean)) {
-      missing_cols <- setdiff(names(model_presence_absence$preProcess$mean), 
-                            colnames(presence_absence_df))
-      if (length(missing_cols) > 0) {
-        cat("Adding missing columns for presence/absence prediction:", 
-            paste(missing_cols, collapse=", "), "\n")
-        for (col in missing_cols) {
-          if (!col %in% c(".outcome", "fungal_endophyte")) {  # Skip problematic columns
-            presence_absence_df[[col]] <- 0
-          }
-        }
-      }
-    }
-    
     # Process in batches for large datasets
     batch_size <- 5000
     n_batches <- ceiling(nrow(presence_absence_df) / batch_size)
@@ -613,26 +548,15 @@ presence_absence_result <- time_operation({
         cat("  Processing batch", i, "of", n_batches, "(rows", start_idx, "to", end_idx, ")\n")
         
         batch_df <- presence_absence_df[start_idx:end_idx, , drop = FALSE]
-        # Ensure all required columns are present except special ones
-        if (!is.null(model_presence_absence$preProcess) && !is.null(model_presence_absence$preProcess$mean)) {
-          missing_cols <- setdiff(names(model_presence_absence$preProcess$mean), 
-                                colnames(batch_df))
-          if (length(missing_cols) > 0) {
-            for (col in missing_cols) {
-              if (!col %in% c(".outcome", "fungal_endophyte")) {  # Skip problematic columns
-                batch_df[[col]] <- 0
-              }
-            }
-          }
-        }
-        
+        batch_df <- prepare_for_prediction(batch_df, model_presence_absence)
         batch_probs <- predict(model_presence_absence, newdata = batch_df, type = "prob")
         all_probs[[i]] <- batch_probs
       }
       
       presence_absence_probs <- do.call(rbind, all_probs)
     } else {
-      presence_absence_probs <- predict(model_presence_absence, newdata = presence_absence_df, type = "prob")
+      batch_df <- prepare_for_prediction(presence_absence_df, model_presence_absence)
+      presence_absence_probs <- predict(model_presence_absence, newdata = batch_df, type = "prob")
     }
     
     presence_absence_preds <- ifelse(presence_absence_probs$Presence > 0.5, "Presence", "Absence")
