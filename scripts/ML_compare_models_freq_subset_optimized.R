@@ -1,5 +1,6 @@
 # ML Compare Models Optimized: four-class labels with feature selection & parallel processing
-# Date: 7/9/2025
+# Date: 7/22/2025
+#Frequency based
 
 library(tidyverse)
 library(tidytext)
@@ -100,12 +101,11 @@ dtm_bigrams <- labeled %>%
   count(id, bigram, sort=TRUE) %>%
   rename(word = bigram)
 
-# Combine unigrams and bigrams
+# Combine unigrams and bigrams (FREQUENCY ONLY - no TF-IDF weighting)
 dtm_combined <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
-  # Apply TF-IDF weighting
-  bind_tf_idf(word, id, n) %>%
-  select(id, word, tf_idf) %>%
-  cast_dtm(document = id, term = word, value = tf_idf)
+  group_by(id, word) %>%
+  summarise(freq = sum(n), .groups = 'drop') %>%
+  cast_dtm(document = id, term = word, value = freq)
 
 dtm <- dtm_combined
 
