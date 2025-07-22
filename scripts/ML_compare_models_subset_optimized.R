@@ -196,6 +196,34 @@ custom_summary <- function(data, lev = NULL, model = NULL) {
   }
 }
 
+# Custom summary for presence/absence that heavily penalizes false positives
+custom_summary_presence <- function(data, lev = NULL, model = NULL) {
+  # Calculate standard metrics
+  stats <- defaultSummary(data, lev, model)
+  
+  # Add custom metrics that penalize false positives heavily
+  if (length(lev) == 2) {
+    # Assume "Presence" is the positive class
+    presence_idx <- which(lev == "Presence")
+    if (length(presence_idx) > 0) {
+      cm <- confusionMatrix(data$pred, data$obs, positive = lev[presence_idx])
+      
+      # Specificity is crucial - we want very few false positives (predicting Absence when it's Presence)
+      specificity <- cm$byClass["Specificity"]
+      sensitivity <- cm$byClass["Sensitivity"]
+      
+      # Custom metric: heavily weight specificity (minimize false positives)
+      # This penalizes predicting "Absence" when it's actually "Presence"
+      weighted_score <- 0.9 * specificity + 0.1 * sensitivity
+      
+      stats["WeightedScore"] <- weighted_score
+      stats["Specificity"] <- specificity
+    }
+  }
+  
+  return(stats)
+}
+
 # Train control with custom summary function
 control <- trainControl(
   method = "repeatedcv", number = 5, repeats = 3,
@@ -210,17 +238,27 @@ control_relevance <- trainControl(
   savePredictions = "final", allowParallel = TRUE
 )
 
+# Train control specifically for presence/absence classification
+control_presence <- trainControl(
+  method = "repeatedcv", number = 5, repeats = 3,
+  classProbs = TRUE, summaryFunction = custom_summary_presence,
+  savePredictions = "final", allowParallel = TRUE
+)
+
 # Train & evaluate function ---------------------------------------------
 train_and_eval <- function(data, test_data, method, tune_len=10, weights=NULL, 
-                          optimize_metric="Accuracy", threshold=0.5, ...) {
+                          optimize_metric="Accuracy", threshold=0.5, use_presence_control=FALSE, ...) {
   tic(method)
+  
+  # Choose appropriate control based on task
+  train_control <- if(use_presence_control) control_presence else control
   
   # Special handling for different model types
   if (method == "xgbTree") {
     # XGBoost needs special handling for class weights
     model <- train(
       label ~ ., data = data, method = method,
-      trControl = control, tuneLength = tune_len,
+      trControl = train_control, tuneLength = tune_len,
       metric = optimize_metric,  # Use the specified metric
       weights = weights,
       ...
@@ -229,7 +267,7 @@ train_and_eval <- function(data, test_data, method, tune_len=10, weights=NULL,
     # Default handling for other models
     model <- train(
       label ~ ., data = data, method = method,
-      trControl = control, tuneLength = tune_len,
+      trControl = train_control, tuneLength = tune_len,
       metric = optimize_metric,  # Use the specified metric
       weights = weights,
       ...
@@ -359,14 +397,63 @@ rec_relevant <- recipe(label ~ ., data = train_df_relevant) %>%
 
 balanced_relevant <- juice(rec_relevant)
 
-# Train models for Presence vs. Absence
+# Calculate class weights for real-world distribution
+# We expect ~99% Presence, ~1% Absence in real data
+# So we need to heavily penalize false positives (predicting Absence when it's Presence)
+expected_presence_pct <- 0.99
+expected_absence_pct <- 0.01
+
+# Create weights that reflect real-world expectations
+presence_weight <- expected_absence_pct / expected_presence_pct  # Low weight for majority class
+absence_weight <- expected_presence_pct / expected_absence_pct   # High weight for minority class
+
+cat("Class weights - Presence:", presence_weight, "Absence:", absence_weight, "\n")
+
+# Create sample weights for the balanced training data
+train_weights_relevant <- ifelse(balanced_relevant$label == "Presence", presence_weight, absence_weight)
+names(train_weights_relevant) <- rownames(balanced_relevant)
+
+# Train models for Presence vs. Absence with class weights
 results_presence_absence <- list()
 for (m in models) {
-  cat("Training model:", m, "\n")
-  results_presence_absence[[m]] <- train_and_eval(
-    balanced_relevant, test_df_relevant, m, tune_len = 5,
-    weights = NULL
-  )
+  cat("Training model:", m, "with class weights\n")
+  if (m == "glmnet") {
+    # For glmnet, use weights parameter
+    results_presence_absence[[m]] <- train_and_eval(
+      balanced_relevant, test_df_relevant, m, tune_len = 5,
+      weights = train_weights_relevant,
+      optimize_metric = "WeightedScore",  # Use our custom metric
+      use_presence_control = TRUE
+    )
+  } else if (m == "rf") {
+    # For random forest, use classwt parameter
+    classwt <- c("Presence" = presence_weight, "Absence" = absence_weight)
+    results_presence_absence[[m]] <- train_and_eval(
+      balanced_relevant, test_df_relevant, m, tune_len = 5,
+      weights = NULL,
+      optimize_metric = "WeightedScore",
+      use_presence_control = TRUE,
+      classwt = classwt
+    )
+  } else if (m == "xgbTree") {
+    # For XGBoost, calculate scale_pos_weight
+    scale_pos_weight <- absence_weight / presence_weight
+    results_presence_absence[[m]] <- train_and_eval(
+      balanced_relevant, test_df_relevant, m, tune_len = 5,
+      weights = NULL,
+      optimize_metric = "WeightedScore",
+      use_presence_control = TRUE,
+      scale_pos_weight = scale_pos_weight
+    )
+  } else {
+    # For other models, use weights if supported
+    results_presence_absence[[m]] <- train_and_eval(
+      balanced_relevant, test_df_relevant, m, tune_len = 5,
+      weights = train_weights_relevant,
+      optimize_metric = "WeightedScore",
+      use_presence_control = TRUE
+    )
+  }
 }
 
 # Store both sets of results

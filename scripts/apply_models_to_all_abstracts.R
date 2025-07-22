@@ -1,8 +1,6 @@
 # Apply trained models to All_Abstracts.csv - Optimized for Speed
 # Date: 7/14/2025
 
-#This file is buggy at the moment. Working on apply_two_stage_models.R instead.
-
 library(tidyverse)
 library(tidytext)
 library(caret)
