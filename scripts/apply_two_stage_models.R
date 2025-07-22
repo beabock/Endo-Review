@@ -1,6 +1,15 @@
-# Apply Two-Stage Models to All Abstracts Dataset - Version 2
+# Apply Two-Stage Models to All Abstracts Dataset - Version 3 (Frequency-Based)
 # Date: 7/21/2025
-# Purpose: Apply trained relevance and presence/absence models to the complete All_abstracts.csv dataset
+# Purpose: Apply trained relevance and presence/both/absence models to the complete All_abstracts.csv dataset
+# 
+# IMPORTANT: This script uses FREQUENCY-BASED DTM construction to match
+# the frequency-based models trained by ML_compare_models_freq_subset_optimized.R
+# 
+# Key Features:
+# - Uses raw frequency counts instead of TF-IDF weighting for DTM creation
+# - Supports three-class presence/both/absence classification
+# - Includes comprehensive debug output for troubleshooting
+# - Ensures feature compatibility between training and application phases
 
 library(tidyverse)
 library(tidytext)
@@ -21,6 +30,68 @@ all_abstracts <- read.csv("data/All_abstracts.csv") %>%
 
 cat("Total abstracts loaded:", nrow(all_abstracts), "\n")
 
+# Helper functions for DTM creation ------------------------------------------
+
+# Extract features from a trained model
+extract_model_features <- function(model) {
+  if (!is.null(model$trainingData)) {
+    # Remove the .outcome column to get feature names
+    feature_names <- colnames(model$trainingData)
+    feature_names <- feature_names[feature_names != ".outcome"]
+    return(feature_names)
+  } else {
+    stop("Model does not contain training data with feature names")
+  }
+}
+
+# Create DTM from abstracts using FREQUENCY (not TF-IDF) to match training
+create_dtm_from_abstracts <- function(abstracts_df, required_features) {
+  # Tokenize unigrams
+  dtm_unigrams <- abstracts_df %>%
+    unnest_tokens(word, abstract, token = "words") %>%
+    anti_join(stop_words, by = "word") %>%
+    filter(!str_detect(word, "\\d")) %>%
+    mutate(word = str_to_lower(word)) %>%
+    count(id, word, sort = TRUE)
+  
+  # Tokenize bigrams
+  dtm_bigrams <- abstracts_df %>%
+    unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
+    filter(!is.na(bigram)) %>%
+    separate(bigram, c("word1", "word2"), sep = " ") %>%
+    filter(!word1 %in% stop_words$word) %>%
+    filter(!word2 %in% stop_words$word) %>%
+    filter(!str_detect(word1, "\\d")) %>%
+    filter(!str_detect(word2, "\\d")) %>%
+    unite(bigram, word1, word2, sep = "_") %>%
+    count(id, bigram, sort = TRUE) %>%
+    rename(word = bigram)
+  
+  # Combine and use FREQUENCY (not TF-IDF) to match training
+  dtm_combined <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
+    group_by(id, word) %>%
+    summarise(freq = sum(n), .groups = 'drop') %>%
+    cast_dtm(document = id, term = word, value = freq)
+  
+  # Convert to data frame
+  dtm_df <- as.data.frame(as.matrix(dtm_combined))
+  rownames(dtm_df) <- dtm_combined$dimnames$Docs
+  
+  # Ensure all required features are present (add missing features as zeros)
+  missing_features <- setdiff(required_features, colnames(dtm_df))
+  if (length(missing_features) > 0) {
+    cat("Adding", length(missing_features), "missing features as zeros\n")
+    for (feature in missing_features) {
+      dtm_df[[feature]] <- 0
+    }
+  }
+  
+  # Select only the required features in the same order
+  dtm_df <- dtm_df[, required_features, drop = FALSE]
+  
+  return(dtm_df)
+}
+
 # Load the trained models ----------------------------------------------------
 cat("Loading trained models...\n")
 
@@ -40,27 +111,43 @@ relevance_model <- readRDS(relevance_model_path)
 
 
 
-# Find presence/both/absence model (e.g., best_model_svmLinear_presence_both_absence.rds)
+# Find presence/both/absence model (frequency-based models)
 presence_model_files <- list.files("models", pattern = "^best_model_.*presence_both_absence.*\\.rds$", full.names = TRUE)
 if (length(presence_model_files) == 0) {
-  stop("No presence/both/absence classification model found. Please run ML_compare_models_subset_optimized.R first.")
+  stop("No presence/both/absence classification model found. Please run ML_compare_models_freq_subset_optimized.R first.")
 }
 cat("Available presence/both/absence models:\n")
 for (i in seq_along(presence_model_files)) {
   cat(i, ":", basename(presence_model_files[i]), "\n")
 }
-presence_model_path <- presence_model_files[1]
+
+# Prefer xgbTree model if available, otherwise use the first one
+xgb_models <- presence_model_files[grepl("xgbTree", presence_model_files)]
+if (length(xgb_models) > 0) {
+  presence_model_path <- xgb_models[1]
+  cat("Using xgbTree model:", basename(presence_model_path), "\n")
+} else {
+  presence_model_path <- presence_model_files[1]
+  cat("Using first available model:", basename(presence_model_path), "\n")
+}
+
 cat("Loading presence/both/absence model:", basename(presence_model_path), "\n")
 presence_model <- readRDS(presence_model_path)
 
-
-# Verify this is a presence/absence model by checking the outcome levels
+# Verify this is a three-class model by checking the outcome levels
 if (!is.null(presence_model$trainingData) && ".outcome" %in% colnames(presence_model$trainingData)) {
   outcome_levels <- levels(presence_model$trainingData$.outcome)
   cat("Model outcome levels:", paste(outcome_levels, collapse = ", "), "\n")
-  if (!all(c("Presence", "Absence") %in% outcome_levels)) {
-    warning("This model doesn't seem to be trained for Presence/Absence classification!")
+  expected_levels <- c("Presence", "Both", "Absence")
+  if (!all(expected_levels %in% outcome_levels)) {
+    warning("This model doesn't seem to be trained for Presence/Both/Absence three-class classification!")
+    cat("Expected levels:", paste(expected_levels, collapse = ", "), "\n")
+    cat("Found levels:", paste(outcome_levels, collapse = ", "), "\n")
+  } else {
+    cat("✓ Confirmed three-class model with correct levels\n")
   }
+} else {
+  warning("Cannot verify model outcome levels - no training data found in model object")
 }
 
 
