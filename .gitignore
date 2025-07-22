@@ -33,3 +33,6 @@ Results/label_loose/plant_raw_species_counts_label_loose.png
 Results/label_loose/tracheo_missing_plant_families_label_loose.csv
 taxa_info_results_label_loose.csv
 /Results
+/Archive
+PCA_correct.png
+*.png
