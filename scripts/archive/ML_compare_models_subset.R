@@ -4,6 +4,8 @@
 #This time, I want to subset my training dataset, and compare different ML approaches on them. See what works best then run those on bigger training datasets and run again.
 
 
+#7/23/25 Coming back to this since this seemed like the best approach
+
 # Library loading ---------------------------------------------------------
 
 
@@ -128,7 +130,7 @@ order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
 dtm_df <- dtm_df[, order_cols]
 
 dtm_df <- dtm_df[1:20,1:15]
-write.csv(dtm_df, "msa_dtm_preview.csv")
+
 
 valid_ids <- as.integer(rownames_dtm)  # convert back to integer
 
