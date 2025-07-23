@@ -4,7 +4,7 @@
 #This time, I want to subset my training dataset, and compare different ML approaches on them. See what works best then run those on bigger training datasets and run again.
 
 
-#7/23/25 Coming back to this since this seemed like the best approach
+#7/23/25 Coming back to this since this seemed like the best approach. Adding in relevance filtering step.
 
 # Library loading ---------------------------------------------------------
 
@@ -74,10 +74,28 @@ train_and_evaluate <- function(train_df, test_df, method_name, tune_len = 10, ..
 
 set.seed(1998)
 
-labeled_abstracts <- read.csv("Training_labeled_abs_5.csv") %>%
+labeled_abstracts <- read.csv("data/Training_labeled_abs_5.csv") %>%
   clean_names() %>%
-  filter(label %in% c("Presence", "Absence")) %>%
-  mutate(id = row_number())
+ # filter(label %in% c("Presence", "Absence")) %>%
+  mutate(id = row_number())%>%
+  filter(label != "")%>%
+  mutate(
+    relevance = case_when(
+      label %in% c("Presence", "Absence", "Both") ~ "Relevant",
+      label %in% c("Review", "Other") ~ "Irrelevant",
+      TRUE ~ NA_character_
+    ),
+    relevance = factor(relevance)
+  )%>%
+  mutate(
+    presence_both_absence = case_when(
+      label == "Presence" ~ "Presence",
+      label == "Absence" ~ "Absence",
+      label == "Both" ~ "Presence",
+      TRUE ~ NA_character_
+    ),
+    presence_both_absence = factor(presence_both_absence, levels = c("Presence", "Absence"))
+  )
 
 
 # Remove artificial or duplicate Presence examples
@@ -107,6 +125,9 @@ labeled_abstracts %>%
 # labeled_abstracts <- labeled_abstracts %>%
 #   select(all_of(c(target, predictor, metadata_columns, "id")))
 
+# Create Document-Term Matrix (DTM) --------------------------------------
+#Will need to repeat this step for P/A
+
 dtm <- labeled_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%
   anti_join(stop_words, by = "word") %>%
@@ -121,16 +142,13 @@ dtm <- labeled_abstracts %>%
 rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
 
 dtm_matrix <- as.matrix(dtm)
-dtm_df <- as.data.frame(dtm_matrix)
+dtm_df <- as.data.frame(dtm_matrix, check.names = F) #Did checknames here...
 
 # Get column names ordered by decreasing column sum
 order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
 
 # Reorder the columns
 dtm_df <- dtm_df[, order_cols]
-
-dtm_df <- dtm_df[1:20,1:15]
-
 
 valid_ids <- as.integer(rownames_dtm)  # convert back to integer
 
@@ -144,10 +162,10 @@ rownames(dtm_matrix) <- rownames_dtm
 
 labeled_abstracts <- labeled_abstracts %>%
   filter(id %in% rownames(dtm_matrix)) %>%
-  mutate(label = factor(label))
+  mutate(relevance = factor(relevance))
 
 # Train-test split
-train_index <- createDataPartition(labeled_abstracts$label, p = 0.8, list = FALSE)
+train_index <- createDataPartition(labeled_abstracts$relevance, p = 0.8, list = FALSE)
 train_data <- labeled_abstracts[train_index, ]
 test_data <- labeled_abstracts[-train_index, ]
 
@@ -160,8 +178,8 @@ test_matrix <- dtm_matrix[test_ids, ]
 train_dtm_matrix <- train_matrix
 
 # Convert to data frame for caret
-train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(label = train_data$label)
-test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(label = test_data$label)
+train_df <- as.data.frame(as.matrix(train_matrix), check.names = F) %>% mutate(relevance = train_data$relevance)
+test_df <- as.data.frame(as.matrix(test_matrix), check.names = F) %>% mutate(relevance = test_data$relevance)
 
 
 # Testing models ----------------------------------------------------------
@@ -169,8 +187,8 @@ test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(label = test_data$la
 
 #glmnet and svmLinear are super fast.
 
-train_recipe <- recipe(label ~ ., data = train_df) %>%
-  step_smote(label) %>%
+train_recipe <- recipe(relevance ~ ., data = train_df) %>%
+  step_smote(relevance) %>%
   prep()
 balanced_train <- juice(train_recipe)
 
@@ -193,7 +211,164 @@ for (method in models_to_try) {
   tic(paste("Time for", method))
   result <- tryCatch({
     train(
-      label ~ ., 
+      relevance ~ ., 
+      data = balanced_train,
+      method = method,
+      metric = "ROC",
+      trControl = train_control,
+      tuneLength = 10
+    )
+  }, error = function(e) {
+    message("Model ", method, " failed: ", e$message)
+    return(NULL)
+  })
+  toc()
+  results[[method]] <- result
+}
+
+
+confusion_matrices <- list() 
+# Evaluate
+accuracy_table <- tibble(
+  model = names(results),
+  accuracy = sapply(names(results), function(m) {
+    model <- results[[m]]
+    if (is.null(model)) return(NA)
+    
+    preds <- predict(model, newdata = test_df)
+    cm <- confusionMatrix(preds, test_df$relevance)
+    
+    # Save confusion matrix to list for later inspection
+    confusion_matrices[[m]] <<- cm
+    
+    cm$overall["Accuracy"]
+  })
+) %>% filter(!is.na(accuracy)) %>% arrange(desc(accuracy))
+
+print(accuracy_table)
+
+#91% on glmnet, pretty good. 
+
+for (m in names(confusion_matrices)) {
+  cat("\nConfusion Matrix for model:", m, "\n")
+  print(confusion_matrices[[m]]$table)  # Just the table
+  cat("\nDetailed stats:\n")
+  print(confusion_matrices[[m]]$byClass)  # Per-class metrics (Sensitivity, Specificity, etc.)
+  cat("\n")
+}
+
+accuracy_table %>%
+  ggplot(aes(x = reorder(model, accuracy), y = accuracy)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Model Accuracy Comparison",
+    x = "Model",
+    y = "Accuracy"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+# Save best model
+best_model <- results[[accuracy_table$model[1]]]
+saveRDS(best_model, file = paste0("models/best_model_relevance_", accuracy_table$model[1], ".rds"))
+
+
+best_model
+#svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Same thing but now P/A --------------------------------------------
+
+labeled_abstracts <- labeled_abstracts %>%
+  filter(relevance == "Relevant")
+
+labeled_abstracts %>%
+  count(presence_both_absence)
+
+dtm <- labeled_abstracts %>%
+  unnest_tokens(word, abstract, token = "words") %>%
+  anti_join(stop_words, by = "word") %>%
+  mutate(word = str_to_lower(word)) %>%
+  filter(!str_detect(word, "\\d")) %>%
+  count(id, word, sort = TRUE) %>%
+  ungroup() %>%
+  mutate(id = as.character(id)) %>%  # Ensure IDs are character
+  cast_dtm(document = id, term = word, value = n) #Think about this more.
+
+# Preserve row names BEFORE converting
+rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
+
+dtm_matrix <- as.matrix(dtm)
+dtm_df <- as.data.frame(dtm_matrix)
+
+# Get column names ordered by decreasing column sum
+order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
+
+# Reorder the columns
+dtm_df <- dtm_df[, order_cols]
+
+valid_ids <- as.integer(rownames_dtm)  # convert back to integer
+
+labeled_abstracts <- labeled_abstracts %>%
+  filter(id %in% valid_ids) %>%
+  mutate(id = as.character(id)) %>%         # match rownames (character)
+  arrange(match(id, rownames_dtm))  
+
+
+rownames(dtm_matrix) <- rownames_dtm
+
+labeled_abstracts <- labeled_abstracts %>%
+  filter(id %in% rownames(dtm_matrix)) %>%
+  mutate(presence_both_absence = factor(presence_both_absence))
+
+# Train-test split
+train_index <- createDataPartition(labeled_abstracts$presence_both_absence, p = 0.8, list = FALSE)
+train_data <- labeled_abstracts[train_index, ]
+test_data <- labeled_abstracts[-train_index, ]
+
+train_ids <- as.character(train_data$id)
+test_ids <- as.character(test_data$id)
+
+train_matrix <- dtm_matrix[train_ids, ]
+test_matrix <- dtm_matrix[test_ids, ]
+
+train_dtm_matrix <- train_matrix
+
+# Convert to data frame for caret
+train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(presence_both_absence = train_data$presence_both_absence)
+test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(presence_both_absence = test_data$presence_both_absence)
+
+
+# Testing models ----------------------------------------------------------
+
+
+#glmnet and svmLinear are super fast.
+
+train_recipe <- recipe(presence_both_absence ~ ., data = train_df) %>%
+  step_smote(presence_both_absence) %>%
+  prep()
+balanced_train <- juice(train_recipe)
+
+# Train Control
+train_control <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 3,
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  savePredictions = "final"
+)
+
+# Models to compare
+models_to_try <- c("glmnet", "svmLinear") #Can add rf back in but it kind of sucks
+results <- list()
+
+for (method in models_to_try) {
+  cat("\nTraining:", method, "\n")
+  tic(paste("Time for", method))
+  result <- tryCatch({
+    train(
+      presence_both_absence ~ ., 
       data = balanced_train,
       method = method,
       metric = "ROC",
@@ -219,7 +394,7 @@ accuracy_table <- tibble(
     if (is.null(model)) return(NA)
     
     preds <- predict(model, newdata = test_df)
-    cm <- confusionMatrix(preds, test_df$label)
+    cm <- confusionMatrix(preds, test_df$presence_both_absence)
     
     # Save confusion matrix to list for later inspection
     confusion_matrices[[m]] <<- cm
@@ -230,7 +405,7 @@ accuracy_table <- tibble(
 
 print(accuracy_table)
 
-#98%!!!! holy hell!!!
+#90%, pretty good.
 
 for (m in names(confusion_matrices)) {
   cat("\nConfusion Matrix for model:", m, "\n")
@@ -254,66 +429,14 @@ accuracy_table %>%
 
 # Save best model
 best_model <- results[[accuracy_table$model[1]]]
-#saveRDS(best_model, file = paste0("best_model_", accuracy_table$model[1], ".rds"))
+saveRDS(best_model, file = paste0("models/best_model_presence_", accuracy_table$model[1], ".rds"))
 
 
 best_model
-#svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-#Doing some pca stuff here
-library(irlba)
-
-# Use training matrix (only rownames with labels)
-svd_result <- irlba(train_matrix, nv = 2)  # 2 PCs for plotting
-
-# Project into PC space
-pca_coords <- svd_result$u %*% diag(svd_result$d)
-
-# Recreate labels
-train_labels <- train_data$label
-
-# Data frame for plotting
-pca_df <- data.frame(
-  PC1 = pca_coords[, 1],
-  PC2 = pca_coords[, 2],
-  label = train_labels
-)
-
-ggplot(pca_df, aes(x = PC1, y = PC2, color = label)) +
-  geom_point(alpha = 0.5) +
-  labs(
-    title = "PCA of Abstract Word Features (Training Set)",
-    x = "Principal Component 1",
-    y = "Principal Component 2"
-  ) +
-  scale_color_manual(values = c("Presence" = "#0072B2", "Absence" = "#D55E00"))
-
-save_plot(plot = last_plot(), "PCA_Label.png")
-
-preds <- predict(best_model, newdata = train_df)
-
-# Add prediction info to PCA plot
-pca_df$predicted <- preds
-pca_df$correct <- ifelse(pca_df$label == pca_df$predicted, "Correct", "Incorrect")
-
-ggplot(pca_df, aes(x = PC1, y = PC2, color = correct)) +
-  geom_point(alpha = 0.6) +
-  labs(
-    title = "SVM Classification Accuracy in PCA Space",
-    x = "PC1", y = "PC2"
-  ) +
-  scale_color_manual(values = c("Correct" = "forestgreen", "Incorrect" = "firebrick")) 
-
-save_plot(plot = last_plot(), "PCA_correct.png")
 
 # Whole dataset -----------------------------------------------------------
-
-
-best_model <- readRDS("best_model_svmLinear.rds")
-# Step 8: Predict on the Full Dataset
-full_abstracts <- read.csv("All_Abstracts.csv") %>%
-  clean_names()
 
 
 
@@ -401,24 +524,22 @@ colname_mapping <- c(
   "eid" = "eid"                             # 'eid' matches
 )
 
+full_abstracts <- read.csv("data/All_Abstracts.csv") %>%
+  clean_names()
 
+
+# Apply your column name harmonization
 full_abstracts <- full_abstracts %>%
   rename_with(~ ifelse(. %in% names(colname_mapping), colname_mapping[.], .))
 
-
-metadata_columns <- metadata_columns[!metadata_columns %in% c("id", "predicted_label")]
-
-
-full_abstracts <- full_abstracts %>%
-  select(c(predictor, all_of(metadata_columns)))
-
-
+# Filter out labeled DOIs (so we’re not predicting on training data)
 filtered_dois <- labeled_abstracts$doi[!is.na(labeled_abstracts$doi) & labeled_abstracts$doi != ""]
 full_abstracts <- full_abstracts[!full_abstracts$doi %in% filtered_dois, ]
 
-# Add ID column for consistent row tracking
+# Add unique ID column for tracking documents
 full_abstracts$id <- 1:nrow(full_abstracts)
 
+# Construct DTM (no make.names!)
 dtm <- full_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%
   anti_join(stop_words, by = "word") %>%
@@ -426,17 +547,22 @@ dtm <- full_abstracts %>%
   filter(!str_detect(word, "\\d")) %>%
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
-  mutate(id = as.character(id)) %>%  # Ensure IDs are character
+  mutate(id = as.character(id)) %>%
   cast_dtm(document = id, term = word, value = n)
 
-
+# Convert to matrix and assign rownames
 dtm_matrix <- as.matrix(dtm)
-rownames(dtm_matrix) <- dtm$dimnames$Docs  # Ensure IDs as rownames
+rownames(dtm_matrix) <- dtm$dimnames$Docs  # these are the character ids
 
-# Load vocabulary from training data (should already exist in your script)
-trained_vocab <- colnames(train_dtm_matrix)
+# DO NOT run make.names() here, to match training conditions!
 
-# Add missing words (zero columns) to full DTM
+# Load the trained model
+rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
+
+# Get training feature names
+trained_vocab <- rel_model$finalModel$xNames
+
+# Add missing columns (words present in training but not here)
 missing_words <- setdiff(trained_vocab, colnames(dtm_matrix))
 if (length(missing_words) > 0) {
   zero_matrix <- matrix(0, nrow = nrow(dtm_matrix), ncol = length(missing_words),
@@ -444,31 +570,20 @@ if (length(missing_words) > 0) {
   dtm_matrix <- cbind(dtm_matrix, zero_matrix)
 }
 
-# Reorder columns to match training vocab
+# Remove extra columns not in trained vocab
+dtm_matrix <- dtm_matrix[, colnames(dtm_matrix) %in% trained_vocab]
+
+# Reorder columns to match the trained model’s input order
 dtm_matrix <- dtm_matrix[, trained_vocab, drop = FALSE]
 
-# Predict labels using best model
-# Ensure model is loaded and ready
-train_vars <- setdiff(colnames(train_df), "label")
+# Convert to dataframe
+full_df <- as.data.frame(dtm_matrix, check.names = F)
 
-# 2. Convert DTM to dataframe
-full_df <- as.data.frame(dtm_matrix)
+# Sanity check (should be empty):
+ setdiff(rel_model$finalModel$xNames, colnames(full_df))
 
-missing_cols <- setdiff(train_vars, colnames(full_df))
-
-if (length(missing_cols) > 0) {
-  full_df <- bind_cols(
-    full_df,
-    missing_cols %>%
-      set_names() %>%
-      purrr::map_dfc(~ rep(0, nrow(full_df)))
-  )
-}
-
-# 4. Reorder to match training variable order
-full_df <- full_df %>% select(all_of(train_vars))
-
-probs <- predict(best_model, newdata = full_df, type = "prob")
+# Predict
+probs <- predict(rel_model, newdata = full_df, type = "prob")
 
 full_abstracts <- full_abstracts %>%
   bind_cols(probs)
