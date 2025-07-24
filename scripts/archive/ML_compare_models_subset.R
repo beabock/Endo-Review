@@ -108,61 +108,11 @@ rows_to_remove <- labeled_abstracts %>%
 
 labeled_abstracts <- labeled_abstracts %>%
   anti_join(rows_to_remove, by = "id")%>%
-  group_by(label)%>%
- # slice_sample(n=30)%>%
   ungroup()
 
-# Check label balance
-labeled_abstracts %>%
-  count(label) 
-
-# # Metadata columns
-# target <- "label"
-# predictor <- "abstract"
-# metadata_columns <- setdiff(names(labeled_abstracts), c(target, predictor)) %>%
-#   discard(~ .x %in% c("publication_type", "group_authors", "part_number", "web_of_science_index"))
-# 
-# labeled_abstracts <- labeled_abstracts %>%
-#   select(all_of(c(target, predictor, metadata_columns, "id")))
-
-# Create Document-Term Matrix (DTM) --------------------------------------
-#Will need to repeat this step for P/A
-
-dtm <- labeled_abstracts %>%
-  unnest_tokens(word, abstract, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  mutate(word = str_to_lower(word)) %>%
-  filter(!str_detect(word, "\\d")) %>%
-  count(id, word, sort = TRUE) %>%
-  ungroup() %>%
-  mutate(id = as.character(id)) %>%
-  cast_dtm(document = id, term = word, value = n)
-
-# Extract matrix and fix column names
-dtm_matrix <- as.matrix(dtm)
-colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
-
-# Continue safely
-dtm_df <- as.data.frame(dtm_matrix)
-
-# Check
-stopifnot(!any(duplicated(colnames(dtm_df))))
-
-# Get column names ordered by decreasing column sum
-order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
-
-# Reorder the columns
-dtm_df <- dtm_df[, order_cols]
-
-valid_ids <- as.integer(rownames_dtm)  # convert back to integer
-
-labeled_abstracts <- labeled_abstracts %>%
-  filter(id %in% valid_ids) %>%
-  mutate(id = as.character(id)) %>%         # match rownames (character)
-  arrange(match(id, rownames_dtm))  
 
 
-rownames(dtm_matrix) <- rownames_dtm
+
 
 labeled_abstracts <- labeled_abstracts %>%
   filter(id %in% rownames(dtm_matrix)) %>%
@@ -170,44 +120,17 @@ labeled_abstracts <- labeled_abstracts %>%
 
 # Train-test split
 train_index <- createDataPartition(labeled_abstracts$relevance, p = 0.8, list = FALSE)
-train_data <- labeled_abstracts[train_index, ]
-test_data <- labeled_abstracts[-train_index, ]
-
-train_ids <- as.character(train_data$id)
-test_ids <- as.character(test_data$id)
-
-train_matrix <- dtm_matrix[train_ids, ]
-test_matrix <- dtm_matrix[test_ids, ]
-
-train_dtm_matrix <- train_matrix
-
-# Convert to data frame for caret
-train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(relevance = train_data$relevance)
-test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(relevance = test_data$relevance)
-
-
-# Testing models ----------------------------------------------------------
-
-
-#glmnet and svmLinear are super fast.
-
-train_recipe <- recipe(relevance ~ ., data = train_df) %>%
   step_smote(relevance) %>%
-  prep()
-balanced_train <- juice(train_recipe)
 
-# Train Control
-train_control <- trainControl(
-  method = "repeatedcv",
-  number = 5,
-  repeats = 3,
-  classProbs = TRUE,
+# --- Optimized block ---
+set.seed(1998)
+
   summaryFunction = twoClassSummary,
   savePredictions = "final"
 )
 
 # Models to compare
-models_to_try <- c("glmnet", "svmLinear") #Can add rf back in but it kind of sucks
+models_to_try <- c("glmnet") # Can add rf back in but it kind of sucks. can also add svmLinear back if wanted, but glmnet performs the best.
 results <- list()
 
 for (method in models_to_try) {
@@ -221,7 +144,41 @@ for (method in models_to_try) {
       metric = "ROC",
       trControl = train_control,
       tuneLength = 10
+
+# Remove artificial or duplicate Presence examples
+rows_to_remove <- labeled_abstracts %>%
+  filter(
+    is.na(doi) | doi %in% c("", "<NA>", "NA"),
+    label == "Presence",
+    is.na(authors) | authors == ""
+  )
+
     )
+  anti_join(rows_to_remove, by = "id")
+
+# DTM creation and alignment
+dtm <- labeled_abstracts %>%
+  unnest_tokens(word, abstract, token = "words") %>%
+  anti_join(stop_words, by = "word") %>%
+  mutate(word = str_to_lower(word)) %>%
+  filter(!str_detect(word, "\\d")) %>%
+  count(id, word, sort = TRUE) %>%
+  ungroup() %>%
+  mutate(id = as.character(id)) %>%
+  cast_dtm(document = id, term = word, value = n)
+
+dtm_matrix <- as.matrix(dtm)
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
+rownames_dtm <- dtm$dimnames$Docs
+rownames(dtm_matrix) <- rownames_dtm
+dtm_df <- as.data.frame(dtm_matrix)
+stopifnot(!any(duplicated(colnames(dtm_df))))
+
+# Align abstracts and DTM
+labeled_abstracts <- labeled_abstracts %>%
+  filter(id %in% rownames(dtm_matrix)) %>%
+  mutate(relevance = factor(relevance)) %>%
+  arrange(match(id, rownames(dtm_matrix)))
   }, error = function(e) {
     message("Model ", method, " failed: ", e$message)
     return(NULL)
@@ -630,8 +587,15 @@ full_abstracts %>%
   pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
   count(threshold, label)
 
+
 # Save the results
 write.csv(full_abstracts, "relevance_preds.csv", row.names = FALSE)
+
+irr_un <- full_abstracts %>%
+  filter(label_loose == "Irrelevant" | label_loose == "Uncertain")%>%
+  relocate(label_loose, abstract)
+
+write.csv(irr_un, "irrelevant_uncertain_abstracts.csv", row.names = FALSE)
 
 abstracts_with_rel <- read.csv("relevance_preds.csv")%>%
   filter(label_loose == "Relevant")
