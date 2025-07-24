@@ -135,14 +135,18 @@ dtm <- labeled_abstracts %>%
   filter(!str_detect(word, "\\d")) %>%
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
-  mutate(id = as.character(id)) %>%  # Ensure IDs are character
-  cast_dtm(document = id, term = word, value = n) #Think about this more.
+  mutate(id = as.character(id)) %>%
+  cast_dtm(document = id, term = word, value = n)
 
-# Preserve row names BEFORE converting
-rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
-
+# Extract matrix and fix column names
 dtm_matrix <- as.matrix(dtm)
-dtm_df <- as.data.frame(dtm_matrix, check.names = F) #Did checknames here...
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
+
+# Continue safely
+dtm_df <- as.data.frame(dtm_matrix)
+
+# Check
+stopifnot(!any(duplicated(colnames(dtm_df))))
 
 # Get column names ordered by decreasing column sum
 order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
@@ -178,8 +182,8 @@ test_matrix <- dtm_matrix[test_ids, ]
 train_dtm_matrix <- train_matrix
 
 # Convert to data frame for caret
-train_df <- as.data.frame(as.matrix(train_matrix), check.names = F) %>% mutate(relevance = train_data$relevance)
-test_df <- as.data.frame(as.matrix(test_matrix), check.names = F) %>% mutate(relevance = test_data$relevance)
+train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(relevance = train_data$relevance)
+test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(relevance = test_data$relevance)
 
 
 # Testing models ----------------------------------------------------------
@@ -257,24 +261,18 @@ for (m in names(confusion_matrices)) {
   cat("\n")
 }
 
-accuracy_table %>%
-  ggplot(aes(x = reorder(model, accuracy), y = accuracy)) +
-  geom_col(fill = "steelblue") +
-  coord_flip() +
-  labs(
-    title = "Model Accuracy Comparison",
-    x = "Model",
-    y = "Accuracy"
-  ) +
-  theme_minimal(base_size = 14)
-
-
 # Save best model
 best_model <- results[[accuracy_table$model[1]]]
+
+setdiff(colnames(best_model$trainingData), best_model$finalModel$xNames)
+#xnames <- best_model$finalModel$xNames
+#best_model$trainingData <- best_model$trainingData[, c(xnames, ".outcome"), drop = FALSE]
+
+
+
 saveRDS(best_model, file = paste0("models/best_model_relevance_", accuracy_table$model[1], ".rds"))
 
 
-best_model
 #svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # Same thing but now P/A --------------------------------------------
@@ -290,6 +288,8 @@ dtm <- labeled_abstracts %>%
   anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
+  #mutate(word = str_replace_all(word, "'s\\b", ""))  %>% # Remove possessives
+  #filter(!str_detect(word, "'")) %>%  # Remove any word containing an apostrophe
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
   mutate(id = as.character(id)) %>%  # Ensure IDs are character
@@ -299,7 +299,15 @@ dtm <- labeled_abstracts %>%
 rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
 
 dtm_matrix <- as.matrix(dtm)
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
+
+# Continue safely
 dtm_df <- as.data.frame(dtm_matrix)
+
+# Check
+stopifnot(!any(duplicated(colnames(dtm_df))))
+
+
 
 # Get column names ordered by decreasing column sum
 order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
@@ -332,10 +340,9 @@ test_ids <- as.character(test_data$id)
 train_matrix <- dtm_matrix[train_ids, ]
 test_matrix <- dtm_matrix[test_ids, ]
 
-train_dtm_matrix <- train_matrix
-
 # Convert to data frame for caret
 train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(presence_both_absence = train_data$presence_both_absence)
+
 test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(presence_both_absence = test_data$presence_both_absence)
 
 
@@ -383,8 +390,6 @@ for (method in models_to_try) {
   results[[method]] <- result
 }
 
-#Ran on whole training dataset this time.
-
 confusion_matrices <- list() 
 # Evaluate
 accuracy_table <- tibble(
@@ -415,25 +420,17 @@ for (m in names(confusion_matrices)) {
   cat("\n")
 }
 
-accuracy_table %>%
-  ggplot(aes(x = reorder(model, accuracy), y = accuracy)) +
-  geom_col(fill = "steelblue") +
-  coord_flip() +
-  labs(
-    title = "Model Accuracy Comparison",
-    x = "Model",
-    y = "Accuracy"
-  ) +
-  theme_minimal(base_size = 14)
 
 
 # Save best model
 best_model <- results[[accuracy_table$model[1]]]
+
+
 saveRDS(best_model, file = paste0("models/best_model_presence_", accuracy_table$model[1], ".rds"))
 
 
 best_model
-
+#This part is seemingly doing well...
 
 
 # Whole dataset -----------------------------------------------------------
@@ -545,6 +542,8 @@ dtm <- full_abstracts %>%
   anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
+ # mutate(word = str_replace_all(word, "'s\\b", ""))  %>% # Remove possessives
+ # filter(!str_detect(word, "'")) %>%  # Remove any word containing an apostrophe
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
   mutate(id = as.character(id)) %>%
@@ -552,9 +551,20 @@ dtm <- full_abstracts %>%
 
 # Convert to matrix and assign rownames
 dtm_matrix <- as.matrix(dtm)
+
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
+
+# Continue safely
+
+# Check
+
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix)) #Santize
 rownames(dtm_matrix) <- dtm$dimnames$Docs  # these are the character ids
 
-# DO NOT run make.names() here, to match training conditions!
+dtm_df <- as.data.frame(dtm_matrix)
+
+stopifnot(!any(duplicated(colnames(dtm_df))))
+
 
 # Load the trained model
 rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
@@ -563,24 +573,26 @@ rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
 trained_vocab <- rel_model$finalModel$xNames
 
 # Add missing columns (words present in training but not here)
-missing_words <- setdiff(trained_vocab, colnames(dtm_matrix))
+missing_words <- setdiff(trained_vocab, colnames(dtm_df))
 if (length(missing_words) > 0) {
-  zero_matrix <- matrix(0, nrow = nrow(dtm_matrix), ncol = length(missing_words),
-                        dimnames = list(rownames(dtm_matrix), missing_words))
-  dtm_matrix <- cbind(dtm_matrix, zero_matrix)
+  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
+                        dimnames = list(rownames(dtm_df), missing_words))
+  dtm_df <- cbind(dtm_df, zero_matrix)
 }
 
 # Remove extra columns not in trained vocab
-dtm_matrix <- dtm_matrix[, colnames(dtm_matrix) %in% trained_vocab]
+dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
 
 # Reorder columns to match the trained model’s input order
-dtm_matrix <- dtm_matrix[, trained_vocab, drop = FALSE]
+dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
 
 # Convert to dataframe
-full_df <- as.data.frame(dtm_matrix, check.names = F)
+full_df <- dtm_df
 
 # Sanity check (should be empty):
- setdiff(rel_model$finalModel$xNames, colnames(full_df))
+ head(setdiff(rel_model$finalModel$xNames, colnames(full_df)))
+
+head(setdiff(colnames(rel_model$trainingData), colnames(full_df)))
 
 # Predict
 probs <- predict(rel_model, newdata = full_df, type = "prob")
@@ -597,6 +609,113 @@ strict_thresh <- 0.8  # only classify with strong certainty
 full_abstracts <- full_abstracts %>%
   mutate(
     label_loose = case_when(
+      Relevant >= loose_thresh ~ "Relevant",
+      Irrelevant >= loose_thresh ~ "Irrelevant",
+      TRUE ~ "Uncertain"
+    ),
+    label_medium = case_when(
+      Relevant >= medium_thresh ~ "Relevant",
+      Irrelevant >= medium_thresh ~ "Irrelevant",
+      TRUE ~ "Uncertain"
+    ),
+    label_strict = case_when(
+      Relevant >= strict_thresh ~ "Relevant",
+      Irrelevant >= strict_thresh ~ "Irrelevant",
+      TRUE ~ "Uncertain"
+    )
+  )
+
+full_abstracts %>%
+  select(label_loose, label_medium, label_strict) %>%
+  pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
+  count(threshold, label)
+
+# Save the results
+write.csv(full_abstracts, "relevance_preds.csv", row.names = FALSE)
+
+abstracts_with_rel <- read.csv("relevance_preds.csv")%>%
+  filter(label_loose == "Relevant")
+
+abstracts_with_rel %>%
+  select(label_loose, label_medium, label_strict) %>%
+  pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
+  count(threshold, label)
+
+#Now do the same with P/A
+
+dtm <- abstracts_with_rel %>%
+  unnest_tokens(word, abstract, token = "words") %>%
+  anti_join(stop_words, by = "word") %>%
+  mutate(word = str_to_lower(word)) %>%
+  filter(!str_detect(word, "\\d")) %>%
+ # mutate(word = str_replace_all(word, "'s\\b", ""))  %>% # Remove possessives
+ # filter(!str_detect(word, "'")) %>%  # Remove any word containing an apostrophe
+  count(id, word, sort = TRUE) %>%
+  ungroup() %>%
+  mutate(id = as.character(id)) %>%
+  cast_dtm(document = id, term = word, value = n)
+
+# Convert to matrix and assign rownames
+dtm_matrix <- as.matrix(dtm)
+
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
+
+# Continue safely
+
+# Check
+
+colnames(dtm_matrix) <- make.names(colnames(dtm_matrix)) #Santize
+rownames(dtm_matrix) <- dtm$dimnames$Docs  # these are the character ids
+
+dtm_df <- as.data.frame(dtm_matrix)
+
+stopifnot(!any(duplicated(colnames(dtm_df))))
+
+
+# Load the trained model
+pa_model <- readRDS("models/best_model_presence_svmLinear.rds")
+
+# Get training feature names
+trained_vocab <- setdiff(colnames(pa_model$trainingData), ".outcome")
+
+# Add missing columns (words present in training but not here)
+missing_words <- setdiff(trained_vocab, colnames(dtm_df))
+if (length(missing_words) > 0) {
+  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
+                        dimnames = list(rownames(dtm_df), missing_words))
+  dtm_df <- cbind(dtm_df, zero_matrix)
+}
+
+# Remove extra columns not in trained vocab
+dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
+
+# Reorder columns to match the trained model’s input order
+dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
+
+# Convert to dataframe
+full_df <- dtm_df
+
+# Sanity check (should be empty):
+ head(setdiff(colnames(pa_model$finalModel), colnames(full_df)))
+
+head(setdiff(colnames(pa_model$trainingData), colnames(full_df)))
+
+# Predict
+probs <- predict(pa_model, newdata = full_df, type = "prob")
+
+abstracts_with_rel  <- abstracts_with_rel  %>%
+  bind_cols(probs)
+
+# Define thresholds
+loose_thresh <- 0.5   # more willing to classify
+medium_thresh <- 0.6  # balanced
+strict_thresh <- 0.8  # only classify with strong certainty
+super_strict_thresh <- 0.9  # very high confidence
+
+# Apply each thresholding scheme
+abstracts_with_rel <- abstracts_with_rel %>%
+  mutate(
+    label_loose = case_when(
       Presence >= loose_thresh ~ "Presence",
       Absence >= loose_thresh ~ "Absence",
       TRUE ~ "Uncertain"
@@ -610,21 +729,20 @@ full_abstracts <- full_abstracts %>%
       Presence >= strict_thresh ~ "Presence",
       Absence >= strict_thresh ~ "Absence",
       TRUE ~ "Uncertain"
+    ),
+    label_super_strict = case_when(
+      Presence >= super_strict_thresh ~ "Presence",
+      Absence >= super_strict_thresh ~ "Absence",
+      TRUE ~ "Uncertain"
     )
   )
 
-full_abstracts %>%
-  select(label_loose, label_medium, label_strict) %>%
+abstracts_with_rel %>%
+  select(label_loose, label_medium, label_strict, label_super_strict) %>%
   pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
   count(threshold, label)
 
 # Save the results
-write.csv(full_abstracts, "full_predictions_with_metadata.csv", row.names = FALSE)
+write.csv(abstracts_with_rel, "relevance_pa_preds_all_abstracts.csv", row.names = FALSE)
 
-full_abstracts <- read.csv("full_predictions_with_metadata.csv")
-
-full_abstracts %>%
-  select(label_loose, label_medium, label_strict) %>%
-  pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
-  count(threshold, label)
-
+#Go with strict and manually review uncertain and absence...
