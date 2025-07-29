@@ -1,6 +1,8 @@
 # ML Compare Models Optimized: four-class labels with feature selection & parallel processing
 # Date: 7/22/2025
-#Frequency based
+#Frequency based'
+
+#idea for next time... maybe try relevance and then presence/absence like original. go back to when it worked better around EMSL time.
 
 library(tidyverse)
 library(tidytext)
@@ -601,7 +603,6 @@ print(best_cm_presence_both_absence)
 saveRDS(list(model_name = stage2_results$best_name),
         file = paste0("best_model_presence_both_absence_", stage2_results$best_name, ".rds"))
 
-# Note: Feature importance extraction was attempted but removed due to compatibility issues with these models
 
 # PCA visualization of training data -------------------------------------
 svd_res <- irlba(train_mat, nv=2)
