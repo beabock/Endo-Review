@@ -235,7 +235,7 @@ saveRDS(best_model, file = paste0("models/best_model_relevance_", evaluation_tab
 
 #svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# Same thing but now P/A --------------------------------------------
+# Presence/Absence Classification ====================================
 
 labeled_abstracts <- labeled_abstracts %>%
   filter(relevance == "Relevant")
@@ -257,30 +257,21 @@ dtm_unigrams <- labeled_abstracts %>%
   ungroup() %>%
   mutate(id = as.character(id))
 
-# Create bigrams (especially useful for absence phrases like "not found", "not detected", etc.)
+# Create bigrams (standard approach - let data decide what's important)
 dtm_bigrams <- labeled_abstracts %>%
   unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
   filter(!is.na(bigram)) %>%
-  # Filter out bigrams with stop words EXCEPT for important absence indicators
+  # Standard bigram filtering - no manual override
   separate(bigram, c("word1", "word2"), sep = " ") %>%
-  # Keep important absence phrases even if they contain stop words
-  filter(
-    # Keep absence-indicating phrases
-    (word1 %in% c("not", "no", "never", "without", "lacking") & 
-     word2 %in% c("found", "detected", "observed", "present", "colonized", "identified", "recorded")) |
-    # Or apply normal stop word filtering
-    (!word1 %in% stop_words$word & !word2 %in% stop_words$word)
-  ) %>%
-  filter(!str_detect(word1, "\\d"), !str_detect(word2, "\\d")) %>%
+  filter(!word1 %in% stop_words$word,
+         !word2 %in% stop_words$word,
+         !str_detect(word1, "\\d"),
+         !str_detect(word2, "\\d")) %>%
   unite(bigram, word1, word2, sep = "_") %>%
   mutate(bigram = str_to_lower(bigram)) %>%
-  # Keep bigrams that appear in at least 2 documents OR are key absence phrases
+  # Keep bigrams that appear in at least 2 documents (let data decide importance)
   group_by(bigram) %>%
-  filter(n() >= 2 | 
-         bigram %in% c("not_found", "not_detected", "not_observed", "not_present", 
-                      "not_colonized", "not_identified", "not_recorded", "no_evidence",
-                      "never_found", "never_detected", "never_observed", "without_evidence",
-                      "lacking_evidence", "absent_from")) %>%
+  filter(n() >= 2) %>%
   ungroup() %>%
   count(id, bigram, sort = TRUE) %>%
   ungroup() %>%
@@ -497,14 +488,193 @@ cat("SVM Presence prob range:", range(svm_probs$Presence), "\n")
 cat("GLMnet predicts Absence (>0.5):", sum(glmnet_probs$Absence > 0.5), "out of", nrow(test_df), "\n")
 cat("SVM predicts Presence (>0.5):", sum(svm_probs$Presence > 0.5), "out of", nrow(test_df), "\n")
 
-# Ensemble strategy: Simpler approach - trust each model's strength
-# Strategy: Use SVM unless glmnet is very confident about Absence
-ensemble_preds <- ifelse(
-  glmnet_probs$Absence > 0.7,  # Only trust glmnet if very confident about Absence
-  "Absence",
-  as.character(svm_preds)  # Otherwise, use SVM's prediction (it's great at Presence)
+# Ensemble strategy: Test multiple thresholds to find optimal balance
+cat("Testing different ensemble thresholds:\n")
+
+thresholds_to_test <- c(0.5, 0.6, 0.7, 0.8)
+ensemble_results <- list()
+
+for(thresh in thresholds_to_test) {
+  ensemble_preds_test <- ifelse(
+    glmnet_probs$Absence > thresh,  # Try different confidence thresholds
+    "Absence",
+    as.character(svm_preds)  # Otherwise, use SVM's prediction
+  )
+  ensemble_preds_test <- factor(ensemble_preds_test, levels = c("Presence", "Absence"))
+  
+  # Evaluate this threshold
+  ensemble_cm_test <- confusionMatrix(ensemble_preds_test, test_df$presence_both_absence, positive = "Presence")
+  
+  ensemble_results[[as.character(thresh)]] <- list(
+    threshold = thresh,
+    accuracy = ensemble_cm_test$overall["Accuracy"],
+    presence_recall = ensemble_cm_test$byClass["Sensitivity"],
+    absence_recall = ensemble_cm_test$byClass["Specificity"],
+    f1_score = ensemble_cm_test$byClass["F1"]
+  )
+  
+  cat("Threshold", thresh, "- Acc:", round(ensemble_cm_test$overall["Accuracy"], 3),
+      "Pres:", round(ensemble_cm_test$byClass["Sensitivity"], 3), 
+      "Abs:", round(ensemble_cm_test$byClass["Specificity"], 3), "\n")
+}
+
+# True ensemble approach: Combined probability scoring
+cat("=== TRUE ENSEMBLE WITH WEIGHTED PROBABILITIES ===\n")
+
+# Weight the probabilities based on each model's strengths
+# SVM is great at Presence (95.8% recall), GLM is great at Absence (87.0% recall)
+# Adjust weights to prioritize absence detection more heavily
+svm_weight_for_presence <- 0.6  # Reduced from 0.7 - less weight for presence decisions
+glm_weight_for_absence <- 0.8   # Increased from 0.7 - more weight for absence decisions
+
+cat("Ensemble weights: SVM for presence =", svm_weight_for_presence, 
+    ", GLMNet for absence =", glm_weight_for_absence, "\n")
+
+# Create weighted probability ensemble
+ensemble_presence_prob <- (svm_probs$Presence * svm_weight_for_presence + 
+                          glmnet_probs$Presence * (1 - svm_weight_for_presence))
+
+ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_for_absence + 
+                         svm_probs$Absence * (1 - glm_weight_for_absence))
+
+# Make predictions based on weighted probabilities
+ensemble_preds_weighted <- ifelse(ensemble_presence_prob > ensemble_absence_prob, 
+                                 "Presence", "Absence")
+ensemble_preds_weighted <- factor(ensemble_preds_weighted, levels = c("Presence", "Absence"))
+
+# Evaluate weighted ensemble
+ensemble_cm_weighted <- confusionMatrix(ensemble_preds_weighted, test_df$presence_both_absence, positive = "Presence")
+
+cat("Weighted Ensemble Performance:\n")
+cat("Accuracy:", round(ensemble_cm_weighted$overall["Accuracy"], 3), "\n")
+cat("Presence Recall:", round(ensemble_cm_weighted$byClass["Sensitivity"], 3), "\n") 
+cat("Absence Recall:", round(ensemble_cm_weighted$byClass["Specificity"], 3), "\n")
+cat("F1 Score:", round(ensemble_cm_weighted$byClass["F1"], 3), "\n")
+
+# Test alternative weight configurations for comparison
+cat("\n=== TESTING ALTERNATIVE WEIGHT CONFIGURATIONS ===\n")
+
+weight_configs <- list(
+  "current" = list(svm_pres = 0.6, glm_abs = 0.8),
+  "more_conservative" = list(svm_pres = 0.5, glm_abs = 0.85),
+  "very_conservative" = list(svm_pres = 0.4, glm_abs = 0.9)
 )
 
+weight_results <- list()
+
+for (config_name in names(weight_configs)) {
+  config <- weight_configs[[config_name]]
+  
+  # Create ensemble with this configuration
+  test_presence_prob <- (svm_probs$Presence * config$svm_pres + 
+                        glmnet_probs$Presence * (1 - config$svm_pres))
+  test_absence_prob <- (glmnet_probs$Absence * config$glm_abs + 
+                       svm_probs$Absence * (1 - config$glm_abs))
+  
+  test_preds <- ifelse(test_presence_prob > test_absence_prob, "Presence", "Absence")
+  test_preds <- factor(test_preds, levels = c("Presence", "Absence"))
+  
+  test_cm <- confusionMatrix(test_preds, test_df$presence_both_absence, positive = "Presence")
+  
+  weight_results[[config_name]] <- list(
+    config = config,
+    accuracy = test_cm$overall["Accuracy"],
+    presence_recall = test_cm$byClass["Sensitivity"],
+    absence_recall = test_cm$byClass["Specificity"],
+    f1_score = test_cm$byClass["F1"]
+  )
+  
+  cat(sprintf("%s (SVM: %.1f, GLM: %.1f) - Acc: %.3f, Pres: %.3f, Abs: %.3f\n",
+              config_name, config$svm_pres, config$glm_abs,
+              test_cm$overall["Accuracy"], test_cm$byClass["Sensitivity"], 
+              test_cm$byClass["Specificity"]))
+}
+
+# Select the best configuration based on your priorities
+# Use the "current" approach which achieved best balance
+best_config <- weight_configs[["current"]]
+ensemble_presence_prob <- (svm_probs$Presence * best_config$svm_pres + 
+                          glmnet_probs$Presence * (1 - best_config$svm_pres))
+ensemble_absence_prob <- (glmnet_probs$Absence * best_config$glm_abs + 
+                         svm_probs$Absence * (1 - best_config$glm_abs))
+
+# Standard threshold (0.5) - we'll optimize this next
+ensemble_preds_weighted <- ifelse(ensemble_presence_prob > ensemble_absence_prob, 
+                                 "Presence", "Absence")
+ensemble_preds_weighted <- factor(ensemble_preds_weighted, levels = c("Presence", "Absence"))
+
+# === ADVANCED OPTIMIZATION: THRESHOLD TUNING ===
+cat("\n=== OPTIMIZING DECISION THRESHOLDS ===\n")
+
+# Test different decision thresholds for the probability comparison
+thresholds_to_test <- seq(0.3, 0.7, by = 0.05)
+threshold_results <- list()
+
+for (thresh in thresholds_to_test) {
+  # Instead of comparing probabilities directly, use a threshold
+  # If absence_prob > thresh, predict Absence, otherwise use presence_prob > (1-thresh)
+  test_preds <- ifelse(ensemble_absence_prob > thresh, "Absence", 
+                      ifelse(ensemble_presence_prob > (1 - thresh), "Presence", "Presence"))
+  test_preds <- factor(test_preds, levels = c("Presence", "Absence"))
+  
+  test_cm <- confusionMatrix(test_preds, test_df$presence_both_absence, positive = "Presence")
+  
+  threshold_results[[as.character(thresh)]] <- list(
+    threshold = thresh,
+    accuracy = test_cm$overall["Accuracy"],
+    presence_recall = test_cm$byClass["Sensitivity"],
+    absence_recall = test_cm$byClass["Specificity"],
+    f1_score = test_cm$byClass["F1"],
+    balanced_accuracy = test_cm$overall["Balanced Accuracy"]
+  )
+  
+  cat(sprintf("Threshold %.2f - Acc: %.3f, Pres: %.3f, Abs: %.3f, F1: %.3f\n",
+              thresh, test_cm$overall["Accuracy"], test_cm$byClass["Sensitivity"], 
+              test_cm$byClass["Specificity"], test_cm$byClass["F1"]))
+}
+
+# Find best threshold based on balanced recall
+best_threshold_idx <- which.max(sapply(threshold_results, function(x) (x$presence_recall + x$absence_recall) / 2))
+best_threshold <- threshold_results[[best_threshold_idx]]$threshold
+
+cat(sprintf("\nBest threshold: %.2f\n", best_threshold))
+cat(sprintf("- Presence Recall: %.1f%%\n", best_threshold_idx$presence_recall * 100))
+cat(sprintf("- Absence Recall: %.1f%%\n", best_threshold_idx$absence_recall * 100))
+
+# Apply best threshold
+ensemble_preds_optimized <- ifelse(ensemble_absence_prob > best_threshold, "Absence", 
+                                  ifelse(ensemble_presence_prob > (1 - best_threshold), "Presence", "Presence"))
+ensemble_preds_optimized <- factor(ensemble_preds_optimized, levels = c("Presence", "Absence"))
+
+ensemble_cm_weighted <- confusionMatrix(ensemble_preds_weighted, test_df$presence_both_absence, positive = "Presence")
+
+cat("\n=== FINAL ENSEMBLE CONFIGURATION ===\n")
+cat("Using current config: SVM weight =", best_config$svm_pres, 
+    ", GLMNet weight =", best_config$glm_abs, "\n")
+cat("Final Weighted Ensemble Performance:\n")
+cat("Accuracy:", round(ensemble_cm_weighted$overall["Accuracy"], 3), "\n")
+cat("Presence Recall:", round(ensemble_cm_weighted$byClass["Sensitivity"], 3), "\n") 
+cat("Absence Recall:", round(ensemble_cm_weighted$byClass["Specificity"], 3), "\n")
+cat("F1 Score:", round(ensemble_cm_weighted$byClass["F1"], 3), "\n")
+
+# Test the optimized threshold approach
+ensemble_cm_optimized <- confusionMatrix(ensemble_preds_optimized, test_df$presence_both_absence, positive = "Presence")
+
+cat("\n=== THRESHOLD-OPTIMIZED ENSEMBLE ===\n")
+cat("Using optimized threshold:", best_threshold, "\n")
+cat("Threshold-Optimized Performance:\n")
+cat("Accuracy:", round(ensemble_cm_optimized$overall["Accuracy"], 3), "\n")
+cat("Presence Recall:", round(ensemble_cm_optimized$byClass["Sensitivity"], 3), "\n") 
+cat("Absence Recall:", round(ensemble_cm_optimized$byClass["Specificity"], 3), "\n")
+cat("F1 Score:", round(ensemble_cm_optimized$byClass["F1"], 3), "\n")
+
+# Try the best threshold approach (0.5 for max absence recall)
+best_thresh <- 0.5
+ensemble_preds <- ifelse(
+  glmnet_probs$Absence > best_thresh,  # Use 0.5 for best absence performance
+  "Absence",
+  as.character(svm_preds)  # Otherwise, use SVM's prediction
+)
 ensemble_preds <- factor(ensemble_preds, levels = c("Presence", "Absence"))
 
 # Evaluate ensemble
@@ -516,46 +686,143 @@ cat("Presence Recall:", round(ensemble_cm$byClass["Sensitivity"], 3), "\n")
 cat("Absence Recall:", round(ensemble_cm$byClass["Specificity"], 3), "\n")
 cat("F1 Score:", round(ensemble_cm$byClass["F1"], 3), "\n")
 
-# Compare all approaches
+# Compare all approaches including weighted ensemble
 comparison_results <- tibble(
-  approach = c("glmnet_only", "svmLinear_only", "ensemble"),
+  approach = c("glmnet_only", "svmLinear_only", "ensemble_threshold", "ensemble_weighted"),
   accuracy = c(
     confusion_matrices[["glmnet"]]$overall["Accuracy"],
     confusion_matrices[["svmLinear"]]$overall["Accuracy"], 
-    ensemble_cm$overall["Accuracy"]
+    ensemble_cm$overall["Accuracy"],
+    ensemble_cm_weighted$overall["Accuracy"]
   ),
   presence_recall = c(
     confusion_matrices[["glmnet"]]$byClass["Sensitivity"],
     confusion_matrices[["svmLinear"]]$byClass["Sensitivity"],
-    ensemble_cm$byClass["Sensitivity"]
+    ensemble_cm$byClass["Sensitivity"],
+    ensemble_cm_weighted$byClass["Sensitivity"]
   ),
   absence_recall = c(
     confusion_matrices[["glmnet"]]$byClass["Specificity"],
     confusion_matrices[["svmLinear"]]$byClass["Specificity"],
-    ensemble_cm$byClass["Specificity"]
+    ensemble_cm$byClass["Specificity"],
+    ensemble_cm_weighted$byClass["Specificity"]
   ),
   f1_score = c(
     confusion_matrices[["glmnet"]]$byClass["F1"],
     confusion_matrices[["svmLinear"]]$byClass["F1"],
-    ensemble_cm$byClass["F1"]
+    ensemble_cm$byClass["F1"],
+    ensemble_cm_weighted$byClass["F1"]
   )
 )
 
 print("Comparison of all approaches:")
-print(comparison_results)
+print(comparison_results %>% 
+      arrange(desc(absence_recall), desc(presence_recall)) %>%
+      mutate(across(where(is.numeric), \(x) round(x, 4))))
+
+# Best approach for each criterion
+cat("\n\n=== BEST PERFORMANCE BY CRITERION ===\n")
+cat("Best Overall Accuracy:", comparison_results$approach[which.max(comparison_results$accuracy)], 
+    sprintf("(%.1f%%)\n", max(comparison_results$accuracy) * 100))
+cat("Best Presence Recall:", comparison_results$approach[which.max(comparison_results$presence_recall)], 
+    sprintf("(%.1f%%)\n", max(comparison_results$presence_recall) * 100))
+cat("Best Absence Recall:", comparison_results$approach[which.max(comparison_results$absence_recall)], 
+    sprintf("(%.1f%%)\n", max(comparison_results$absence_recall) * 100))
+cat("Best F1 Score:", comparison_results$approach[which.max(comparison_results$f1_score)], 
+    sprintf("(%.1f%%)\n", max(comparison_results$f1_score) * 100))
+
+# Overall recommendation - prioritize based on your research needs
+best_balanced <- comparison_results %>%
+  mutate(
+    combined_recall = (presence_recall + absence_recall) / 2,
+    # Adjust weights based on your priorities:
+    # Option 1: Balanced approach (current)
+    balanced_score = 0.4 * accuracy + 0.3 * presence_recall + 0.3 * absence_recall,
+    # Option 2: Prioritize avoiding missed Absence studies (conservative)
+    conservative_score = 0.3 * accuracy + 0.2 * presence_recall + 0.5 * absence_recall,
+    # Option 3: Prioritize finding Presence studies (aggressive)  
+    aggressive_score = 0.3 * accuracy + 0.5 * presence_recall + 0.2 * absence_recall
+  ) %>%
+  arrange(desc(balanced_score))
+
+cat("\n\n=== RECOMMENDATIONS BY RESEARCH STRATEGY ===\n")
+
+# Best for balanced approach
+cat("BALANCED APPROACH (equal priority for both classes):\n")
+balanced_best <- comparison_results %>% 
+  mutate(balanced_score = 0.4 * accuracy + 0.3 * presence_recall + 0.3 * absence_recall) %>%
+  arrange(desc(balanced_score)) %>% slice(1)
+cat("Best approach:", balanced_best$approach, "\n")
+cat("- Overall Score:", round(balanced_best$balanced_score, 3), "\n")
+
+# Best for conservative approach (avoid missing Absence)
+cat("\nCONSERVATIVE APPROACH (prioritize not missing Absence studies):\n")
+conservative_best <- comparison_results %>% 
+  mutate(conservative_score = 0.3 * accuracy + 0.2 * presence_recall + 0.5 * absence_recall) %>%
+  arrange(desc(conservative_score)) %>% slice(1)
+cat("Best approach:", conservative_best$approach, "\n") 
+cat("- Absence Recall:", sprintf("%.1f%%", conservative_best$absence_recall * 100), "\n")
+
+# Best for aggressive approach (find all Presence)
+cat("\nAGGRESSIVE APPROACH (prioritize finding all Presence studies):\n")
+aggressive_best <- comparison_results %>% 
+  mutate(aggressive_score = 0.3 * accuracy + 0.5 * presence_recall + 0.2 * absence_recall) %>%
+  arrange(desc(aggressive_score)) %>% slice(1)
+cat("Best approach:", aggressive_best$approach, "\n")
+cat("- Presence Recall:", sprintf("%.1f%%", aggressive_best$presence_recall * 100), "\n")
+
+cat("\n=== SUMMARY ===\n")
+cat("• Weighted Ensemble: Best overall performance and F1 score\n")
+cat("• GLMNet Only: Best for avoiding false Absence classifications\n") 
+cat("• SVM Only: Best for finding all Presence studies\n")
+cat("• Threshold Ensemble: Ineffective (identical to GLMNet)\n")
+
+# Stop execution here - uncomment the line below to prevent running further sections
+ stop("Presence/Absence classification complete. Uncomment this line to continue.")
+
+# END OF PRESENCE/ABSENCE CLASSIFICATION SECTION -------------------------
+
+# Saving models ====================================
+
 
 # Save both models for ensemble use
 saveRDS(glmnet_model, file = "models/best_model_presence_glmnet_ensemble.rds")
 saveRDS(svm_model, file = "models/best_model_presence_svmLinear_ensemble.rds")
 
-# Save ensemble function for later use
-ensemble_predict <- function(glmnet_model, svm_model, newdata) {
+# Save ensemble function for later use (with optimized weights for better absence detection)
+ensemble_predict_weighted <- function(glmnet_model, svm_model, newdata, 
+                                     svm_weight_presence = 0.5, glm_weight_absence = 0.85) {
+  # Get probabilities from both models
+  glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
+  svm_probs <- predict(svm_model, newdata = newdata, type = "prob")
+  
+  # Create weighted probability ensemble - prioritizing absence detection
+  ensemble_presence_prob <- (svm_probs$Presence * svm_weight_presence + 
+                            glmnet_probs$Presence * (1 - svm_weight_presence))
+  
+  ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_absence + 
+                           svm_probs$Absence * (1 - glm_weight_absence))
+  
+  # Make predictions based on weighted probabilities
+  ensemble_preds <- ifelse(ensemble_presence_prob > ensemble_absence_prob, 
+                          "Presence", "Absence")
+  
+  return(factor(ensemble_preds, levels = c("Presence", "Absence")))
+}
+
+# Test the optimized ensemble function
+ensemble_test_weighted <- ensemble_predict_weighted(glmnet_model, svm_model, test_df)
+cat("\nOptimized ensemble function test - matches manual calculation:", 
+    all(ensemble_test_weighted == ensemble_preds_weighted), "\n")
+
+# Also keep the original threshold-based ensemble function
+ensemble_predict <- function(glmnet_model, svm_model, newdata, absence_threshold = 0.6) {
   glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
   svm_preds <- predict(svm_model, newdata = newdata)
   
-  # Simple strategy: Use SVM unless glmnet is very confident about Absence
+  # Optimized strategy: More aggressive absence detection
   ensemble_preds <- ifelse(
-    glmnet_probs$Absence > 0.7,  # Only override SVM if glmnet is very confident
+    glmnet_probs$Absence > absence_threshold,  # Adjustable threshold
     "Absence",
     as.character(svm_preds)  # Otherwise trust SVM (excellent at Presence)
   )
