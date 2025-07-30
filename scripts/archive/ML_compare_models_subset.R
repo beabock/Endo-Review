@@ -360,7 +360,7 @@ cat("P/A Balanced class distribution:\n")
 print(table(balanced_train$presence_both_absence))
 
 # Models to compare
-models_to_try <- c("glmnet", "svmLinear") # Adding random forest
+models_to_try <- c("glmnet", "svmLinear") 
 results <- list()
 
 for (method in models_to_try) {
@@ -557,7 +557,8 @@ cat("\n=== TESTING ALTERNATIVE WEIGHT CONFIGURATIONS ===\n")
 weight_configs <- list(
   "current" = list(svm_pres = 0.6, glm_abs = 0.8),
   "more_conservative" = list(svm_pres = 0.5, glm_abs = 0.85),
-  "very_conservative" = list(svm_pres = 0.4, glm_abs = 0.9)
+  "very_conservative" = list(svm_pres = 0.4, glm_abs = 0.9),
+  "ultra_conservative" = list(svm_pres = 0.4, glm_abs = 0.95)
 )
 
 weight_results <- list()
@@ -603,6 +604,32 @@ ensemble_preds_weighted <- ifelse(ensemble_presence_prob > ensemble_absence_prob
                                  "Presence", "Absence")
 ensemble_preds_weighted <- factor(ensemble_preds_weighted, levels = c("Presence", "Absence"))
 
+# === TEST OPTIMAL THRESHOLD WITH WEIGHT CONFIGURATIONS ===
+cat("\n=== TESTING OPTIMAL THRESHOLD (0.55) WITH WEIGHT CONFIGURATIONS ===\n")
+
+optimal_threshold <- 0.55
+for (config_name in names(weight_configs)) {
+  config <- weight_configs[[config_name]]
+  
+  # Create ensemble with this configuration
+  test_presence_prob <- (svm_probs$Presence * config$svm_pres + 
+                        glmnet_probs$Presence * (1 - config$svm_pres))
+  test_absence_prob <- (glmnet_probs$Absence * config$glm_abs + 
+                       svm_probs$Absence * (1 - config$glm_abs))
+  
+  # Use optimal threshold instead of simple comparison
+  test_preds <- ifelse(test_absence_prob > optimal_threshold, "Absence", 
+                      ifelse(test_presence_prob > (1 - optimal_threshold), "Presence", "Presence"))
+  test_preds <- factor(test_preds, levels = c("Presence", "Absence"))
+  
+  test_cm <- confusionMatrix(test_preds, test_df$presence_both_absence, positive = "Presence")
+  
+  cat(sprintf("%s with 0.55 threshold (SVM: %.1f, GLM: %.2f) - Acc: %.3f, Pres: %.3f, Abs: %.3f\n",
+              config_name, config$svm_pres, config$glm_abs,
+              test_cm$overall["Accuracy"], test_cm$byClass["Sensitivity"], 
+              test_cm$byClass["Specificity"]))
+}
+
 # === ADVANCED OPTIMIZATION: THRESHOLD TUNING ===
 cat("\n=== OPTIMIZING DECISION THRESHOLDS ===\n")
 
@@ -636,10 +663,11 @@ for (thresh in thresholds_to_test) {
 # Find best threshold based on balanced recall
 best_threshold_idx <- which.max(sapply(threshold_results, function(x) (x$presence_recall + x$absence_recall) / 2))
 best_threshold <- threshold_results[[best_threshold_idx]]$threshold
+best_threshold_results <- threshold_results[[best_threshold_idx]]
 
 cat(sprintf("\nBest threshold: %.2f\n", best_threshold))
-cat(sprintf("- Presence Recall: %.1f%%\n", best_threshold_idx$presence_recall * 100))
-cat(sprintf("- Absence Recall: %.1f%%\n", best_threshold_idx$absence_recall * 100))
+cat(sprintf("- Presence Recall: %.1f%%\n", best_threshold_results$presence_recall * 100))
+cat(sprintf("- Absence Recall: %.1f%%\n", best_threshold_results$absence_recall * 100))
 
 # Apply best threshold
 ensemble_preds_optimized <- ifelse(ensemble_absence_prob > best_threshold, "Absence", 
@@ -778,7 +806,7 @@ cat("• SVM Only: Best for finding all Presence studies\n")
 cat("• Threshold Ensemble: Ineffective (identical to GLMNet)\n")
 
 # Stop execution here - uncomment the line below to prevent running further sections
- stop("Presence/Absence classification complete. Uncomment this line to continue.")
+ 
 
 # END OF PRESENCE/ABSENCE CLASSIFICATION SECTION -------------------------
 
@@ -789,9 +817,9 @@ cat("• Threshold Ensemble: Ineffective (identical to GLMNet)\n")
 saveRDS(glmnet_model, file = "models/best_model_presence_glmnet_ensemble.rds")
 saveRDS(svm_model, file = "models/best_model_presence_svmLinear_ensemble.rds")
 
-# Save ensemble function for later use (with optimized weights for better absence detection)
+# Save ensemble function for later use (matching the manual calculation approach)
 ensemble_predict_weighted <- function(glmnet_model, svm_model, newdata, 
-                                     svm_weight_presence = 0.5, glm_weight_absence = 0.85) {
+                                     svm_weight_presence = 0.6, glm_weight_absence = 0.8) {
   # Get probabilities from both models
   glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
   svm_probs <- predict(svm_model, newdata = newdata, type = "prob")
@@ -803,17 +831,42 @@ ensemble_predict_weighted <- function(glmnet_model, svm_model, newdata,
   ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_absence + 
                            svm_probs$Absence * (1 - glm_weight_absence))
   
-  # Make predictions based on weighted probabilities
-  ensemble_preds <- ifelse(ensemble_presence_prob > ensemble_absence_prob, 
-                          "Presence", "Absence")
+  # Make predictions using simple probability comparison (matches manual calculation)
+  ensemble_preds <- ifelse(ensemble_presence_prob > ensemble_absence_prob, "Presence", "Absence")
   
   return(factor(ensemble_preds, levels = c("Presence", "Absence")))
 }
 
-# Test the optimized ensemble function
+# Alternative threshold-optimized ensemble function
+ensemble_predict_threshold_optimized <- function(glmnet_model, svm_model, newdata, 
+                                               svm_weight_presence = 0.6, glm_weight_absence = 0.8, 
+                                               threshold = 0.55) {
+  # Get probabilities from both models
+  glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
+  svm_probs <- predict(svm_model, newdata = newdata, type = "prob")
+  
+  # Create weighted probability ensemble - prioritizing absence detection
+  ensemble_presence_prob <- (svm_probs$Presence * svm_weight_presence + 
+                            glmnet_probs$Presence * (1 - svm_weight_presence))
+  
+  ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_absence + 
+                           svm_probs$Absence * (1 - glm_weight_absence))
+  
+  # Make predictions using optimized threshold
+  ensemble_preds <- ifelse(ensemble_absence_prob > threshold, "Absence", 
+                          ifelse(ensemble_presence_prob > (1 - threshold), "Presence", "Presence"))
+  
+  return(factor(ensemble_preds, levels = c("Presence", "Absence")))
+}
+
+# Test the ensemble functions
 ensemble_test_weighted <- ensemble_predict_weighted(glmnet_model, svm_model, test_df)
-cat("\nOptimized ensemble function test - matches manual calculation:", 
+cat("\nWeighted ensemble function test - matches manual calculation:", 
     all(ensemble_test_weighted == ensemble_preds_weighted), "\n")
+
+# Test the threshold-optimized function
+ensemble_test_threshold_opt <- ensemble_predict_threshold_optimized(glmnet_model, svm_model, test_df, threshold = 0.55)
+cat("Threshold-optimized ensemble function test created successfully\n")
 
 # Also keep the original threshold-based ensemble function
 ensemble_predict <- function(glmnet_model, svm_model, newdata, absence_threshold = 0.6) {
@@ -834,10 +887,9 @@ ensemble_test <- ensemble_predict(glmnet_model, svm_model, test_df)
 cat("\nEnsemble function test - matches manual calculation:", all(ensemble_test == ensemble_preds), "\n")
 
 
-best_model
-#This part is seemingly doing well...
+# This part is performing very well! Continue to apply to full dataset.
 
-
+# stop("Presence/Absence classification complete. Uncomment this line to continue.")
 # Whole dataset -----------------------------------------------------------
 
 
