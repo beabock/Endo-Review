@@ -34,42 +34,7 @@ cus_pal <- c(
   "#D9AE94"   # pale mushroom beige — for caps and forest floor tones
 )
 
-# Functions ---------------------------------------------------------------
-save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...) {
-  ggsave(filename, plot, width = width, height = height, units = units, ...)
-}
-
-train_and_evaluate <- function(train_df, test_df, method_name, tune_len = 10, ...) {
-  train_control <- trainControl(
-    method = "repeatedcv",
-    number = 5,
-    repeats = 3,
-    classProbs = TRUE,
-    summaryFunction = multiClassSummary,
-    savePredictions = "final"
-  )
-  
-  model <- train(
-    label ~ ., 
-    data = train_df,
-    method = method_name,
-    trControl = train_control,
-    tuneLength = tune_len,
-    ...
-  )
-  
-  predictions <- predict(model, newdata = test_df)
-  cm <- confusionMatrix(predictions, test_df$label)
-  
-  list(
-    model = model,
-    confusion_matrix = cm,
-    accuracy = cm$overall["Accuracy"]
-  )
-}
-
-
-# Presence/Absence --------------------------------------------------------
+# Relevance Classification (Relevant vs Irrelevant) ----------------------
 
 
 set.seed(1998)
@@ -107,54 +72,8 @@ rows_to_remove <- labeled_abstracts %>%
   )
 
 labeled_abstracts <- labeled_abstracts %>%
-  anti_join(rows_to_remove, by = "id")%>%
+  anti_join(rows_to_remove, by = "id") %>%
   ungroup()
-
-
-
-
-
-labeled_abstracts <- labeled_abstracts %>%
-  filter(id %in% rownames(dtm_matrix)) %>%
-  mutate(relevance = factor(relevance))
-
-# Train-test split
-train_index <- createDataPartition(labeled_abstracts$relevance, p = 0.8, list = FALSE)
-  step_smote(relevance) %>%
-
-# --- Optimized block ---
-set.seed(1998)
-
-  summaryFunction = twoClassSummary,
-  savePredictions = "final"
-)
-
-# Models to compare
-models_to_try <- c("glmnet") # Can add rf back in but it kind of sucks. can also add svmLinear back if wanted, but glmnet performs the best.
-results <- list()
-
-for (method in models_to_try) {
-  cat("\nTraining:", method, "\n")
-  tic(paste("Time for", method))
-  result <- tryCatch({
-    train(
-      relevance ~ ., 
-      data = balanced_train,
-      method = method,
-      metric = "ROC",
-      trControl = train_control,
-      tuneLength = 10
-
-# Remove artificial or duplicate Presence examples
-rows_to_remove <- labeled_abstracts %>%
-  filter(
-    is.na(doi) | doi %in% c("", "<NA>", "NA"),
-    label == "Presence",
-    is.na(authors) | authors == ""
-  )
-
-    )
-  anti_join(rows_to_remove, by = "id")
 
 # DTM creation and alignment
 dtm <- labeled_abstracts %>%
@@ -179,6 +98,57 @@ labeled_abstracts <- labeled_abstracts %>%
   filter(id %in% rownames(dtm_matrix)) %>%
   mutate(relevance = factor(relevance)) %>%
   arrange(match(id, rownames(dtm_matrix)))
+
+# Train-test split
+train_index <- createDataPartition(labeled_abstracts$relevance, p = 0.8, list = FALSE)
+train_data <- labeled_abstracts[train_index, ]
+test_data <- labeled_abstracts[-train_index, ]
+
+train_ids <- as.character(train_data$id)
+test_ids <- as.character(test_data$id)
+
+train_matrix <- dtm_matrix[train_ids, ]
+test_matrix <- dtm_matrix[test_ids, ]
+
+# Convert to data frame for caret
+train_df <- as.data.frame(as.matrix(train_matrix)) %>% 
+  mutate(relevance = train_data$relevance)
+
+test_df <- as.data.frame(as.matrix(test_matrix)) %>% 
+  mutate(relevance = test_data$relevance)
+
+# Apply SMOTE for class balancing
+train_recipe <- recipe(relevance ~ ., data = train_df) %>%
+  step_smote(relevance) %>%
+  prep()
+balanced_train <- juice(train_recipe)
+
+# Train Control
+train_control <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 3,
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  savePredictions = "final"
+)
+
+# Models to compare
+models_to_try <- c("glmnet") # Can add rf back in but it kind of sucks. can also add svmLinear back if wanted, but glmnet performs the best.
+results <- list()
+
+for (method in models_to_try) {
+  cat("\nTraining:", method, "\n")
+  tic(paste("Time for", method))
+  result <- tryCatch({
+    train(
+      relevance ~ ., 
+      data = balanced_train,
+      method = method,
+      metric = "ROC",
+      trControl = train_control,
+      tuneLength = 10
+    )
   }, error = function(e) {
     message("Model ", method, " failed: ", e$message)
     return(NULL)
