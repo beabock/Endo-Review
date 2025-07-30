@@ -1,0 +1,680 @@
+# Simple Species Extraction for Classification Results
+# B. Bock  
+# July 30, 2025
+#
+# Comprehensive script to extract:
+# 1. Species information (plants and fungi)
+# 2. Plant parts studied
+# 3. Research methods (culture, microscopy, molecular)
+# 4. Geographic locations
+#
+# Focuses on the weighted ensemble (89.8% accuracy) predictions
+
+library(tidyverse)
+library(tictoc)
+
+# Source the detection functions
+source("../optimized_taxa_detection.R")
+
+cat("=== COMPREHENSIVE EXTRACTION PIPELINE ===\n")
+cat("Processing weighted ensemble results (best ML performance)\n")
+cat("Extracting: Species | Plant Parts | Methods | Geography\n\n")
+
+# Define extraction functions ------------------------------------------------
+
+# Function to detect research methods in abstracts (from visualize_taxa_results.R)
+detect_research_methods <- function(text) {
+  # Define method categories and their keywords
+  method_categories <- list(
+    molecular = c("pcr", "dna", "rna", "sequenc", "primer", "amplif", "gene", "genom", 
+                 "transcript", "clone", "phylogen", "molecular", "extraction", "isolat", 
+                 "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", "its", 
+                 "rrna", "18s", "28s", "rdna", "barcode", "phylogeny"),
+    
+    culture_based = c("culture", "isolat", "plate", "medium", "agar", "petri", "colony", 
+                     "incubat", "inocul", "sterile", "aseptic", "axenic", "pure culture", 
+                     "ferment", "broth", "in vitro", "cultivation", "cultured"),
+    
+    microscopy = c("microscop", "stain", "section", "histolog", "morpholog", "ultrastructur", 
+                  "sem", "tem", "scanning electron", "transmission electron", "light microscop", 
+                  "confocal", "fluorescen", "magnification", "micrograph", "optical")
+  )
+  
+  text_lower <- tolower(text)
+  results <- sapply(names(method_categories), function(category) {
+    keywords <- method_categories[[category]]
+    matches <- sapply(keywords, function(keyword) {
+      grepl(keyword, text_lower)
+    })
+    any(matches)
+  })
+  
+  # Create summary
+  methods_found <- names(results)[results]
+  return(list(
+    molecular = results["molecular"],
+    culture_based = results["culture_based"],
+    microscopy = results["microscopy"],
+    methods_detected = if(length(methods_found) > 0) paste(methods_found, collapse = "; ") else NA
+  ))
+}
+
+# Function to detect geographic locations
+detect_geographic_locations <- function(text) {
+  # Comprehensive country lists categorized by Global North/South
+  # Based on UN classifications and economic development indicators
+  
+  global_north_countries <- c(
+    # North America
+    "usa", "united states", "america", "canada", "greenland",
+    # Europe
+    "germany", "france", "italy", "spain", "uk", "united kingdom", "england", 
+    "scotland", "wales", "ireland", "poland", "sweden", "norway", "finland",
+    "denmark", "netherlands", "belgium", "switzerland", "austria", "portugal",
+    "greece", "czech republic", "hungary", "slovakia", "slovenia", "estonia",
+    "latvia", "lithuania", "iceland", "luxembourg", "malta", "cyprus",
+    "croatia", "romania", "bulgaria", "albania", "montenegro", "serbia",
+    "bosnia and herzegovina", "macedonia", "north macedonia", "moldova",
+    "belarus", "ukraine", "andorra", "liechtenstein", "monaco", "san marino",
+    "vatican", "vatican city",
+    # Asia-Pacific Developed
+    "japan", "south korea", "australia", "new zealand", "singapore", "israel",
+    "brunei",
+    # Others
+    "russia"
+  )
+  
+  global_south_countries <- c(
+    # Asia
+    "china", "india", "indonesia", "pakistan", "bangladesh", "vietnam", 
+    "philippines", "thailand", "malaysia", "myanmar", "cambodia", "laos",
+    "sri lanka", "nepal", "bhutan", "afghanistan", "mongolia", "north korea",
+    "taiwan", "hong kong", "macao", "maldives", "timor-leste", "east timor",
+    "uzbekistan", "kazakhstan", "kyrgyzstan", "tajikistan", "turkmenistan",
+    "armenia", "azerbaijan", "georgia",
+    # Africa
+    "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda", "tanzania",
+    "ghana", "mozambique", "madagascar", "cameroon", "ivory coast", "cote divoire", "niger", 
+    "burkina faso", "mali", "malawi", "zambia", "senegal", "somalia", "chad",
+    "guinea", "rwanda", "benin", "tunisia", "burundi", "south sudan", "togo",
+    "sierra leone", "libya", "liberia", "mauritania", "lesotho", "namibia",
+    "gambia", "botswana", "gabon", "guinea-bissau", "equatorial guinea",
+    "mauritius", "eswatini", "swaziland", "djibouti", "comoros", "cape verde", "seychelles",
+    "sao tome and principe", "morocco", "algeria", "sudan", "democratic republic congo",
+    "central african republic", "republic congo", "angola", "zimbabwe", "eritrea",
+    # Latin America & Caribbean
+    "brazil", "mexico", "argentina", "colombia", "peru", "venezuela", "chile",
+    "ecuador", "bolivia", "paraguay", "uruguay", "guyana", "suriname", 
+    "french guiana", "guatemala", "honduras", "el salvador", "nicaragua",
+    "costa rica", "panama", "cuba", "haiti", "dominican republic", "jamaica",
+    "trinidad and tobago", "barbados", "belize", "bahamas", "saint lucia",
+    "grenada", "saint vincent", "antigua", "dominica", "saint kitts",
+    "saint vincent and the grenadines", "antigua and barbuda", "saint kitts and nevis",
+    # Middle East
+    "turkey", "iran", "iraq", "saudi arabia", "yemen", "syria", "jordan",
+    "lebanon", "kuwait", "qatar", "bahrain", "united arab emirates", "oman",
+    "palestine", "palestinian territories",
+    # Pacific Islands
+    "papua new guinea", "fiji", "solomon islands", "vanuatu", "samoa", "tonga",
+    "kiribati", "palau", "nauru", "tuvalu", "marshall islands", "micronesia",
+    "federated states of micronesia", "cook islands", "niue", "tokelau",
+    "american samoa", "guam", "northern mariana islands", "french polynesia",
+    "new caledonia", "wallis and futuna"
+  )
+  
+  # All countries combined
+  all_countries <- c(global_north_countries, global_south_countries)
+  
+  continents <- c("africa", "asia", "europe", "north america", "south america", 
+                  "australia", "oceania", "antarctica")
+  
+  regions <- c("mediterranean", "tropical", "temperate", "boreal", "arctic", "alpine", 
+               "coastal", "mountain", "desert", "rainforest", "savanna", "grassland",
+               "wetland", "forest", "woodland", "prairie", "steppe", "tundra", "taiga",
+               "subtropical", "equatorial", "subantarctic", "subarctic", "montane",
+               "lowland", "highland", "riparian", "littoral", "estuarine", "mangrove",
+               "deciduous", "coniferous", "mixed forest", "cloud forest", "dry forest")
+  
+  text_lower <- tolower(text)
+  
+  # Find countries and categorize
+  countries_found <- all_countries[sapply(all_countries, function(country) {
+    grepl(paste0("\\b", country, "\\b"), text_lower)
+  })]
+  
+  # Categorize found countries
+  north_countries <- intersect(countries_found, global_north_countries)
+  south_countries <- intersect(countries_found, global_south_countries)
+  
+  # Find continents
+  continents_found <- continents[sapply(continents, function(continent) {
+    grepl(paste0("\\b", continent, "\\b"), text_lower)
+  })]
+  
+  # Find regions/ecosystems
+  regions_found <- regions[sapply(regions, function(region) {
+    grepl(paste0("\\b", region, "\\b"), text_lower)
+  })]
+  
+  # Look for coordinate patterns (latitude/longitude)
+  coord_pattern <- "\\b\\d{1,2}[°]?\\s*[NS]?\\s*,?\\s*\\d{1,3}[°]?\\s*[EW]?\\b"
+  has_coordinates <- grepl(coord_pattern, text)
+  
+  return(list(
+    countries = if(length(countries_found) > 0) paste(countries_found, collapse = "; ") else NA,
+    global_north_countries = if(length(north_countries) > 0) paste(north_countries, collapse = "; ") else NA,
+    global_south_countries = if(length(south_countries) > 0) paste(south_countries, collapse = "; ") else NA,
+    continents = if(length(continents_found) > 0) paste(continents_found, collapse = "; ") else NA,
+    regions = if(length(regions_found) > 0) paste(regions_found, collapse = "; ") else NA,
+    has_coordinates = has_coordinates,
+    geographic_info = paste(c(countries_found, continents_found, regions_found), collapse = "; ")
+  ))
+}
+
+# Function to detect plant parts (enhanced from existing)
+detect_plant_parts <- function(text) {
+  # Comprehensive plant parts keywords (matching species detection list)
+  plant_parts_keywords <- c(
+    # Basic structures
+    "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
+    "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
+    "twig", "twigs", "shoot", "shoots", "bud", "buds", "trunk", "trunks",
+    
+    # Reproductive structures
+    "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
+    "sepal", "sepals", "petal", "petals", "stigma", "stigmas", 
+    "style", "styles", "ovary", "ovaries", "ovule", "ovules",
+    "calyx", "calyces", "corolla", "corollas", "pollen",
+    "inflorescence", "inflorescences", "floret", "florets",
+    "stamen", "stamens", "filament", "filaments", "receptacle",
+    "berry", "berries", "drupe", "drupes", "achene", "achenes",
+    "samara", "samaras", "capsule", "capsules", "silique", "siliques",
+    
+    # Specialized structures
+    "rhizome", "rhizomes", "tuber", "tubers", "bulb", "bulbs",
+    "corm", "corms", "tendril", "tendrils", "thorn", "thorns",
+    "needle", "needles", "spine", "spines", "scale", "scales",
+    "keel", "keels", "ligule", "ligules", "pulvinus", "pulvini",
+    "lenticel", "lenticels", "haustorium", "haustoria", "tiller", "tillers",
+    "cone", "cones", "pod", "pods", "runner", "runners", "stolon", "stolons",
+    "pseudobulb", "pseudobulbs", "phylloclade", "phylloclades",
+    
+    # Galls and abnormal structures
+    "gall", "galls", "witch broom", "witches broom", "canker", "cankers",
+    "tumor", "tumors", "neoplasm", "neoplasms", "hyperplasia", "hypertrophy",
+    "callus", "calli", "proliferation", "proliferations",
+    
+    # Anatomical features
+    "xylem", "phloem", "cortex", "cortices", "epidermis", "endodermis",
+    "mesophyll", "parenchyma", "sclerenchyma", "collenchyma",
+    "stoma", "stomata", "cuticle", "cuticles", "trichome", "trichomes",
+    "meristem", "meristems", "pericycle", "cambium", "cambia",
+    "resin duct", "resin ducts", "vascular bundle", "vascular bundles",
+    "pith", "guard cell", "guard cells", "lumen", "lumens",
+    "chloroplast", "chloroplasts", "amyloplast", "amyloplasts",
+    "vessel element", "vessel elements", "tracheid", "tracheids",
+    "sieve tube", "sieve tubes", "companion cell", "companion cells",
+    
+    # Leaf parts
+    "petiole", "petioles", "lamina", "laminae", "stipule", "stipules",
+    "leaflet", "leaflets", "node", "nodes", "internode", "internodes",
+    "midrib", "midribs", "vein", "veins", "margin", "margins",
+    "blade", "blades", "sheath", "sheaths", "ochrea", "ochreae",
+    
+    # Root parts
+    "taproot", "taproots", "fibrous root", "fibrous roots", "root hair", "root hairs",
+    "root cap", "root caps", "lateral root", "lateral roots",
+    "adventitious root", "adventitious roots", "aerial root", "aerial roots",
+    "prop root", "prop roots", "buttress root", "buttress roots",
+    
+    # Wood and bark features
+    "heartwood", "sapwood", "annual ring", "annual rings", "growth ring", "growth rings",
+    "ray", "rays", "tylosis", "tyloses", "extractive", "extractives",
+    "cellulose", "lignin", "hemicellulose", "pectin", "suberin",
+    
+    # Secretory structures
+    "resin canal", "resin canals", "oil duct", "oil ducts", "latex vessel", "latex vessels",
+    "mucilage canal", "mucilage canals", "secretory cell", "secretory cells",
+    "glandular hair", "glandular hairs", "nectary", "nectaries",
+    
+    # Surface features
+    "waxy bloom", "waxy blooms", "pubescence", "glaucous surface",
+    "papilla", "papillae", "emergences", "lenticel", "lenticels"
+  )
+  
+  text_lower <- tolower(text)
+  parts_found <- plant_parts_keywords[sapply(plant_parts_keywords, function(part) {
+    grepl(paste0("\\b", part, "\\b"), text_lower)
+  })]
+  
+  return(list(
+    plant_parts_detected = if(length(parts_found) > 0) paste(parts_found, collapse = "; ") else NA,
+    parts_count = length(parts_found)
+  ))
+}
+
+# Step 1: Prepare the data ------------------------------------------------
+
+cat("Step 1: Preparing classification results for species detection...\n")
+
+# Load the relevant abstracts with predictions
+classification_results <- read_csv("../../results/predictions/relevant_abstracts_with_pa_predictions.csv")
+
+# Load and bind training dataset (only those with real DOIs)
+cat("  Loading training dataset for inclusion...\n")
+training_data <- read_csv("../../data/raw/Training_labeled_abs_5.csv") %>%
+  clean_names() %>%
+  filter(!is.na(doi) & doi != "" & nchar(doi) > 5) %>%  # Only real DOIs
+  filter(label %in% c("Presence", "Absence")) %>%  # Only relevant labels
+  select(article_title, abstract, authors, source_title, publication_year, doi, label) %>%
+  mutate(
+    id = max(classification_results$id, na.rm = TRUE) + row_number(),  # Unique IDs
+    title = article_title,
+    predicted_label = label,  # Use actual label as prediction
+    glmnet_prob_presence = ifelse(label == "Presence", 0.95, 0.05),  # High confidence
+    glmnet_prob_absence = ifelse(label == "Absence", 0.95, 0.05),
+    confidence = 0.95,  # Training data is high confidence
+    source = "training"
+  )
+
+cat("  Added", nrow(training_data), "training abstracts with valid DOIs\n")
+
+# Combine classification results with training data
+combined_results <- classification_results %>%
+  mutate(source = "classification") %>%
+  bind_rows(training_data %>% select(names(classification_results), source))
+
+cat("  Combined dataset:", nrow(combined_results), "total abstracts\n")
+
+# Focus on the weighted ensemble predictions (best performance) + training data
+abstracts_for_species <- combined_results %>%
+  filter(!is.na(predicted_label)) %>%  # Has either prediction or training label
+  select(
+    id, article_title, abstract, authors, source_title, 
+    publication_year, doi, predicted_label, 
+    glmnet_prob_presence, glmnet_prob_absence, source
+  ) %>%
+  # Rename to match expected format
+  rename(
+    title = article_title
+  ) %>%
+  # Add confidence score
+  mutate(
+    confidence = pmax(glmnet_prob_presence, glmnet_prob_absence, na.rm = TRUE)
+  )
+
+cat("  Prepared", nrow(abstracts_for_species), "abstracts with weighted ensemble predictions\n")
+
+# Create breakdown by prediction type
+prediction_summary <- abstracts_for_species %>%
+  count(predicted_label, name = "count") %>%
+  mutate(percentage = round(100 * count / sum(count), 1))
+
+cat("  Prediction breakdown:\n")
+print(prediction_summary)
+
+# Step 2: Run species detection -------------------------------------------
+
+cat("\nStep 2: Running species detection...\n")
+
+# Load species reference data and set up processing
+if (file.exists("../../species.rds")) {
+  species <- readRDS("../../species.rds")
+} else if (file.exists("../../models/species.rds")) {
+  species <- readRDS("../../models/species.rds")
+} else {
+  stop("Species reference data not found. Please ensure species.rds exists.")
+}
+
+cat("  Loaded species reference data:", nrow(species), "species records\n")
+
+# Set up parallel processing and lookup tables
+setup_parallel(workers = 2)
+lookup_tables <- create_lookup_tables(species)
+
+# Define plant parts keywords for species detection - comprehensive list
+plant_parts_keywords_species <- c(
+  # Basic structures
+  "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
+  "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
+  "twig", "twigs", "shoot", "shoots", "bud", "buds", "trunk", "trunks",
+  
+  # Reproductive structures
+  "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
+  "sepal", "sepals", "petal", "petals", "stigma", "stigmas", 
+  "style", "styles", "ovary", "ovaries", "ovule", "ovules",
+  "calyx", "calyces", "corolla", "corollas", "pollen",
+  "inflorescence", "inflorescences", "floret", "florets",
+  "stamen", "stamens", "filament", "filaments", "receptacle",
+  "berry", "berries", "drupe", "drupes", "achene", "achenes",
+  "samara", "samaras", "capsule", "capsules", "silique", "siliques",
+  
+  # Specialized structures
+  "rhizome", "rhizomes", "tuber", "tubers", "bulb", "bulbs",
+  "corm", "corms", "tendril", "tendrils", "thorn", "thorns",
+  "needle", "needles", "spine", "spines", "scale", "scales",
+  "keel", "keels", "ligule", "ligules", "pulvinus", "pulvini",
+  "lenticel", "lenticels", "haustorium", "haustoria", "tiller", "tillers",
+  "cone", "cones", "pod", "pods", "runner", "runners", "stolon", "stolons",
+  "pseudobulb", "pseudobulbs", "phylloclade", "phylloclades",
+  
+  # Galls and abnormal structures
+  "gall", "galls", "witch broom", "witches broom", "canker", "cankers",
+  "tumor", "tumors", "neoplasm", "neoplasms", "hyperplasia", "hypertrophy",
+  "callus", "calli", "proliferation", "proliferations",
+  
+  # Anatomical features
+  "xylem", "phloem", "cortex", "cortices", "epidermis", "endodermis",
+  "mesophyll", "parenchyma", "sclerenchyma", "collenchyma",
+  "stoma", "stomata", "cuticle", "cuticles", "trichome", "trichomes",
+  "meristem", "meristems", "pericycle", "cambium", "cambia",
+  "resin duct", "resin ducts", "vascular bundle", "vascular bundles",
+  "pith", "guard cell", "guard cells", "lumen", "lumens",
+  "chloroplast", "chloroplasts", "amyloplast", "amyloplasts",
+  "vessel element", "vessel elements", "tracheid", "tracheids",
+  "sieve tube", "sieve tubes", "companion cell", "companion cells",
+  
+  # Leaf parts
+  "petiole", "petioles", "lamina", "laminae", "stipule", "stipules",
+  "leaflet", "leaflets", "node", "nodes", "internode", "internodes",
+  "midrib", "midribs", "vein", "veins", "margin", "margins",
+  "blade", "blades", "sheath", "sheaths", "ochrea", "ochreae",
+  
+  # Root parts
+  "taproot", "taproots", "fibrous root", "fibrous roots", "root hair", "root hairs",
+  "root cap", "root caps", "lateral root", "lateral roots",
+  "adventitious root", "adventitious roots", "aerial root", "aerial roots",
+  "prop root", "prop roots", "buttress root", "buttress roots",
+  
+  # Wood and bark features
+  "heartwood", "sapwood", "annual ring", "annual rings", "growth ring", "growth rings",
+  "ray", "rays", "tylosis", "tyloses", "extractive", "extractives",
+  "cellulose", "lignin", "hemicellulose", "pectin", "suberin",
+  
+  # Secretory structures
+  "resin canal", "resin canals", "oil duct", "oil ducts", "latex vessel", "latex vessels",
+  "mucilage canal", "mucilage canals", "secretory cell", "secretory cells",
+  "glandular hair", "glandular hairs", "nectary", "nectaries",
+  
+  # Surface features
+  "waxy bloom", "waxy blooms", "pubescence", "glaucous surface",
+  "papilla", "papillae", "emergences", "lenticel", "lenticels"
+)
+
+# Process species detection in batches
+tic("Species detection")
+
+batch_size <- 25
+n_batches <- ceiling(nrow(abstracts_for_species) / batch_size)
+
+cat("Processing", nrow(abstracts_for_species), "abstracts in", n_batches, "batches...\n")
+
+all_species_results <- map_dfr(1:n_batches, function(i) {
+  start_idx <- (i - 1) * batch_size + 1
+  end_idx <- min(i * batch_size, nrow(abstracts_for_species))
+  
+  batch_data <- abstracts_for_species[start_idx:end_idx, ]
+  
+  cat("  Processing batch", i, "of", n_batches, "(rows", start_idx, "to", end_idx, ")\n")
+  
+  # Process this batch
+  batch_results <- process_abstracts_parallel(
+    abstracts = batch_data,
+    lookup_tables = lookup_tables,
+    plant_parts_keywords = plant_parts_keywords_species,
+    batch_size = 10,
+    workers = 1
+  )
+  
+  return(batch_results)
+})
+
+# Save species detection results
+write_csv(all_species_results, "../../results/species_detection_weighted_ensemble.csv")
+cat("Species detection completed. Results saved to: ../../results/species_detection_weighted_ensemble.csv\n")
+
+toc()
+
+# Step 2.5: Extract additional information -----------------------------------
+
+cat("\nStep 2.5: Extracting plant parts, methods, and geographic information...\n")
+tic("Additional information extraction")
+
+# Apply extraction functions to all abstracts
+cat("  Extracting research methods...\n")
+methods_results <- map_dfr(1:nrow(abstracts_for_species), function(i) {
+  if (i %% 100 == 0) cat("    Processed", i, "of", nrow(abstracts_for_species), "abstracts\n")
+  
+  abstract_text <- abstracts_for_species$abstract[i]
+  if (is.na(abstract_text)) abstract_text <- ""
+  
+  # Extract methods
+  methods <- detect_research_methods(abstract_text)
+  
+  # Extract plant parts  
+  plant_parts <- detect_plant_parts(abstract_text)
+  
+  # Extract geographic info
+  geography <- detect_geographic_locations(abstract_text)
+  
+  return(data.frame(
+    id = abstracts_for_species$id[i],
+    molecular_methods = methods$molecular,
+    culture_based_methods = methods$culture_based,
+    microscopy_methods = methods$microscopy,
+    methods_summary = methods$methods_detected,
+    plant_parts_detected = plant_parts$plant_parts_detected,
+    parts_count = plant_parts$parts_count,
+    countries_detected = geography$countries,
+    global_north_countries = geography$global_north_countries,
+    global_south_countries = geography$global_south_countries,
+    continents_detected = geography$continents,
+    regions_detected = geography$regions,
+    has_coordinates = geography$has_coordinates,
+    geographic_summary = geography$geographic_info
+  ))
+})
+
+cat("  Additional information extraction completed\n")
+toc()
+
+# Step 3: Combine and analyze results -----------------------------------------
+
+cat("\nStep 3: Combining species and additional information...\n")
+
+if (file.exists("../../results/species_detection_weighted_ensemble.csv")) {
+  
+  # Load species detection results
+  species_results <- read_csv("../../results/species_detection_weighted_ensemble.csv", show_col_types = FALSE)
+  
+  # Combine with additional extraction results
+  comprehensive_results <- species_results %>%
+    left_join(methods_results, by = "id") %>%
+    # Add original classification data
+    left_join(
+      abstracts_for_species %>% 
+        select(id, confidence, glmnet_prob_presence, glmnet_prob_absence),
+      by = "id"
+    )
+  
+  # Save comprehensive results
+  write_csv(comprehensive_results, "../../results/comprehensive_extraction_results.csv")
+  
+  cat("Analysis of comprehensive extraction results:\n")
+  cat("  Total abstracts processed:", nrow(comprehensive_results), "\n")
+  
+  # Species analysis
+  abstracts_with_species <- comprehensive_results %>%
+    filter(!is.na(species_detected)) %>%
+    nrow()
+  
+  cat("  Abstracts with species detected:", abstracts_with_species, 
+      "(", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%)\n")
+  
+  # Unique species
+  unique_species <- comprehensive_results %>%
+    filter(!is.na(species_detected)) %>%
+    distinct(species_detected) %>%
+    nrow()
+  
+  cat("  Unique species detected:", unique_species, "\n")
+  
+  # Methods analysis
+  methods_summary <- comprehensive_results %>%
+    summarise(
+      molecular = sum(molecular_methods, na.rm = TRUE),
+      culture = sum(culture_based_methods, na.rm = TRUE),
+      microscopy = sum(microscopy_methods, na.rm = TRUE),
+      total_with_methods = sum(!is.na(methods_summary))
+    )
+  
+  cat("  Research methods detected:\n")
+  cat("    Molecular methods:", methods_summary$molecular, "abstracts\n")
+  cat("    Culture-based methods:", methods_summary$culture, "abstracts\n") 
+  cat("    Microscopy methods:", methods_summary$microscopy, "abstracts\n")
+  cat("    Abstracts with any method info:", methods_summary$total_with_methods, "\n")
+  
+  # Plant parts analysis
+  abstracts_with_parts <- comprehensive_results %>%
+    filter(!is.na(plant_parts_detected)) %>%
+    nrow()
+  
+  cat("  Plant parts information:\n")
+  cat("    Abstracts with plant parts:", abstracts_with_parts, 
+      "(", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%)\n")
+  
+  # Geographic analysis
+  geographic_summary <- comprehensive_results %>%
+    summarise(
+      with_countries = sum(!is.na(countries_detected)),
+      with_global_north = sum(!is.na(global_north_countries)),
+      with_global_south = sum(!is.na(global_south_countries)),
+      with_continents = sum(!is.na(continents_detected)),
+      with_regions = sum(!is.na(regions_detected)),
+      with_coordinates = sum(has_coordinates, na.rm = TRUE),
+      with_any_geography = sum(!is.na(geographic_summary))
+    )
+  
+  cat("  Geographic information:\n")
+  cat("    Abstracts with countries:", geographic_summary$with_countries, "\n")
+  cat("    Abstracts with Global North countries:", geographic_summary$with_global_north, "\n")
+  cat("    Abstracts with Global South countries:", geographic_summary$with_global_south, "\n")
+  cat("    Abstracts with continents:", geographic_summary$with_continents, "\n")
+  cat("    Abstracts with regions:", geographic_summary$with_regions, "\n")
+  cat("    Abstracts with coordinates:", geographic_summary$with_coordinates, "\n")
+  cat("    Abstracts with any geographic info:", geographic_summary$with_any_geography, "\n")
+  
+  # Kingdom analysis
+  kingdom_summary <- comprehensive_results %>%
+    filter(!is.na(species_detected)) %>%
+    count(kingdom, name = "abstracts") %>%
+    arrange(desc(abstracts))
+  
+  if (nrow(kingdom_summary) > 0) {
+    cat("  Species by kingdom:\n")
+    for (i in 1:nrow(kingdom_summary)) {
+      cat("    ", kingdom_summary$kingdom[i], ":", kingdom_summary$abstracts[i], "abstracts\n")
+    }
+  }
+  
+  # Prediction type analysis
+  prediction_analysis <- comprehensive_results %>%
+    group_by(predicted_label) %>%
+    summarise(
+      total = n(),
+      with_species = sum(!is.na(species_detected)),
+      molecular = sum(molecular_methods, na.rm = TRUE),
+      culture = sum(culture_based_methods, na.rm = TRUE),
+      microscopy = sum(microscopy_methods, na.rm = TRUE),
+      with_geography = sum(!is.na(geographic_summary)),
+      .groups = "drop"
+    )
+  
+  cat("  Analysis by prediction type:\n")
+  print(prediction_analysis)
+  
+  # Create detailed summary report
+  capture.output({
+    cat("=== COMPREHENSIVE EXTRACTION SUMMARY REPORT ===\n")
+    cat("Generated:", Sys.time(), "\n")
+    cat("Input: Weighted ensemble predictions (89.8% ML accuracy)\n")
+    cat("Extractions: Species, Plant Parts, Methods, Geography\n\n")
+    
+    cat("OVERVIEW:\n")
+    cat("Total abstracts processed:", nrow(comprehensive_results), "\n")
+    cat("Abstracts with species:", abstracts_with_species, 
+        "(", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%)\n")
+    cat("Unique species detected:", unique_species, "\n\n")
+    
+    cat("RESEARCH METHODS:\n")
+    cat("Molecular methods:", methods_summary$molecular, "abstracts\n")
+    cat("Culture-based methods:", methods_summary$culture, "abstracts\n")
+    cat("Microscopy methods:", methods_summary$microscopy, "abstracts\n")
+    cat("Any method information:", methods_summary$total_with_methods, "abstracts\n\n")
+    
+    cat("PLANT PARTS:\n")
+    cat("Abstracts with plant parts:", abstracts_with_parts, 
+        "(", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%)\n\n")
+    
+    cat("GEOGRAPHIC INFORMATION:\n")
+    cat("Countries mentioned:", geographic_summary$with_countries, "abstracts\n")
+    cat("Global North countries:", geographic_summary$with_global_north, "abstracts\n")
+    cat("Global South countries:", geographic_summary$with_global_south, "abstracts\n")
+    cat("Continents mentioned:", geographic_summary$with_continents, "abstracts\n")
+    cat("Regions/ecosystems mentioned:", geographic_summary$with_regions, "abstracts\n")
+    cat("Coordinates provided:", geographic_summary$with_coordinates, "abstracts\n")
+    cat("Any geographic info:", geographic_summary$with_any_geography, "abstracts\n\n")
+    
+    cat("SPECIES BY KINGDOM:\n")
+    if (nrow(kingdom_summary) > 0) {
+      for (i in 1:nrow(kingdom_summary)) {
+        cat(kingdom_summary$kingdom[i], ":", kingdom_summary$abstracts[i], "abstracts\n")
+      }
+    }
+    cat("\n")
+    
+    cat("ANALYSIS BY PREDICTION TYPE:\n")
+    print(prediction_analysis)
+    cat("\n")
+    
+    cat("DATA QUALITY INDICATORS:\n")
+    cat("1. Species detection rate: ", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%\n")
+    cat("2. Method information coverage: ", round(100 * methods_summary$total_with_methods / nrow(comprehensive_results), 1), "%\n")
+    cat("3. Plant parts coverage: ", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%\n")
+    cat("4. Geographic coverage: ", round(100 * geographic_summary$with_any_geography / nrow(comprehensive_results), 1), "%\n\n")
+    
+    cat("RECOMMENDATIONS:\n")
+    cat("1. Focus manual review on abstracts with species + methods + geography\n")
+    cat("2. Prioritize 'Presence' predictions with comprehensive information\n")
+    cat("3. Review 'Absence' predictions with species detected (potential misclassification)\n")
+    cat("4. Use geographic and method information for study characterization\n")
+    cat("5. Consider plant parts information for endophyte ecology analysis\n")
+  }, file = "../../results/comprehensive_extraction_report.txt")
+  
+  cat("Comprehensive report saved to: ../../results/comprehensive_extraction_report.txt\n")
+  
+} else {
+  cat("No species detection results found - running methods and geography extraction only.\n")
+  
+  # Save just the additional extraction results
+  write_csv(methods_results, "../../results/methods_geography_extraction.csv")
+  cat("Methods and geography results saved to: ../../results/methods_geography_extraction.csv\n")
+}
+
+cat("\n=== COMPREHENSIVE EXTRACTION COMPLETE ===\n")
+cat("Key output files:\n")
+cat("- ../../results/comprehensive_extraction_results.csv: Complete results with all extractions\n")
+cat("- ../../results/species_detection_weighted_ensemble.csv: Species detection details\n") 
+cat("- ../../results/comprehensive_extraction_report.txt: Detailed analysis report\n\n")
+cat("Data extracted:\n")
+cat("✓ Species identification (plants and fungi)\n")
+cat("✓ Plant parts studied (roots, leaves, stems, etc.)\n")
+cat("✓ Research methods (molecular, culture, microscopy)\n")
+cat("✓ Geographic locations (countries, regions, coordinates)\n\n")
+cat("Next steps:\n")
+cat("1. Review comprehensive_extraction_results.csv for systematic review data\n")
+cat("2. Use geographic and method information for study characterization\n")
+cat("3. Focus on abstracts with complete information for priority review\n")
+cat("4. Consider running visualization scripts for deeper analysis\n\n")
+
+cat("Comprehensive extraction pipeline complete! 🧬🔬🌍\n")

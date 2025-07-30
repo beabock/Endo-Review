@@ -269,7 +269,7 @@ custom_relevance <- case_when(
 
 - **Memory Management:** Sparse matrix operations for large datasets
 - **Processing Speed:** Vectorized operations, parallel processing ready
-- **Scalability:** Tested on datasets with 50,000+ abstracts
+- **Scalability:** Tested on datasets with 10,000+ abstracts
 
 ### Model Persistence
 
