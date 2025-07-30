@@ -133,6 +133,15 @@ train_control <- trainControl(
   savePredictions = "final"
 )
 
+# Check class distribution
+cat("Original class distribution:\n")
+print(table(train_df$relevance))
+cat("Balanced class distribution:\n")
+print(table(balanced_train$relevance))
+
+# Calculate class weights (emphasize Relevant class)
+class_weights <- c(Irrelevant = 1, Relevant = 2)  # Give Relevant 2x weight
+
 # Models to compare
 models_to_try <- c("glmnet") # Can add rf back in but it kind of sucks. can also add svmLinear back if wanted, but glmnet performs the best.
 results <- list()
@@ -141,14 +150,27 @@ for (method in models_to_try) {
   cat("\nTraining:", method, "\n")
   tic(paste("Time for", method))
   result <- tryCatch({
-    train(
-      relevance ~ ., 
-      data = balanced_train,
-      method = method,
-      metric = "ROC",
-      trControl = train_control,
-      tuneLength = 10
-    )
+    if (method == "glmnet") {
+      # For glmnet, we can adjust class weights
+      train(
+        relevance ~ ., 
+        data = balanced_train,
+        method = method,
+        metric = "ROC",
+        trControl = train_control,
+        tuneLength = 10,
+        weights = ifelse(balanced_train$relevance == "Relevant", 2, 1)
+      )
+    } else {
+      train(
+        relevance ~ ., 
+        data = balanced_train,
+        method = method,
+        metric = "ROC",
+        trControl = train_control,
+        tuneLength = 10
+      )
+    }
   }, error = function(e) {
     message("Model ", method, " failed: ", e$message)
     return(NULL)
@@ -159,24 +181,37 @@ for (method in models_to_try) {
 
 
 confusion_matrices <- list() 
-# Evaluate
-accuracy_table <- tibble(
+# Evaluate with focus on Relevant class recall
+evaluation_table <- tibble(
   model = names(results),
   accuracy = sapply(names(results), function(m) {
     model <- results[[m]]
     if (is.null(model)) return(NA)
     
     preds <- predict(model, newdata = test_df)
-    cm <- confusionMatrix(preds, test_df$relevance)
+    cm <- confusionMatrix(preds, test_df$relevance, positive = "Relevant")
     
     # Save confusion matrix to list for later inspection
     confusion_matrices[[m]] <<- cm
     
     cm$overall["Accuracy"]
+  }),
+  sensitivity_relevant = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$byClass["Sensitivity"]  # Recall for Relevant
+  }),
+  specificity = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$byClass["Specificity"]
+  }),
+  f1_score = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$byClass["F1"]
   })
-) %>% filter(!is.na(accuracy)) %>% arrange(desc(accuracy))
+) %>% filter(!is.na(accuracy)) %>% arrange(desc(sensitivity_relevant))
 
-print(accuracy_table)
+print("Model Performance (sorted by Relevant class recall):")
+print(evaluation_table)
 
 #91% on glmnet, pretty good. 
 
@@ -188,16 +223,14 @@ for (m in names(confusion_matrices)) {
   cat("\n")
 }
 
-# Save best model
-best_model <- results[[accuracy_table$model[1]]]
+# Save best model (based on recall for Relevant class)
+best_model <- results[[evaluation_table$model[1]]]
 
 setdiff(colnames(best_model$trainingData), best_model$finalModel$xNames)
 #xnames <- best_model$finalModel$xNames
 #best_model$trainingData <- best_model$trainingData[, c(xnames, ".outcome"), drop = FALSE]
 
-
-
-saveRDS(best_model, file = paste0("models/best_model_relevance_", accuracy_table$model[1], ".rds"))
+saveRDS(best_model, file = paste0("models/best_model_relevance_", evaluation_table$model[1], ".rds"))
 
 
 #svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -210,22 +243,58 @@ labeled_abstracts <- labeled_abstracts %>%
 labeled_abstracts %>%
   count(presence_both_absence)
 
-dtm <- labeled_abstracts %>%
+# Create unigrams
+dtm_unigrams <- labeled_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%
   anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
-  #mutate(word = str_replace_all(word, "'s\\b", ""))  %>% # Remove possessives
-  #filter(!str_detect(word, "'")) %>%  # Remove any word containing an apostrophe
+  # Keep words that appear in at least 2 documents (reduce noise)
+  group_by(word) %>%
+  filter(n() >= 2) %>%
+  ungroup() %>%
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
-  mutate(id = as.character(id)) %>%  # Ensure IDs are character
-  cast_dtm(document = id, term = word, value = n) #Think about this more.
+  mutate(id = as.character(id))
+
+# Create bigrams (especially useful for absence phrases like "not found", "not detected", etc.)
+dtm_bigrams <- labeled_abstracts %>%
+  unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
+  filter(!is.na(bigram)) %>%
+  # Filter out bigrams with stop words EXCEPT for important absence indicators
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  # Keep important absence phrases even if they contain stop words
+  filter(
+    # Keep absence-indicating phrases
+    (word1 %in% c("not", "no", "never", "without", "lacking") & 
+     word2 %in% c("found", "detected", "observed", "present", "colonized", "identified", "recorded")) |
+    # Or apply normal stop word filtering
+    (!word1 %in% stop_words$word & !word2 %in% stop_words$word)
+  ) %>%
+  filter(!str_detect(word1, "\\d"), !str_detect(word2, "\\d")) %>%
+  unite(bigram, word1, word2, sep = "_") %>%
+  mutate(bigram = str_to_lower(bigram)) %>%
+  # Keep bigrams that appear in at least 2 documents OR are key absence phrases
+  group_by(bigram) %>%
+  filter(n() >= 2 | 
+         bigram %in% c("not_found", "not_detected", "not_observed", "not_present", 
+                      "not_colonized", "not_identified", "not_recorded", "no_evidence",
+                      "never_found", "never_detected", "never_observed", "without_evidence",
+                      "lacking_evidence", "absent_from")) %>%
+  ungroup() %>%
+  count(id, bigram, sort = TRUE) %>%
+  ungroup() %>%
+  mutate(id = as.character(id)) %>%
+  rename(word = bigram)  # Rename for consistency
+
+# Combine unigrams and bigrams
+dtm_combined <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
+  cast_dtm(document = id, term = word, value = n)
 
 # Preserve row names BEFORE converting
-rownames_dtm <- dtm$dimnames$Docs  # Extract doc IDs from DTM
+rownames_dtm <- dtm_combined$dimnames$Docs  # Extract doc IDs from DTM
 
-dtm_matrix <- as.matrix(dtm)
+dtm_matrix <- as.matrix(dtm_combined)
 colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
 
 # Continue safely
@@ -293,22 +362,62 @@ train_control <- trainControl(
   savePredictions = "final"
 )
 
+# Check class distribution for P/A
+cat("P/A Original class distribution:\n")
+print(table(train_df$presence_both_absence))
+cat("P/A Balanced class distribution:\n")
+print(table(balanced_train$presence_both_absence))
+
 # Models to compare
-models_to_try <- c("glmnet", "svmLinear") #Can add rf back in but it kind of sucks
+models_to_try <- c("glmnet", "svmLinear") # Adding random forest
 results <- list()
 
 for (method in models_to_try) {
   cat("\nTraining:", method, "\n")
   tic(paste("Time for", method))
   result <- tryCatch({
-    train(
-      presence_both_absence ~ ., 
-      data = balanced_train,
-      method = method,
-      metric = "ROC",
-      trControl = train_control,
-      tuneLength = 10
-    )
+    if (method == "glmnet") {
+      # For glmnet, heavily weight Absence class to avoid misclassifying it
+      train(
+        presence_both_absence ~ ., 
+        data = balanced_train,
+        method = method,
+        metric = "ROC",
+        trControl = train_control,
+        tuneLength = 10,
+        weights = ifelse(balanced_train$presence_both_absence == "Absence", 3, 1)  # 3x weight for Absence
+      )
+    } else if (method == "rf") {
+      # For Random Forest, use built-in class weights
+      train(
+        presence_both_absence ~ ., 
+        data = balanced_train,
+        method = method,
+        metric = "ROC",
+        trControl = train_control,
+        tuneLength = 5,  # Fewer tuning params for speed
+        classwt = c(Presence = 1, Absence = 3)  # 3x weight for Absence
+      )
+    } else if (method == "svmLinear") {
+      # For SVM, standard training (already balanced with SMOTE)
+      train(
+        presence_both_absence ~ ., 
+        data = balanced_train,
+        method = method,
+        metric = "ROC",
+        trControl = train_control,
+        tuneLength = 10
+      )
+    } else {
+      train(
+        presence_both_absence ~ ., 
+        data = balanced_train,
+        method = method,
+        metric = "ROC",
+        trControl = train_control,
+        tuneLength = 10
+      )
+    }
   }, error = function(e) {
     message("Model ", method, " failed: ", e$message)
     return(NULL)
@@ -318,26 +427,43 @@ for (method in models_to_try) {
 }
 
 confusion_matrices <- list() 
-# Evaluate
-accuracy_table <- tibble(
+# Evaluate with focus on both classes, especially Absence recall
+evaluation_table_pa <- tibble(
   model = names(results),
   accuracy = sapply(names(results), function(m) {
     model <- results[[m]]
     if (is.null(model)) return(NA)
     
     preds <- predict(model, newdata = test_df)
-    cm <- confusionMatrix(preds, test_df$presence_both_absence)
+    cm <- confusionMatrix(preds, test_df$presence_both_absence, positive = "Presence")
     
     # Save confusion matrix to list for later inspection
     confusion_matrices[[m]] <<- cm
     
     cm$overall["Accuracy"]
+  }),
+  presence_recall = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$byClass["Sensitivity"]  # Recall for Presence
+  }),
+  absence_recall = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$byClass["Specificity"]  # Recall for Absence
+  }),
+  f1_score = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$byClass["F1"]
+  }),
+  balanced_accuracy = sapply(names(results), function(m) {
+    if (is.null(results[[m]])) return(NA)
+    confusion_matrices[[m]]$overall["Balanced Accuracy"]
   })
-) %>% filter(!is.na(accuracy)) %>% arrange(desc(accuracy))
+) %>% filter(!is.na(accuracy)) %>% arrange(desc(absence_recall))
 
-print(accuracy_table)
+print("P/A Model Performance (sorted by Absence recall):")
+print(evaluation_table_pa)
 
-#90%, pretty good.
+
 
 for (m in names(confusion_matrices)) {
   cat("\nConfusion Matrix for model:", m, "\n")
@@ -349,11 +475,96 @@ for (m in names(confusion_matrices)) {
 
 
 
-# Save best model
-best_model <- results[[accuracy_table$model[1]]]
+# Save both models for ensemble approach
+glmnet_model <- results[["glmnet"]]  # Best for Absence detection (100% recall)
+svm_model <- results[["svmLinear"]]   # Best for Presence detection (95.8% recall)
 
+# Create ensemble predictions
+cat("\n=== ENSEMBLE APPROACH ===\n")
+cat("Using glmnet for Absence detection and svmLinear for Presence detection\n")
 
-saveRDS(best_model, file = paste0("models/best_model_presence_", accuracy_table$model[1], ".rds"))
+# Get predictions from both models
+glmnet_preds <- predict(glmnet_model, newdata = test_df)
+svm_preds <- predict(svm_model, newdata = test_df)
+
+# Get probabilities for more nuanced ensemble
+glmnet_probs <- predict(glmnet_model, newdata = test_df, type = "prob")
+svm_probs <- predict(svm_model, newdata = test_df, type = "prob")
+
+# Debug: Check probability distributions
+cat("GLMnet Absence prob range:", range(glmnet_probs$Absence), "\n")
+cat("SVM Presence prob range:", range(svm_probs$Presence), "\n")
+cat("GLMnet predicts Absence (>0.5):", sum(glmnet_probs$Absence > 0.5), "out of", nrow(test_df), "\n")
+cat("SVM predicts Presence (>0.5):", sum(svm_probs$Presence > 0.5), "out of", nrow(test_df), "\n")
+
+# Ensemble strategy: Simpler approach - trust each model's strength
+# Strategy: Use SVM unless glmnet is very confident about Absence
+ensemble_preds <- ifelse(
+  glmnet_probs$Absence > 0.7,  # Only trust glmnet if very confident about Absence
+  "Absence",
+  as.character(svm_preds)  # Otherwise, use SVM's prediction (it's great at Presence)
+)
+
+ensemble_preds <- factor(ensemble_preds, levels = c("Presence", "Absence"))
+
+# Evaluate ensemble
+ensemble_cm <- confusionMatrix(ensemble_preds, test_df$presence_both_absence, positive = "Presence")
+
+cat("\nEnsemble Performance:\n")
+cat("Accuracy:", round(ensemble_cm$overall["Accuracy"], 3), "\n")
+cat("Presence Recall:", round(ensemble_cm$byClass["Sensitivity"], 3), "\n") 
+cat("Absence Recall:", round(ensemble_cm$byClass["Specificity"], 3), "\n")
+cat("F1 Score:", round(ensemble_cm$byClass["F1"], 3), "\n")
+
+# Compare all approaches
+comparison_results <- tibble(
+  approach = c("glmnet_only", "svmLinear_only", "ensemble"),
+  accuracy = c(
+    confusion_matrices[["glmnet"]]$overall["Accuracy"],
+    confusion_matrices[["svmLinear"]]$overall["Accuracy"], 
+    ensemble_cm$overall["Accuracy"]
+  ),
+  presence_recall = c(
+    confusion_matrices[["glmnet"]]$byClass["Sensitivity"],
+    confusion_matrices[["svmLinear"]]$byClass["Sensitivity"],
+    ensemble_cm$byClass["Sensitivity"]
+  ),
+  absence_recall = c(
+    confusion_matrices[["glmnet"]]$byClass["Specificity"],
+    confusion_matrices[["svmLinear"]]$byClass["Specificity"],
+    ensemble_cm$byClass["Specificity"]
+  ),
+  f1_score = c(
+    confusion_matrices[["glmnet"]]$byClass["F1"],
+    confusion_matrices[["svmLinear"]]$byClass["F1"],
+    ensemble_cm$byClass["F1"]
+  )
+)
+
+print("Comparison of all approaches:")
+print(comparison_results)
+
+# Save both models for ensemble use
+saveRDS(glmnet_model, file = "models/best_model_presence_glmnet_ensemble.rds")
+saveRDS(svm_model, file = "models/best_model_presence_svmLinear_ensemble.rds")
+
+# Save ensemble function for later use
+ensemble_predict <- function(glmnet_model, svm_model, newdata) {
+  glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
+  svm_preds <- predict(svm_model, newdata = newdata)
+  
+  # Simple strategy: Use SVM unless glmnet is very confident about Absence
+  ensemble_preds <- ifelse(
+    glmnet_probs$Absence > 0.7,  # Only override SVM if glmnet is very confident
+    "Absence",
+    as.character(svm_preds)  # Otherwise trust SVM (excellent at Presence)
+  )
+  return(factor(ensemble_preds, levels = c("Presence", "Absence")))
+}
+
+# Test the ensemble function
+ensemble_test <- ensemble_predict(glmnet_model, svm_model, test_df)
+cat("\nEnsemble function test - matches manual calculation:", all(ensemble_test == ensemble_preds), "\n")
 
 
 best_model
