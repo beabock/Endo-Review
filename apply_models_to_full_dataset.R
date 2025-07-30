@@ -23,8 +23,7 @@ library(tictoc)
 
 cat("=== ENDOPHYTE SYSTEMATIC REVIEW: FULL DATASET CLASSIFICATION ===\n")
 cat("Pipeline: Relevance → Presence/Absence Classification\n")
-cat("Models: glmnet (relevance), weighted ensemble (P/A)\n")
-cat("Performance optimizations: Sparse matrix operations, delayed data frame conversion\n\n")
+cat("Models: glmnet (relevance), weighted ensemble (P/A)\n\n")
 
 # Ensemble functions ------------------------------------------------------
 
@@ -221,24 +220,19 @@ cat("  Loading trained relevance model...\n")
 rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
 trained_vocab <- rel_model$finalModel$xNames
 
-# Align features with training vocabulary (work with matrix for efficiency)
-missing_words <- setdiff(trained_vocab, colnames(dtm_matrix))
+# Align features with training vocabulary
+missing_words <- setdiff(trained_vocab, colnames(dtm_df))
 if (length(missing_words) > 0) {
-  zero_matrix <- matrix(0, nrow = nrow(dtm_matrix), ncol = length(missing_words),
-                        dimnames = list(rownames(dtm_matrix), missing_words))
-  dtm_matrix <- cbind(dtm_matrix, zero_matrix)
+  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
+                        dimnames = list(rownames(dtm_df), missing_words))
+  dtm_df <- cbind(dtm_df, zero_matrix)
 }
 
-# Remove extra columns and reorder to match training (still as matrix)
-dtm_matrix <- dtm_matrix[, colnames(dtm_matrix) %in% trained_vocab]
-dtm_matrix <- dtm_matrix[, trained_vocab, drop = FALSE]
+# Remove extra columns and reorder to match training
+dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
+dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
 
-cat("  Feature alignment complete:", ncol(dtm_matrix), "features\n")
-
-# Convert to data frame only now (much smaller after feature alignment)
-cat("  Converting aligned matrix to data frame for prediction...\n")
-dtm_df <- as.data.frame(dtm_matrix)
-stopifnot(!any(duplicated(colnames(dtm_df))))
+cat("  Feature alignment complete:", ncol(dtm_df), "features\n")
 
 # Predict relevance
 cat("  Predicting relevance...\n")
@@ -330,10 +324,10 @@ dtm_combined <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
 dtm_matrix <- as.matrix(dtm_combined)
 colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
 rownames(dtm_matrix) <- dtm_combined$dimnames$Docs
+dtm_df <- as.data.frame(dtm_matrix)
+stopifnot(!any(duplicated(colnames(dtm_df))))
 
-# Optimize: Only convert to data frame after feature alignment to reduce size
-cat("  DTM matrix created:", nrow(dtm_matrix), "documents ×", ncol(dtm_matrix), "terms\n")
-cat("  Note: Delaying data frame conversion until after feature alignment for efficiency...\n")
+cat("  P/A DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
 
 # Load trained P/A models
 cat("  Loading trained P/A models...\n")
@@ -343,24 +337,19 @@ svm_model <- readRDS("models/best_model_presence_svmLinear_ensemble.rds")
 # Get training vocabulary from SVM model (more comprehensive)
 trained_vocab_pa <- setdiff(colnames(svm_model$trainingData), ".outcome")
 
-# Align features with training vocabulary (work with matrix for efficiency)
-missing_words <- setdiff(trained_vocab_pa, colnames(dtm_matrix))
+# Align features with training vocabulary
+missing_words <- setdiff(trained_vocab_pa, colnames(dtm_df))
 if (length(missing_words) > 0) {
-  zero_matrix <- matrix(0, nrow = nrow(dtm_matrix), ncol = length(missing_words),
-                        dimnames = list(rownames(dtm_matrix), missing_words))
-  dtm_matrix <- cbind(dtm_matrix, zero_matrix)
+  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
+                        dimnames = list(rownames(dtm_df), missing_words))
+  dtm_df <- cbind(dtm_df, zero_matrix)
 }
 
-# Remove extra columns and reorder to match training (still as matrix)
-dtm_matrix <- dtm_matrix[, colnames(dtm_matrix) %in% trained_vocab_pa]
-dtm_matrix <- dtm_matrix[, trained_vocab_pa, drop = FALSE]
+# Remove extra columns and reorder to match training
+dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab_pa]
+dtm_df <- dtm_df[, trained_vocab_pa, drop = FALSE]
 
-cat("  P/A feature alignment complete:", ncol(dtm_matrix), "features\n")
-
-# NOW convert to data frame (much smaller after feature alignment)
-cat("  Converting aligned matrix to data frame...\n")
-dtm_df <- as.data.frame(dtm_matrix)
-stopifnot(!any(duplicated(colnames(dtm_df))))
+cat("  P/A feature alignment complete:", ncol(dtm_df), "features\n")
 
 # Apply ensemble prediction methods
 cat("  Applying weighted ensemble predictions...\n")
