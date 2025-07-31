@@ -1,12 +1,19 @@
 # Simple Species Extraction for Classification Results
 # B. Bock  
 # July 30, 2025
+# Updated: July 31, 2025 - Using new comprehensive search results
 #
 # Comprehensive script to extract:
 # 1. Species information (plants and fungi)
 # 2. Plant parts studied
 # 3. Research methods (culture, microscopy, molecular)
 # 4. Geographic locations
+#
+# Data Source: Web of Science search conducted July 31, 2025
+# Search Strategy: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi")
+#                 AND (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR 
+#                      lycophyte* OR pteridophyte* OR algae OR green alga* OR macroalga* OR 
+#                      cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
 #
 # Focuses on the weighted ensemble (89.8% accuracy) predictions
 
@@ -173,8 +180,8 @@ detect_geographic_locations <- function(text) {
 
 # Function to detect plant parts (enhanced from existing)
 detect_plant_parts <- function(text) {
-  # Comprehensive plant parts keywords (matching species detection list)
-  plant_parts_keywords <- c(
+  # Comprehensive plant parts keywords (deduplicated)
+  plant_parts_keywords <- unique(c(
     # Basic structures
     "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
     "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
@@ -239,8 +246,8 @@ detect_plant_parts <- function(text) {
     
     # Surface features
     "waxy bloom", "waxy blooms", "pubescence", "glaucous surface",
-    "papilla", "papillae", "emergences", "lenticel", "lenticels"
-  )
+    "papilla", "papillae", "emergences"
+  ))
   
   text_lower <- tolower(text)
   parts_found <- plant_parts_keywords[sapply(plant_parts_keywords, function(part) {
@@ -332,8 +339,8 @@ cat("  Loaded species reference data:", nrow(species), "species records\n")
 setup_parallel(workers = 2)
 lookup_tables <- create_lookup_tables(species)
 
-# Define plant parts keywords for species detection - comprehensive list
-plant_parts_keywords_species <- c(
+# Define plant parts keywords for species detection - comprehensive list (deduplicated)
+plant_parts_keywords_species <- unique(c(
   # Basic structures
   "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
   "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
@@ -398,8 +405,8 @@ plant_parts_keywords_species <- c(
   
   # Surface features
   "waxy bloom", "waxy blooms", "pubescence", "glaucous surface",
-  "papilla", "papillae", "emergences", "lenticel", "lenticels"
-)
+  "papilla", "papillae", "emergences"
+))
 
 # Process species detection in batches
 tic("Species detection")

@@ -3,6 +3,12 @@
 ## Overview
 This project implements machine learning models for endophyte research literature classification and species extraction.
 
+**Data Collection Update (July 31, 2025):**
+- **Enhanced Search Strategy**: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi") AND (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR algae OR green alga* OR macroalga* OR cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
+- **Database**: Web of Science Core Collection
+- **Scope**: Comprehensive coverage of fungal endophytes across diverse host organisms
+- **Status**: Current dataset for all analyses
+
 ## Directory Structure
 
 ```
