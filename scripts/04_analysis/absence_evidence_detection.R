@@ -1,0 +1,330 @@
+# Absence Evidence Detection for Endophyte Research
+# B. Bock
+# July 31, 2025
+#
+# Specialized script to identify and analyze studies reporting absence of fungal endophytes
+# Part of the systematic investigation of endophyte universality in plants
+
+library(tidyverse)
+library(stringr)
+
+cat("=== ABSENCE EVIDENCE DETECTION ===\n")
+cat("Identifying studies that searched for but did not find fungal endophytes\n\n")
+
+# Load comprehensive extraction results
+if (!file.exists("../../results/comprehensive_extraction_results.csv")) {
+  stop("Please run extract_species_simple.R first to generate comprehensive results.")
+}
+
+comprehensive_data <- read_csv("../../results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+
+cat("Total abstracts for absence analysis:", nrow(comprehensive_data), "\n")
+
+# Define absence detection function
+detect_absence_evidence <- function(text) {
+  # Keywords indicating absence or negative results
+  absence_indicators <- c(
+    # Direct absence statements
+    "no endophyte", "no endophytes", "endophyte-free", "endophytes absent", 
+    "absence of endophyte", "absence of endophytes", "lacking endophyte", 
+    "lacking endophytes", "without endophyte", "without endophytes",
+    "devoid of endophyte", "devoid of endophytes", "free of endophyte",
+    "free of endophytes", "not contain endophyte", "not contain endophytes",
+    
+    # Negative culture results
+    "no fungi isolated", "no fungal isolates", "no growth", "sterile", 
+    "failed to isolate", "no colonization", "not colonized", "uncolonized",
+    "no infection", "not infected", "culture negative", "negative culture",
+    "no viable fungi", "no culturable fungi",
+    
+    # Negative molecular results  
+    "no amplification", "no pcr product", "no fungal dna", "no fungal sequences",
+    "below detection limit", "not detected", "negative pcr", "pcr negative",
+    "no fungal taxa", "no fungal otus", "no reads", "empty samples",
+    
+    # Negative microscopy results
+    "no fungal structures", "no hyphae observed", "no fungal hyphae",
+    "no internal fungi", "no intercellular fungi", "no intracellular fungi",
+    "tissues free", "clean tissues", "no fungal presence",
+    
+    # Quantitative absence
+    "zero percent", "0%", "zero colonization", "colonization rate of 0",
+    "frequency of 0", "prevalence of 0", "incidence of 0"
+  )
+  
+  # Method-specific search terms
+  search_methods <- c(
+    # Culture methods
+    "cultured", "isolated", "isolation", "culture", "plated", "incubated",
+    "medium", "agar", "petri", "colony", "sterile", "aseptic",
+    
+    # Molecular methods
+    "pcr", "amplified", "sequenced", "dna extracted", "primers", "its",
+    "18s", "28s", "rrna", "barcode", "metagenomic", "amplicon",
+    
+    # Microscopy methods
+    "sectioned", "stained", "microscopy", "examined", "observed",
+    "histological", "cleared", "mounted", "visualized"
+  )
+  
+  text_lower <- tolower(text)
+  
+  # Check for absence indicators
+  absence_matches <- sapply(absence_indicators, function(term) {
+    grepl(paste0("\\b", term, "\\b"), text_lower, fixed = FALSE)
+  })
+  
+  # Check for search methods (indicates active looking)
+  method_matches <- sapply(search_methods, function(term) {
+    grepl(paste0("\\b", term, "\\b"), text_lower, fixed = FALSE)
+  })
+  
+  # Calculate scores
+  absence_score <- sum(absence_matches)
+  method_score <- sum(method_matches)
+  
+  # Identify specific absence terms found
+  absence_terms_found <- names(absence_matches)[absence_matches]
+  method_terms_found <- names(method_matches)[method_matches]
+  
+  return(list(
+    potential_absence = absence_score > 0 & method_score > 0,  # Both absence terms AND methods
+    absence_score = absence_score,
+    method_score = method_score,
+    absence_terms = if(length(absence_terms_found) > 0) paste(absence_terms_found, collapse = "; ") else NA,
+    method_terms = if(length(method_terms_found) > 0) paste(method_terms_found, collapse = "; ") else NA,
+    confidence_level = case_when(
+      absence_score >= 3 & method_score >= 2 ~ "High",
+      absence_score >= 2 & method_score >= 1 ~ "Medium", 
+      absence_score >= 1 & method_score >= 1 ~ "Low",
+      TRUE ~ "None"
+    )
+  ))
+}
+
+# Apply absence detection to all abstracts
+cat("Applying absence detection algorithm...\n")
+
+absence_results <- map_dfr(1:nrow(comprehensive_data), function(i) {
+  if (i %% 500 == 0) cat("  Processed", i, "of", nrow(comprehensive_data), "abstracts\n")
+  
+  abstract_text <- comprehensive_data$abstract[i]
+  title_text <- comprehensive_data$title[i]
+  
+  # Combine title and abstract for analysis
+  combined_text <- paste(
+    ifelse(is.na(title_text), "", title_text),
+    ifelse(is.na(abstract_text), "", abstract_text),
+    sep = " "
+  )
+  
+  if (nchar(combined_text) < 10) {
+    # Skip very short texts
+    return(data.frame(
+      id = comprehensive_data$id[i],
+      potential_absence = FALSE,
+      absence_score = 0,
+      method_score = 0,
+      absence_terms = NA,
+      method_terms = NA,
+      confidence_level = "None"
+    ))
+  }
+  
+  # Apply detection function
+  absence_analysis <- detect_absence_evidence(combined_text)
+  
+  return(data.frame(
+    id = comprehensive_data$id[i],
+    potential_absence = absence_analysis$potential_absence,
+    absence_score = absence_analysis$absence_score,
+    method_score = absence_analysis$method_score,
+    absence_terms = absence_analysis$absence_terms,
+    method_terms = absence_analysis$method_terms,
+    confidence_level = absence_analysis$confidence_level
+  ))
+})
+
+cat("Absence detection completed.\n")
+
+# Combine with original data
+absence_analysis_results <- comprehensive_data %>%
+  left_join(absence_results, by = "id") %>%
+  mutate(
+    # Add additional classification variables
+    has_species = !is.na(species_detected),
+    has_methods = !is.na(methods_summary),
+    predicted_relevant = predicted_label == "Presence"
+  )
+
+# Analysis of absence evidence
+cat("\n=== ABSENCE EVIDENCE ANALYSIS ===\n")
+
+total_abstracts <- nrow(absence_analysis_results)
+potential_absence <- sum(absence_analysis_results$potential_absence, na.rm = TRUE)
+high_confidence_absence <- sum(absence_analysis_results$confidence_level == "High", na.rm = TRUE)
+medium_confidence_absence <- sum(absence_analysis_results$confidence_level == "Medium", na.rm = TRUE)
+
+cat("Total abstracts analyzed:", total_abstracts, "\n")
+cat("Potential absence evidence:", potential_absence, "(", round(100 * potential_absence / total_abstracts, 2), "%)\n")
+cat("High confidence absence:", high_confidence_absence, "(", round(100 * high_confidence_absence / total_abstracts, 2), "%)\n")
+cat("Medium confidence absence:", medium_confidence_absence, "(", round(100 * medium_confidence_absence / total_abstracts, 2), "%)\n")
+
+# Detailed analysis by prediction type
+absence_by_prediction <- absence_analysis_results %>%
+  group_by(predicted_label) %>%
+  summarise(
+    total = n(),
+    potential_absence = sum(potential_absence, na.rm = TRUE),
+    high_confidence = sum(confidence_level == "High", na.rm = TRUE),
+    medium_confidence = sum(confidence_level == "Medium", na.rm = TRUE),
+    low_confidence = sum(confidence_level == "Low", na.rm = TRUE),
+    absence_rate = round(100 * potential_absence / total, 2),
+    .groups = "drop"
+  )
+
+cat("\nAbsence evidence by ML prediction:\n")
+print(absence_by_prediction)
+
+# Analysis by research methods
+absence_by_methods <- absence_analysis_results %>%
+  filter(potential_absence == TRUE) %>%
+  summarise(
+    total_absence = n(),
+    with_molecular = sum(molecular_methods, na.rm = TRUE),
+    with_culture = sum(culture_based_methods, na.rm = TRUE),
+    with_microscopy = sum(microscopy_methods, na.rm = TRUE),
+    molecular_pct = round(100 * with_molecular / total_absence, 1),
+    culture_pct = round(100 * with_culture / total_absence, 1),
+    microscopy_pct = round(100 * with_microscopy / total_absence, 1)
+  )
+
+cat("\nMethod usage in absence studies:\n")
+print(absence_by_methods)
+
+# Geographic patterns in absence evidence
+absence_geographic <- absence_analysis_results %>%
+  filter(potential_absence == TRUE, !is.na(countries_detected)) %>%
+  separate_rows(countries_detected, sep = "; ") %>%
+  count(countries_detected, name = "absence_studies") %>%
+  arrange(desc(absence_studies)) %>%
+  head(15)
+
+if (nrow(absence_geographic) > 0) {
+  cat("\nTop countries with absence evidence:\n")
+  print(absence_geographic)
+}
+
+# Plant parts analysis for absence studies
+absence_plant_parts <- absence_analysis_results %>%
+  filter(potential_absence == TRUE, !is.na(plant_parts_detected)) %>%
+  separate_rows(plant_parts_detected, sep = "; ") %>%
+  count(plant_parts_detected, name = "absence_studies") %>%
+  arrange(desc(absence_studies)) %>%
+  head(15)
+
+if (nrow(absence_plant_parts) > 0) {
+  cat("\nPlant parts most commonly reported as endophyte-free:\n")
+  print(absence_plant_parts)
+}
+
+# Temporal analysis
+absence_temporal <- absence_analysis_results %>%
+  filter(!is.na(publication_year), publication_year >= 1990) %>%
+  mutate(
+    decade = floor(publication_year / 10) * 10,
+    five_year_period = floor(publication_year / 5) * 5
+  ) %>%
+  group_by(five_year_period) %>%
+  summarise(
+    total_studies = n(),
+    absence_studies = sum(potential_absence, na.rm = TRUE),
+    absence_rate = round(100 * absence_studies / total_studies, 2),
+    high_confidence_absence = sum(confidence_level == "High", na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(five_year_period)
+
+cat("\nTemporal trends in absence reporting:\n")
+print(absence_temporal)
+
+# Save results
+write_csv(absence_analysis_results, "../../results/absence_evidence_analysis.csv")
+
+# Create high-confidence absence subset for manual review
+high_confidence_subset <- absence_analysis_results %>%
+  filter(confidence_level %in% c("High", "Medium")) %>%
+  arrange(desc(absence_score), desc(method_score)) %>%
+  select(
+    id, title, abstract, publication_year, predicted_label, confidence,
+    species_detected, methods_summary, plant_parts_detected, 
+    countries_detected, absence_score, method_score, confidence_level,
+    absence_terms, method_terms
+  )
+
+write_csv(high_confidence_subset, "../../results/high_confidence_absence_evidence.csv")
+
+# Generate summary report
+capture.output({
+  cat("=== ABSENCE EVIDENCE DETECTION REPORT ===\n")
+  cat("Generated:", Sys.time(), "\n")
+  cat("Purpose: Identify studies reporting absence of fungal endophytes\n")
+  cat("Method: Automated text analysis with manual validation recommended\n\n")
+  
+  cat("SUMMARY STATISTICS:\n")
+  cat("Total abstracts analyzed:", total_abstracts, "\n")
+  cat("Potential absence evidence:", potential_absence, "(", round(100 * potential_absence / total_abstracts, 2), "%)\n")
+  cat("High confidence absence:", high_confidence_absence, "\n")
+  cat("Medium confidence absence:", medium_confidence_absence, "\n\n")
+  
+  cat("ABSENCE BY PREDICTION TYPE:\n")
+  print(absence_by_prediction)
+  cat("\n")
+  
+  cat("METHODOLOGICAL CONTEXT:\n")
+  print(absence_by_methods)
+  cat("\n")
+  
+  cat("TEMPORAL TRENDS:\n")
+  print(absence_temporal)
+  cat("\n")
+  
+  if (nrow(absence_geographic) > 0) {
+    cat("GEOGRAPHIC PATTERNS:\n")
+    print(absence_geographic)
+    cat("\n")
+  }
+  
+  if (nrow(absence_plant_parts) > 0) {
+    cat("PLANT PARTS PATTERNS:\n")
+    print(absence_plant_parts)
+    cat("\n")
+  }
+  
+  cat("QUALITY CONTROL RECOMMENDATIONS:\n")
+  cat("1. Manual review of high-confidence absence cases recommended\n")
+  cat("2. Verify methodological adequacy for studies claiming absence\n")
+  cat("3. Check for potential false positives in absence detection\n")
+  cat("4. Consider context of absence claims (e.g., specific conditions)\n\n")
+  
+  cat("NEXT STEPS:\n")
+  cat("1. Expert review of high_confidence_absence_evidence.csv\n")
+  cat("2. Quality assessment of methodological rigor\n")
+  cat("3. Integration with species-level absence patterns\n")
+  cat("4. Comparison with universality claims in literature\n")
+  
+}, file = "../../results/absence_evidence_report.txt")
+
+cat("\nFiles created:\n")
+cat("✓ ../../results/absence_evidence_analysis.csv (complete results)\n")
+cat("✓ ../../results/high_confidence_absence_evidence.csv (priority cases for review)\n")
+cat("✓ ../../results/absence_evidence_report.txt (detailed analysis report)\n")
+
+cat("\n=== ABSENCE DETECTION COMPLETE ===\n")
+cat("Key findings:\n")
+cat("🔍 ", potential_absence, " studies with potential absence evidence identified\n")
+cat("📊 ", high_confidence_absence, " high-confidence absence cases found\n")
+cat("⏰ Temporal trends in absence reporting analyzed\n")
+cat("🌍 Geographic patterns in absence evidence mapped\n")
+cat("🌱 Plant parts commonly reported as endophyte-free documented\n")
+cat("\nRecommendation: Manual review of high-confidence cases to validate absence claims!\n")

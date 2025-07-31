@@ -1,21 +1,31 @@
 # Search Strategy Documentation
 
-## Project: Endophyte Research Systematic Review
+## Project: Testing the Universality of Fungal Endophytes in Plants
 **Principal Investigator**: B. Bock  
 **Institution**: Northern Arizona University  
-**Project Timeline**: 2025
+**Project Timeline**: 2024-2025
+
+## Research Context
+This systematic review addresses the fundamental ecological question: **"Do all plant species harbor fungal endophytes?"** 
+
+The claim of universal endophyte presence is frequently stated in the literature but often lacks proper citation or empirical support. This research aims to:
+1. Test the universality hypothesis through comprehensive literature analysis
+2. Identify evidence of endophyte absence across plant species and tissues
+3. Assess taxonomic, geographic, and methodological biases in endophyte research
+4. Evaluate the adequacy of detection methods for documenting true absence
+
+**Operational Definition of "Absence"**: Studies that actively searched for fungal endophytes using appropriate methods but failed to detect any fungal presence (via culture, molecular, or microscopy approaches).
 
 ---
 
 ## Search Evolution History
 
 ### Phase 1: Initial Exploratory Search
-- **Date**: [Initial project start - exact date from project records]
+- **Date**: Novemeber 18, 2024
 - **Purpose**: Preliminary scope assessment and model training data
-- **Strategy**: `Endophyt* AND (fung* OR mycolog*)`
-- **Database**: Web of Science Core Collection
+- **Strategy**: `("fungal endophyte" OR "fungal endophytes" OR "endophytic fungi" OR "endophytic fungus") AND plant`
+- **Database**: Web of Science Core Collection and Scopus
 - **Limitations Identified**:
-  - Overly broad capture (included bacterial endophytes)
   - Limited host organism diversity
   - Potential false positives from mycological studies without plant association
 
@@ -24,11 +34,18 @@
 - **Purpose**: Final comprehensive dataset for systematic review and analysis
 - **Strategy**: 
   ```
-  ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi")
+  ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR 
+  "latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR 
+  "internal fungi" OR "resident fungi" OR "seed-borne fungi" OR "seed-transmitted fungi" OR 
+  "dark septate endophyte" OR "dark septate fungi" OR "DSE fungi")
   AND
-  (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR algae OR green alga* OR macroalga* OR cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
+  (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR 
+  pteridophyte* OR tree* OR shrub* OR grass* OR "graminoid*" OR herb* OR 
+  crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR 
+  stem* OR twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR 
+  cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
   ```
-- **Database**: Web of Science Core Collection
+- **Database**: Web of Science Core Collection and Scopus
 - **Search Date**: July 31, 2025
 - **Status**: **CURRENT DATASET FOR ALL ANALYSES**
 
@@ -54,7 +71,7 @@
 **Plant Groups Included:**
 
 1. **Vascular Plants**
-   - `plant*` - Captures plant, plants, Plantae, plantation, etc.
+   - `plant*` - Captures plant, plants, Plantae etc.
 
 2. **Bryophytes (Non-vascular plants)**
    - `moss*` - Mosses
@@ -88,12 +105,24 @@
 
 ## Search Implementation Details
 
-### Database: Web of Science Core Collection
-**Coverage:**
+### Database: Web of Science Core Collection and Scopus
+**Web of Science Coverage:**
 - Science Citation Index Expanded
 - Social Sciences Citation Index  
 - Arts & Humanities Citation Index
 - Conference Proceedings Citation Index
+
+**Scopus Coverage:**
+- Life sciences and health sciences
+- Physical sciences and engineering
+- Social sciences and humanities
+- Conference proceedings and book series
+
+**Rationale for Dual Database Search:**
+- **Complementary Coverage**: Different indexing policies capture different literature sets
+- **Enhanced Recall**: Reduces risk of missing relevant studies due to database limitations
+- **Geographic Diversity**: Scopus includes more non-English and regional publications
+- **Quality Assurance**: Cross-database validation of search effectiveness
 
 **Date Range:** All years to July 31, 2025
 
@@ -101,16 +130,20 @@
 
 **Document Types:**
 - Articles
-- Reviews
+- Reviews (consider removing)
 - Proceedings papers
 - Book chapters (if indexed)
 
 ### Search Execution
 - **Date Performed**: July 31, 2025
 - **Searcher**: B. Bock
-- **Search Interface**: Web of Science Advanced Search
-- **Export Format**: Full record with abstracts
-- **Deduplication**: Automated within Web of Science, manual verification performed
+- **Search Interface**: Web of Science Advanced Search and Scopus Advanced Search
+- **Export Format**: Full record with abstracts (both databases)
+- **Deduplication**: 
+  - Automated within each database
+  - Cross-database deduplication using DOI and title matching
+  - Manual verification of ambiguous duplicates
+- **Combined Results**: Merged dataset with source database tracking
 
 ---
 
@@ -171,10 +204,11 @@
 4. **Methodological Refinement**: Continuous improvement based on validation results
 
 ### Research Applications
-1. **Systematic Review**: Primary data source for comprehensive literature analysis
-2. **Meta-analysis**: Foundation for quantitative synthesis of research findings
-3. **Research Gap Identification**: Basis for identifying understudied areas
-4. **Future Research Planning**: Informed guidance for research prioritization
+1. **Universality Testing**: Primary data source for testing the "all plants have endophytes" hypothesis
+2. **Absence Documentation**: Systematic identification of studies reporting endophyte absence
+3. **Bias Quantification**: Foundation for assessing taxonomic, geographic, and methodological research biases
+4. **Gap Analysis**: Identification of understudied plant groups and ecosystems
+5. **Evidence Synthesis**: Comprehensive evaluation of endophyte presence/absence patterns across plant diversity
 
 ---
 
