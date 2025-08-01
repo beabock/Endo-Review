@@ -8,18 +8,20 @@
 # 2. Research methods distribution
 # 3. Plant parts frequency
 # 4. Geographic distribution
-# 5. Prediction quality analysis
+# 5. Prediction quality analysis 
 
 library(tidyverse)
 library(ggplot2)
 library(scales)
 library(viridis)
-library(patchwork)
 library(RColorBrewer)
 library(forcats)
 library(treemapify)
 library(maps)
 library(countrycode)
+
+# Ensure tidyverse functions are not masked
+
 
 # Custom theme for consistent visualization
 custom_theme <- theme_bw(base_size = 12) +
@@ -59,12 +61,12 @@ cat("=== COMPREHENSIVE EXTRACTION VISUALIZATION ===\n")
 cat("Loading results from extract_species_simple.R...\n\n")
 
 # Check for required input files
-if (!file.exists("../../results/comprehensive_extraction_results.csv")) {
+if (!file.exists("results/comprehensive_extraction_results.csv")) {
   stop("Error: comprehensive_extraction_results.csv not found. Please run extract_species_simple.R first.")
 }
 
 # Load main results
-results <- read_csv("../../results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+results <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 cat("Loaded", nrow(results), "abstracts with comprehensive extraction data\n")
 
@@ -97,7 +99,7 @@ results_clean <- results %>%
     ),
     
     # Species detection indicators
-    has_species = !is.na(species_detected),
+    has_species = !is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName),
     has_plant_parts = !is.na(plant_parts_detected),
     has_geography = !is.na(geographic_summary),
     
@@ -123,32 +125,54 @@ results_clean <- results %>%
     )
   )
 
-# Print summary statistics
+# Print summary statistics (grouping by abstract ID to avoid double counting)
+abstract_summary <- results_clean %>%
+  group_by(id) %>%
+  summarise(
+    has_species = any(has_species),
+    has_plant_parts = any(has_plant_parts),
+    has_geography = any(has_geography),
+    has_methods = any(methods_combined != "No methods detected"),
+    predicted_label = first(predicted_label),
+    .groups = "drop"
+  )
+
 cat("\nData Summary:\n")
-cat("- Total abstracts:", nrow(results_clean), "\n")
-cat("- With species detected:", sum(results_clean$has_species), 
-    "(", round(100 * mean(results_clean$has_species), 1), "%)\n")
-cat("- With plant parts:", sum(results_clean$has_plant_parts),
-    "(", round(100 * mean(results_clean$has_plant_parts), 1), "%)\n")
-cat("- With geography:", sum(results_clean$has_geography),
-    "(", round(100 * mean(results_clean$has_geography), 1), "%)\n")
-cat("- With methods:", sum(results_clean$methods_combined != "No methods detected"),
-    "(", round(100 * mean(results_clean$methods_combined != "No methods detected"), 1), "%)\n\n")
+cat("- Total abstracts:", nrow(abstract_summary), "\n")
+cat("- With species detected:", sum(abstract_summary$has_species), 
+    "(", round(100 * mean(abstract_summary$has_species), 1), "%)\n")
+cat("- With plant parts:", sum(abstract_summary$has_plant_parts),
+    "(", round(100 * mean(abstract_summary$has_plant_parts), 1), "%)\n")
+cat("- With geography:", sum(abstract_summary$has_geography),
+    "(", round(100 * mean(abstract_summary$has_geography), 1), "%)\n")
+cat("- With methods:", sum(abstract_summary$has_methods),
+    "(", round(100 * mean(abstract_summary$has_methods), 1), "%)\n\n")
 
 # 1. SPECIES DETECTION OVERVIEW ------------------------------------------
 
 cat("Creating species detection overview plots...\n")
 
 # Species detection by prediction type
-p1_species_by_prediction <- results_clean %>%
-  group_by(predicted_label) %>%
-  summarise(
+species_summary <- abstract_summary %>%
+  dplyr::group_by(predicted_label) %>%
+  dplyr::summarise(
     total = n(),
     with_species = sum(has_species),
     species_rate = with_species / total,
     .groups = "drop"
   ) %>%
-  ggplot(aes(x = fct_reorder(predicted_label, species_rate))) +
+  dplyr::filter(!is.na(predicted_label)) %>%  # Remove any NA prediction labels
+  dplyr::mutate(
+    predicted_label = as.character(predicted_label),  # Ensure character type
+    species_rate = ifelse(is.nan(species_rate), 0, species_rate)  # Handle NaN values
+  )
+
+# Debug: Check the data
+cat("Species summary data:\n")
+print(species_summary)
+
+p1_species_by_prediction <- species_summary %>%
+  ggplot(aes(x = forcats::fct_reorder(predicted_label, species_rate))) +
   geom_col(aes(y = total), fill = "lightgray", alpha = 0.7, width = 0.7) +
   geom_col(aes(y = with_species), fill = endo_palette[1], width = 0.7) +
   geom_text(aes(y = with_species + total * 0.05, 
@@ -163,39 +187,66 @@ p1_species_by_prediction <- results_clean %>%
   custom_theme
 
 # Kingdom distribution pie chart
-p2_kingdom_dist <- results_clean %>%
-  filter(has_species) %>%
-  count(kingdom, name = "count") %>%
-  mutate(
+kingdom_data <- results_clean %>%
+  dplyr::filter(has_species) %>%
+  dplyr::group_by(id) %>%
+  dplyr::slice(1) %>%  # Take first row per abstract to avoid double counting
+  dplyr::ungroup() %>%
+  dplyr::count(kingdom, name = "count") %>%
+  dplyr::filter(!is.na(kingdom)) %>%  # Remove any NA kingdoms
+  dplyr::mutate(
     percentage = count / sum(count) * 100,
     label = paste0(kingdom, "\n", count, " (", round(percentage, 1), "%)")
-  ) %>%
-  ggplot(aes(x = "", y = count, fill = kingdom)) +
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar("y", start = 0) +
-  scale_fill_manual(values = c("Plantae" = endo_palette[1], "Fungi" = endo_palette[2])) +
-  geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
-  labs(
-    title = "Species Distribution by Kingdom",
-    subtitle = paste("From", sum(results_clean$has_species), "abstracts with species detected")
-  ) +
-  theme_void() +
-  theme(
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(size = 11, hjust = 0.5),
-    legend.position = "none"
   )
 
-# Combine species overview plots
-p_species_overview <- p1_species_by_prediction / p2_kingdom_dist
-save_plot(p_species_overview, "../../figures/species_detection_overview.png", height = 10)
+# Only create pie chart if we have kingdom data
+if (nrow(kingdom_data) > 0) {
+  # Create color mapping based on available kingdoms
+  available_kingdoms <- unique(kingdom_data$kingdom)
+  kingdom_colors <- endo_palette[1:length(available_kingdoms)]
+  names(kingdom_colors) <- available_kingdoms
+  
+  p2_kingdom_dist <- kingdom_data %>%
+    ggplot(aes(x = "", y = count, fill = kingdom)) +
+    geom_bar(stat = "identity", width = 1) +
+    coord_polar("y", start = 0) +
+    scale_fill_manual(values = kingdom_colors) +
+    geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
+    labs(
+      title = "Species Distribution by Kingdom",
+      subtitle = paste("From", sum(abstract_summary$has_species), "abstracts with species detected")
+    ) +
+    theme_void() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+      plot.subtitle = element_text(size = 11, hjust = 0.5),
+      legend.position = "none"
+    )
+  
+  # Save species plots individually 
+  save_plot(p1_species_by_prediction, "figures/species_detection_by_prediction.png", height = 6)
+  save_plot(p2_kingdom_dist, "figures/species_kingdom_distribution.png", height = 6)
+} else {
+  # If no kingdom data, just save the species detection plot
+  cat("No kingdom data available for pie chart. Saving species detection plot only.\n")
+  save_plot(p1_species_by_prediction, "figures/species_detection_by_prediction.png", height = 6)
+}
 
 # 2. RESEARCH METHODS ANALYSIS -------------------------------------------
 
 cat("Creating research methods analysis plots...\n")
 
-# Methods distribution
-methods_summary <- results_clean %>%
+# Methods distribution  
+methods_abstract_summary <- results_clean %>%
+  group_by(id) %>%
+  summarise(
+    has_molecular = any(has_molecular),
+    has_culture = any(has_culture), 
+    has_microscopy = any(has_microscopy),
+    .groups = "drop"
+  )
+
+methods_summary <- methods_abstract_summary %>%
   summarise(
     Molecular = sum(has_molecular),
     Culture = sum(has_culture),
@@ -203,7 +254,7 @@ methods_summary <- results_clean %>%
   ) %>%
   pivot_longer(everything(), names_to = "Method", values_to = "Count") %>%
   mutate(
-    Percentage = Count / nrow(results_clean) * 100,
+    Percentage = Count / nrow(methods_abstract_summary) * 100,
     Method = fct_reorder(Method, Count)
   )
 
@@ -218,13 +269,15 @@ p3_methods_individual <- methods_summary %>%
     subtitle = "Individual method frequencies across all abstracts",
     x = "Research Method",
     y = "Number of Abstracts",
-    caption = paste("Total abstracts analyzed:", nrow(results_clean))
+    caption = paste("Total abstracts analyzed:", nrow(methods_abstract_summary))
   ) +
   custom_theme +
   theme(legend.position = "none")
 
 # Combined methods analysis
 methods_combined_summary <- results_clean %>%
+  group_by(id) %>%
+  summarise(methods_combined = first(methods_combined), .groups = "drop") %>%
   count(methods_combined, name = "count") %>%
   mutate(
     percentage = count / sum(count) * 100,
@@ -249,7 +302,8 @@ p4_methods_combined <- methods_combined_summary %>%
   theme(legend.position = "none")
 
 # Methods by prediction type
-p5_methods_by_prediction <- results_clean %>%
+p5_methods_by_prediction <- methods_abstract_summary %>%
+  left_join(abstract_summary %>% select(id, predicted_label), by = "id") %>%
   group_by(predicted_label) %>%
   summarise(
     Molecular = sum(has_molecular),
@@ -276,9 +330,10 @@ p5_methods_by_prediction <- results_clean %>%
   ) +
   custom_theme
 
-# Combine methods plots
-p_methods_analysis <- (p3_methods_individual | p4_methods_combined) / p5_methods_by_prediction
-save_plot(p_methods_analysis, "../../figures/research_methods_analysis.png", height = 12)
+# Save methods plots individually
+save_plot(p3_methods_individual, "figures/methods_individual.png", height = 6)
+save_plot(p4_methods_combined, "figures/methods_combined.png", height = 6)
+save_plot(p5_methods_by_prediction, "figures/methods_by_prediction.png", height = 6)
 
 # 3. PLANT PARTS ANALYSIS ------------------------------------------------
 
@@ -333,8 +388,9 @@ if (sum(results_clean$has_plant_parts) > 0) {
     ) +
     custom_theme
   
-  p_plant_parts <- p6_plant_parts_freq / plant_parts_by_pred
-  save_plot(p_plant_parts, "../../figures/plant_parts_analysis.png", height = 12)
+  # Save plant parts plots individually
+  save_plot(p6_plant_parts_freq, "figures/plant_parts_frequency.png", height = 8)
+  save_plot(plant_parts_by_pred, "figures/plant_parts_by_prediction.png", height = 6)
   
 } else {
   cat("No plant parts data available for visualization.\n")
@@ -393,13 +449,13 @@ if (sum(results_clean$has_geography) > 0) {
       coord_flip() +
       custom_theme
     
-    p_geography <- p7_geo_regions / p8_countries
+    # Save geography plots individually
+    save_plot(p7_geo_regions, "figures/geographic_regions.png", height = 6)
+    save_plot(p8_countries, "figures/top_countries.png", height = 8)
   } else {
-    p_geography <- p7_geo_regions
+    # Save only regions plot if no country data
+    save_plot(p7_geo_regions, "figures/geographic_regions.png", height = 6)
   }
-  
-  save_plot(p_geography, "../../figures/geographic_analysis.png", 
-            height = if(nrow(countries_data) > 0) 12 else 6)
   
 } else {
   cat("No geographic data available for visualization.\n")
@@ -489,9 +545,10 @@ p11_quality_heatmap <- quality_matrix %>%
   custom_theme +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Combine quality plots
-p_quality <- (p9_confidence | p10_completeness) / p11_quality_heatmap
-save_plot(p_quality, "../../figures/prediction_quality_analysis.png", height = 12)
+# Save quality plots individually
+save_plot(p9_confidence, "figures/confidence_distribution.png", height = 6)
+save_plot(p10_completeness, "figures/completeness_by_confidence.png", height = 6)
+save_plot(p11_quality_heatmap, "figures/quality_heatmap.png", height = 6)
 
 # 6. COMPREHENSIVE SUMMARY DASHBOARD ------------------------------------
 
@@ -561,9 +618,9 @@ p_info_summary <- info_summary %>%
   custom_theme +
   theme(legend.position = "none")
 
-# Combine summary dashboard
-p_dashboard <- p_summary_text | p_info_summary
-save_plot(p_dashboard, "../../figures/extraction_summary_dashboard.png", width = 16, height = 8)
+# Save summary dashboard plots individually
+save_plot(p_summary_text, "figures/summary_text.png", width = 8, height = 8)
+save_plot(p_info_summary, "figures/info_summary.png", width = 8, height = 8)
 
 # 7. SAVE VISUALIZATION SUMMARY ------------------------------------------
 
@@ -575,16 +632,24 @@ capture.output({
   cat("Source: comprehensive_extraction_results.csv\n\n")
   
   cat("FILES GENERATED:\n")
-  cat("1. species_detection_overview.png - Species detection rates and kingdom distribution\n")
-  cat("2. research_methods_analysis.png - Individual and combined method frequencies\n")
+  cat("1. species_detection_by_prediction.png - Species detection rates by prediction type\n")
+  cat("2. species_kingdom_distribution.png - Species distribution by kingdom (if available)\n")
+  cat("3. methods_individual.png - Individual method frequencies\n")
+  cat("4. methods_combined.png - Combined method frequencies\n")
+  cat("5. methods_by_prediction.png - Methods by prediction type\n")
   if (sum(results_clean$has_plant_parts) > 0) {
-    cat("3. plant_parts_analysis.png - Most studied plant parts and detection rates\n")
+    cat("6. plant_parts_frequency.png - Most studied plant parts\n")
+    cat("7. plant_parts_by_prediction.png - Plant parts detection by prediction type\n")
   }
   if (sum(results_clean$has_geography) > 0) {
-    cat("4. geographic_analysis.png - Geographic distribution and top countries\n")
+    cat("8. geographic_regions.png - Geographic distribution by region\n")
+    cat("9. top_countries.png - Most studied countries (if available)\n")
   }
-  cat("5. prediction_quality_analysis.png - Confidence distributions and completeness\n")
-  cat("6. extraction_summary_dashboard.png - Overall summary and key metrics\n\n")
+  cat("10. confidence_distribution.png - Confidence distributions by prediction\n")
+  cat("11. completeness_by_confidence.png - Information completeness by confidence\n")
+  cat("12. quality_heatmap.png - Information detection rates heatmap\n")
+  cat("13. summary_text.png - Overall summary statistics\n")
+  cat("14. info_summary.png - Information detection overview\n\n")
   
   cat("KEY FINDINGS:\n")
   cat("- Species detection rate:", round(species_rate, 1), "%\n")
@@ -628,25 +693,25 @@ capture.output({
   cat("4. Use plant parts data for ecological niche analysis\n")
   cat("5. Consider geographic patterns for global endophyte distribution studies\n")
   
-}, file = "../../results/visualization_summary_report.txt")
+}, file = "results/visualization_summary_report.txt")
 
-cat("Visualization summary saved to: ../../results/visualization_summary_report.txt\n")
+cat("Visualization summary saved to: results/visualization_summary_report.txt\n")
 
 # Clean up
 cat("\n=== VISUALIZATION COMPLETE ===\n")
-cat("Generated", length(list.files("../../figures", pattern = "*.png")), "visualization files in ../../figures/\n")
+cat("Generated", length(list.files("figures", pattern = "*.png")), "visualization files in figures/\n")
 cat("\nKey outputs:\n")
-cat("📊 Species detection patterns and kingdom distribution\n")
-cat("🔬 Research methods usage and combinations\n")
-if (sum(results_clean$has_plant_parts) > 0) cat("🌱 Plant parts frequency and preferences\n")
-if (sum(results_clean$has_geography) > 0) cat("🌍 Geographic distribution of studies\n")
-cat("📈 Prediction quality and information completeness\n")
-cat("📋 Comprehensive summary dashboard\n\n")
+cat("📊 Species detection patterns and kingdom distribution (individual plots)\n")
+cat("🔬 Research methods usage and combinations (individual plots)\n")
+if (sum(results_clean$has_plant_parts) > 0) cat("🌱 Plant parts frequency and preferences (individual plots)\n")
+if (sum(results_clean$has_geography) > 0) cat("🌍 Geographic distribution of studies (individual plots)\n")
+cat("📈 Prediction quality and information completeness (individual plots)\n")
+cat("📋 Summary statistics and information overview (individual plots)\n\n")
 
 cat("Next steps:\n")
-cat("1. Review generated plots for patterns and insights\n")
+cat("1. Review generated individual plots for patterns and insights\n")
 cat("2. Use findings to guide systematic review priorities\n")
-cat("3. Consider additional focused visualizations for specific research questions\n")
+cat("3. Consider combining plots manually in external software if needed\n")
 cat("4. Integrate visualizations into research presentations and publications\n\n")
 
-cat("All visualization files saved to ../../figures/ directory! 📊✨\n")
+cat("All individual visualization files saved to figures/ directory! 📊✨\n")

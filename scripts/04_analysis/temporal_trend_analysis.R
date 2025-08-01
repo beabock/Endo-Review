@@ -15,15 +15,17 @@ library(ggplot2)
 library(viridis)
 library(scales)
 
+#Publication year is not present in dataset currenty. Need to add back in upstream.
+
 cat("=== TEMPORAL TREND ANALYSIS ===\n")
 cat("Analyzing research patterns over time\n\n")
 
 # Load comprehensive data
-if (!file.exists("../../results/comprehensive_extraction_results.csv")) {
+if (!file.exists("results/comprehensive_extraction_results.csv")) {
   stop("Please run extract_species_simple.R first to generate comprehensive results.")
 }
 
-comprehensive_data <- read_csv("../../results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+comprehensive_data <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 cat("Total abstracts for temporal analysis:", nrow(comprehensive_data), "\n")
 

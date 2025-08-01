@@ -18,18 +18,18 @@ cat("=== GEOGRAPHIC BIAS AND RESEARCH GAP ANALYSIS ===\n")
 cat("Identifying research inequities and understudied regions\n\n")
 
 # Load comprehensive data
-if (!file.exists("../../results/comprehensive_extraction_results.csv")) {
+if (!file.exists("results/comprehensive_extraction_results.csv")) {
   stop("Please run extract_species_simple.R first to generate comprehensive results.")
 }
 
-comprehensive_data <- read_csv("../../results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+comprehensive_data <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 # Filter for abstracts with geographic information
 geographic_data <- comprehensive_data %>%
   filter(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected)) %>%
   mutate(
     # Create research quality indicators
-    has_species = !is.na(species_detected),
+    has_species = !is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName),
     has_molecular = !is.na(molecular_methods) & molecular_methods,
     has_culture = !is.na(culture_based_methods) & culture_based_methods,
     has_microscopy = !is.na(microscopy_methods) & microscopy_methods,
@@ -209,10 +209,10 @@ capacity_analysis <- geographic_data %>%
     culture_access = round(100 * sum(has_culture, na.rm = TRUE) / n(), 1),
     microscopy_access = round(100 * sum(has_microscopy, na.rm = TRUE) / n(), 1),
     
-    # Publication characteristics
-    avg_publication_year = round(mean(publication_year, na.rm = TRUE), 1),
-    recent_studies = sum(publication_year >= 2015, na.rm = TRUE),
-    recent_pct = round(100 * recent_studies / n(), 1),
+    # Publication characteristics. commenting out bc currently not in data
+    #avg_publication_year = round(mean(publication_year, na.rm = TRUE), 1),
+    #recent_studies = sum(publication_year >= 2015, na.rm = TRUE),
+   # recent_pct = round(100 * recent_studies / n(), 1),
     
     # Study quality
     comprehensive_studies = sum(info_score >= 3, na.rm = TRUE),
@@ -278,16 +278,16 @@ research_gaps <- tibble(
 )
 
 # Save all results
-write_csv(development_analysis, "../../results/geographic_equity_analysis.csv")
-write_csv(country_studies, "../../results/country_research_patterns.csv")
-write_csv(continental_studies, "../../results/continental_research_analysis.csv")
-write_csv(ecosystem_studies, "../../results/ecosystem_research_coverage.csv")
-write_csv(capacity_analysis, "../../results/research_capacity_analysis.csv")
-write_csv(hotspot_coverage, "../../results/biodiversity_hotspot_coverage.csv")
-write_csv(research_gaps, "../../results/research_gap_priorities.csv")
+write_csv(development_analysis, "results/geographic_equity_analysis.csv")
+write_csv(country_studies, "results/country_research_patterns.csv")
+write_csv(continental_studies, "results/continental_research_analysis.csv")
+write_csv(ecosystem_studies, "results/ecosystem_research_coverage.csv")
+write_csv(capacity_analysis, "results/research_capacity_analysis.csv")
+write_csv(hotspot_coverage, "results/biodiversity_hotspot_coverage.csv")
+write_csv(research_gaps, "results/research_gap_priorities.csv")
 
 if (exists("equity_ratios")) {
-  write_csv(equity_ratios, "../../results/north_south_equity_ratios.csv")
+  write_csv(equity_ratios, "results/north_south_equity_ratios.csv")
 }
 
 # Generate comprehensive geographic analysis report
@@ -378,20 +378,20 @@ capture.output({
   cat("   - Integration with conservation priorities\n")
   cat("   - Climate change impact assessments\n")
   
-}, file = "../../results/geographic_bias_analysis_report.txt")
+}, file = "results/geographic_bias_analysis_report.txt")
 
 cat("\nFiles created:\n")
-cat("✓ ../../results/geographic_equity_analysis.csv\n")
-cat("✓ ../../results/country_research_patterns.csv\n")
-cat("✓ ../../results/continental_research_analysis.csv\n")
-cat("✓ ../../results/ecosystem_research_coverage.csv\n")
-cat("✓ ../../results/research_capacity_analysis.csv\n")
-cat("✓ ../../results/biodiversity_hotspot_coverage.csv\n")
-cat("✓ ../../results/research_gap_priorities.csv\n")
+cat("✓ results/geographic_equity_analysis.csv\n")
+cat("✓ results/country_research_patterns.csv\n")
+cat("✓ results/continental_research_analysis.csv\n")
+cat("✓ results/ecosystem_research_coverage.csv\n")
+cat("✓ results/research_capacity_analysis.csv\n")
+cat("✓ results/biodiversity_hotspot_coverage.csv\n")
+cat("✓ results/research_gap_priorities.csv\n")
 if (exists("equity_ratios")) {
-  cat("✓ ../../results/north_south_equity_ratios.csv\n")
+  cat("✓ results/north_south_equity_ratios.csv\n")
 }
-cat("✓ ../../results/geographic_bias_analysis_report.txt\n")
+cat("✓ results/geographic_bias_analysis_report.txt\n")
 
 cat("\n=== GEOGRAPHIC ANALYSIS COMPLETE ===\n")
 cat("Key insights identified:\n")

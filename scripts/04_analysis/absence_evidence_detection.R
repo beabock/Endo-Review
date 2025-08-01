@@ -5,6 +5,8 @@
 # Specialized script to identify and analyze studies reporting absence of fungal endophytes
 # Part of the systematic investigation of endophyte universality in plants
 
+#Currently losing abstract text data. Need to add back in upstream.
+
 library(tidyverse)
 library(stringr)
 
@@ -12,11 +14,11 @@ cat("=== ABSENCE EVIDENCE DETECTION ===\n")
 cat("Identifying studies that searched for but did not find fungal endophytes\n\n")
 
 # Load comprehensive extraction results
-if (!file.exists("../../results/comprehensive_extraction_results.csv")) {
+if (!file.exists("results/comprehensive_extraction_results.csv")) {
   stop("Please run extract_species_simple.R first to generate comprehensive results.")
 }
 
-comprehensive_data <- read_csv("../../results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+comprehensive_data <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 cat("Total abstracts for absence analysis:", nrow(comprehensive_data), "\n")
 

@@ -347,12 +347,7 @@ cat("  Combined dataset:", nrow(combined_results), "total abstracts\n")
 # Focus on the weighted ensemble predictions (best performance) + training data
 abstracts_for_species <- combined_results %>%
   filter(!is.na(weighted_ensemble)) %>%  # Has either prediction or training label
-  select(
-    id, article_title, abstract, authors, source_title, 
-    publication_year, doi, weighted_ensemble,
-    glmnet_prob_presence, glmnet_prob_absence, source
-  ) %>%
-  # Rename to match expected format
+  # Keep ALL columns from combined_results to preserve metadata
   rename(
     title = article_title,
     predicted_label = weighted_ensemble
@@ -579,15 +574,37 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   # Combine with additional extraction results
   comprehensive_results <- species_results %>%
     left_join(methods_results, by = "id") %>%
-    # Add original classification data
+    # Add ALL original classification data and metadata
     left_join(
       abstracts_for_species %>% 
-        select(id, confidence, glmnet_prob_presence, glmnet_prob_absence),
+        # Select metadata columns that aren't already in species_results
+        select(id, abstract, authors, source_title, publication_year, doi, 
+               source, confidence, glmnet_prob_presence, glmnet_prob_absence,
+               # Include any other prediction columns
+               starts_with("glmnet_"), starts_with("svm_"), 
+               starts_with("pa_"), contains("ensemble"), 
+               contains("Relevant"), contains("classification")),
       by = "id"
     )
   
   # Save comprehensive results
   write_csv(comprehensive_results, "results/comprehensive_extraction_results.csv")
+  
+  # Report on metadata preservation
+  cat("Metadata check in comprehensive results:\n")
+  metadata_cols <- c("abstract", "authors", "source_title", "publication_year", "doi", "source")
+  for (col in metadata_cols) {
+    if (col %in% names(comprehensive_results)) {
+      non_na_count <- sum(!is.na(comprehensive_results[[col]]))
+      cat("  ✓", col, ":", non_na_count, "non-NA values out of", nrow(comprehensive_results), "total\n")
+    } else {
+      cat("  ✗", col, ": MISSING from comprehensive results\n")
+    }
+  }
+  
+  # Also report total columns
+  cat("  Total columns in comprehensive results:", ncol(comprehensive_results), "\n")
+  cat("  Key sections: Species info, Plant parts, Methods, Geography, Metadata\n")
   
   cat("Analysis of comprehensive extraction results:\n")
   cat("  Total abstracts processed:", nrow(comprehensive_results), "\n")
