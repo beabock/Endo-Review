@@ -196,6 +196,12 @@ batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE) {
         lookup_tables$synonym_resolution,
         by = c("user_supplied_name_lower" = "canonicalName_lower")
       ) %>%
+      # Add taxonomic hierarchy for the accepted name
+      left_join(
+        lookup_tables$accepted_species %>% 
+          select(canonicalName, kingdom, phylum, family, genus),
+        by = c("acceptedName" = "canonicalName")
+      ) %>%
       mutate(
         resolved_name = acceptedName,
         status = "SYNONYM",
@@ -241,13 +247,8 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
       filter(tolower(resolved_name) %in% all_tokens)
     
     if (nrow(species_matches) > 0) {
-      # Add metadata
+      # Add metadata (taxonomic info already present from batch_validate_names)
       species_matches <- species_matches %>%
-        left_join(
-          lookup_tables$accepted_species %>% 
-            select(canonicalName, kingdom, phylum, family, genus),
-          by = c("resolved_name" = "canonicalName")
-        ) %>%
         mutate(
           id = abstract_id,
           predicted_label = predicted_label,
@@ -428,10 +429,10 @@ process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_key
 # Test function to demonstrate synonym handling
 test_synonym_handling <- function() {
   # Load species data
-  if (!file.exists("species.rds")) {
+  if (!file.exists("models/species.rds")) {
     stop("species.rds file not found. Please run the main script first.")
   }
-  species <- readRDS("species.rds")
+  species <- readRDS("models/species.rds")
   
   # Create lookup tables
   lookup_tables <- create_lookup_tables(species)

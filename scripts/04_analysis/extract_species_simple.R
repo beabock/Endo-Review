@@ -19,9 +19,10 @@
 
 library(tidyverse)
 library(tictoc)
+library(janitor)
 
 # Source the detection functions
-source("../optimized_taxa_detection.R")
+source("scripts/archive/optimized_taxa_detection.R")
 
 cat("=== COMPREHENSIVE EXTRACTION PIPELINE ===\n")
 cat("Processing weighted ensemble results (best ML performance)\n")
@@ -265,45 +266,85 @@ detect_plant_parts <- function(text) {
 cat("Step 1: Preparing classification results for species detection...\n")
 
 # Load the relevant abstracts with predictions
-classification_results <- read_csv("../../results/predictions/relevant_abstracts_with_pa_predictions.csv")
+classification_results <- read_csv("results/predictions/relevant_abstracts_with_pa_predictions.csv")
 
 # Load and bind training dataset (only those with real DOIs)
 cat("  Loading training dataset for inclusion...\n")
-training_data <- read_csv("../../data/raw/Training_labeled_abs_5.csv") %>%
+training_data_raw <- read_csv("data/raw/Training_labeled_abs_5.csv") %>%
   clean_names() %>%
   filter(!is.na(doi) & doi != "" & nchar(doi) > 5) %>%  # Only real DOIs
-  filter(label %in% c("Presence", "Absence")) %>%  # Only relevant labels
+  filter(label %in% c("Presence", "Absence"))  # Only relevant labels
+
+# Create training data that matches classification_results structure
+training_data <- training_data_raw %>%
   select(article_title, abstract, authors, source_title, publication_year, doi, label) %>%
   mutate(
     id = max(classification_results$id, na.rm = TRUE) + row_number(),  # Unique IDs
-    title = article_title,
-    predicted_label = label,  # Use actual label as prediction
-    glmnet_prob_presence = ifelse(label == "Presence", 0.95, 0.05),  # High confidence
+    # Map to classification_results column names
+    Relevant = ifelse(label == "Presence", TRUE, FALSE),
+    relevance_loose = ifelse(label == "Presence", TRUE, FALSE),
+    glmnet_pred = label,
+    svm_pred = label,
+    weighted_ensemble = label,
+    threshold_ensemble = label,
+    glmnet_prob_presence = ifelse(label == "Presence", 0.95, 0.05),
     glmnet_prob_absence = ifelse(label == "Absence", 0.95, 0.05),
-    confidence = 0.95,  # Training data is high confidence
+    svm_prob_presence = ifelse(label == "Presence", 0.95, 0.05),
+    svm_prob_absence = ifelse(label == "Absence", 0.95, 0.05),
+    pa_loose = ifelse(label == "Presence", TRUE, FALSE),
+    pa_medium = ifelse(label == "Presence", TRUE, FALSE),
+    pa_strict = ifelse(label == "Presence", TRUE, FALSE),
+    pa_super_strict = ifelse(label == "Presence", TRUE, FALSE),
+    final_classification = label,
+    conservative_classification = label,
     source = "training"
-  )
+  ) %>%
+  # Select only the columns that exist in classification_results, plus source
+  select(all_of(names(classification_results)), source)
 
 cat("  Added", nrow(training_data), "training abstracts with valid DOIs\n")
 
 # Combine classification results with training data
 combined_results <- classification_results %>%
-  mutate(source = "classification") %>%
-  bind_rows(training_data %>% select(names(classification_results), source))
+  mutate(
+    source = "classification",
+    # Ensure consistent data types
+    publication_year = as.character(publication_year),
+    Relevant = as.character(Relevant),
+    relevance_loose = as.character(relevance_loose),
+    pa_loose = as.character(pa_loose),
+    pa_medium = as.character(pa_medium),
+    pa_strict = as.character(pa_strict),
+    pa_super_strict = as.character(pa_super_strict)
+  ) %>%
+  bind_rows(
+    training_data %>%
+      mutate(
+        # Ensure training data has consistent types
+        publication_year = as.character(publication_year),
+        Relevant = as.character(Relevant),
+        relevance_loose = as.character(relevance_loose),
+        pa_loose = as.character(pa_loose),
+        pa_medium = as.character(pa_medium),
+        pa_strict = as.character(pa_strict),
+        pa_super_strict = as.character(pa_super_strict)
+      )
+  )
 
 cat("  Combined dataset:", nrow(combined_results), "total abstracts\n")
 
 # Focus on the weighted ensemble predictions (best performance) + training data
 abstracts_for_species <- combined_results %>%
-  filter(!is.na(predicted_label)) %>%  # Has either prediction or training label
+  filter(!is.na(weighted_ensemble)) %>%  # Has either prediction or training label
   select(
     id, article_title, abstract, authors, source_title, 
-    publication_year, doi, predicted_label, 
+    publication_year, doi, weighted_ensemble,
     glmnet_prob_presence, glmnet_prob_absence, source
   ) %>%
   # Rename to match expected format
   rename(
-    title = article_title
+    title = article_title,
+    predicted_label = weighted_ensemble
   ) %>%
   # Add confidence score
   mutate(
@@ -324,11 +365,32 @@ print(prediction_summary)
 
 cat("\nStep 2: Running species detection...\n")
 
+# Check if species detection results already exist (recovery mechanism)
+species_file <- "results/species_detection_weighted_ensemble.csv"
+if (file.exists(species_file)) {
+  cat("⚠️  Found existing species detection results. Do you want to:\n")
+  cat("   - Skip species detection and use existing results\n")
+  cat("   - Or delete this file and rerun from scratch\n")
+  cat("   File:", species_file, "\n")
+  
+  # For now, we'll load existing results and continue
+  cat("   Loading existing species detection results...\n")
+  all_species_results <- read_csv(species_file, show_col_types = FALSE)
+  cat("   ✅ Loaded", nrow(all_species_results), "existing species detection records\n")
+  
+  # Skip to step 2.5
+  skip_species_detection <- TRUE
+} else {
+  skip_species_detection <- FALSE
+}
+
+if (!skip_species_detection) {
+
 # Load species reference data and set up processing
-if (file.exists("../../species.rds")) {
-  species <- readRDS("../../species.rds")
-} else if (file.exists("../../models/species.rds")) {
-  species <- readRDS("../../models/species.rds")
+if (file.exists("species.rds")) {
+  species <- readRDS("species.rds")
+} else if (file.exists("models/species.rds")) {
+  species <- readRDS("models/species.rds")
 } else {
   stop("Species reference data not found. Please ensure species.rds exists.")
 }
@@ -433,14 +495,23 @@ all_species_results <- map_dfr(1:n_batches, function(i) {
     workers = 1
   )
   
+  # Save intermediate results every 10 batches to prevent data loss
+  if (i %% 10 == 0) {
+    temp_file <- paste0("results/temp_species_batch_", i, ".csv")
+    write_csv(batch_results, temp_file)
+    cat("    ✅ Saved intermediate results to", temp_file, "\n")
+  }
+  
   return(batch_results)
 })
 
 # Save species detection results
-write_csv(all_species_results, "../../results/species_detection_weighted_ensemble.csv")
-cat("Species detection completed. Results saved to: ../../results/species_detection_weighted_ensemble.csv\n")
+write_csv(all_species_results, "results/species_detection_weighted_ensemble.csv")
+cat("Species detection completed. Results saved to: results/species_detection_weighted_ensemble.csv\n")
 
 toc()
+
+} # End of species detection if-block
 
 # Step 2.5: Extract additional information -----------------------------------
 
@@ -489,10 +560,10 @@ toc()
 
 cat("\nStep 3: Combining species and additional information...\n")
 
-if (file.exists("../../results/species_detection_weighted_ensemble.csv")) {
+if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   
   # Load species detection results
-  species_results <- read_csv("../../results/species_detection_weighted_ensemble.csv", show_col_types = FALSE)
+  species_results <- read_csv("results/species_detection_weighted_ensemble.csv", show_col_types = FALSE)
   
   # Combine with additional extraction results
   comprehensive_results <- species_results %>%
@@ -505,7 +576,7 @@ if (file.exists("../../results/species_detection_weighted_ensemble.csv")) {
     )
   
   # Save comprehensive results
-  write_csv(comprehensive_results, "../../results/comprehensive_extraction_results.csv")
+  write_csv(comprehensive_results, "results/comprehensive_extraction_results.csv")
   
   cat("Analysis of comprehensive extraction results:\n")
   cat("  Total abstracts processed:", nrow(comprehensive_results), "\n")
@@ -656,23 +727,23 @@ if (file.exists("../../results/species_detection_weighted_ensemble.csv")) {
     cat("3. Review 'Absence' predictions with species detected (potential misclassification)\n")
     cat("4. Use geographic and method information for study characterization\n")
     cat("5. Consider plant parts information for endophyte ecology analysis\n")
-  }, file = "../../results/comprehensive_extraction_report.txt")
+  }, file = "results/comprehensive_extraction_report.txt")
   
-  cat("Comprehensive report saved to: ../../results/comprehensive_extraction_report.txt\n")
+  cat("Comprehensive report saved to: results/comprehensive_extraction_report.txt\n")
   
 } else {
   cat("No species detection results found - running methods and geography extraction only.\n")
   
   # Save just the additional extraction results
-  write_csv(methods_results, "../../results/methods_geography_extraction.csv")
-  cat("Methods and geography results saved to: ../../results/methods_geography_extraction.csv\n")
+  write_csv(methods_results, "results/methods_geography_extraction.csv")
+  cat("Methods and geography results saved to: results/methods_geography_extraction.csv\n")
 }
 
 cat("\n=== COMPREHENSIVE EXTRACTION COMPLETE ===\n")
 cat("Key output files:\n")
-cat("- ../../results/comprehensive_extraction_results.csv: Complete results with all extractions\n")
-cat("- ../../results/species_detection_weighted_ensemble.csv: Species detection details\n") 
-cat("- ../../results/comprehensive_extraction_report.txt: Detailed analysis report\n\n")
+cat("- results/comprehensive_extraction_results.csv: Complete results with all extractions\n")
+cat("- results/species_detection_weighted_ensemble.csv: Species detection details\n") 
+cat("- results/comprehensive_extraction_report.txt: Detailed analysis report\n\n")
 cat("Data extracted:\n")
 cat("✓ Species identification (plants and fungi)\n")
 cat("✓ Plant parts studied (roots, leaves, stems, etc.)\n")

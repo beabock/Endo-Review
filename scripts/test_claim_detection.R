@@ -208,3 +208,5 @@ if (!interactive()) {
   # Test on sample abstracts
   test_on_sample_abstracts()
 }
+
+pilot_citation_analysis(sample_size = 500)

@@ -198,7 +198,7 @@ The claim of universal endophyte presence is frequently stated in the literature
 ## Future Considerations
 
 ### Potential Search Enhancements
-1. **Multi-database Approach**: Integration with PubMed, Scopus, specialized databases
+1. **Multi-database Approach**: Integration with PubMed, specialized databases
 2. **Language Expansion**: Non-English literature inclusion with translation
 3. **Temporal Updates**: Regular search updates for emerging literature
 4. **Methodological Refinement**: Continuous improvement based on validation results
