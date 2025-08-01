@@ -73,62 +73,73 @@ detect_geographic_locations <- function(text) {
   # Based on UN classifications and economic development indicators
   
   global_north_countries <- c(
-    # North America
-    "usa", "united states", "america", "canada", "greenland",
-    # Europe
-    "germany", "france", "italy", "spain", "uk", "united kingdom", "england", 
-    "scotland", "wales", "ireland", "poland", "sweden", "norway", "finland",
-    "denmark", "netherlands", "belgium", "switzerland", "austria", "portugal",
-    "greece", "czech republic", "hungary", "slovakia", "slovenia", "estonia",
-    "latvia", "lithuania", "iceland", "luxembourg", "malta", "cyprus",
-    "croatia", "romania", "bulgaria", "albania", "montenegro", "serbia",
-    "bosnia and herzegovina", "macedonia", "north macedonia", "moldova",
-    "belarus", "ukraine", "andorra", "liechtenstein", "monaco", "san marino",
-    "vatican", "vatican city",
-    # Asia-Pacific Developed
-    "japan", "south korea", "australia", "new zealand", "singapore", "israel",
-    "brunei",
-    # Others
-    "russia"
-  )
+  # North America
+  "united states", "usa", "america", "canada", "greenland", "bermuda",
+  
+  # Europe (EU and high-income non-EU)
+  "united kingdom", "uk", "england", "scotland", "wales", "northern ireland",
+  "ireland", "germany", "france", "italy", "spain", "portugal", "netherlands",
+  "belgium", "luxembourg", "austria", "switzerland", "denmark", "sweden",
+  "norway", "finland", "iceland", "liechtenstein", "andorra", "monaco",
+  "san marino", "vatican", "vatican city", "czech republic", "slovakia",
+  "slovenia", "estonia", "latvia", "lithuania", "poland", "malta", "cyprus",
+  "greece", "hungary", "croatia",
+  
+  # Southeastern and Eastern Europe (borderline/high-income)
+  "romania", "bulgaria",
+
+  # Asia-Pacific High Income
+  "japan", "south korea", "republic of korea", "australia", "new zealand",
+  "singapore", "taiwan", "hong kong", "macao", "israel", "brunei",
+
+  # Others
+  "russia"
+)
   
   global_south_countries <- c(
-    # Asia
-    "china", "india", "indonesia", "pakistan", "bangladesh", "vietnam", 
-    "philippines", "thailand", "malaysia", "myanmar", "cambodia", "laos",
-    "sri lanka", "nepal", "bhutan", "afghanistan", "mongolia", "north korea",
-    "taiwan", "hong kong", "macao", "maldives", "timor-leste", "east timor",
-    "uzbekistan", "kazakhstan", "kyrgyzstan", "tajikistan", "turkmenistan",
-    "armenia", "azerbaijan", "georgia",
-    # Africa
-    "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda", "tanzania",
-    "ghana", "mozambique", "madagascar", "cameroon", "ivory coast", "cote divoire", "niger", 
-    "burkina faso", "mali", "malawi", "zambia", "senegal", "somalia", "chad",
-    "guinea", "rwanda", "benin", "tunisia", "burundi", "south sudan", "togo",
-    "sierra leone", "libya", "liberia", "mauritania", "lesotho", "namibia",
-    "gambia", "botswana", "gabon", "guinea-bissau", "equatorial guinea",
-    "mauritius", "eswatini", "swaziland", "djibouti", "comoros", "cape verde", "seychelles",
-    "sao tome and principe", "morocco", "algeria", "sudan", "democratic republic congo",
-    "central african republic", "republic congo", "angola", "zimbabwe", "eritrea",
-    # Latin America & Caribbean
-    "brazil", "mexico", "argentina", "colombia", "peru", "venezuela", "chile",
-    "ecuador", "bolivia", "paraguay", "uruguay", "guyana", "suriname", 
-    "french guiana", "guatemala", "honduras", "el salvador", "nicaragua",
-    "costa rica", "panama", "cuba", "haiti", "dominican republic", "jamaica",
-    "trinidad and tobago", "barbados", "belize", "bahamas", "saint lucia",
-    "grenada", "saint vincent", "antigua", "dominica", "saint kitts",
-    "saint vincent and the grenadines", "antigua and barbuda", "saint kitts and nevis",
-    # Middle East
-    "turkey", "iran", "iraq", "saudi arabia", "yemen", "syria", "jordan",
-    "lebanon", "kuwait", "qatar", "bahrain", "united arab emirates", "oman",
-    "palestine", "palestinian territories",
-    # Pacific Islands
-    "papua new guinea", "fiji", "solomon islands", "vanuatu", "samoa", "tonga",
-    "kiribati", "palau", "nauru", "tuvalu", "marshall islands", "micronesia",
-    "federated states of micronesia", "cook islands", "niue", "tokelau",
-    "american samoa", "guam", "northern mariana islands", "french polynesia",
-    "new caledonia", "wallis and futuna"
-  )
+  # Latin America & Caribbean
+  "mexico", "brazil", "argentina", "chile", "colombia", "peru", "venezuela",
+  "ecuador", "bolivia", "paraguay", "uruguay", "guyana", "suriname",
+  "french guiana", "guatemala", "honduras", "el salvador", "nicaragua",
+  "costa rica", "panama", "cuba", "haiti", "dominican republic", "jamaica",
+  "trinidad and tobago", "barbados", "belize", "bahamas", "saint lucia",
+  "saint vincent and the grenadines", "grenada", "dominica", "antigua and barbuda",
+  "saint kitts and nevis", "saint kitts", "saint vincent", "antigua",
+  "curaçao", "aruba", "sint maarten", "bonaire",
+
+  # Africa
+  "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda",
+  "tanzania", "ghana", "mozambique", "madagascar", "cameroon",
+  "côte d’ivoire", "ivory coast", "niger", "mali", "zambia", "senegal",
+  "malawi", "burkina faso", "chad", "rwanda", "guinea", "benin", "tunisia",
+  "burundi", "liberia", "sierra leone", "lesotho", "namibia", "botswana",
+  "gabon", "gambia", "mauritania", "eswatini", "swaziland", "djibouti",
+  "central african republic", "republic of the congo", "congo", "democratic republic of the congo",
+  "angola", "zimbabwe", "sudan", "south sudan", "libya", "algeria",
+  "somalia", "eritrea", "guinea-bissau", "equatorial guinea",
+  "sao tome and principe", "comoros", "cape verde", "seychelles",
+  "reunion", "western sahara",
+
+  # Asia
+  "china", "india", "indonesia", "pakistan", "bangladesh", "vietnam",
+  "philippines", "thailand", "myanmar", "burma", "cambodia", "laos",
+  "nepal", "sri lanka", "malaysia", "bhutan", "maldives", "mongolia",
+  "afghanistan", "north korea", "timor-leste", "east timor", "kazakhstan",
+  "uzbekistan", "kyrgyzstan", "tajikistan", "turkmenistan",
+  "armenia", "azerbaijan", "georgia",
+
+  # Middle East
+  "turkey", "iran", "iraq", "syria", "jordan", "lebanon", "palestine",
+  "palestinian territories", "saudi arabia", "yemen", "united arab emirates",
+  "oman", "qatar", "bahrain", "kuwait",
+
+  # Pacific Islands
+  "papua new guinea", "fiji", "solomon islands", "vanuatu", "samoa",
+  "tonga", "kiribati", "palau", "nauru", "tuvalu", "marshall islands",
+  "micronesia", "federated states of micronesia", "cook islands", "niue",
+  "tokelau", "american samoa", "guam", "northern mariana islands",
+  "french polynesia", "new caledonia", "wallis and futuna"
+)
   
   # All countries combined
   all_countries <- c(global_north_countries, global_south_countries)
@@ -379,7 +390,7 @@ if (file.exists(species_file)) {
   cat("   ✅ Loaded", nrow(all_species_results), "existing species detection records\n")
   
   # Skip to step 2.5
-  skip_species_detection <- TRUE
+  skip_species_detection <- FALSE #Changing this right now to force it to run
 } else {
   skip_species_detection <- FALSE
 }
@@ -581,19 +592,28 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   cat("Analysis of comprehensive extraction results:\n")
   cat("  Total abstracts processed:", nrow(comprehensive_results), "\n")
   
-  # Species analysis
-  abstracts_with_species <- comprehensive_results %>%
-    filter(!is.na(species_detected)) %>%
-    nrow()
+  # Species analysis (check for actual species column names)
+  species_columns <- c("resolved_name", "canonicalName", "acceptedScientificName")
+  species_col <- species_columns[species_columns %in% names(comprehensive_results)][1]
   
-  cat("  Abstracts with species detected:", abstracts_with_species, 
-      "(", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%)\n")
-  
-  # Unique species
-  unique_species <- comprehensive_results %>%
-    filter(!is.na(species_detected)) %>%
-    distinct(species_detected) %>%
-    nrow()
+  if (!is.na(species_col)) {
+    abstracts_with_species <- comprehensive_results %>%
+      filter(!is.na(.data[[species_col]])) %>%
+      nrow()
+    
+    cat("  Abstracts with species detected:", abstracts_with_species, 
+        "(", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%)\n")
+    
+    # Unique species
+    unique_species <- comprehensive_results %>%
+      filter(!is.na(.data[[species_col]])) %>%
+      distinct(.data[[species_col]]) %>%
+      nrow()
+  } else {
+    cat("  No species column found in results\n")
+    abstracts_with_species <- 0
+    unique_species <- 0
+  }
   
   cat("  Unique species detected:", unique_species, "\n")
   
@@ -621,7 +641,7 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   cat("    Abstracts with plant parts:", abstracts_with_parts, 
       "(", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%)\n")
   
-  # Geographic analysis
+  # Geographic analysis (fix geographic_summary calculation)
   geographic_summary <- comprehensive_results %>%
     summarise(
       with_countries = sum(!is.na(countries_detected)),
@@ -630,7 +650,7 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
       with_continents = sum(!is.na(continents_detected)),
       with_regions = sum(!is.na(regions_detected)),
       with_coordinates = sum(has_coordinates, na.rm = TRUE),
-      with_any_geography = sum(!is.na(geographic_summary))
+      with_any_geography = sum(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected))
     )
   
   cat("  Geographic information:\n")
@@ -642,29 +662,39 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   cat("    Abstracts with coordinates:", geographic_summary$with_coordinates, "\n")
   cat("    Abstracts with any geographic info:", geographic_summary$with_any_geography, "\n")
   
-  # Kingdom analysis
-  kingdom_summary <- comprehensive_results %>%
-    filter(!is.na(species_detected)) %>%
-    count(kingdom, name = "abstracts") %>%
-    arrange(desc(abstracts))
+  # Kingdom analysis (check for kingdom column)
+  kingdom_columns <- c("kingdom", "kingdom.x", "kingdom.y")
+  kingdom_col <- kingdom_columns[kingdom_columns %in% names(comprehensive_results)][1]
+  
+  if (!is.na(kingdom_col) && !is.na(species_col)) {
+    kingdom_summary <- comprehensive_results %>%
+      filter(!is.na(.data[[species_col]])) %>%
+      count(.data[[kingdom_col]], name = "abstracts") %>%
+      arrange(desc(abstracts))
+  } else {
+    kingdom_summary <- data.frame()
+  }
   
   if (nrow(kingdom_summary) > 0) {
     cat("  Species by kingdom:\n")
     for (i in 1:nrow(kingdom_summary)) {
-      cat("    ", kingdom_summary$kingdom[i], ":", kingdom_summary$abstracts[i], "abstracts\n")
+      kingdom_name <- kingdom_summary[[kingdom_col]][i]
+      if (!is.na(kingdom_name)) {
+        cat("    ", kingdom_name, ":", kingdom_summary$abstracts[i], "abstracts\n")
+      }
     }
   }
   
-  # Prediction type analysis
+  # Prediction type analysis (use dynamic species column)
   prediction_analysis <- comprehensive_results %>%
     group_by(predicted_label) %>%
     summarise(
       total = n(),
-      with_species = sum(!is.na(species_detected)),
+      with_species = if(!is.na(species_col)) sum(!is.na(.data[[species_col]])) else 0,
       molecular = sum(molecular_methods, na.rm = TRUE),
       culture = sum(culture_based_methods, na.rm = TRUE),
       microscopy = sum(microscopy_methods, na.rm = TRUE),
-      with_geography = sum(!is.na(geographic_summary)),
+      with_geography = sum(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected)),
       .groups = "drop"
     )
   
@@ -706,7 +736,10 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
     cat("SPECIES BY KINGDOM:\n")
     if (nrow(kingdom_summary) > 0) {
       for (i in 1:nrow(kingdom_summary)) {
-        cat(kingdom_summary$kingdom[i], ":", kingdom_summary$abstracts[i], "abstracts\n")
+        kingdom_name <- kingdom_summary[[kingdom_col]][i]
+        if (!is.na(kingdom_name)) {
+          cat(kingdom_name, ":", kingdom_summary$abstracts[i], "abstracts\n")
+        }
       }
     }
     cat("\n")
