@@ -60,8 +60,8 @@ detect_absence_evidence <- function(text) {
     "medium", "agar", "petri", "colony", "sterile", "aseptic",
     
     # Molecular methods
-    "pcr", "amplified", "sequenced", "dna extracted", "primers", "its",
-    "18s", "28s", "rrna", "barcode", "metagenomic", "amplicon",
+    "pcr", "amplified", "sequenced", "dna extracted", "primers",
+    "18s", "28s", "rrna", "barcode", "metagenom*", "amplicon",
     
     # Microscopy methods
     "sectioned", "stained", "microscopy", "examined", "observed",
@@ -110,14 +110,9 @@ absence_results <- map_dfr(1:nrow(comprehensive_data), function(i) {
   if (i %% 500 == 0) cat("  Processed", i, "of", nrow(comprehensive_data), "abstracts\n")
   
   abstract_text <- comprehensive_data$abstract[i]
-  title_text <- comprehensive_data$title[i]
   
-  # Combine title and abstract for analysis
-  combined_text <- paste(
-    ifelse(is.na(title_text), "", title_text),
-    ifelse(is.na(abstract_text), "", abstract_text),
-    sep = " "
-  )
+  # Use only abstract for analysis since title column is not available
+  combined_text <- ifelse(is.na(abstract_text), "", abstract_text)
   
   if (nchar(combined_text) < 10) {
     # Skip very short texts
@@ -152,35 +147,56 @@ cat("Absence detection completed.\n")
 absence_analysis_results <- comprehensive_data %>%
   left_join(absence_results, by = "id") %>%
   mutate(
-    # Add additional classification variables
-    has_species = !is.na(species_detected),
-    has_methods = !is.na(methods_summary),
+    # Add additional classification variables - check for any species information
+    has_species = !is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName),
+    # Check if methods_summary exists, if not check for individual method columns
+    has_methods = if("methods_summary" %in% names(.)) {
+      !is.na(methods_summary)
+    } else if(any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %in% names(.))) {
+      !is.na(molecular_methods) | !is.na(culture_based_methods) | !is.na(microscopy_methods)
+    } else {
+      FALSE
+    },
     predicted_relevant = predicted_label == "Presence"
   )
 
 # Analysis of absence evidence
 cat("\n=== ABSENCE EVIDENCE ANALYSIS ===\n")
 
-total_abstracts <- nrow(absence_analysis_results)
-potential_absence <- sum(absence_analysis_results$potential_absence, na.rm = TRUE)
-high_confidence_absence <- sum(absence_analysis_results$confidence_level == "High", na.rm = TRUE)
-medium_confidence_absence <- sum(absence_analysis_results$confidence_level == "Medium", na.rm = TRUE)
+# Calculate totals properly grouped by id to avoid double-counting
+total_abstracts <- absence_analysis_results %>% 
+  group_by(id) %>% 
+  slice(1) %>% 
+  nrow()
+high_confidence_absence <- absence_analysis_results %>% 
+  group_by(id) %>% 
+  slice(1) %>% 
+  summarise(high_confidence = any(confidence_level == "High", na.rm = TRUE), .groups = "drop") %>% 
+  pull(high_confidence) %>% 
+  sum(na.rm = TRUE)
+medium_confidence_absence <- absence_analysis_results %>% 
+  group_by(id) %>% 
+  slice(1) %>% 
+  summarise(medium_confidence = any(confidence_level == "Medium", na.rm = TRUE), .groups = "drop") %>% 
+  pull(medium_confidence) %>% 
+  sum(na.rm = TRUE)
 
 cat("Total abstracts analyzed:", total_abstracts, "\n")
-cat("Potential absence evidence:", potential_absence, "(", round(100 * potential_absence / total_abstracts, 2), "%)\n")
 cat("High confidence absence:", high_confidence_absence, "(", round(100 * high_confidence_absence / total_abstracts, 2), "%)\n")
 cat("Medium confidence absence:", medium_confidence_absence, "(", round(100 * medium_confidence_absence / total_abstracts, 2), "%)\n")
 
 # Detailed analysis by prediction type
 absence_by_prediction <- absence_analysis_results %>%
+  group_by(id, predicted_label) %>%
+  slice(1) %>%
+  ungroup() %>%
   group_by(predicted_label) %>%
   summarise(
     total = n(),
-    potential_absence = sum(potential_absence, na.rm = TRUE),
     high_confidence = sum(confidence_level == "High", na.rm = TRUE),
     medium_confidence = sum(confidence_level == "Medium", na.rm = TRUE),
-    low_confidence = sum(confidence_level == "Low", na.rm = TRUE),
-    absence_rate = round(100 * potential_absence / total, 2),
+    high_confidence_rate = round(100 * high_confidence / total, 2),
+    medium_confidence_rate = round(100 * medium_confidence / total, 2),
     .groups = "drop"
   )
 
@@ -188,28 +204,37 @@ cat("\nAbsence evidence by ML prediction:\n")
 print(absence_by_prediction)
 
 # Analysis by research methods
-absence_by_methods <- absence_analysis_results %>%
-  filter(potential_absence == TRUE) %>%
-  summarise(
-    total_absence = n(),
-    with_molecular = sum(molecular_methods, na.rm = TRUE),
-    with_culture = sum(culture_based_methods, na.rm = TRUE),
-    with_microscopy = sum(microscopy_methods, na.rm = TRUE),
-    molecular_pct = round(100 * with_molecular / total_absence, 1),
-    culture_pct = round(100 * with_culture / total_absence, 1),
-    microscopy_pct = round(100 * with_microscopy / total_absence, 1)
-  )
-
-cat("\nMethod usage in absence studies:\n")
-print(absence_by_methods)
+if (any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %in% names(absence_analysis_results))) {
+  absence_by_methods <- absence_analysis_results %>%
+    filter(confidence_level %in% c("High", "Medium")) %>%
+    summarise(
+      total_absence = n(),
+      with_molecular = if("molecular_methods" %in% names(.)) sum(molecular_methods, na.rm = TRUE) else 0,
+      with_culture = if("culture_based_methods" %in% names(.)) sum(culture_based_methods, na.rm = TRUE) else 0,
+      with_microscopy = if("microscopy_methods" %in% names(.)) sum(microscopy_methods, na.rm = TRUE) else 0,
+      molecular_pct = round(100 * with_molecular / total_absence, 1),
+      culture_pct = round(100 * with_culture / total_absence, 1),
+      microscopy_pct = round(100 * with_microscopy / total_absence, 1)
+    )
+  
+  cat("\nMethod usage in absence studies:\n")
+  print(absence_by_methods)
+} else {
+  cat("\nMethod usage analysis skipped - method columns not available in dataset\n")
+}
 
 # Geographic patterns in absence evidence
-absence_geographic <- absence_analysis_results %>%
-  filter(potential_absence == TRUE, !is.na(countries_detected)) %>%
-  separate_rows(countries_detected, sep = "; ") %>%
-  count(countries_detected, name = "absence_studies") %>%
-  arrange(desc(absence_studies)) %>%
-  head(15)
+if ("countries_detected" %in% names(absence_analysis_results)) {
+  absence_geographic <- absence_analysis_results %>%
+    filter(confidence_level %in% c("High", "Medium"), !is.na(countries_detected)) %>%
+    separate_rows(countries_detected, sep = "; ") %>%
+    count(countries_detected, name = "absence_studies") %>%
+    arrange(desc(absence_studies)) %>%
+    head(15)
+} else {
+  absence_geographic <- data.frame()
+  cat("\nGeographic analysis skipped - countries_detected column not available\n")
+}
 
 if (nrow(absence_geographic) > 0) {
   cat("\nTop countries with absence evidence:\n")
@@ -217,12 +242,17 @@ if (nrow(absence_geographic) > 0) {
 }
 
 # Plant parts analysis for absence studies
-absence_plant_parts <- absence_analysis_results %>%
-  filter(potential_absence == TRUE, !is.na(plant_parts_detected)) %>%
-  separate_rows(plant_parts_detected, sep = "; ") %>%
-  count(plant_parts_detected, name = "absence_studies") %>%
-  arrange(desc(absence_studies)) %>%
-  head(15)
+if ("plant_parts_detected" %in% names(absence_analysis_results)) {
+  absence_plant_parts <- absence_analysis_results %>%
+    filter(confidence_level %in% c("High", "Medium"), !is.na(plant_parts_detected)) %>%
+    separate_rows(plant_parts_detected, sep = "; ") %>%
+    count(plant_parts_detected, name = "absence_studies") %>%
+    arrange(desc(absence_studies)) %>%
+    head(15)
+} else {
+  absence_plant_parts <- data.frame()
+  cat("\nPlant parts analysis skipped - plant_parts_detected column not available\n")
+}
 
 if (nrow(absence_plant_parts) > 0) {
   cat("\nPlant parts most commonly reported as endophyte-free:\n")
@@ -231,6 +261,9 @@ if (nrow(absence_plant_parts) > 0) {
 
 # Temporal analysis
 absence_temporal <- absence_analysis_results %>%
+  group_by(id) %>%
+  slice(1) %>%
+  ungroup() %>%
   filter(!is.na(publication_year), publication_year >= 1990) %>%
   mutate(
     decade = floor(publication_year / 10) * 10,
@@ -239,9 +272,9 @@ absence_temporal <- absence_analysis_results %>%
   group_by(five_year_period) %>%
   summarise(
     total_studies = n(),
-    absence_studies = sum(potential_absence, na.rm = TRUE),
-    absence_rate = round(100 * absence_studies / total_studies, 2),
     high_confidence_absence = sum(confidence_level == "High", na.rm = TRUE),
+    medium_confidence_absence = sum(confidence_level == "Medium", na.rm = TRUE),
+    high_confidence_rate = round(100 * high_confidence_absence / total_studies, 2),
     .groups = "drop"
   ) %>%
   arrange(five_year_period)
@@ -250,20 +283,20 @@ cat("\nTemporal trends in absence reporting:\n")
 print(absence_temporal)
 
 # Save results
-write_csv(absence_analysis_results, "../../results/absence_evidence_analysis.csv")
+write_csv(absence_analysis_results, "results/absence_evidence_analysis.csv")
 
 # Create high-confidence absence subset for manual review
 high_confidence_subset <- absence_analysis_results %>%
   filter(confidence_level %in% c("High", "Medium")) %>%
   arrange(desc(absence_score), desc(method_score)) %>%
   select(
-    id, title, abstract, publication_year, predicted_label, confidence,
-    species_detected, methods_summary, plant_parts_detected, 
+    id, abstract, publication_year, predicted_label, confidence,
+    canonicalName, resolved_name, acceptedScientificName, methods_summary, plant_parts_detected,
     countries_detected, absence_score, method_score, confidence_level,
     absence_terms, method_terms
   )
 
-write_csv(high_confidence_subset, "../../results/high_confidence_absence_evidence.csv")
+write_csv(high_confidence_subset, "results/high_confidence_absence_evidence.csv")
 
 # Generate summary report
 capture.output({
@@ -274,7 +307,6 @@ capture.output({
   
   cat("SUMMARY STATISTICS:\n")
   cat("Total abstracts analyzed:", total_abstracts, "\n")
-  cat("Potential absence evidence:", potential_absence, "(", round(100 * potential_absence / total_abstracts, 2), "%)\n")
   cat("High confidence absence:", high_confidence_absence, "\n")
   cat("Medium confidence absence:", medium_confidence_absence, "\n\n")
   
@@ -314,17 +346,17 @@ capture.output({
   cat("3. Integration with species-level absence patterns\n")
   cat("4. Comparison with universality claims in literature\n")
   
-}, file = "../../results/absence_evidence_report.txt")
+}, file = "results/absence_evidence_report.txt")
 
 cat("\nFiles created:\n")
-cat("✓ ../../results/absence_evidence_analysis.csv (complete results)\n")
-cat("✓ ../../results/high_confidence_absence_evidence.csv (priority cases for review)\n")
-cat("✓ ../../results/absence_evidence_report.txt (detailed analysis report)\n")
+cat("✓ results/absence_evidence_analysis.csv (complete results)\n")
+cat("✓ results/high_confidence_absence_evidence.csv (priority cases for review)\n")
+cat("✓ results/absence_evidence_report.txt (detailed analysis report)\n")
 
 cat("\n=== ABSENCE DETECTION COMPLETE ===\n")
 cat("Key findings:\n")
-cat("🔍 ", potential_absence, " studies with potential absence evidence identified\n")
 cat("📊 ", high_confidence_absence, " high-confidence absence cases found\n")
+cat("📋 ", medium_confidence_absence, " medium-confidence absence cases found\n")
 cat("⏰ Temporal trends in absence reporting analyzed\n")
 cat("🌍 Geographic patterns in absence evidence mapped\n")
 cat("🌱 Plant parts commonly reported as endophyte-free documented\n")

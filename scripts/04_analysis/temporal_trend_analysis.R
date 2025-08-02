@@ -15,7 +15,6 @@ library(ggplot2)
 library(viridis)
 library(scales)
 
-#Publication year is not present in dataset currenty. Need to add back in upstream.
 
 cat("=== TEMPORAL TREND ANALYSIS ===\n")
 cat("Analyzing research patterns over time\n\n")
@@ -31,7 +30,11 @@ cat("Total abstracts for temporal analysis:", nrow(comprehensive_data), "\n")
 
 # Data preparation
 temporal_data <- comprehensive_data %>%
-  filter(!is.na(publication_year), publication_year >= 1980, publication_year <= 2025) %>%
+mutate(
+    # Ensure publication_year is numeric
+    publication_year = as.integer(publication_year)
+  ) %>%
+  filter(!is.na(publication_year)) %>%
   mutate(
     # Create time periods
     decade = floor(publication_year / 10) * 10,
@@ -45,7 +48,7 @@ temporal_data <- comprehensive_data %>%
     
     # Information completeness
     info_score = (
-      ifelse(!is.na(species_detected), 1, 0) +
+      ifelse(!is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName)), 1, 0) +
       ifelse(!is.na(methods_summary), 1, 0) +
       ifelse(!is.na(plant_parts_detected), 1, 0) +
       ifelse(!is.na(geographic_summary), 1, 0)
@@ -56,7 +59,7 @@ temporal_data <- comprehensive_data %>%
     has_global_south = !is.na(global_south_countries),
     
     # Species detection
-    has_species = !is.na(species_detected)
+    has_species = !is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName)
   )
 
 cat("Data prepared for years", min(temporal_data$publication_year), "to", max(temporal_data$publication_year), "\n")
@@ -135,8 +138,8 @@ species_trends <- temporal_data %>%
     total_papers = n(),
     papers_with_species = sum(has_species, na.rm = TRUE),
     species_detection_pct = round(100 * papers_with_species / total_papers, 1),
-    # Species diversity (approximate)
-    unique_species = length(unique(species_detected[!is.na(species_detected)])),
+    # Species diversity (approximate) - using canonicalName as primary identifier
+    unique_species = length(unique(canonicalName[!is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName)])),
     .groups = "drop"
   ) %>%
   arrange(five_year_period)
@@ -198,15 +201,15 @@ temporal_summary <- period_counts %>%
   arrange(five_year_period)
 
 # Save results
-write_csv(temporal_summary, "../../results/temporal_trends_summary.csv")
-write_csv(annual_counts, "../../results/annual_publication_counts.csv")
-write_csv(method_trends, "../../results/research_method_trends.csv")
-write_csv(geographic_trends, "../../results/geographic_research_trends.csv")
-write_csv(species_trends, "../../results/species_detection_trends.csv")
-write_csv(completeness_trends, "../../results/information_completeness_trends.csv")
+write_csv(temporal_summary, "results/temporal_trends_summary.csv")
+write_csv(annual_counts, "results/annual_publication_counts.csv")
+write_csv(method_trends, "results/research_method_trends.csv")
+write_csv(geographic_trends, "results/geographic_research_trends.csv")
+write_csv(species_trends, "results/species_detection_trends.csv")
+write_csv(completeness_trends, "results/information_completeness_trends.csv")
 
 if (exists("kingdom_trends")) {
-  write_csv(kingdom_trends, "../../results/kingdom_focus_trends.csv")
+  write_csv(kingdom_trends, "results/kingdom_focus_trends.csv")
 }
 
 # Generate trend analysis report
