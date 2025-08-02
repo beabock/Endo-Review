@@ -210,9 +210,9 @@ capacity_analysis <- geographic_data %>%
     microscopy_access = round(100 * sum(has_microscopy, na.rm = TRUE) / n(), 1),
     
     # Publication characteristics. commenting out bc currently not in data
-    #avg_publication_year = round(mean(publication_year, na.rm = TRUE), 1),
-    #recent_studies = sum(publication_year >= 2015, na.rm = TRUE),
-   # recent_pct = round(100 * recent_studies / n(), 1),
+    avg_publication_year = round(mean(publication_year, na.rm = TRUE), 1),
+    recent_studies = sum(publication_year >= 2015, na.rm = TRUE),
+    recent_pct = round(100 * recent_studies / n(), 1),
     
     # Study quality
     comprehensive_studies = sum(info_score >= 3, na.rm = TRUE),

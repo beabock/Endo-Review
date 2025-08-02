@@ -59,7 +59,13 @@ create_lookup_tables <- function(species_df) {
       by = c("acceptedNameUsageID" = "taxonID")
     ) %>%
     rename(acceptedName = canonicalName.y, synonymName = canonicalName.x) %>%
-    select(synonymName, acceptedName, canonicalName_lower)
+    filter(!is.na(acceptedName)) %>%  # Remove entries where accepted name is missing
+    select(synonymName, acceptedName, canonicalName_lower) %>%
+    # Group by synonym name and take the first accepted name to avoid duplicates
+    group_by(canonicalName_lower) %>%
+    slice(1) %>%
+    ungroup() %>%
+    distinct()  # Remove any remaining duplicate entries
   
   return(list(
     species_df = species_df,
@@ -206,7 +212,8 @@ batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE) {
         resolved_name = acceptedName,
         status = "SYNONYM",
         acceptedScientificName = acceptedName
-      )
+      ) %>%
+      distinct()  # Remove any duplicate rows that might be created
     
     # Combine matches
     resolved <- bind_rows(accepted_matches, synonym_matches)
@@ -243,8 +250,10 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
   # Species matches
   if (is.data.frame(valid_species) && nrow(valid_species) > 0) {
     # Match against both individual tokens and bigrams
+    # Check both resolved names and original user-supplied names
     species_matches <- valid_species %>%
-      filter(tolower(resolved_name) %in% all_tokens)
+      filter(tolower(resolved_name) %in% all_tokens | 
+             tolower(user_supplied_name) %in% all_tokens)
     
     if (nrow(species_matches) > 0) {
       # Add metadata (taxonomic info already present from batch_validate_names)
@@ -429,10 +438,11 @@ process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_key
 # Test function to demonstrate synonym handling
 test_synonym_handling <- function() {
   # Load species data
-  if (!file.exists("models/species.rds")) {
-    stop("species.rds file not found. Please run the main script first.")
+  species_path <- "C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review/models/species.rds"
+  if (!file.exists(species_path)) {
+    stop("species.rds file not found at: ", species_path)
   }
-  species <- readRDS("models/species.rds")
+  species <- readRDS(species_path)
   
   # Create lookup tables
   lookup_tables <- create_lookup_tables(species)

@@ -5,7 +5,6 @@
 # Specialized script to identify and analyze studies reporting absence of fungal endophytes
 # Part of the systematic investigation of endophyte universality in plants
 
-#Currently losing abstract text data. Need to add back in upstream.
 
 library(tidyverse)
 library(stringr)

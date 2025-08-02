@@ -36,12 +36,12 @@ detect_research_methods <- function(text) {
   method_categories <- list(
     molecular = c("pcr", "dna", "rna", "sequenc", "primer", "amplif", "gene", "genom", 
                  "transcript", "clone", "phylogen", "molecular", "extraction", "isolat", 
-                 "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", "its", 
+                 "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", 
                  "rrna", "18s", "28s", "rdna", "barcode", "phylogeny"),
     
-    culture_based = c("culture", "isolat", "plate", "medium", "agar", "petri", "colony", 
-                     "incubat", "inocul", "sterile", "aseptic", "axenic", "pure culture", 
-                     "ferment", "broth", "in vitro", "cultivation", "cultured"),
+    culture_based = c("culture*", "isolat", "plate", "medium", "agar", "petri", "colony", 
+                     "incubat", "sterile", "aseptic", "axenic", 
+                     "ferment", "broth", "in vitro", "cultivation"),
     
     microscopy = c("microscop", "stain", "section", "histolog", "morpholog", "ultrastructur", 
                   "sem", "tem", "scanning electron", "transmission electron", "light microscop", 
@@ -590,13 +590,21 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   # Save comprehensive results
   write_csv(comprehensive_results, "results/comprehensive_extraction_results.csv")
   
+  # Calculate total unique abstracts for accurate reporting
+  total_unique_abstracts <- length(unique(comprehensive_results$id))
+  
   # Report on metadata preservation
   cat("Metadata check in comprehensive results:\n")
   metadata_cols <- c("abstract", "authors", "source_title", "publication_year", "doi", "source")
   for (col in metadata_cols) {
     if (col %in% names(comprehensive_results)) {
-      non_na_count <- sum(!is.na(comprehensive_results[[col]]))
-      cat("  ✓", col, ":", non_na_count, "non-NA values out of", nrow(comprehensive_results), "total\n")
+      # Count unique abstracts with non-NA values for this column
+      non_na_count <- comprehensive_results %>%
+        group_by(id) %>%
+        summarise(has_data = any(!is.na(.data[[col]])), .groups = "drop") %>%
+        pull(has_data) %>%
+        sum()
+      cat("  ✓", col, ":", non_na_count, "abstracts with data out of", total_unique_abstracts, "total\n")
     } else {
       cat("  ✗", col, ": MISSING from comprehensive results\n")
     }
@@ -607,20 +615,23 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   cat("  Key sections: Species info, Plant parts, Methods, Geography, Metadata\n")
   
   cat("Analysis of comprehensive extraction results:\n")
-  cat("  Total abstracts processed:", nrow(comprehensive_results), "\n")
-  
+  cat("  Total unique abstracts processed:", total_unique_abstracts, "\n")
+
   # Species analysis (check for actual species column names)
   species_columns <- c("resolved_name", "canonicalName", "acceptedScientificName")
   species_col <- species_columns[species_columns %in% names(comprehensive_results)][1]
   
   if (!is.na(species_col)) {
+    # Count unique abstracts with species detected
     abstracts_with_species <- comprehensive_results %>%
-      filter(!is.na(.data[[species_col]])) %>%
-      nrow()
+      group_by(id) %>%
+      summarise(has_species = any(!is.na(.data[[species_col]])), .groups = "drop") %>%
+      pull(has_species) %>%
+      sum()
     
     cat("  Abstracts with species detected:", abstracts_with_species, 
-        "(", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%)\n")
-    
+        "(", round(100 * abstracts_with_species / total_unique_abstracts, 1), "%)\n")
+
     # Unique species
     unique_species <- comprehensive_results %>%
       filter(!is.na(.data[[species_col]])) %>%
@@ -634,13 +645,21 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   
   cat("  Unique species detected:", unique_species, "\n")
   
-  # Methods analysis
+  # Methods analysis - count unique abstracts
   methods_summary <- comprehensive_results %>%
+    group_by(id) %>%
     summarise(
-      molecular = sum(molecular_methods, na.rm = TRUE),
-      culture = sum(culture_based_methods, na.rm = TRUE),
-      microscopy = sum(microscopy_methods, na.rm = TRUE),
-      total_with_methods = sum(!is.na(methods_summary))
+      molecular = any(molecular_methods, na.rm = TRUE),
+      culture = any(culture_based_methods, na.rm = TRUE),
+      microscopy = any(microscopy_methods, na.rm = TRUE),
+      has_methods = any(!is.na(methods_summary)),
+      .groups = "drop"
+    ) %>%
+    summarise(
+      molecular = sum(molecular),
+      culture = sum(culture),
+      microscopy = sum(microscopy),
+      total_with_methods = sum(has_methods)
     )
   
   cat("  Research methods detected:\n")
@@ -649,25 +668,38 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
   cat("    Microscopy methods:", methods_summary$microscopy, "abstracts\n")
   cat("    Abstracts with any method info:", methods_summary$total_with_methods, "\n")
   
-  # Plant parts analysis
+  # Plant parts analysis - count unique abstracts
   abstracts_with_parts <- comprehensive_results %>%
-    filter(!is.na(plant_parts_detected)) %>%
-    nrow()
+    group_by(id) %>%
+    summarise(has_parts = any(!is.na(plant_parts_detected)), .groups = "drop") %>%
+    pull(has_parts) %>%
+    sum()
   
   cat("  Plant parts information:\n")
   cat("    Abstracts with plant parts:", abstracts_with_parts, 
-      "(", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%)\n")
+      "(", round(100 * abstracts_with_parts / total_unique_abstracts, 1), "%)\n")
   
-  # Geographic analysis (fix geographic_summary calculation)
+  # Geographic analysis - count unique abstracts
   geographic_summary <- comprehensive_results %>%
+    group_by(id) %>%
     summarise(
-      with_countries = sum(!is.na(countries_detected)),
-      with_global_north = sum(!is.na(global_north_countries)),
-      with_global_south = sum(!is.na(global_south_countries)),
-      with_continents = sum(!is.na(continents_detected)),
-      with_regions = sum(!is.na(regions_detected)),
-      with_coordinates = sum(has_coordinates, na.rm = TRUE),
-      with_any_geography = sum(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected))
+      with_countries = any(!is.na(countries_detected)),
+      with_global_north = any(!is.na(global_north_countries)),
+      with_global_south = any(!is.na(global_south_countries)),
+      with_continents = any(!is.na(continents_detected)),
+      with_regions = any(!is.na(regions_detected)),
+      with_coordinates = any(has_coordinates, na.rm = TRUE),
+      with_any_geography = any(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected)),
+      .groups = "drop"
+    ) %>%
+    summarise(
+      with_countries = sum(with_countries),
+      with_global_north = sum(with_global_north),
+      with_global_south = sum(with_global_south),
+      with_continents = sum(with_continents),
+      with_regions = sum(with_regions),
+      with_coordinates = sum(with_coordinates),
+      with_any_geography = sum(with_any_geography)
     )
   
   cat("  Geographic information:\n")
@@ -702,16 +734,25 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
     }
   }
   
-  # Prediction type analysis (use dynamic species column)
+  # Prediction type analysis - count unique abstracts per prediction type
   prediction_analysis <- comprehensive_results %>%
+    group_by(id, predicted_label) %>%
+    summarise(
+      has_species = if(!is.na(species_col)) any(!is.na(.data[[species_col]])) else FALSE,
+      molecular = any(molecular_methods, na.rm = TRUE),
+      culture = any(culture_based_methods, na.rm = TRUE),
+      microscopy = any(microscopy_methods, na.rm = TRUE),
+      with_geography = any(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected)),
+      .groups = "drop"
+    ) %>%
     group_by(predicted_label) %>%
     summarise(
       total = n(),
-      with_species = if(!is.na(species_col)) sum(!is.na(.data[[species_col]])) else 0,
-      molecular = sum(molecular_methods, na.rm = TRUE),
-      culture = sum(culture_based_methods, na.rm = TRUE),
-      microscopy = sum(microscopy_methods, na.rm = TRUE),
-      with_geography = sum(!is.na(countries_detected) | !is.na(continents_detected) | !is.na(regions_detected)),
+      with_species = sum(has_species),
+      molecular = sum(molecular),
+      culture = sum(culture),
+      microscopy = sum(microscopy),
+      with_geography = sum(with_geography),
       .groups = "drop"
     )
   
@@ -726,9 +767,9 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
     cat("Extractions: Species, Plant Parts, Methods, Geography\n\n")
     
     cat("OVERVIEW:\n")
-    cat("Total abstracts processed:", nrow(comprehensive_results), "\n")
+    cat("Total unique abstracts processed:", total_unique_abstracts, "\n")
     cat("Abstracts with species:", abstracts_with_species, 
-        "(", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%)\n")
+        "(", round(100 * abstracts_with_species / total_unique_abstracts, 1), "%)\n")
     cat("Unique species detected:", unique_species, "\n\n")
     
     cat("RESEARCH METHODS:\n")
@@ -739,7 +780,7 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
     
     cat("PLANT PARTS:\n")
     cat("Abstracts with plant parts:", abstracts_with_parts, 
-        "(", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%)\n\n")
+        "(", round(100 * abstracts_with_parts / total_unique_abstracts, 1), "%)\n\n")
     
     cat("GEOGRAPHIC INFORMATION:\n")
     cat("Countries mentioned:", geographic_summary$with_countries, "abstracts\n")
@@ -766,10 +807,10 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
     cat("\n")
     
     cat("DATA QUALITY INDICATORS:\n")
-    cat("1. Species detection rate: ", round(100 * abstracts_with_species / nrow(comprehensive_results), 1), "%\n")
-    cat("2. Method information coverage: ", round(100 * methods_summary$total_with_methods / nrow(comprehensive_results), 1), "%\n")
-    cat("3. Plant parts coverage: ", round(100 * abstracts_with_parts / nrow(comprehensive_results), 1), "%\n")
-    cat("4. Geographic coverage: ", round(100 * geographic_summary$with_any_geography / nrow(comprehensive_results), 1), "%\n\n")
+    cat("1. Species detection rate: ", round(100 * abstracts_with_species / total_unique_abstracts, 1), "%\n")
+    cat("2. Method information coverage: ", round(100 * methods_summary$total_with_methods / total_unique_abstracts, 1), "%\n")
+    cat("3. Plant parts coverage: ", round(100 * abstracts_with_parts / total_unique_abstracts, 1), "%\n")
+    cat("4. Geographic coverage: ", round(100 * geographic_summary$with_any_geography / total_unique_abstracts, 1), "%\n\n")
     
     cat("RECOMMENDATIONS:\n")
     cat("1. Focus manual review on abstracts with species + methods + geography\n")

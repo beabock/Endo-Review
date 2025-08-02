@@ -20,7 +20,7 @@ library(treemapify)
 library(maps)
 library(countrycode)
 
-# Ensure tidyverse functions are not masked
+# Need to adjust abstract counts throughout to group by abstract.id
 
 
 # Custom theme for consistent visualization
