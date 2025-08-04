@@ -13,11 +13,11 @@ cat("Creating stratified sample for accuracy assessment\n\n")
 
 # Load comprehensive extraction results
 cat("Loading comprehensive extraction results...\n")
-if (!file.exists("../../results/comprehensive_extraction_results.csv")) {
+if (!file.exists("results/comprehensive_extraction_results.csv")) {
   stop("Please run extract_species_simple.R first to generate comprehensive results.")
 }
 
-comprehensive_data <- read_csv("../../results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+comprehensive_data <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 cat("Total abstracts available:", nrow(comprehensive_data), "\n")
 
@@ -40,7 +40,7 @@ validation_data <- comprehensive_data %>%
     ),
     # Information completeness score
     info_score = (
-      ifelse(!is.na(species_detected), 1, 0) +
+      ifelse(!is.na(canonicalName), 1, 0) +
       ifelse(!is.na(methods_summary), 1, 0) +
       ifelse(!is.na(plant_parts_detected), 1, 0) +
       ifelse(!is.na(geographic_summary), 1, 0)
@@ -52,7 +52,7 @@ validation_data <- comprehensive_data %>%
       TRUE ~ "None (0 types)"
     ),
     # Species detection status
-    has_species = ifelse(!is.na(species_detected), "Species detected", "No species"),
+    has_species = ifelse(!is.na(canonicalName), "Species detected", "No species"),
     # Create unique combination for stratification
     stratum = paste(predicted_label, confidence_level, has_species, sep = " | ")
   )
@@ -135,7 +135,7 @@ validation_sample <- validation_sample %>%
   select(
     validation_id, id, title, abstract, authors, publication_year, source_title,
     predicted_label, confidence, confidence_level,
-    species_detected, kingdom, has_species,
+    canonicalName, kingdom, has_species,
     methods_summary, plant_parts_detected, geographic_summary,
     info_score, info_completeness, stratum,
     # Validation fields
@@ -144,7 +144,7 @@ validation_sample <- validation_sample %>%
   )
 
 # Save validation sample
-write_csv(validation_sample, "../../results/validation_sample_for_manual_review.csv")
+write_csv(validation_sample, "results/validation_sample_for_manual_review.csv")
 
 # Create validation instructions
 validation_instructions <- "
@@ -210,7 +210,7 @@ Generated: {Sys.time()}
 
 writeLines(
   str_glue(validation_instructions),
-  "../../results/VALIDATION_INSTRUCTIONS.md"
+  "results/VALIDATION_INSTRUCTIONS.md"
 )
 
 # Create summary report
@@ -246,12 +246,12 @@ validation_progress <- tibble(
   percentage = c(100, 0, 0, 0)
 )
 
-write_csv(validation_progress, "../../results/validation_progress_tracker.csv")
+write_csv(validation_progress, "results/validation_progress_tracker.csv")
 
 cat("\nFiles created:\n")
-cat("✓ ../../results/validation_sample_for_manual_review.csv (", nrow(validation_sample), " abstracts)\n")
-cat("✓ ../../results/VALIDATION_INSTRUCTIONS.md (detailed instructions)\n")
-cat("✓ ../../results/validation_progress_tracker.csv (progress tracking)\n")
+cat("✓ results/validation_sample_for_manual_review.csv (", nrow(validation_sample), " abstracts)\n")
+cat("✓ results/VALIDATION_INSTRUCTIONS.md (detailed instructions)\n")
+cat("✓ results/validation_progress_tracker.csv (progress tracking)\n")
 
 cat("\n=== NEXT STEPS ===\n")
 cat("1. Open validation_sample_for_manual_review.csv in Excel or similar\n")

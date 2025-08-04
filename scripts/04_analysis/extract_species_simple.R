@@ -7,7 +7,7 @@
 # 1. Species information (plants and fungi)
 # 2. Plant parts studied
 # 3. Research methods (culture, microscopy, molecular)
-# 4. Geographic locations
+# 4. Geographic locations: one thing I need to fix is niger is both a species name and a country.... the country niger is showing up as represented more than it is
 #
 # Data Source: Web of Science search conducted July 31, 2025
 # Search Strategy: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi")
@@ -108,7 +108,7 @@ detect_geographic_locations <- function(text) {
   "curaçao", "aruba", "sint maarten", "bonaire",
 
   # Africa
-  "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda",
+  "niger", "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda",
   "tanzania", "ghana", "mozambique", "madagascar", "cameroon",
   "côte d’ivoire", "ivory coast", "niger", "mali", "zambia", "senegal",
   "malawi", "burkina faso", "chad", "rwanda", "guinea", "benin", "tunisia",
@@ -157,10 +157,20 @@ detect_geographic_locations <- function(text) {
   text_lower <- tolower(text)
   
   # Find countries and categorize
-  countries_found <- all_countries[sapply(all_countries, function(country) {
+  cleaned_countries <- sapply(all_countries, function(country) {
+  if (country == "niger") {
+    # Match only if "Niger" appears capitalized in original text or as "Republic of Niger"
+    grepl("\\bRepublic of Niger\\b", text, ignore.case = TRUE) ||
+    grepl("\\bNiger\\b", text)  # Capitalized only
+  } else {
     grepl(paste0("\\b", country, "\\b"), text_lower)
-  })]
+  }
+})
+
+  countries_found <- all_countries[cleaned_countries]
   
+  country_presence <- setNames(as.integer(all_countries %in% countries_found), all_countries)
+
   # Categorize found countries
   north_countries <- intersect(countries_found, global_north_countries)
   south_countries <- intersect(countries_found, global_south_countries)
@@ -180,14 +190,15 @@ detect_geographic_locations <- function(text) {
   has_coordinates <- grepl(coord_pattern, text)
   
   return(list(
-    countries = if(length(countries_found) > 0) paste(countries_found, collapse = "; ") else NA,
-    global_north_countries = if(length(north_countries) > 0) paste(north_countries, collapse = "; ") else NA,
-    global_south_countries = if(length(south_countries) > 0) paste(south_countries, collapse = "; ") else NA,
-    continents = if(length(continents_found) > 0) paste(continents_found, collapse = "; ") else NA,
-    regions = if(length(regions_found) > 0) paste(regions_found, collapse = "; ") else NA,
-    has_coordinates = has_coordinates,
-    geographic_info = paste(c(countries_found, continents_found, regions_found), collapse = "; ")
-  ))
+  countries = if(length(countries_found) > 0) paste(countries_found, collapse = "; ") else NA,
+  global_north_countries = if(length(north_countries) > 0) paste(north_countries, collapse = "; ") else NA,
+  global_south_countries = if(length(south_countries) > 0) paste(south_countries, collapse = "; ") else NA,
+  continents = if(length(continents_found) > 0) paste(continents_found, collapse = "; ") else NA,
+  regions = if(length(regions_found) > 0) paste(regions_found, collapse = "; ") else NA,
+  has_coordinates = has_coordinates,
+  geographic_info = paste(c(countries_found, continents_found, regions_found), collapse = "; "),
+  country_presence = country_presence
+))
 }
 
 # Function to detect plant parts (enhanced from existing)
