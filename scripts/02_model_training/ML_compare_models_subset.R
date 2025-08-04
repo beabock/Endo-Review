@@ -214,6 +214,8 @@ evaluation_table <- tibble(
 print("Model Performance (sorted by Relevant class recall):")
 print(evaluation_table)
 
+write.csv(evaluation_table, "evaluation_table_relevance.csv", row.names = FALSE)
+
 #91% on glmnet, pretty good. 
 
 for (m in names(confusion_matrices)) {
@@ -228,13 +230,10 @@ for (m in names(confusion_matrices)) {
 best_model <- results[[evaluation_table$model[1]]]
 
 setdiff(colnames(best_model$trainingData), best_model$finalModel$xNames)
-#xnames <- best_model$finalModel$xNames
-#best_model$trainingData <- best_model$trainingData[, c(xnames, ".outcome"), drop = FALSE]
 
 saveRDS(best_model, file = paste0("models/best_model_relevance_", evaluation_table$model[1], ".rds"))
 
 
-#svmLinear it is!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # Presence/Absence Classification ====================================
 
@@ -677,6 +676,8 @@ ensemble_preds_optimized <- factor(ensemble_preds_optimized, levels = c("Presenc
 
 ensemble_cm_weighted <- confusionMatrix(ensemble_preds_weighted, test_df$presence_both_absence, positive = "Presence")
 
+write.csv(ensemble_cm_weighted, "evaluation_table_pa.csv", row.names = FALSE)
+
 cat("\n=== FINAL ENSEMBLE CONFIGURATION ===\n")
 cat("Using current config: SVM weight =", best_config$svm_pres, 
     ", GLMNet weight =", best_config$glm_abs, "\n")
@@ -806,8 +807,7 @@ cat("• GLMNet Only: Best for avoiding false Absence classifications\n")
 cat("• SVM Only: Best for finding all Presence studies\n")
 cat("• Threshold Ensemble: Ineffective (identical to GLMNet)\n")
 
-# Stop execution here - uncomment the line below to prevent running further sections
- 
+
 
 # END OF PRESENCE/ABSENCE CLASSIFICATION SECTION -------------------------
 

@@ -7,7 +7,7 @@
 -  Search terms: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungi" OR "endophytic fungus") AND plant
 - Databases: Web of Science and Scopus
 
--Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that.
+-Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that. With the new search, I'm trying to capture historic names of endophytes and other terms for endophytes, as well as ways plants might be described in an abstract without saying plant. **Open to suggestions on improving this search**
 - Search terms:  (
     "fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR 
     "latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR 
@@ -29,41 +29,27 @@
 
 ### Machine Learning Pipeline
 
-#### Model Training and Comparison
-
-**Model Training and Comparison Workflow:**
-
-1. **Data Preparation:**
-   - Input data: Abstracts and labels (Presence/Absence, Relevance)
-   - Preprocessing: Text cleaning, tokenization, stopword removal, TF-IDF vectorization
-   - Stratified train/test split to ensure balanced class representation
-
-2. **Model Selection:**
-   - Algorithms compared: SVM (Linear), GLMNet (Lasso/Elastic Net), Random Forest, XGBoost
-   - Each model trained using caret's `train()` function with custom tuning grids
-
-3. **Hyperparameter Tuning:**
-   - Grid search and cross-validation (5-fold or 10-fold) for each algorithm
-   - Performance metrics: Accuracy, balanced accuracy, ROC-AUC
-
-4. **Model Evaluation:**
-   - Predictions generated for test set
-   - Confusion matrices, accuracy, balanced accuracy, and ROC curves calculated
-   - Class-specific metrics (precision, recall, F1) reported
-   - Visualizations: Accuracy comparison, balanced accuracy comparison, confusion matrix plots
-
-5. **Model Export and Documentation:**
-   - Best-performing models saved as RDS files in `models/` (e.g., `best_model_glmnet_optimized.rds`)
-   - Model comparison summary exported to CSV (`results/model_comparison_summary.csv`)
-   - All plots saved to `plots/` (e.g., `accuracy_comparison.png`, `confusion_matrix_glmnet.png`)
-
----
-
 **Detailed ML Workflow: Relevance and Presence/Absence Classification**
+
+**Training Dataset Overview**
+
+| Label    | Count |
+|----------|-------|
+| Absence  | 117   |
+| Both     | 174   |
+| Other    | 73    |
+| Presence | 312   |
+| Review   | 141   |
+
+**Training Dataset Details**
+- I manually labeled all of those abstracts
+- There are only a few actual Absence examples in the literature, so I fed those to ChatGPT and asked for fake Absence abstracts to increase my training dataset.
 
 **1. Relevance Classification**
    - Model: GLMNet (Elastic Net regularized logistic regression)
    - Training: Distinguishes "Relevant" vs "Irrelevant" abstracts using labeled data.
+   - Relevant = Absence, Presence, Both (Presence)
+   - Irrelevant = Other, Review
    - Feature Engineering: Abstracts are tokenized, stop words removed, and a document-term matrix (DTM) is constructed and harmonized to match training vocabulary.
    - Prediction: Probabilities for "Relevant" and "Irrelevant" are predicted for all unlabeled abstracts.
    - Thresholding: Multiple thresholds applied (Loose: 0.5, Medium: 0.6, Strict: 0.8). Abstracts labeled as "Relevant", "Irrelevant", or "Uncertain".
@@ -73,7 +59,7 @@
 
 **2. Presence/Absence Classification**
    - Models: SVM (Linear) and GLMNet, with ensemble approaches.
-   - Training: Models trained to classify "Presence" vs "Absence" of target taxa, using only abstracts labeled as "Relevant".
+   - Training: Models trained to classify "Presence" vs "Absence" of fungal endophytes, using only abstracts labeled as "Relevant".
    - Feature Engineering: DTM construction and harmonization as above.
    - Prediction: Probabilities for "Presence" and "Absence" predicted for all relevant abstracts.
    - Thresholding: Multiple thresholds applied (Loose: 0.5, Medium: 0.6, Strict: 0.8, Super Strict: 0.9). Abstracts labeled as "Presence", "Absence", or "Uncertain".
@@ -113,11 +99,11 @@
 ### Extraction and Analysis
 - Species and synonym extraction
 - Geographic and temporal analysis
-- Scripts: `visualize_taxa_results.R`, `temporal_trend_analysis.R`, `geographic_bias_analysis.R`
+- Scripts: `extract_species_simple.R`, `visualize_taxa_results.R`, `temporal_trend_analysis.R`, `geographic_bias_analysis.R`
 
 **Extraction and Analysis Workflow**
 - Data sources include ML-classified abstracts (weighted ensemble predictions) and validated training data.
-- Species detection is performed in batches using parallel processing and reference data (`species.rds`), with results saved to `results/species_detection_weighted_ensemble.csv`.
+- Species detection is performed in batches using parallel processing and reference data from GBIF regarding all accepted species (`species.rds`), with results saved to `results/species_detection_weighted_ensemble.csv`.
 - Plant parts are extracted using comprehensive keyword matching for structures and anatomical features, with both detected parts and counts recorded.
 - Research methods (molecular, culture-based, microscopy) are identified using curated keyword lists, with each abstract annotated for method presence and summary.
 - Geographic information is extracted using extensive keyword lists and regex for countries, continents, regions, and coordinates, with countries categorized as Global North/South.
@@ -133,33 +119,55 @@
 
 ## 2. Main Results
 
+
+### Absence of fungal endophytes?
+
+- Big finding: No examples of plant species that have no evidence of fungal endophytes
+- Massive differences in sampling intensity across plant taxa, plant parts, places in the world
+
+
 ### Literature Search and Screening
-- Number of abstracts screened: [N]
-- Number included: [N]
-- Number excluded: [N]
-- ![PRISMA Flow Diagram](plots/prisma_flow_diagram.png)
+- Number of abstracts screened: 9778 (will increase with new pull)
+- Number included (relevant, loosest labeling): 7851
+- Number excluded (irrelevant: reviews, misc other): 1602
 
 ### Geographic Distribution
 - Map of study locations and research concentration
-- ![Geographic Distribution](plots/global_research_intensity_heatmap.png)
+- ![Geographic Distribution](../../plots/global_research_intensity_heatmap.png)
 
 ### Temporal Trends
 - Publication volume and method adoption over time
-- ![Temporal Trends](plots/temporal_trends.png)
+- ![Temporal Trends](../../plots/publication_volume_over_time.png)
 
 ### Species and Taxonomic Diversity
 - Most studied plant families, genera, and species
 - Representation by phylum:
-  - ![Family Representation (Count)](plots/plant_family_representation_per_phylum_count.png)
-  - ![Family Representation (Percent)](plots/plant_family_representation_per_phylum_percent.png)
-  - ![Genus Representation (Count)](plots/plant_genus_representation_per_phylum_count.png)
-  - ![Genus Representation (Percent)](plots/plant_genus_representation_per_phylum_percent.png)
-  - ![Species Representation (Count)](plots/plant_species_representation_per_phylum_count.png)
-  - ![Species Representation (Percent)](plots/plant_species_representation_per_phylum_percent.png)
+  - ![Family Representation (Percent)](../../plots/plant_family_representation_per_phylum_percent.png)
+  - ![Genus Representation (Percent)](../../plots/plant_genus_representation_per_phylum_percent.png)
+  - ![Species Representation (Percent)](../../plots/plant_species_representation_per_phylum_percent.png)
 
 ### Research Methods
-- Frequency of molecular, culture-based, and microscopy methods
-- ![Research Methods Summary](plots/research_methods_summary.png)
+- Frequency of molecular, culture-based, and microscopy methods. **Could use input on making this better**. 
+- method_categories <- list(
+    molecular = c("pcr", "dna", "rna", "sequenc", "primer", "amplif", "gene", "genom", 
+                 "transcript", "clone", "phylogen", "molecular", "extraction", "isolat", 
+                 "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", 
+                 "rrna", "18s", "28s", "rdna", "barcode", "phylogeny"),
+    
+    culture_based = c("culture*", "isolat", "plate", "medium", "agar", "petri", "colony", 
+                     "incubat", "sterile", "aseptic", "axenic", 
+                     "ferment", "broth", "in vitro", "cultivation"),
+    
+    microscopy = c("microscop", "stain", "section", "histolog", "morpholog", "ultrastructur", 
+                  "sem", "tem", "scanning electron", "transmission electron", "light microscop", 
+                  "confocal", "fluorescen", "magnification", "micrograph", "optical")
+  )
+
+- ![Research Methods Summary](../../figures/methods_combined.png)
+
+### Plant Parts
+
+- ![Plant Parts](../../figures/plant_parts_frequency.png)
 
 ### Validation and Quality Assessment
 - Model accuracy metrics
@@ -176,17 +184,6 @@
 - Complete manual validation and error analysis
 - Draft methods and results sections
 - Plan for supplementary materials (species lists, code, data dictionary)
-
----
-
-## 4. Appendix
-
-- Links to scripts and data files
-  - `scripts/04_analysis/`
-  - `results/comprehensive_extraction_results.csv`
-  - `models/species.rds`
-  - `plots/`
-- Checklist of completed and pending tasks
 
 ---
 
