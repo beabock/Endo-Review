@@ -35,7 +35,7 @@ load_pbdb_extinct_species <- function(pbdb_file = "data/raw/pbdb_all.csv") {
   message("Loading PBDB data to identify extinct species...")
   
   # Read PBDB data, skipping metadata rows
-  pbdb_data <- read_csv(pbdb_file, skip = 15, show_col_types = FALSE) %>%
+  pbdb_data <- read_csv(pbdb_file, skip = 16, show_col_types = FALSE) %>%
     janitor::clean_names()
   
   # Extract extinct species names
@@ -45,7 +45,7 @@ load_pbdb_extinct_species <- function(pbdb_file = "data/raw/pbdb_all.csv") {
     unique() %>%
     na.omit()
   
-  message("Found ", length(extinct_species), " extinct species in PBDB dataset")
+  message("Found ", length(extinct_species), " extinct taxa in PBDB dataset")
   
   return(extinct_species)
 }
@@ -75,6 +75,100 @@ filter_extinct_species <- function(taxa_results, extinct_species = NULL) {
 plot_plant_diversity_per_phylum <- function(taxa_results, reference_species_df, 
                                            extinct_species = NULL, output_dir = "plots") {
   
+  # Function to plot percent and count of families represented/not represented per phylum
+  plot_taxon_representation_per_phylum <- function(taxa_results, reference_species_df, extinct_species = NULL, output_dir = "plots", level = "family") {
+    # Supported levels: "family", "genus", "species"
+    stopifnot(level %in% c("family", "genus", "species"))
+    taxa_results_clean <- filter_extinct_species(taxa_results, extinct_species)
+    reference_clean <- filter_extinct_species(reference_species_df, extinct_species)
+
+    # Select column for level
+    level_col <- switch(level,
+      family = "family",
+      genus = "genus",
+      species = "canonicalName"
+    )
+
+    # Focus on plant data only, filter for Presence only
+    plant_taxa <- taxa_results_clean %>%
+      filter(kingdom == "Plantae", !is.na(phylum), !is.na(.data[[level_col]]), predicted_label == "Presence") %>%
+      distinct(phylum, .data[[level_col]])
+
+    plant_reference <- reference_clean %>%
+      filter(kingdom == "Plantae", !is.na(phylum), !is.na(.data[[level_col]])) %>%
+      distinct(phylum, .data[[level_col]])
+
+    # Count taxa found and total per phylum
+    taxa_found <- plant_taxa %>%
+      group_by(phylum) %>%
+      summarise(n_found = n_distinct(.data[[level_col]]), .groups = "drop")
+
+    taxa_total <- plant_reference %>%
+      group_by(phylum) %>%
+      summarise(total = n_distinct(.data[[level_col]]), .groups = "drop")
+
+    # Merge and calculate not represented
+    taxon_rep <- taxa_total %>%
+      left_join(taxa_found, by = "phylum") %>%
+      mutate(n_found = replace_na(n_found, 0),
+             n_not_found = total - n_found)
+
+    # Reshape for stacked bar
+    taxon_rep_long <- taxon_rep %>%
+      select(phylum, n_found, n_not_found) %>%
+      pivot_longer(cols = c(n_found, n_not_found),
+                   names_to = "status", values_to = "count") %>%
+      mutate(status = recode(status,
+                             n_found = "Represented",
+                             n_not_found = "Not Represented"))
+
+    # Add percent for each phylum
+    taxon_rep_long <- taxon_rep_long %>%
+      group_by(phylum) %>%
+      mutate(percent = count / sum(count) * 100) %>%
+      ungroup()
+
+    # Plot actual counts with labels
+    count_plot <- ggplot(taxon_rep_long, aes(x = phylum, y = count, fill = status)) +
+      geom_col() +
+      geom_text(aes(label = count), position = position_stack(vjust = 0.5), size = 4) +
+      coord_flip() +
+      labs(
+        title = paste("Plant", stringr::str_to_title(level), "Representation per Phylum (Count)"),
+        x = "Phylum",
+        y = paste("Number of", stringr::str_to_title(level), "s"),
+        fill = "Status"
+      ) +
+      scale_fill_manual(values = c("Represented" = cus_pal[1], "Not Represented" = cus_pal[3])) +
+      theme_minimal()
+
+    save_plot(file.path(output_dir, paste0("plant_", level, "_representation_per_phylum_count.png")), count_plot)
+
+    # Plot percent with labels
+    percent_plot <- ggplot(taxon_rep_long, aes(x = phylum, y = percent, fill = status)) +
+      geom_col() +
+      geom_text(aes(label = sprintf("%.1f%%", percent)), position = position_stack(vjust = 0.5), size = 4) +
+      coord_flip() +
+      labs(
+        title = paste("Plant", stringr::str_to_title(level), "Representation per Phylum (Percent)"),
+        x = "Phylum",
+        y = paste("Percent of", stringr::str_to_title(level), "s"),
+        fill = "Status"
+      ) +
+      scale_fill_manual(values = c("Represented" = cus_pal[1], "Not Represented" = cus_pal[3])) +
+      theme_minimal()
+
+    save_plot(file.path(output_dir, paste0("plant_", level, "_representation_per_phylum_percent.png")), percent_plot)
+
+    # Save summary CSV
+    write_csv(taxon_rep, file.path(output_dir, paste0(level, "_representation_per_phylum_summary.csv")))
+
+    return(list(
+      count_plot = count_plot,
+      percent_plot = percent_plot,
+      summary = taxon_rep
+    ))
+  }
   # Filter out extinct species from both datasets
   taxa_results_clean <- filter_extinct_species(taxa_results, extinct_species)
   reference_clean <- filter_extinct_species(reference_species_df, extinct_species)
@@ -399,4 +493,8 @@ if (interactive()) {
   message('  pbdb_file = "data/raw/pbdb_all.csv",')
   message('  output_dir = "plots"')
   message(')')
+    message('To create family representation plots:')
+    message('plot_family_representation_per_phylum(')
+    message('  taxa_results, reference_species, extinct_species, output_dir = "plots"')
+    message(')')
 }

@@ -290,6 +290,47 @@ if (exists("equity_ratios")) {
   write_csv(equity_ratios, "results/north_south_equity_ratios.csv")
 }
 
+# === Plot: Global Research Intensity by Country (grouped by abstract id) ===
+cat("\nGenerating global research intensity heat map by country (grouped by abstract id)...\n")
+
+# Prepare country-level data for mapping, grouping by abstract id
+country_map_data <- country_studies %>%
+  group_by(country_clean, development_focus) %>%
+  summarise(unique_abstracts = n_distinct(id), .groups = "drop") %>%
+  group_by(country_clean) %>%
+  summarise(total_studies = sum(unique_abstracts), .groups = "drop") %>%
+  mutate(country_clean = tolower(country_clean))
+
+# Get world map data
+world_map <- map_data("world") %>%
+  mutate(region = tolower(region))
+
+# Merge map data with research intensity
+map_plot_data <- world_map %>%
+  left_join(country_map_data, by = c("region" = "country_clean"))
+
+# Plot heat map
+heatmap_plot <- ggplot(map_plot_data, aes(long, lat, group = group)) +
+  geom_polygon(aes(fill = total_studies), color = "gray70", size = 0.1) +
+  scale_fill_viridis(option = "C", na.value = "white", direction = -1, name = "Research Intensity (Unique Abstracts)") +
+  theme_minimal() +
+  labs(
+    title = "Global Intensity of Endophyte Research by Country",
+    subtitle = "Number of unique abstracts per country",
+    caption = "Data: Comprehensive Extraction Results"
+  ) +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "bottom"
+  )
+
+# Save plot
+heatmap_file <- "plots/global_research_intensity_heatmap.png"
+ggsave(heatmap_file, heatmap_plot, width = 12, height = 6, dpi = 300)
+cat("Heat map saved to:", heatmap_file, "\n")
+
 # Generate comprehensive geographic analysis report
 capture.output({
   cat("=== GEOGRAPHIC BIAS AND RESEARCH GAP ANALYSIS REPORT ===\n")

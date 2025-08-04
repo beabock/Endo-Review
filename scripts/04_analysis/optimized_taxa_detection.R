@@ -435,6 +435,7 @@ process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_key
   return(final_results)
 }
 
+
 # Test function to demonstrate synonym handling
 test_synonym_handling <- function() {
   # Load species data
@@ -562,4 +563,50 @@ test_synonym_handling <- function() {
 if (interactive()) {
   cat("Testing optimized taxa detection with synonym handling...\n")
   test_results <- test_synonym_handling()
+}
+
+if (interactive()) {
+  cat("\n=== Running Function Tests ===\n")
+  
+  # Minimal mock species data
+  mock_species <- tibble(
+    taxonID = c(1, 2),
+    canonicalName = c("Quercus robur", "Fagus sylvatica"),
+    taxonomicStatus = c("accepted", "accepted"),
+    acceptedNameUsageID = c(NA, NA),
+    kingdom = c("Plantae", "Plantae"),
+    phylum = c("Tracheophyta", "Tracheophyta"),
+    family = c("Fagaceae", "Fagaceae"),
+    genus = c("Quercus", "Fagus")
+  )
+  
+  # Test create_lookup_tables
+  lookup_tables <- create_lookup_tables(mock_species)
+  print(names(lookup_tables))
+  
+  # Test extract_candidate_names
+  candidates <- extract_candidate_names("Quercus robur and Fagus sylvatica are common trees.")
+  print(candidates)
+  
+  # Test batch_validate_names
+  validated <- batch_validate_names(candidates, lookup_tables)
+  print(validated)
+  
+  # Test process_taxonomic_matches
+  matches <- process_taxonomic_matches(validated, lookup_tables, "Quercus robur and Fagus sylvatica", 1, "Presence")
+  print(matches)
+  
+  # Test extract_plant_info
+  plant_parts_keywords <- c("leaf", "root")
+  plant_info <- extract_plant_info("Quercus robur leaf and Fagus sylvatica root", 1, "Presence", lookup_tables, plant_parts_keywords)
+  print(plant_info)
+  
+  # Test process_abstracts_parallel (with only one abstract for speed)
+  abstracts <- tibble(
+    abstract = c("Quercus robur leaf and Fagus sylvatica root"),
+    id = 1,
+    predicted_label = "Presence"
+  )
+  parallel_results <- process_abstracts_parallel(abstracts, lookup_tables, plant_parts_keywords, batch_size = 1, workers = 1)
+  print(parallel_results)
 }

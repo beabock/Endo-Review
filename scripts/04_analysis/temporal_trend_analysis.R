@@ -48,7 +48,7 @@ mutate(
     
     # Information completeness
     info_score = (
-      ifelse(!is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName)), 1, 0) +
+      ifelse(!is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName), 1, 0) +
       ifelse(!is.na(methods_summary), 1, 0) +
       ifelse(!is.na(plant_parts_detected), 1, 0) +
       ifelse(!is.na(geographic_summary), 1, 0)
@@ -63,7 +63,7 @@ mutate(
   )
 
 cat("Data prepared for years", min(temporal_data$publication_year), "to", max(temporal_data$publication_year), "\n")
-cat("Total abstracts in analysis:", nrow(temporal_data), "\n\n")
+cat("Total abstracts in analysis:", length(unique(temporal_data$id)), "\n\n")
 
 # 1. Publication volume trends
 cat("1. Analyzing publication volume trends...\n")
@@ -89,6 +89,26 @@ period_growth <- period_counts %>%
     growth_rate = (publications - lag(publications)) / lag(publications) * 100,
     cumulative_pubs = cumsum(publications)
   )
+
+# === Plot: Publications Over Time ===
+cat("\nGenerating publication volume plot over time...\n")
+
+pubs_plot <- ggplot(annual_counts, aes(x = publication_year, y = publications)) +
+  geom_col(fill = "#2c7bb6", alpha = 0.8) +
+  geom_line(color = "#d7191c", size = 1) +
+  geom_point(color = "#d7191c", size = 2) +
+  theme_minimal() +
+  labs(
+    title = "Endophyte Research Publications Over Time",
+    x = "Year",
+    y = "Number of Publications",
+    caption = "Data: Comprehensive Extraction Results"
+  ) +
+  scale_x_continuous(breaks = seq(min(annual_counts$publication_year), max(annual_counts$publication_year), by = 2)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
+
+ggsave("plots/publication_volume_over_time.png", pubs_plot, width = 10, height = 5, dpi = 300)
+cat("Publication volume plot saved to: plots/publication_volume_over_time.png\n")
 
 # 2. Research method evolution
 cat("\n2. Analyzing research method evolution...\n")
@@ -302,19 +322,19 @@ capture.output({
   cat("2. Assess quality vs quantity in publication growth\n")
   cat("3. Track methodological standardization efforts\n")
   cat("4. Monitor emerging research trends and gaps\n")
-}, file = "../../results/temporal_trends_report.txt")
+}, file = "results/temporal_trends_report.txt")
 
 cat("\nFiles created:\n")
-cat("✓ ../../results/temporal_trends_summary.csv\n")
-cat("✓ ../../results/annual_publication_counts.csv\n")
-cat("✓ ../../results/research_method_trends.csv\n")
-cat("✓ ../../results/geographic_research_trends.csv\n")
-cat("✓ ../../results/species_detection_trends.csv\n")
-cat("✓ ../../results/information_completeness_trends.csv\n")
+cat("✓ results/temporal_trends_summary.csv\n")
+cat("✓ results/annual_publication_counts.csv\n")
+cat("✓ results/research_method_trends.csv\n")
+cat("✓ results/geographic_research_trends.csv\n")
+cat("✓ results/species_detection_trends.csv\n")
+cat("✓ results/information_completeness_trends.csv\n")
 if (exists("kingdom_trends")) {
-  cat("✓ ../../results/kingdom_focus_trends.csv\n")
+  cat("✓ results/kingdom_focus_trends.csv\n")
 }
-cat("✓ ../../results/temporal_trends_report.txt\n")
+cat("✓ results/temporal_trends_report.txt\n")
 
 cat("\n=== TEMPORAL ANALYSIS COMPLETE ===\n")
 cat("Key insights:\n")
