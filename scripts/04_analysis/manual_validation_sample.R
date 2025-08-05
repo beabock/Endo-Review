@@ -130,18 +130,7 @@ validation_sample <- validation_sample %>%
     species_accuracy = "",  # Correct/Incorrect/Partial/NA
     notes = "",
     validation_id = paste0("VAL_", str_pad(row_number(), 3, pad = "0"))
-  ) %>%
-  # Select key fields for validation
-  select(
-    validation_id, id, title, abstract, authors, publication_year, source_title,
-    predicted_label, confidence, confidence_level,
-    canonicalName, kingdom, has_species,
-    methods_summary, plant_parts_detected, geographic_summary,
-    info_score, info_completeness, stratum,
-    # Validation fields
-    validator_name, validation_date, manual_label, manual_confidence,
-    species_accuracy, notes
-  )
+  ) 
 
 # Save validation sample
 write_csv(validation_sample, "results/validation_sample_for_manual_review.csv")

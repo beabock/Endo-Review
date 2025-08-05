@@ -35,12 +35,12 @@ detect_research_methods <- function(text) {
   # Define method categories and their keywords
   method_categories <- list(
     molecular = c("pcr", "dna", "rna", "sequenc", "primer", "amplif", "gene", "genom", 
-                 "transcript", "clone", "phylogen", "molecular", "extraction", "isolat", 
+                 "transcript", "clone", "phylogen", "molecular", "extraction", 
                  "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", 
                  "rrna", "18s", "28s", "rdna", "barcode", "phylogeny"),
     
     culture_based = c("culture*", "isolat", "plate", "medium", "agar", "petri", "colony", 
-                     "incubat", "sterile", "aseptic", "axenic", 
+                     "sterile", "aseptic", "axenic", 
                      "ferment", "broth", "in vitro", "cultivation"),
     
     microscopy = c("microscop", "stain", "section", "histolog", "morpholog", "ultrastructur", 

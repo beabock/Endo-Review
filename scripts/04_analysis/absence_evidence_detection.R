@@ -264,7 +264,8 @@ absence_temporal <- absence_analysis_results %>%
   group_by(id) %>%
   slice(1) %>%
   ungroup() %>%
-  filter(!is.na(publication_year), publication_year >= 1990) %>%
+  mutate(publication_year = as.integer(publication_year)) %>%
+  filter(!is.na(publication_year)) %>%
   mutate(
     decade = floor(publication_year / 10) * 10,
     five_year_period = floor(publication_year / 5) * 5
