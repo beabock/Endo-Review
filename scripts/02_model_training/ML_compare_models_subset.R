@@ -1,17 +1,11 @@
 #B. Bock
-#6/19/25
-#ML Approach: this is adapted from ML_bigger.R. 
-#This time, I want to subset my training dataset, and compare different ML approaches on them. See what works best then run those on bigger training datasets and run again.
+#Started 6/19/25
+#this is adapted from ML_bigger.R. 
+#Goal: take a bunch of abstracts related to fungal endophytes and 1) sort or relevance to my question (do all plants host fungi), and 2) sort them into presnece/absence of fungi in plants
 
-
-#7/23/25 Coming back to this since this seemed like the best approach. Adding in relevance filtering step.
-#As of 7/30/25, this is the best script to use for training models on the Endo Review project. Use this file!
+#As of 8/11/25, this is the best script to use for training models on the Endo Review project. Use this file!
 
 # Library loading ---------------------------------------------------------
-
-
-
-# Load necessary libraries
 
 library(tidyverse)
 library(tidytext)
@@ -42,13 +36,12 @@ set.seed(1998)
 
 labeled_abstracts <- read.csv("data/Training_labeled_abs_5.csv") %>%
   clean_names() %>%
- # filter(label %in% c("Presence", "Absence")) %>%
   mutate(id = row_number())%>%
   filter(label != "")%>%
   mutate(
     relevance = case_when(
-      label %in% c("Presence", "Absence", "Both") ~ "Relevant",
-      label %in% c("Review", "Other") ~ "Irrelevant",
+      label %in% c("Presence", "Absence", "Both") ~ "Relevant", #Both is when an abstract mentions both presence and absence of fungi in plants. We're lumping Both into Presence.
+      label %in% c("Review", "Other") ~ "Irrelevant", #We do not want Review papers or other unrelated abtracts.
       TRUE ~ NA_character_
     ),
     relevance = factor(relevance)
@@ -57,7 +50,7 @@ labeled_abstracts <- read.csv("data/Training_labeled_abs_5.csv") %>%
     presence_both_absence = case_when(
       label == "Presence" ~ "Presence",
       label == "Absence" ~ "Absence",
-      label == "Both" ~ "Presence",
+      label == "Both" ~ "Presence", #Both lumped into Presence
       TRUE ~ NA_character_
     ),
     presence_both_absence = factor(presence_both_absence, levels = c("Presence", "Absence"))
@@ -71,6 +64,17 @@ rows_to_remove <- labeled_abstracts %>%
     label == "Presence",
     is.na(authors) | authors == ""
   )
+  
+dups <- labeled_abstracts %>%
+  group_by(doi, abstract) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+nrow(rows_to_remove)
+nrow(dups)
+
+rows_to_remove <- bind_rows(rows_to_remove, dups)%>%
+  distinct(id, keep.all= T)
 
 labeled_abstracts <- labeled_abstracts %>%
   anti_join(rows_to_remove, by = "id") %>%
@@ -79,10 +83,10 @@ labeled_abstracts <- labeled_abstracts %>%
 # DTM creation and alignment
 dtm <- labeled_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  mutate(word = str_to_lower(word)) %>%
+  anti_join(stop_words, by = "word") %>% #Remove stop words
+  mutate(word = str_to_lower(word)) %>% #Make all words lowercase
   filter(!str_detect(word, "\\d")) %>%
-  count(id, word, sort = TRUE) %>%
+  count(id, word, sort = TRUE) %>% #just doing counts of words (unigrams)
   ungroup() %>%
   mutate(id = as.character(id)) %>%
   cast_dtm(document = id, term = word, value = n)
@@ -101,7 +105,7 @@ labeled_abstracts <- labeled_abstracts %>%
   arrange(match(id, rownames(dtm_matrix)))
 
 # Train-test split
-train_index <- createDataPartition(labeled_abstracts$relevance, p = 0.8, list = FALSE)
+train_index <- createDataPartition(labeled_abstracts$relevance, p = 0.8, list = FALSE) #.8 split training/testing
 train_data <- labeled_abstracts[train_index, ]
 test_data <- labeled_abstracts[-train_index, ]
 
@@ -118,20 +122,20 @@ train_df <- as.data.frame(as.matrix(train_matrix)) %>%
 test_df <- as.data.frame(as.matrix(test_matrix)) %>% 
   mutate(relevance = test_data$relevance)
 
-# Apply SMOTE for class balancing
+# Apply SMOTE (Synthetic Minority Over-sampling Technique) for class balancing (creates synthetic samples of the minority class)
 train_recipe <- recipe(relevance ~ ., data = train_df) %>%
   step_smote(relevance) %>%
-  prep()
-balanced_train <- juice(train_recipe)
+  prep() #Prepares the recipe (estimates parameters, creates synthetic samples)
+balanced_train <- juice(train_recipe) #Extracts the balanced training data
 
 # Train Control
 train_control <- trainControl(
-  method = "repeatedcv",
-  number = 5,
-  repeats = 3,
-  classProbs = TRUE,
-  summaryFunction = twoClassSummary,
-  savePredictions = "final"
+  method = "repeatedcv",      # Use repeated cross-validation for model training
+  number = 5,                 # 5 folds per cross-validation run
+  repeats = 3,                # Repeat the cross-validation 3 times for robustness
+  classProbs = TRUE,          # Calculate class probabilities (needed for ROC and thresholding)
+  summaryFunction = twoClassSummary, # Use summary metrics suitable for binary classification (ROC, Sensitivity, Specificity)
+  savePredictions = "final"   # Save the final predictions for later analysis
 )
 
 # Check class distribution
@@ -214,7 +218,7 @@ evaluation_table <- tibble(
 print("Model Performance (sorted by Relevant class recall):")
 print(evaluation_table)
 
-write.csv(evaluation_table, "evaluation_table_relevance.csv", row.names = FALSE)
+write.csv(evaluation_table, "results/evaluation_table_relevance.csv", row.names = FALSE)
 
 #91% on glmnet, pretty good. 
 
@@ -233,7 +237,41 @@ setdiff(colnames(best_model$trainingData), best_model$finalModel$xNames)
 
 saveRDS(best_model, file = paste0("models/best_model_relevance_", evaluation_table$model[1], ".rds"))
 
+# Reshape the evaluation table for plotting
+eval_long <- evaluation_table %>%
+  pivot_longer(cols = c(accuracy, sensitivity_relevant, specificity, f1_score),
+               names_to = "metric", values_to = "value")
 
+# Plot
+plt <- ggplot(eval_long, aes(x = model, y = value, fill = metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Model Performance Comparison",
+       y = "Score",
+       x = "Model") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal()
+
+# Save the plot
+ggsave("plots/relevance_performance_comparison.png", width = 8, height = 5, dpi = 300)
+
+cm <- confusion_matrices[[evaluation_table$model[1]]]$table
+
+# Convert to data frame for ggplot
+cm_df <- as.data.frame(cm)
+colnames(cm_df) <- c("Prediction", "Reference", "Freq")
+
+# Plot heatmap
+ggplot(cm_df, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = Freq), color = "black", size = 6) +
+  scale_fill_gradient(low = "#F0E442", high = "#009E73") +
+  labs(title = "Confusion Matrix Heatmap",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+
+# Save the plot
+ggsave("plots/relevance_confusion_matrix_heatmap.png", width = 5, height = 4, dpi = 300)
 
 # Presence/Absence Classification ====================================
 
@@ -545,6 +583,45 @@ ensemble_preds_weighted <- factor(ensemble_preds_weighted, levels = c("Presence"
 # Evaluate weighted ensemble
 ensemble_cm_weighted <- confusionMatrix(ensemble_preds_weighted, test_df$presence_both_absence, positive = "Presence")
 
+cm_weighted <- ensemble_cm_weighted$table
+cm_weighted_df <- as.data.frame(cm_weighted)
+colnames(cm_weighted_df) <- c("Prediction", "Reference", "Freq")
+
+# Plot heatmap for the weighted ensemble confusion matrix
+ggplot(cm_weighted_df, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = Freq), color = "black", size = 6) +
+  scale_fill_gradient(low = "#F0E442", high = "#009E73") +
+  labs(title = "Weighted Ensemble Confusion Matrix Heatmap",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+
+# Save the plot
+ggsave("plots/ensemble_pa_confusion_matrix_heatmap.png", width = 5, height = 4, dpi = 300)
+write.csv(cm_weighted_df, "results/evaluation_table_pa.csv", row.names = FALSE)
+
+ensemble_metrics <- tibble(
+  Metric = c("Accuracy", "Presence Recall", "Absence Recall", "F1 Score"),
+  Value = c(
+    ensemble_cm_weighted$overall["Accuracy"],
+    ensemble_cm_weighted$byClass["Sensitivity"],
+    ensemble_cm_weighted$byClass["Specificity"],
+    ensemble_cm_weighted$byClass["F1"]
+  )
+)
+
+# Plot the metrics for the weighted ensemble model
+ggplot(ensemble_metrics, aes(x = Metric, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  labs(title = "Weighted Ensemble Model Performance Metrics",
+       y = "Score",
+       x = "Metric") +
+  scale_fill_brewer(palette = "Set2") 
+
+# Save the plot
+ggsave("plots/pa_ensemble_weighted_performance_metrics.png", width = 7, height = 5, dpi = 300)
+
 cat("Weighted Ensemble Performance:\n")
 cat("Accuracy:", round(ensemble_cm_weighted$overall["Accuracy"], 3), "\n")
 cat("Presence Recall:", round(ensemble_cm_weighted$byClass["Sensitivity"], 3), "\n") 
@@ -676,7 +753,6 @@ ensemble_preds_optimized <- factor(ensemble_preds_optimized, levels = c("Presenc
 
 ensemble_cm_weighted <- confusionMatrix(ensemble_preds_weighted, test_df$presence_both_absence, positive = "Presence")
 
-write.csv(ensemble_cm_weighted, "evaluation_table_pa.csv", row.names = FALSE)
 
 cat("\n=== FINAL ENSEMBLE CONFIGURATION ===\n")
 cat("Using current config: SVM weight =", best_config$svm_pres, 
@@ -893,7 +969,7 @@ cat("\nEnsemble function test - matches manual calculation:", all(ensemble_test 
 # stop("Presence/Absence classification complete. Uncomment this line to continue.")
 # Whole dataset -----------------------------------------------------------
 
-
+#Clean it up , then split into a relevance set and a pa set
 
 colname_mapping <- c(
   "title" = "article_title",                # 'title' to 'article_title'
@@ -983,7 +1059,7 @@ full_abstracts <- read.csv("data/All_Abstracts.csv") %>%
   clean_names()
 
 
-# Apply your column name harmonization
+# Apply column name harmonization
 full_abstracts <- full_abstracts %>%
   rename_with(~ ifelse(. %in% names(colname_mapping), colname_mapping[.], .))
 
@@ -994,7 +1070,7 @@ full_abstracts <- full_abstracts[!full_abstracts$doi %in% filtered_dois, ]
 # Add unique ID column for tracking documents
 full_abstracts$id <- 1:nrow(full_abstracts)
 
-# Construct DTM (no make.names!)
+# Construct DTM. for relevance, only do unigrams.
 dtm <- full_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%
   anti_join(stop_words, by = "word") %>%
@@ -1012,9 +1088,6 @@ dtm_matrix <- as.matrix(dtm)
 
 colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
 
-# Continue safely
-
-# Check
 
 colnames(dtm_matrix) <- make.names(colnames(dtm_matrix)) #Santize
 rownames(dtm_matrix) <- dtm$dimnames$Docs  # these are the character ids
@@ -1211,3 +1284,10 @@ abstracts_with_rel %>%
 write.csv(abstracts_with_rel, "relevance_pa_preds_all_abstracts.csv", row.names = FALSE)
 
 #Go with strict and manually review uncertain and absence...
+
+ds <- read.csv("results/predictions/relevant_abstracts_with_pa_predictions.csv")%>%
+  filter(final_classification == "Absence") %>%
+  relocate(final_classification)
+
+
+#write.csv(ds, "results/predictions/absences_to_review.csv", row.names = FALSE)

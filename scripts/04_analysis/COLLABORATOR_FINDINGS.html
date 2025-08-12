@@ -25,15 +25,40 @@
       <div class="crossnote markdown-preview  ">
       
 <h1 id="endophyte-systematic-review-summary-of-findings">Endophyte Systematic Review: Summary of Findings </h1>
+<h2 id="background">Background: </h2>
+<ul>
+<li>People often make the statement that all plants host endophytes</li>
+<li>This statement is either uncited or cites a source that does not find this</li>
+<li>Cited sources are often papers that find fungal endophytes in some plants</li>
+</ul>
+<h2 id="question">Question: </h2>
+<ul>
+<li>Is it true that fungal endophytes are present in all plant species?</li>
+<li>Approach:
+<ul>
+<li>Download all abstracts from WoS, Scopus (and maybe also PubMed) about fungal endophytes in plants.</li>
+<li>Train a model to sort between Relevant and Irrelevant abstracts</li>
+<li>Train a model to sort between Presence (fungal endophytes found) and Absence (no fungal endophytes found)</li>
+<li>Challenge: There are very few (&lt;10) papers that do not find fungal endophytes in plants</li>
+<li>Survey the plant lineages that do have evidence of fungal endophytes</li>
+</ul>
+</li>
+</ul>
 <h2 id="1-methods">1. Methods </h2>
 <h3 id="data-collection">Data Collection </h3>
 <ul>
-<li>Literature search conducted (11/18/24)</li>
-<li>Search terms: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungi" OR "endophytic fungus") AND plant</li>
-<li>Databases: Web of Science and Scopus</li>
-</ul>
-<p>-Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that. With the new search, I'm trying to capture historic names of endophytes and other terms for endophytes, as well as ways plants might be described in an abstract without saying plant. <strong>Open to suggestions on improving this search</strong></p>
-<ul>
+<li>
+<p>Literature search conducted (11/18/24)</p>
+</li>
+<li>
+<p>Search terms: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungi" OR "endophytic fungus") AND plant</p>
+</li>
+<li>
+<p>Databases: Web of Science and Scopus</p>
+</li>
+<li>
+<p>Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that. With the new search, I'm trying to capture historic names of endophytes and other terms for endophytes, as well as ways plants might be described in an abstract without saying plant. <strong>Open to suggestions on improving this search</strong></p>
+</li>
 <li>
 <p>Search terms:  (<br>
 "fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR<br>
@@ -112,6 +137,8 @@ cyanobacteria OR cyanobiont* OR photobiont* OR lichen*<br>
 </ul>
 </li>
 </ul>
+<p><img src="../../plots/relevance_confusion_matrix_heatmap.png" alt="Relevance CM"><br>
+<img src="../../plots/relevance_performance_comparison.png" alt="Relevance Performance"></p>
 <p><strong>2. Presence/Absence Classification</strong></p>
 <ul>
 <li>Models: SVM (Linear) and GLMNet, with ensemble approaches.</li>
@@ -135,6 +162,8 @@ cyanobacteria OR cyanobiont* OR photobiont* OR lichen*<br>
 </ul>
 </li>
 </ul>
+<p><img src="../../plots/ensemble_pa_confusion_matrix_heatmap.png" alt="PA CM"><br>
+<img src="../../plots/pa_ensemble_weighted_performance_metrics.png" alt="PA Performance"></p>
 <p><strong>3. Summary of Output Files</strong></p>
 <ul>
 <li>Model RDS files: Saved in <code>models/</code> for reproducibility and future application.</li>

@@ -1,5 +1,21 @@
 # Endophyte Systematic Review: Summary of Findings
 
+## Background:
+
+- People often make the statement that all plants host endophytes
+- This statement is either uncited or cites a source that does not find this
+- Cited sources are often papers that find fungal endophytes in some plants
+
+## Question:
+
+- Is it true that fungal endophytes are present in all plant species?
+- Approach: 
+  - Download all abstracts from WoS, Scopus (and maybe also PubMed) about fungal endophytes in plants. 
+  - Train a model to sort between Relevant and Irrelevant abstracts
+  - Train a model to sort between Presence (fungal endophytes found) and Absence (no fungal endophytes found)
+  - Challenge: There are very few (<10) papers that do not find fungal endophytes in plants
+  - Survey the plant lineages that do have evidence of fungal endophytes
+
 ## 1. Methods
 
 ### Data Collection
@@ -7,22 +23,32 @@
 -  Search terms: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungi" OR "endophytic fungus") AND plant
 - Databases: Web of Science and Scopus
 
--Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that. With the new search, I'm trying to capture historic names of endophytes and other terms for endophytes, as well as ways plants might be described in an abstract without saying plant. **Open to suggestions on improving this search**
+- Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that. With the new search, I'm trying to capture historic names of endophytes and other terms for endophytes, as well as ways plants might be described in an abstract without saying plant. **Open to suggestions on improving this search**
+
 - Search terms:  (
-    "fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR 
-    "latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR 
-    "internal fungi" OR "resident fungi" OR "seed-borne fungi" OR "seed-transmitted fungi" OR 
-    "dark septate endophyte" OR "dark septate fungi" OR "DSE fungi"
+  -- Endophyte block --
+  
+  (endophyte* AND (fungus OR fungi OR fungal OR mycota)) OR "latent fung*" OR "systemic fung" OR "internal fung*" OR "resident fung*" OR "fungal endophyte*" OR "endophytic fung*" OR "dark septate endophyte*" OR "DSE" OR "dark septate fung*" OR "seed-borne fung*" OR "seed-transmitted fung*"
   )
+
   AND
   (
-    plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR 
-    pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR 
-    crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR 
-    stem* OR twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR 
-    "red alga*" OR "brown alga*" OR hydrophyte* OR kelp OR seaweed* OR seagrass* OR 
-    cyanobacteria OR cyanobiont* OR photobiont* OR lichen*
+-- CONCEPT B: Host (Plantae only) --
+  plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome* OR thallus OR frond* OR hydrophyte* OR seagrass* OR algae OR "green alga*" OR "red alga*"
   )
+
+optional mycorrhizae block: 
+  OR
+
+  -- Mycorrhizal block --
+  ("mycorrhizal fungus" OR "mycorrhizal fungi" OR "mycorrhiza" OR "mycorrhizae" OR "mycorrhizas" OR 
+   "arbuscular mycorrhiza*" OR "AM fungi" OR "ectomycorrhiza*" OR "EM fungi" OR 
+   "ericoid mycorrhiza*" OR "orchid mycorrhiza*" OR "arbutoid mycorrhiza*" OR "monotropoid mycorrhiza*" OR 
+   "endomycorrhiza*" OR "vesicular arbuscular mycorrhiza*" OR "VAM fungi" OR 
+   "VA mycorrhiza*" OR "ectendomycorrhiza*" OR "ectendomycorrhizal fungi" OR "ECM fungi" OR "OMF fungi")
+
+
+
 
 - Databases: Web of Science, Scopus, and PubMed
 - Scripts: `Combo_abstracts.R` and `Combo_abstracts_pull2.R`
@@ -57,6 +83,9 @@
      - `relevance_preds.csv`: All abstracts with predicted relevance probabilities and labels.
      - `irrelevant_uncertain_abstracts.csv`: Abstracts labeled as "Irrelevant" or "Uncertain" (for manual review).
 
+![Relevance CM](../../plots/relevance_confusion_matrix_heatmap.png)
+![Relevance Performance](../../plots/relevance_performance_comparison.png)
+
 **2. Presence/Absence Classification**
    - Models: SVM (Linear) and GLMNet, with ensemble approaches.
    - Training: Models trained to classify "Presence" vs "Absence" of fungal endophytes, using only abstracts labeled as "Relevant".
@@ -72,6 +101,9 @@
      - `relevance_pa_preds_all_abstracts.csv`: Relevant abstracts with predicted presence/absence probabilities and labels.
      - Model files: `models/best_model_presence_glmnet_ensemble.rds`, `models/best_model_presence_svmLinear_ensemble.rds`
      - Ensemble prediction functions saved for future use.
+
+![PA CM](../../plots/ensemble_pa_confusion_matrix_heatmap.png)
+![PA Performance](../../plots/pa_ensemble_weighted_performance_metrics.png)
 
 **3. Summary of Output Files**
    - Model RDS files: Saved in `models/` for reproducibility and future application.
