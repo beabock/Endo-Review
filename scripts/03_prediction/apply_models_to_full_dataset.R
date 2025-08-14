@@ -12,6 +12,8 @@
 # 4. Apply presence/absence classification (weighted ensemble: glmnet + svmLinear)
 # 5. Save results with multiple threshold options
 
+setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+
 # Library loading ---------------------------------------------------------
 
 library(tidyverse)
@@ -161,7 +163,7 @@ cat("Step 1: Loading and preparing full dataset...\n")
 tic("Data loading and preparation")
 
 # Load full dataset
-full_abstracts <- read.csv("data/All_Abstracts.csv") %>%
+full_abstracts <- read.csv("data/processed/All_abstracts_deduped.csv") %>%
   clean_names()
 
 cat("  Loaded", nrow(full_abstracts), "abstracts from full dataset\n")
@@ -171,7 +173,7 @@ full_abstracts <- full_abstracts %>%
   rename_with(~ ifelse(. %in% names(colname_mapping), colname_mapping[.], .))
 
 # Exclude training data to avoid predicting on labeled abstracts
-labeled_abstracts <- read.csv("data/Training_labeled_abs_5.csv") %>%
+labeled_abstracts <- read.csv("data/raw/Training_labeled_abs_6.csv") %>%
   clean_names()
 
 filtered_dois <- labeled_abstracts$doi[!is.na(labeled_abstracts$doi) & labeled_abstracts$doi != ""]
@@ -191,31 +193,78 @@ toc()
 cat("\nStep 2: Relevance Classification...\n")
 tic("Relevance classification")
 
-# Create DTM for relevance classification
-cat("  Creating document-term matrix...\n")
-dtm <- full_abstracts %>%
-  unnest_tokens(word, abstract, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  mutate(word = str_to_lower(word)) %>%
-  filter(!str_detect(word, "\\d")) %>%
-  count(id, word, sort = TRUE) %>%
-  ungroup() %>%
-  mutate(id = as.character(id)) %>%
-  cast_dtm(document = id, term = word, value = n)
+# Load trained relevance model first to get vocabulary
+cat("  Loading trained relevance model...\n")
+rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
+trained_vocab <- rel_model$finalModel$xNames
+cat("  Training vocabulary size:", length(trained_vocab), "terms\n")
 
-# Convert to matrix and sanitize column names
-dtm_matrix <- as.matrix(dtm)
-colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
-rownames(dtm_matrix) <- dtm$dimnames$Docs
+# Process in batches to manage memory
+batch_size <- 2000  # Adjust based on available RAM
+n_batches <- ceiling(nrow(full_abstracts) / batch_size)
+cat("  Processing", nrow(full_abstracts), "abstracts in", n_batches, "batches\n")
 
-# Optimize: Keep as matrix until needed, convert to sparse-friendly data frame
-cat("  Converting DTM to data frame (this may take a moment for large datasets)...\n")
-dtm_df <- as.data.frame(as.matrix(dtm_matrix))  # Explicit conversion for clarity
-stopifnot(!any(duplicated(colnames(dtm_df))))
+all_predictions <- list()
 
-cat("  DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
+for(i in 1:n_batches) {
+  cat("  Processing batch", i, "of", n_batches, "...\n")
+  
+  # Get batch indices
+  start_idx <- (i-1) * batch_size + 1
+  end_idx <- min(i * batch_size, nrow(full_abstracts))
+  
+  # Extract batch data
+  batch_data <- full_abstracts[start_idx:end_idx, ]
+  
+  # Create DTM for this batch - filter to training vocabulary early
+  dtm_batch <- batch_data %>%
+    unnest_tokens(word, abstract, token = "words") %>%
+    anti_join(stop_words, by = "word") %>%
+    mutate(word = str_to_lower(word)) %>%
+    filter(!str_detect(word, "\\d")) %>%
+    # Only keep words that were in training vocabulary to reduce memory
+    filter(word %in% trained_vocab) %>%
+    count(id, word, sort = TRUE) %>%
+    ungroup() %>%
+    mutate(id = as.character(id)) %>%
+    cast_dtm(document = id, term = word, value = n)
+  
+  # Convert to matrix and sanitize
+  dtm_matrix_batch <- as.matrix(dtm_batch)
+  colnames(dtm_matrix_batch) <- make.names(colnames(dtm_matrix_batch), unique = TRUE)
+  dtm_df_batch <- as.data.frame(dtm_matrix_batch)
+  
+  # Add missing columns (words in training but not in this batch)
+  missing_words <- setdiff(trained_vocab, colnames(dtm_df_batch))
+  if (length(missing_words) > 0) {
+    zero_matrix <- matrix(0, nrow = nrow(dtm_df_batch), ncol = length(missing_words),
+                          dimnames = list(rownames(dtm_df_batch), missing_words))
+    dtm_df_batch <- cbind(dtm_df_batch, zero_matrix)
+  }
+  
+  # Reorder columns to match training
+  dtm_df_batch <- dtm_df_batch[, trained_vocab, drop = FALSE]
+  
+  # Predict for this batch
+  batch_probs <- predict(rel_model, newdata = dtm_df_batch, type = "prob")
+  batch_results <- batch_data %>%
+    bind_cols(batch_probs)
+  
+  # Store results
+  all_predictions[[i]] <- batch_results
+  
+  # Clean up memory
+  rm(dtm_batch, dtm_matrix_batch, dtm_df_batch, batch_probs, batch_results)
+  gc()
+}
 
-# Load trained relevance model
+# Combine all batch results
+cat("  Combining batch results...\n")
+full_abstracts <- bind_rows(all_predictions)
+rm(all_predictions)
+gc()
+
+cat("  Relevance classification complete for", nrow(full_abstracts), "abstracts\n")
 cat("  Loading trained relevance model...\n")
 rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
 trained_vocab <- rel_model$finalModel$xNames
@@ -274,6 +323,8 @@ abstracts_for_pa <- full_abstracts %>%
 
 cat("  Selected", nrow(abstracts_for_pa), "relevant abstracts for P/A classification\n")
 
+write.csv(full_abstracts, "data/processed/full_abstracts_for_pa.csv", row.names = FALSE)
+
 toc()
 
 # STEP 2: Presence/Absence Classification ---------------------------------
@@ -281,51 +332,143 @@ toc()
 cat("\nStep 3: Presence/Absence Classification...\n")
 tic("Presence/Absence classification")
 
-# Create DTM for P/A classification (includes unigrams + bigrams from training)
-cat("  Creating P/A DTM with unigrams and bigrams...\n")
+# STEP 2: Presence/Absence Classification ---------------------------------
 
-# Unigrams
-dtm_unigrams <- abstracts_for_pa %>%
-  unnest_tokens(word, abstract, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  mutate(word = str_to_lower(word)) %>%
-  filter(!str_detect(word, "\\d")) %>%
-  group_by(word) %>%
-  filter(n() >= 2) %>%  # Keep words appearing in at least 2 documents
-  ungroup() %>%
-  count(id, word, sort = TRUE) %>%
-  ungroup() %>%
-  mutate(id = as.character(id))
+cat("\nStep 3: Presence/Absence Classification...\n")
+tic("Presence/Absence classification")
 
-# Bigrams
-dtm_bigrams <- abstracts_for_pa %>%
-  unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
-  filter(!is.na(bigram)) %>%
-  separate(bigram, c("word1", "word2"), sep = " ") %>%
-  filter(!word1 %in% stop_words$word,
-         !word2 %in% stop_words$word,
-         !str_detect(word1, "\\d"),
-         !str_detect(word2, "\\d")) %>%
-  unite(bigram, word1, word2, sep = "_") %>%
-  mutate(bigram = str_to_lower(bigram)) %>%
-  group_by(bigram) %>%
-  filter(n() >= 2) %>%  # Keep bigrams appearing in at least 2 documents
-  ungroup() %>%
-  count(id, bigram, sort = TRUE) %>%
-  ungroup() %>%
-  mutate(id = as.character(id)) %>%
-  rename(word = bigram)
+# Load P/A models first to get vocabulary
+cat("  Loading P/A models...\n")
+glmnet_model <- readRDS("models/best_model_presence_glmnet_ensemble.rds")
+svm_model <- readRDS("models/best_model_presence_svmLinear_ensemble.rds")
 
-# Combine unigrams and bigrams
-dtm_combined <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
-  cast_dtm(document = id, term = word, value = n)
+# Get training vocabulary from one of the models
+pa_trained_vocab <- setdiff(colnames(svm_model$trainingData), ".outcome")
+cat("  P/A training vocabulary size:", length(pa_trained_vocab), "terms\n")
 
-# Convert to matrix and sanitize
-dtm_matrix <- as.matrix(dtm_combined)
-colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
-rownames(dtm_matrix) <- dtm_combined$dimnames$Docs
-dtm_df <- as.data.frame(dtm_matrix)
-stopifnot(!any(duplicated(colnames(dtm_df))))
+# Process P/A classification in batches
+pa_batch_size <- 1000  # Smaller batches for P/A due to bigrams
+n_pa_batches <- ceiling(nrow(abstracts_for_pa) / pa_batch_size)
+cat("  Processing", nrow(abstracts_for_pa), "relevant abstracts in", n_pa_batches, "batches\n")
+
+all_pa_predictions <- list()
+
+for(i in 1:n_pa_batches) {
+  cat("  Processing P/A batch", i, "of", n_pa_batches, "...\n")
+  
+  # Get batch indices
+  start_idx <- (i-1) * pa_batch_size + 1
+  end_idx <- min(i * pa_batch_size, nrow(abstracts_for_pa))
+  
+  # Extract batch data
+  batch_data <- abstracts_for_pa[start_idx:end_idx, ]
+  
+  # Create unigrams for this batch
+  dtm_unigrams_batch <- batch_data %>%
+    unnest_tokens(word, abstract, token = "words") %>%
+    anti_join(stop_words, by = "word") %>%
+    mutate(word = str_to_lower(word)) %>%
+    filter(!str_detect(word, "\\d")) %>%
+    # Filter to training vocabulary early
+    filter(word %in% pa_trained_vocab) %>%
+    count(id, word, sort = TRUE) %>%
+    ungroup() %>%
+    mutate(id = as.character(id))
+  
+  # Create bigrams for this batch
+  dtm_bigrams_batch <- batch_data %>%
+    unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
+    filter(!is.na(bigram)) %>%
+    separate(bigram, c("word1", "word2"), sep = " ") %>%
+    filter(!word1 %in% stop_words$word,
+           !word2 %in% stop_words$word,
+           !str_detect(word1, "\\d"),
+           !str_detect(word2, "\\d")) %>%
+    unite(bigram, word1, word2, sep = "_") %>%
+    mutate(bigram = str_to_lower(bigram)) %>%
+    # Filter to training vocabulary early
+    filter(bigram %in% pa_trained_vocab) %>%
+    count(id, bigram, sort = TRUE) %>%
+    ungroup() %>%
+    mutate(id = as.character(id)) %>%
+    rename(word = bigram)
+  
+  # Combine and create DTM
+  if(nrow(dtm_unigrams_batch) > 0 || nrow(dtm_bigrams_batch) > 0) {
+    dtm_combined_batch <- bind_rows(dtm_unigrams_batch, dtm_bigrams_batch) %>%
+      cast_dtm(document = id, term = word, value = n)
+    
+    # Convert to matrix and sanitize
+    dtm_matrix_batch <- as.matrix(dtm_combined_batch)
+    colnames(dtm_matrix_batch) <- make.names(colnames(dtm_matrix_batch), unique = TRUE)
+    dtm_df_batch <- as.data.frame(dtm_matrix_batch)
+    
+    # Add missing columns
+    missing_words <- setdiff(pa_trained_vocab, colnames(dtm_df_batch))
+    if (length(missing_words) > 0) {
+      zero_matrix <- matrix(0, nrow = nrow(dtm_df_batch), ncol = length(missing_words),
+                            dimnames = list(rownames(dtm_df_batch), missing_words))
+      dtm_df_batch <- cbind(dtm_df_batch, zero_matrix)
+    }
+    
+    # Reorder columns to match training
+    dtm_df_batch <- dtm_df_batch[, pa_trained_vocab, drop = FALSE]
+    
+    # Predict using ensemble
+    glmnet_probs <- predict(glmnet_model, newdata = dtm_df_batch, type = "prob")
+    svm_probs <- predict(svm_model, newdata = dtm_df_batch, type = "prob")
+    
+    # Apply ensemble weights (matching training configuration)
+    svm_weight_presence <- 0.6
+    glm_weight_absence <- 0.8
+    
+    ensemble_presence_prob <- (svm_probs$Presence * svm_weight_presence + 
+                              glmnet_probs$Presence * (1 - svm_weight_presence))
+    ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_absence + 
+                             svm_probs$Absence * (1 - glm_weight_absence))
+    
+    # Make ensemble predictions
+    ensemble_preds <- ifelse(ensemble_presence_prob > ensemble_absence_prob, "Presence", "Absence")
+    ensemble_preds <- factor(ensemble_preds, levels = c("Presence", "Absence"))
+    
+    # Combine results
+    batch_results <- batch_data %>%
+      bind_cols(
+        Presence = svm_probs$Presence,
+        Absence = svm_probs$Absence,
+        ensemble_presence_prob = ensemble_presence_prob,
+        ensemble_absence_prob = ensemble_absence_prob,
+        ensemble_prediction = ensemble_preds
+      )
+  } else {
+    # Handle empty batch
+    batch_results <- batch_data %>%
+      mutate(
+        Presence = 0.5,
+        Absence = 0.5,
+        ensemble_presence_prob = 0.5,
+        ensemble_absence_prob = 0.5,
+        ensemble_prediction = factor("Presence", levels = c("Presence", "Absence"))
+      )
+  }
+  
+  # Store results
+  all_pa_predictions[[i]] <- batch_results
+  
+  # Clean up memory
+  rm(dtm_unigrams_batch, dtm_bigrams_batch, dtm_df_batch)
+  if(exists("dtm_combined_batch")) rm(dtm_combined_batch, dtm_matrix_batch)
+  if(exists("glmnet_probs")) rm(glmnet_probs, svm_probs)
+  gc()
+}
+
+# Combine all P/A batch results
+cat("  Combining P/A batch results...\n")
+abstracts_for_pa <- bind_rows(all_pa_predictions)
+rm(all_pa_predictions)
+gc()
+
+cat("  P/A classification complete for", nrow(abstracts_for_pa), "abstracts\n")
 
 cat("  P/A DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
 

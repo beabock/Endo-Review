@@ -1070,14 +1070,14 @@ full_abstracts <- full_abstracts[!full_abstracts$doi %in% filtered_dois, ]
 # Add unique ID column for tracking documents
 full_abstracts$id <- 1:nrow(full_abstracts)
 
-# Construct DTM. for relevance, only do unigrams.
+# Construct DTM - filter to training vocabulary early to save memory
 dtm <- full_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%
   anti_join(stop_words, by = "word") %>%
   mutate(word = str_to_lower(word)) %>%
   filter(!str_detect(word, "\\d")) %>%
- # mutate(word = str_replace_all(word, "'s\\b", ""))  %>% # Remove possessives
- # filter(!str_detect(word, "'")) %>%  # Remove any word containing an apostrophe
+  # Only keep words that were in training vocabulary to reduce memory
+  filter(word %in% trained_vocab) %>%
   count(id, word, sort = TRUE) %>%
   ungroup() %>%
   mutate(id = as.character(id)) %>%
