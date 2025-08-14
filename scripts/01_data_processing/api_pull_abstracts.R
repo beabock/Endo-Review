@@ -2,6 +2,9 @@
 
 # ==========================================
 # R Script: Pull abstracts from PubMed, Scopus, and Web of Science
+#BB
+#8-13-25
+#PubMed works great, WoS and Scopus are bad. Will need to do those manually from their websites. I requested an API key from WoS and they said no :(
 # ==========================================
 
 # Load required libraries
@@ -115,7 +118,7 @@ pubmed_df <- map_dfr(year_ranges, ~fetch_parse_pubmed(.x[1], .x[2]))
 # 5. Inspect and save
 # -----------------------
 View(pubmed_df[1:30,])
-write.csv(pubmed_df, "data/raw/pubmed_pull_8-23-25.csv", row.names = FALSE)
+write.csv(pubmed_df, "data/raw/pubmed_pull_8-14-25.csv", row.names = FALSE)
 # -----------------------
 # 3. Scopus
 # -----------------------
