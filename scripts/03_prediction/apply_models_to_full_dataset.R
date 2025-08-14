@@ -265,29 +265,6 @@ rm(all_predictions)
 gc()
 
 cat("  Relevance classification complete for", nrow(full_abstracts), "abstracts\n")
-cat("  Loading trained relevance model...\n")
-rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
-trained_vocab <- rel_model$finalModel$xNames
-
-# Align features with training vocabulary
-missing_words <- setdiff(trained_vocab, colnames(dtm_df))
-if (length(missing_words) > 0) {
-  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
-                        dimnames = list(rownames(dtm_df), missing_words))
-  dtm_df <- cbind(dtm_df, zero_matrix)
-}
-
-# Remove extra columns and reorder to match training
-dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
-dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
-
-cat("  Feature alignment complete:", ncol(dtm_df), "features\n")
-
-# Predict relevance
-cat("  Predicting relevance...\n")
-probs <- predict(rel_model, newdata = dtm_df, type = "prob")
-full_abstracts <- full_abstracts %>%
-  bind_cols(probs)
 
 # Apply relevance thresholds
 relevance_thresholds <- list(
@@ -470,64 +447,7 @@ gc()
 
 cat("  P/A classification complete for", nrow(abstracts_for_pa), "abstracts\n")
 
-cat("  P/A DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
-
-# Load trained P/A models
-cat("  Loading trained P/A models...\n")
-glmnet_model <- readRDS("models/best_model_presence_glmnet_ensemble.rds")
-svm_model <- readRDS("models/best_model_presence_svmLinear_ensemble.rds")
-
-# Get training vocabulary from SVM model (more comprehensive)
-trained_vocab_pa <- setdiff(colnames(svm_model$trainingData), ".outcome")
-
-# Align features with training vocabulary
-missing_words <- setdiff(trained_vocab_pa, colnames(dtm_df))
-if (length(missing_words) > 0) {
-  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
-                        dimnames = list(rownames(dtm_df), missing_words))
-  dtm_df <- cbind(dtm_df, zero_matrix)
-}
-
-# Remove extra columns and reorder to match training
-dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab_pa]
-dtm_df <- dtm_df[, trained_vocab_pa, drop = FALSE]
-
-cat("  P/A feature alignment complete:", ncol(dtm_df), "features\n")
-
-# Apply ensemble prediction methods
-cat("  Applying weighted ensemble predictions...\n")
-
-# Method 1: Standard weighted ensemble (best overall performance)
-weighted_preds <- ensemble_predict_weighted(glmnet_model, svm_model, dtm_df)
-
-# Method 2: Threshold-optimized ensemble
-threshold_preds <- ensemble_predict_threshold_optimized(glmnet_model, svm_model, dtm_df, threshold = 0.55)
-
-# Get individual model predictions for comparison
-glmnet_preds <- predict(glmnet_model, newdata = dtm_df)
-svm_preds <- predict(svm_model, newdata = dtm_df)
-
-# Get probabilities for all models
-glmnet_probs <- predict(glmnet_model, newdata = dtm_df, type = "prob")
-svm_probs <- predict(svm_model, newdata = dtm_df, type = "prob")
-
-# Add all predictions to the dataset
-abstracts_for_pa <- abstracts_for_pa %>%
-  mutate(
-    # Individual model predictions
-    glmnet_pred = as.character(glmnet_preds),
-    svm_pred = as.character(svm_preds),
-    # Ensemble predictions
-    weighted_ensemble = as.character(weighted_preds),
-    threshold_ensemble = as.character(threshold_preds),
-    # Probabilities
-    glmnet_prob_presence = glmnet_probs$Presence,
-    glmnet_prob_absence = glmnet_probs$Absence,
-    svm_prob_presence = svm_probs$Presence,
-    svm_prob_absence = svm_probs$Absence
-  )
-
-# Apply P/A thresholds using the weighted ensemble as base
+# Apply P/A thresholds using the ensemble probabilities from batch processing
 pa_thresholds <- list(
   loose = 0.5,       # more willing to classify
   medium = 0.6,      # balanced
@@ -540,15 +460,15 @@ for (thresh_name in names(pa_thresholds)) {
   col_name <- paste0("pa_", thresh_name)
   
   abstracts_for_pa[[col_name]] <- case_when(
-    abstracts_for_pa$glmnet_prob_presence >= thresh_val ~ "Presence",
-    abstracts_for_pa$glmnet_prob_absence >= thresh_val ~ "Absence",
+    abstracts_for_pa$ensemble_presence_prob >= thresh_val ~ "Presence",
+    abstracts_for_pa$ensemble_absence_prob >= thresh_val ~ "Absence",
     TRUE ~ "Uncertain"
   )
 }
 
 # Report P/A classification results
 pa_summary <- abstracts_for_pa %>%
-  select(weighted_ensemble, threshold_ensemble, pa_loose, pa_medium, pa_strict, pa_super_strict) %>%
+  select(ensemble_prediction, pa_loose, pa_medium, pa_strict, pa_super_strict) %>%
   pivot_longer(everything(), names_to = "method", values_to = "label") %>%
   count(method, label) %>%
   pivot_wider(names_from = label, values_from = n, values_fill = 0)
@@ -567,20 +487,18 @@ tic("Saving results")
 final_results <- full_abstracts %>%
   left_join(
     abstracts_for_pa %>% 
-      select(id, glmnet_pred, svm_pred, weighted_ensemble, threshold_ensemble,
-             glmnet_prob_presence, glmnet_prob_absence, 
-             svm_prob_presence, svm_prob_absence,
+      select(id, ensemble_prediction, ensemble_presence_prob, ensemble_absence_prob,
              pa_loose, pa_medium, pa_strict, pa_super_strict),
     by = "id"
   ) %>%
   # Add final classification combining relevance and P/A
   mutate(
-    # Final classification using weighted ensemble
+    # Final classification using ensemble prediction
     final_classification = case_when(
       relevance_loose == "Irrelevant" ~ "Irrelevant",
       relevance_loose == "Uncertain" ~ "Uncertain_Relevance",
-      relevance_loose == "Relevant" & !is.na(weighted_ensemble) ~ weighted_ensemble,
-      relevance_loose == "Relevant" & is.na(weighted_ensemble) ~ "Uncertain_PA",
+      relevance_loose == "Relevant" & !is.na(ensemble_prediction) ~ as.character(ensemble_prediction),
+      relevance_loose == "Relevant" & is.na(ensemble_prediction) ~ "Uncertain_PA",
       TRUE ~ "Uncertain"
     ),
     # Conservative classification using strict thresholds
@@ -615,18 +533,15 @@ relevant_classified <- final_results %>%
   select(id, article_title, abstract, authors, source_title, publication_year, doi,
          # Relevance info
          Relevant, relevance_loose,
-         # Individual model predictions
-         glmnet_pred, svm_pred,
-         # Ensemble predictions  
-         weighted_ensemble, threshold_ensemble,
+         # Ensemble prediction
+         ensemble_prediction,
          # Probabilities
-         glmnet_prob_presence, glmnet_prob_absence,
-         svm_prob_presence, svm_prob_absence,
+         ensemble_presence_prob, ensemble_absence_prob,
          # Threshold classifications
          pa_loose, pa_medium, pa_strict, pa_super_strict,
          # Final classifications
          final_classification, conservative_classification) %>%
-  arrange(desc(glmnet_prob_absence))  # Sort by absence probability for easier review
+  arrange(desc(ensemble_absence_prob))  # Sort by absence probability for easier review
 
 write.csv(relevant_classified, "results/relevant_abstracts_with_pa_predictions.csv", row.names = FALSE)
 
@@ -642,8 +557,7 @@ summary_stats <- list(
   relevance_strict = table(final_results$relevance_strict),
   
   # P/A results (for relevant abstracts only)
-  pa_weighted_ensemble = table(final_results$weighted_ensemble, useNA = "ifany"),
-  pa_threshold_ensemble = table(final_results$threshold_ensemble, useNA = "ifany"),
+  pa_ensemble = table(final_results$ensemble_prediction, useNA = "ifany"),
   
   # Final classifications
   final_classification = table(final_results$final_classification),
@@ -666,12 +580,8 @@ capture.output(
     print(summary_stats$relevance_strict)
     cat("\n")
     
-    cat("P/A Classification - Weighted Ensemble (Relevant abstracts only):\n")
-    print(summary_stats$pa_weighted_ensemble)
-    cat("\n")
-    
-    cat("P/A Classification - Threshold Ensemble (Relevant abstracts only):\n")
-    print(summary_stats$pa_threshold_ensemble)
+    cat("P/A Classification - Ensemble (Relevant abstracts only):\n")
+    print(summary_stats$pa_ensemble)
     cat("\n")
     
     cat("Final Classification (Relevance → P/A Pipeline):\n")
