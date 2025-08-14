@@ -25,29 +25,62 @@
 
 - Will do another pull of the literature once this pipeline is approved by collaborators. Scopus is currently not allowing large downloads so also waiting on that. With the new search, I'm trying to capture historic names of endophytes and other terms for endophytes, as well as ways plants might be described in an abstract without saying plant. **Open to suggestions on improving this search**
 
-- Search terms:  (
-  -- Endophyte block --
-  
-  (endophyte* AND (fungus OR fungi OR fungal OR mycota)) OR "latent fung*" OR "systemic fung" OR "internal fung*" OR "resident fung*" OR "fungal endophyte*" OR "endophytic fung*" OR "dark septate endophyte*" OR "DSE" OR "dark septate fung*" OR "seed-borne fung*" OR "seed-transmitted fung*"
+- Search terms:  
+  (
+  (endophyte* AND (fungus OR fungi OR fungal OR mycota)) OR "latent fung*" OR "systemic fung*" OR "internal fung*" OR "resident fung*" OR "fungal endophyte*" OR "endophytic fung*" OR "dark septate endophyte*" OR "dark septate fung*" OR "seed-borne fung*" OR "seed-transmitted fung*" OR "symptomless fung*" OR "asymptomatic fung*" OR "quiescent fung*"
   )
 
   AND
   (
--- CONCEPT B: Host (Plantae only) --
-  plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome* OR thallus OR frond* OR hydrophyte* OR seagrass* OR algae OR "green alga*" OR "red alga*"
+  plant* OR moss* OR bryophyt* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome* OR thallus OR frond* OR hydrophyte* OR seagrass* OR alga* OR gymnosperm* OR angiosperm* OR macroalga* OR spermatophyte* OR phanerogam* OR monocot* OR dicot* OR charophyt* OR chlorophyt* OR anthocerotophyt* OR glaucophyt* OR langiophytophyt* OR langiophytopsid* OR marchantiophyt* OR rhodophyt* OR tracheophyt* OR vine* OR epiphyt* OR cultivar* OR xylem OR phloem
   )
 
-optional mycorrhizae block: 
-  OR
 
-  -- Mycorrhizal block --
-  ("mycorrhizal fungus" OR "mycorrhizal fungi" OR "mycorrhiza" OR "mycorrhizae" OR "mycorrhizas" OR 
-   "arbuscular mycorrhiza*" OR "AM fungi" OR "ectomycorrhiza*" OR "EM fungi" OR 
-   "ericoid mycorrhiza*" OR "orchid mycorrhiza*" OR "arbutoid mycorrhiza*" OR "monotropoid mycorrhiza*" OR 
-   "endomycorrhiza*" OR "vesicular arbuscular mycorrhiza*" OR "VAM fungi" OR 
-   "VA mycorrhiza*" OR "ectendomycorrhiza*" OR "ectendomycorrhizal fungi" OR "ECM fungi" OR "OMF fungi")
+Web of Science String: 
 
+TS=(
+  (
+    (endophyte* AND (fungus OR fungi OR fungal OR mycota))
+    OR "latent fung*"
+    OR "systemic fung*"
+    OR "internal fung*"
+    OR "resident fung*"
+    OR "fungal endophyte*"
+    OR "endophytic fung*"
+    OR "dark septate endophyte*"
+    OR "dark septate fung*"
+    OR "seed-borne fung*"
+    OR "seed-transmitted fung*"
+    OR "symptomless fung*"
+    OR "asymptomatic fung*"
+    OR "quiescent fung*"
+  )
+  AND
+  (
+    plant* OR moss* OR bryophyt* OR liverwort* OR hornwort* OR fern*
+    OR lycophyte* OR pteridophyte* OR tree* OR forest* OR shrub* OR grass*
+    OR graminoid* OR herb* OR crop* OR seedling* OR sapling* OR seed*
+    OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome*
+    OR thallus OR frond* OR hydrophyte* OR seagrass* OR alga* OR gymnosperm*
+    OR angiosperm* OR macroalga* OR spermatophyte* OR phanerogam* OR monocot*
+    OR dicot* OR charophyt* OR chlorophyt* OR anthocerotophyt* OR glaucophyt*
+    OR langiophytophyt* OR langiophytopsid* OR marchantiophyt* OR rhodophyt*
+    OR tracheophyt* OR vine* OR epiphyt* OR cultivar* OR xylem OR phloem
+  )
+)
+AND DT=(Article)
 
+Scopus String:
+
+(TITLE-ABS-KEY((endophyte* AND (fungus OR fungi OR fungal OR mycota)) OR "latent fung*" OR "systemic fung*" OR "internal fung*" OR "resident fung*" OR "fungal endophyte*" OR "endophytic fung*" OR "dark septate endophyte*" OR "dark septate fung*" OR "seed-borne fung*" OR "seed-transmitted fung*" OR "symptomless fung*" OR "asymptomatic fung*" OR "quiescent fung*"))
+AND
+TITLE-ABS-KEY(plant* OR moss* OR bryophyt* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome OR thallus OR frond* OR hydrophyte* OR seagrass* OR alga* OR gymnosperm* OR angiosperm* OR macroalga* OR spermatophyte* OR phanerogam* OR monocot* OR dicot* OR charophyt* OR chlorophyt* OR anthocerotophyt* OR glaucophyt* OR langiophytophyt* OR langiophytopsid* OR marchantiophyt* OR rhodophyt* OR tracheophyt* OR vine* OR epiphyt* OR cultivar* OR xylem OR phloem)))
+
+PubMed String:
+
+((("endophyte*" AND (fungus OR fungi OR fungal OR mycota))[tiab]) OR "latent fung*"[tiab] OR "systemic fung"[tiab] OR "internal fung*"[tiab] OR "resident fung*"[tiab] OR "fungal endophyte*"[tiab] OR "endophytic fung*"[tiab] OR "dark septate endophyte*"[tiab] OR "dark septate fung*"[tiab] OR "seed-borne fung*"[tiab] OR "seed-transmitted fung*"[tiab] OR "symptomless fung*"[tiab] OR "asymptomatic fung*"[tiab] OR "quiescent fung*"[tiab])
+AND
+(plant*[tiab] OR moss*[tiab] OR bryophyt*[tiab] OR liverwort*[tiab] OR hornwort*[tiab] OR fern*[tiab] OR lycophyte*[tiab] OR pteridophyte*[tiab] OR tree*[tiab] OR forest*[tiab] OR shrub*[tiab] OR grass*[tiab] OR graminoid*[tiab] OR herb*[tiab] OR crop*[tiab] OR seedling*[tiab] OR sapling*[tiab] OR seed*[tiab] OR root*[tiab] OR leaf*[tiab] OR foliage[tiab] OR shoot*[tiab] OR stem*[tiab] OR twig*[tiab] OR rhizome[tiab] OR thallus[tiab] OR frond*[tiab] OR hydrophyte*[tiab] OR seagrass*[tiab] OR alga*[tiab] OR gymnosperm*[tiab] OR angiosperm*[tiab] OR macroalga*[tiab] OR spermatophyte*[tiab] OR phanerogam*[tiab] OR monocot*[tiab] OR dicot*[tiab] OR charophyt*[tiab] OR chlorophyt*[tiab] OR anthocerotophyt*[tiab] OR glaucophyt*[tiab] OR langiophytophyt*[tiab] OR langiophytopsid*[tiab] OR marchantiophyt*[tiab] OR rhodophyt*[tiab] OR tracheophyt*[tiab] OR vine*[tiab] OR epiphyt*[tiab] OR cultivar*[tiab] OR xylem[tiab] OR phloem[tiab]))
 
 
 - Databases: Web of Science, Scopus, and PubMed
