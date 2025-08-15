@@ -22,7 +22,7 @@ library(tictoc)
 library(janitor)
 
 # Source the detection functions
-source("scripts/archive/optimized_taxa_detection.R")
+source("scripts/04_analysis/optimized_taxa_detection.R")
 
 cat("=== COMPREHENSIVE EXTRACTION PIPELINE ===\n")
 cat("Processing weighted ensemble results (best ML performance)\n")
@@ -35,16 +35,16 @@ detect_research_methods <- function(text) {
   # Define method categories and their keywords
   method_categories <- list(
     molecular = c("pcr", "dna", "rna", "sequenc", "primer", "amplif", "gene", "genom", 
-                 "transcript", "clone", "phylogen", "molecular", "extraction", 
+                 "transcript", "clone", "molecular", 
                  "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", 
                  "rrna", "18s", "28s", "rdna", "barcode", "phylogeny"),
     
-    culture_based = c("culture*", "isolat", "plate", "medium", "agar", "petri", "colony", 
+    culture_based = c("culture*", "isolat", "plate", "agar", "petri", "colony", 
                      "sterile", "aseptic", "axenic", 
-                     "ferment", "broth", "in vitro", "cultivation"),
+                     "ferment", "broth", "in vitro"),
     
-    microscopy = c("microscop", "stain", "section", "histolog", "morpholog", "ultrastructur", 
-                  "sem", "tem", "scanning electron", "transmission electron", "light microscop", 
+    microscopy = c("microscop*", "stain", "histolog", "ultrastructur", 
+                  "sem", "tem", "scanning electron", "transmission electron", 
                   "confocal", "fluorescen", "magnification", "micrograph", "optical")
   )
   
@@ -71,6 +71,12 @@ detect_research_methods <- function(text) {
 detect_geographic_locations <- function(text) {
   # Comprehensive country lists categorized by Global North/South
   # Based on UN classifications and economic development indicators
+  # Note: Special handling implemented for countries with problematic homonyms:
+  # - Niger (vs Aspergillus niger species)  
+  # - Turkey (vs turkey tail mushrooms)
+  # - Chile (vs chili peppers)
+  # - Guinea (vs guinea pig)
+  # - Mali (vs species names containing "mali")
   
   global_north_countries <- c(
   # North America
@@ -107,7 +113,7 @@ detect_geographic_locations <- function(text) {
   "saint kitts and nevis", "saint kitts", "saint vincent", "antigua",
   "curaçao", "aruba", "sint maarten", "bonaire",
 
-  # Africa
+  # Africa.
   "niger", "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda",
   "tanzania", "ghana", "mozambique", "madagascar", "cameroon",
   "côte d’ivoire", "ivory coast", "niger", "mali", "zambia", "senegal",
@@ -128,7 +134,7 @@ detect_geographic_locations <- function(text) {
   "uzbekistan", "kyrgyzstan", "tajikistan", "turkmenistan",
   "armenia", "azerbaijan", "georgia",
 
-  # Middle East
+  # Middle East. Note that Turkey may also be an issue because it is a somewhat common word (e.g. Turkeytail mushroom).
   "turkey", "iran", "iraq", "syria", "jordan", "lebanon", "palestine",
   "palestinian territories", "saudi arabia", "yemen", "united arab emirates",
   "oman", "qatar", "bahrain", "kuwait",
@@ -156,16 +162,35 @@ detect_geographic_locations <- function(text) {
   
   text_lower <- tolower(text)
   
-  # Find countries and categorize
+  # Find countries and categorize with special handling for problematic names
   cleaned_countries <- sapply(all_countries, function(country) {
-  if (country == "niger") {
-    # Match only if "Niger" appears capitalized in original text or as "Republic of Niger"
-    grepl("\\bRepublic of Niger\\b", text, ignore.case = TRUE) ||
-    grepl("\\bNiger\\b", text)  # Capitalized only
-  } else {
-    grepl(paste0("\\b", country, "\\b"), text_lower)
-  }
-})
+    if (country == "niger") {
+      # Match only if "Niger" appears capitalized in original text or as "Republic of Niger"
+      # Exclude if preceded by species-like terms
+      grepl("\\bRepublic of Niger\\b", text, ignore.case = TRUE) ||
+      (grepl("\\bNiger\\b", text) && !grepl("\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b", text, ignore.case = TRUE))
+    } else if (country == "turkey") {
+      # Match only if "Turkey" appears capitalized and not as "turkey tail" or similar mushroom contexts
+      grepl("\\bTurkey\\b", text) && 
+      !grepl("\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom)\\b", text, ignore.case = TRUE) &&
+      !grepl("\\bturkey\\s+(mushroom|fungus|fungi)\\b", text, ignore.case = TRUE)
+    } else if (country == "chile") {
+      # Match "Chile" (country) but not "chili" (pepper) - use capitalization
+      grepl("\\bChile\\b", text) && !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice)\\b", text, ignore.case = TRUE)
+    } else if (country == "georgia") {
+      # Match "Georgia" but prefer if it's clearly a country (with state/region context or capitalized)
+      grepl("\\bGeorgia\\b", text) && !grepl("\\bgeorgia\\s+(pine|oak|southern)\\b", text, ignore.case = TRUE)
+    } else if (country == "guinea") {
+      # Match "Guinea" but not "guinea pig" contexts
+      grepl("\\bGuinea\\b", text) && !grepl("\\bguinea\\s+pig\\b", text, ignore.case = TRUE)
+    } else if (country == "mali") {
+      # Match "Mali" but not in species contexts (some fungi have "mali" in names)
+      grepl("\\bMali\\b", text) && !grepl("\\b\\w+\\s+mali\\b", text, ignore.case = TRUE)
+    } else {
+      # Standard lowercase matching for other countries
+      grepl(paste0("\\b", country, "\\b"), text_lower)
+    }
+  })
 
   countries_found <- all_countries[cleaned_countries]
   
@@ -288,11 +313,13 @@ detect_plant_parts <- function(text) {
 cat("Step 1: Preparing classification results for species detection...\n")
 
 # Load the relevant abstracts with predictions
-classification_results <- read_csv("results/predictions/relevant_abstracts_with_pa_predictions.csv")
+classification_results <- read_csv("results/relevant_abstracts_with_pa_predictions.csv")
+
+#Maybe make a subset here for testing
 
 # Load and bind training dataset (only those with real DOIs)
 cat("  Loading training dataset for inclusion...\n")
-training_data_raw <- read_csv("data/raw/Training_labeled_abs_5.csv") %>%
+training_data_raw <- read_csv("data/raw/Training_labeled_abs_6.csv") %>%
   clean_names() %>%
   filter(!is.na(doi) & doi != "" & nchar(doi) > 5) %>%  # Only real DOIs
   filter(label %in% c("Presence", "Absence"))  # Only relevant labels
@@ -663,7 +690,7 @@ if (file.exists("results/species_detection_weighted_ensemble.csv")) {
       molecular = any(molecular_methods, na.rm = TRUE),
       culture = any(culture_based_methods, na.rm = TRUE),
       microscopy = any(microscopy_methods, na.rm = TRUE),
-      has_methods = any(!is.na(methods_summary)),
+      has_methods = any(!is.na(methods_summary) | molecular | culture | microscopy),
       .groups = "drop"
     ) %>%
     summarise(
