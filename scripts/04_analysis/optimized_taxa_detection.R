@@ -8,6 +8,10 @@ library(stringr)
 library(furrr)  # For parallel processing
 library(future)
 
+# By default do not run the internal tests/examples when this file is sourced.
+# Set run_examples <- TRUE below (or override in your environment) to enable.
+run_examples <- FALSE
+
 # Set up parallel processing
 setup_parallel <- function(workers = NULL) {
   if (is.null(workers)) {
@@ -560,14 +564,14 @@ test_synonym_handling <- function() {
 }
 
 # Run the test if this script is executed directly
-if (interactive()) {
+if (interactive() && run_examples) {
   cat("Testing optimized taxa detection with synonym handling...\n")
   test_results <- test_synonym_handling()
 }
 
-if (interactive()) {
+if (interactive() && run_examples) {
   cat("\n=== Running Function Tests ===\n")
-  
+
   # Minimal mock species data
   mock_species <- tibble(
     taxonID = c(1, 2),
@@ -579,28 +583,28 @@ if (interactive()) {
     family = c("Fagaceae", "Fagaceae"),
     genus = c("Quercus", "Fagus")
   )
-  
+
   # Test create_lookup_tables
   lookup_tables <- create_lookup_tables(mock_species)
   print(names(lookup_tables))
-  
+
   # Test extract_candidate_names
   candidates <- extract_candidate_names("Quercus robur and Fagus sylvatica are common trees.")
   print(candidates)
-  
+
   # Test batch_validate_names
   validated <- batch_validate_names(candidates, lookup_tables)
   print(validated)
-  
+
   # Test process_taxonomic_matches
   matches <- process_taxonomic_matches(validated, lookup_tables, "Quercus robur and Fagus sylvatica", 1, "Presence")
   print(matches)
-  
+
   # Test extract_plant_info
   plant_parts_keywords <- c("leaf", "root")
   plant_info <- extract_plant_info("Quercus robur leaf and Fagus sylvatica root", 1, "Presence", lookup_tables, plant_parts_keywords)
   print(plant_info)
-  
+
   # Test process_abstracts_parallel (with only one abstract for speed)
   abstracts <- tibble(
     abstract = c("Quercus robur leaf and Fagus sylvatica root"),
