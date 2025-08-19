@@ -22,7 +22,7 @@ library(tictoc)
 library(janitor)
 
 # Source the detection functions
-source("scripts/04_analysis/optimized_taxa_detection.R")
+#source("scripts/04_analysis/optimized_taxa_detection.R")
 
 cat("=== COMPREHENSIVE EXTRACTION PIPELINE ===\n")
 cat("Processing weighted ensemble results (best ML performance)\n")
@@ -315,7 +315,14 @@ cat("Step 1: Preparing classification results for species detection...\n")
 # Load the relevant abstracts with predictions
 classification_results <- read_csv("results/relevant_abstracts_with_pa_predictions.csv")
 
-#Maybe make a subset here for testing
+library(tidyverse)
+library(stringr)
+
+
+# Helpful text column (combine title + abstract to increase recall)
+classification_results <- classification_results %>%
+  mutate(text_join = paste(article_title, abstract, sep = " - "),
+         text_join = ifelse(is.na(text_join), "", text_join))
 
 # Load and bind training dataset (only those with real DOIs)
 cat("  Loading training dataset for inclusion...\n")
@@ -340,6 +347,9 @@ training_data <- training_data_raw %>%
     glmnet_prob_absence = ifelse(label == "Absence", 0.95, 0.05),
     svm_prob_presence = ifelse(label == "Presence", 0.95, 0.05),
     svm_prob_absence = ifelse(label == "Absence", 0.95, 0.05),
+    ensemble_presence_prob = ifelse(label == "Presence", 0.95, 0.05),
+    ensemble_absence_prob = ifelse(label == "Absence", 0.95, 0.05),
+    ensemble_prediction = ifelse(label == "Presence", TRUE, FALSE),
     pa_loose = ifelse(label == "Presence", TRUE, FALSE),
     pa_medium = ifelse(label == "Presence", TRUE, FALSE),
     pa_strict = ifelse(label == "Presence", TRUE, FALSE),
@@ -349,7 +359,8 @@ training_data <- training_data_raw %>%
     source = "training"
   ) %>%
   # Select only the columns that exist in classification_results, plus source
-  select(all_of(names(classification_results)), source)
+  # use any_of() so missing columns in the training data don't cause an error
+  select(any_of(names(classification_results)), source)
 
 cat("  Added", nrow(training_data), "training abstracts with valid DOIs\n")
 
@@ -364,7 +375,8 @@ combined_results <- classification_results %>%
     pa_loose = as.character(pa_loose),
     pa_medium = as.character(pa_medium),
     pa_strict = as.character(pa_strict),
-    pa_super_strict = as.character(pa_super_strict)
+    pa_super_strict = as.character(pa_super_strict),
+    ensemble_prediction = as.character(ensemble_prediction)
   ) %>%
   bind_rows(
     training_data %>%
@@ -376,24 +388,59 @@ combined_results <- classification_results %>%
         pa_loose = as.character(pa_loose),
         pa_medium = as.character(pa_medium),
         pa_strict = as.character(pa_strict),
-        pa_super_strict = as.character(pa_super_strict)
+        pa_super_strict = as.character(pa_super_strict),
+        ensemble_prediction = as.character(ensemble_prediction)
       )
   )
 
 cat("  Combined dataset:", nrow(combined_results), "total abstracts\n")
 
 # Focus on the weighted ensemble predictions (best performance) + training data
+## Align with `apply_models_to_full_dataset.R`: prefer `final_classification` as the primary ensemble output
+# If `final_classification` is missing, populate it from other ensemble columns produced by earlier scripts
+if (!"final_classification" %in% names(combined_results)) {
+  combined_results <- combined_results %>%
+    mutate(final_classification = coalesce(weighted_ensemble, ensemble_prediction, threshold_ensemble, conservative_classification, glmnet_pred, svm_pred))
+}
+
+# Create ensemble presence/absence probability columns if not present, pulling from available model probs
+if (!"ensemble_presence_prob" %in% names(combined_results)) {
+  combined_results <- combined_results %>%
+    mutate(ensemble_presence_prob = coalesce(ensemble_presence_prob, glmnet_prob_presence, svm_prob_presence),
+           ensemble_absence_prob = coalesce(ensemble_absence_prob, glmnet_prob_absence, svm_prob_absence))
+}
+
+# Ensure model-specific probability columns exist (create as NA if missing) so downstream mutate() won't error
+missing_prob_cols <- setdiff(c("glmnet_prob_presence", "glmnet_prob_absence", "svm_prob_presence", "svm_prob_absence"), names(combined_results))
+if (length(missing_prob_cols) > 0) {
+  combined_results[missing_prob_cols] <- NA_real_
+}
+
+# Ensure a combined text column exists on the combined dataset
+if (!"text_join" %in% names(combined_results)) {
+  combined_results <- combined_results %>%
+    mutate(text_join = paste(article_title, abstract, sep = " - "),
+           text_join = ifelse(is.na(text_join), "", text_join))
+}
+
+# Use `final_classification` as the canonical predicted label and keep metadata
 abstracts_for_species <- combined_results %>%
-  filter(!is.na(weighted_ensemble)) %>%  # Has either prediction or training label
+  filter(!is.na(final_classification) & final_classification != "") %>%
   # Keep ALL columns from combined_results to preserve metadata
   rename(
     title = article_title,
-    predicted_label = weighted_ensemble
+    predicted_label = final_classification
   ) %>%
-  # Add confidence score
+  # Add confidence score: prefer ensemble_presence_prob, fallback to model probs
   mutate(
-    confidence = pmax(glmnet_prob_presence, glmnet_prob_absence, na.rm = TRUE)
-  )
+    # Safely build presence/absence confidence by coalescing available probability columns
+    presence_conf = coalesce(ensemble_presence_prob, glmnet_prob_presence, svm_prob_presence, NA_real_),
+    absence_conf  = coalesce(ensemble_absence_prob,  glmnet_prob_absence,  svm_prob_absence,  NA_real_),
+    confidence = pmax(presence_conf, absence_conf, na.rm = TRUE),
+    confidence = ifelse(is.infinite(confidence), NA_real_, confidence)
+  ) %>%
+  # Remove temporary helper columns
+  select(-any_of(c("presence_conf", "absence_conf")))
 
 cat("  Prepared", nrow(abstracts_for_species), "abstracts with weighted ensemble predictions\n")
 
