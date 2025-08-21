@@ -68,14 +68,20 @@ cat("Total abstracts in analysis:", length(unique(temporal_data$id)), "\n\n")
 # 1. Publication volume trends
 cat("1. Analyzing publication volume trends...\n")
 
-# Annual publication counts
+# Annual publication counts (consolidating info per abstract first)
 annual_counts <- temporal_data %>%
+  group_by(id, publication_year) %>%
+  slice(1) %>%  # One row per abstract per year (abstracts shouldn't span years)
+  ungroup() %>%
   count(publication_year, name = "publications") %>%
   complete(publication_year = min(temporal_data$publication_year):max(temporal_data$publication_year),
            fill = list(publications = 0))
 
-# Five-year period trends
+# Five-year period trends (consolidating info per abstract first)
 period_counts <- temporal_data %>%
+  group_by(id, period_label, five_year_period) %>%
+  slice(1) %>%  # One row per abstract per period
+  ungroup() %>%
   count(period_label, five_year_period, name = "publications") %>%
   arrange(five_year_period)
 
@@ -114,6 +120,14 @@ cat("Publication volume plot saved to: plots/publication_volume_over_time.png\n"
 cat("\n2. Analyzing research method evolution...\n")
 
 method_trends <- temporal_data %>%
+  # First consolidate information per abstract per period
+  group_by(id, five_year_period, period_label) %>%
+  summarise(
+    has_molecular = any(has_molecular, na.rm = TRUE),
+    has_culture = any(has_culture, na.rm = TRUE),
+    has_microscopy = any(has_microscopy, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(five_year_period, period_label) %>%
   summarise(
     total_papers = n(),
@@ -135,6 +149,13 @@ cat("\n3. Analyzing geographic research patterns...\n")
 
 geographic_trends <- temporal_data %>%
   filter(!is.na(global_north_countries) | !is.na(global_south_countries)) %>%
+  # First consolidate information per abstract per period
+  group_by(id, five_year_period, period_label) %>%
+  summarise(
+    has_global_north = any(has_global_north, na.rm = TRUE),
+    has_global_south = any(has_global_south, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(five_year_period, period_label) %>%
   summarise(
     total_with_geography = n(),
@@ -153,6 +174,9 @@ print(geographic_trends %>% select(period_label, total_with_geography, north_pct
 cat("\n4. Analyzing species detection trends...\n")
 
 species_trends <- temporal_data %>%
+  group_by(id, five_year_period, period_label) %>%
+  slice(1) %>%  # One row per abstract per period
+  ungroup() %>%
   group_by(five_year_period, period_label) %>%
   summarise(
     total_papers = n(),

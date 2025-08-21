@@ -14,8 +14,11 @@ library(ggplot2)
 library(viridis)
 library(scales)
 
-cat("=== GEOGRAPHIC BIAS AND RESEARCH GAP ANALYSIS ===\n")
-cat("Identifying research inequities and understudied regions\n\n")
+# Load centralized reference data utilities
+source("scripts/04_analysis/reference_data_utils.R")
+
+cat("=== GEOGRAPHIC BIAS ANALYSIS ===\n")
+cat("Analyzing research patterns and equity gaps\n\n")
 
 # Load comprehensive data
 if (!file.exists("results/comprehensive_extraction_results.csv")) {
@@ -60,12 +63,42 @@ geographic_data <- comprehensive_data %>%
     )
   )
 
-cat("Total abstracts with geographic information:", nrow(geographic_data), "\n")
+# Count unique abstracts with geographic information (consolidating info across rows)
+unique_geographic <- geographic_data %>%
+  group_by(id) %>%
+  summarise(
+    # Consolidate all the important information across rows for each abstract
+    development_focus = first(development_focus[!is.na(development_focus)]),
+    has_species = any(has_species, na.rm = TRUE),
+    has_molecular = any(has_molecular, na.rm = TRUE),
+    has_culture = any(has_culture, na.rm = TRUE),
+    has_microscopy = any(has_microscopy, na.rm = TRUE),
+    method_score = max(method_score, na.rm = TRUE),
+    info_score = max(info_score, na.rm = TRUE),
+    has_global_north = any(has_global_north, na.rm = TRUE),
+    has_global_south = any(has_global_south, na.rm = TRUE),
+    countries_detected = paste(unique(countries_detected[!is.na(countries_detected)]), collapse = "; "),
+    continents_detected = paste(unique(continents_detected[!is.na(continents_detected)]), collapse = "; "),
+    regions_detected = paste(unique(regions_detected[!is.na(regions_detected)]), collapse = "; "),
+    publication_year = first(publication_year[!is.na(publication_year)]),
+    .groups = "drop"
+  ) %>%
+  # Clean up empty consolidations
+  mutate(
+    countries_detected = ifelse(countries_detected == "", NA_character_, countries_detected),
+    continents_detected = ifelse(continents_detected == "", NA_character_, continents_detected),
+    regions_detected = ifelse(regions_detected == "", NA_character_, regions_detected),
+    method_score = ifelse(is.infinite(method_score), 0, method_score),
+    info_score = ifelse(is.infinite(info_score), 0, info_score)
+  )
 
-# 1. Global North vs South research equity
+cat("Total abstracts with geographic information:", nrow(unique_geographic), "\n")
+
+# 1. Global North vs South research equity (accounting for zero-study countries)
 cat("\n1. Analyzing Global North/South research equity...\n")
 
-development_analysis <- geographic_data %>%
+# Analysis of abstracts that could be classified (have geographic info)
+development_analysis <- unique_geographic %>%
   filter(development_focus %in% c("Global North", "Global South")) %>%
   group_by(development_focus) %>%
   summarise(
@@ -80,10 +113,10 @@ development_analysis <- geographic_data %>%
     .groups = "drop"
   )
 
-cat("Research equity analysis:\n")
+cat("Research equity analysis (studies with geographic classification):\n")
 print(development_analysis)
 
-# Calculate equity ratios
+# Calculate equity ratios for classified studies
 north_data <- development_analysis %>% filter(development_focus == "Global North")
 south_data <- development_analysis %>% filter(development_focus == "Global South")
 
@@ -104,20 +137,43 @@ if (nrow(north_data) > 0 && nrow(south_data) > 0) {
     )
   )
   
-  cat("\nEquity ratios (North/South):\n")
+  cat("\nEquity ratios (North/South) for classified studies:\n")
   print(equity_ratios)
 }
 
-# 2. Country-specific analysis
-cat("\n2. Analyzing country-specific research patterns...\n")
+cat("\nNOTE: Comprehensive country-level analysis (including zero-study countries) follows below.\n")
 
-# Extract individual countries and count studies
-country_studies <- geographic_data %>%
+# 2. Country-specific analysis (including countries with 0 studies)
+cat("\n2. Analyzing country-specific research patterns (including zero-study countries)...\n")
+
+# Get complete country classification from centralized utility
+all_countries <- get_country_classifications()
+
+# Extract individual countries and count studies (consolidating info across rows)
+countries_with_studies <- geographic_data %>%
   filter(!is.na(countries_detected)) %>%
+  # First consolidate information per abstract
+  group_by(id) %>%
+  summarise(
+    countries_detected = paste(unique(countries_detected[!is.na(countries_detected)]), collapse = "; "),
+    development_focus = first(development_focus[!is.na(development_focus)]),
+    has_species = any(has_species, na.rm = TRUE),
+    has_molecular = any(has_molecular, na.rm = TRUE),
+    method_score = max(method_score, na.rm = TRUE),
+    info_score = max(info_score, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  # Clean up and separate countries
+  mutate(
+    method_score = ifelse(is.infinite(method_score), 0, method_score),
+    info_score = ifelse(is.infinite(info_score), 0, info_score)
+  ) %>%
   separate_rows(countries_detected, sep = "; ") %>%
   mutate(country_clean = str_trim(countries_detected)) %>%
   filter(country_clean != "") %>%
-  group_by(country_clean, development_focus) %>%
+  # Standardize country names using centralized utility
+  mutate(country_clean = sapply(country_clean, standardize_country_name)) %>%
+  group_by(country_clean) %>%
   summarise(
     total_studies = n(),
     studies_with_species = sum(has_species),
@@ -127,25 +183,121 @@ country_studies <- geographic_data %>%
     avg_info_score = round(mean(info_score, na.rm = TRUE), 2),
     high_quality_studies = sum(info_score >= 3, na.rm = TRUE),
     .groups = "drop"
+  )
+
+# Comprehensive country analysis including zero-study countries
+country_studies_complete <- all_countries %>%
+  left_join(countries_with_studies, by = c("country" = "country_clean")) %>%
+  mutate(
+    total_studies = replace_na(total_studies, 0),
+    studies_with_species = replace_na(studies_with_species, 0),
+    molecular_studies = replace_na(molecular_studies, 0),
+    high_quality_studies = replace_na(high_quality_studies, 0),
+    molecular_pct = ifelse(total_studies == 0, 0, molecular_pct),
+    avg_method_score = replace_na(avg_method_score, 0),
+    avg_info_score = replace_na(avg_info_score, 0)
   ) %>%
   arrange(desc(total_studies))
 
 cat("Top 15 most studied countries:\n")
-print(country_studies %>% head(15))
+print(country_studies_complete %>% filter(total_studies > 0) %>% head(15))
 
-# Identify understudied countries with high biodiversity potential
-understudied_countries <- country_studies %>%
-  filter(total_studies < 5, development_focus == "Global South") %>%
-  arrange(desc(total_studies))
+# Zero-study countries analysis
+zero_study_countries <- country_studies_complete %>%
+  filter(total_studies == 0) %>%
+  count(development_focus, name = "countries_with_zero_studies")
 
-cat("\nUnderstudied Global South countries (< 5 studies):\n")
-print(understudied_countries %>% head(10))
+cat("\nCountries with ZERO endophyte research studies:\n")
+print(zero_study_countries)
+
+# Comprehensive Global North vs South analysis
+comprehensive_equity <- country_studies_complete %>%
+  group_by(development_focus) %>%
+  summarise(
+    total_countries = n(),
+    countries_with_studies = sum(total_studies > 0),
+    countries_with_zero_studies = sum(total_studies == 0),
+    pct_countries_with_studies = round(100 * countries_with_studies / total_countries, 1),
+    total_research_volume = sum(total_studies),
+    avg_studies_per_country = round(mean(total_studies), 2),
+    median_studies_per_country = median(total_studies),
+    .groups = "drop"
+  )
+
+cat("\nComprehensive Global North vs South equity analysis:\n")
+print(comprehensive_equity)
+
+# Calculate research coverage ratios
+north_coverage <- comprehensive_equity %>% filter(development_focus == "Global North")
+south_coverage <- comprehensive_equity %>% filter(development_focus == "Global South")
+
+if (nrow(north_coverage) > 0 && nrow(south_coverage) > 0) {
+  coverage_ratios <- tibble(
+    metric = c("% Countries with Studies", "Avg Studies per Country", "Total Research Volume"),
+    north_value = c(north_coverage$pct_countries_with_studies, 
+                   north_coverage$avg_studies_per_country, 
+                   north_coverage$total_research_volume),
+    south_value = c(south_coverage$pct_countries_with_studies, 
+                   south_coverage$avg_studies_per_country, 
+                   south_coverage$total_research_volume),
+    north_south_ratio = round(north_value / south_value, 2),
+    equity_assessment = case_when(
+      north_south_ratio > 3 ~ "Severe North bias",
+      north_south_ratio > 2 ~ "Major North bias",
+      north_south_ratio > 1.5 ~ "Moderate North bias", 
+      north_south_ratio > 1.1 ~ "Slight North bias",
+      north_south_ratio < 0.9 ~ "South advantage",
+      TRUE ~ "Roughly equitable"
+    )
+  )
+  
+  cat("\nResearch coverage ratios (North/South) - accounting for ALL countries:\n")
+  print(coverage_ratios)
+}
+
+# Identify understudied countries with biodiversity potential
+understudied_high_biodiversity <- country_studies_complete %>%
+  filter(
+    development_focus == "Global South",
+    total_studies <= 2,  # Very few or no studies
+    country %in% get_biodiversity_hotspots()  # High biodiversity countries
+  ) %>%
+  arrange(total_studies, country)
+
+cat("\nUnderstudied high-biodiversity countries (≤2 studies):\n")
+print(understudied_high_biodiversity %>% select(country, development_focus, total_studies))
+
+# Identify understudied countries more broadly (for general reporting)
+understudied_countries <- country_studies_complete %>%
+  filter(
+    development_focus == "Global South",
+    total_studies < 5  # Countries with very few studies
+  ) %>%
+  arrange(total_studies, country)
+
+cat("\nUnderstudied Global South countries (<5 studies):\n")
+cat("Found", nrow(understudied_countries), "countries with fewer than 5 studies\n")
 
 # 3. Continental analysis
 cat("\n3. Analyzing continental research patterns...\n")
 
 continental_studies <- geographic_data %>%
   filter(!is.na(continents_detected)) %>%
+  # First consolidate information per abstract
+  group_by(id) %>%
+  summarise(
+    continents_detected = paste(unique(continents_detected[!is.na(continents_detected)]), collapse = "; "),
+    has_species = any(has_species, na.rm = TRUE),
+    has_molecular = any(has_molecular, na.rm = TRUE),
+    method_score = max(method_score, na.rm = TRUE),
+    info_score = max(info_score, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  # Clean up and separate continents
+  mutate(
+    method_score = ifelse(is.infinite(method_score), 0, method_score),
+    info_score = ifelse(is.infinite(info_score), 0, info_score)
+  ) %>%
   separate_rows(continents_detected, sep = "; ") %>%
   mutate(continent_clean = str_trim(continents_detected)) %>%
   filter(continent_clean != "") %>%
@@ -171,6 +323,19 @@ cat("\n4. Analyzing ecosystem research coverage...\n")
 
 ecosystem_studies <- geographic_data %>%
   filter(!is.na(regions_detected)) %>%
+  # First consolidate information per abstract
+  group_by(id) %>%
+  summarise(
+    regions_detected = paste(unique(regions_detected[!is.na(regions_detected)]), collapse = "; "),
+    has_species = any(has_species, na.rm = TRUE),
+    has_molecular = any(has_molecular, na.rm = TRUE),
+    info_score = max(info_score, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  # Clean up and separate ecosystems
+  mutate(
+    info_score = ifelse(is.infinite(info_score), 0, info_score)
+  ) %>%
   separate_rows(regions_detected, sep = "; ") %>%
   mutate(ecosystem_clean = str_trim(regions_detected)) %>%
   filter(ecosystem_clean != "") %>%
@@ -227,13 +392,8 @@ print(capacity_analysis)
 # 6. Biodiversity hotspot coverage
 cat("\n6. Analyzing biodiversity hotspot research coverage...\n")
 
-# Define major biodiversity hotspots (simplified list)
-biodiversity_hotspots <- c(
-  "madagascar", "brazil", "indonesia", "malaysia", "philippines", "colombia", 
-  "ecuador", "peru", "costa rica", "mexico", "south africa", "australia", 
-  "new zealand", "chile", "california", "mediterranean", "india", "china",
-  "myanmar", "thailand", "vietnam", "cameroon", "tanzania", "kenya"
-)
+# Get biodiversity hotspots from centralized utility
+biodiversity_hotspots <- get_biodiversity_hotspots()
 
 hotspot_coverage <- geographic_data %>%
   filter(!is.na(countries_detected)) %>%
@@ -279,7 +439,7 @@ research_gaps <- tibble(
 
 # Save all results
 write_csv(development_analysis, "results/geographic_equity_analysis.csv")
-write_csv(country_studies, "results/country_research_patterns.csv")
+write_csv(country_studies_complete, "results/country_research_patterns.csv")
 write_csv(continental_studies, "results/continental_research_analysis.csv")
 write_csv(ecosystem_studies, "results/ecosystem_research_coverage.csv")
 write_csv(capacity_analysis, "results/research_capacity_analysis.csv")
@@ -293,13 +453,11 @@ if (exists("equity_ratios")) {
 # === Plot: Global Research Intensity by Country (grouped by abstract id) ===
 cat("\nGenerating global research intensity heat map by country (grouped by abstract id)...\n")
 
-# Prepare country-level data for mapping, grouping by abstract id
-country_map_data <- country_studies %>%
-  group_by(country_clean, development_focus) %>%
-  summarise(unique_abstracts = n_distinct(id), .groups = "drop") %>%
-  group_by(country_clean) %>%
-  summarise(total_studies = sum(unique_abstracts), .groups = "drop") %>%
-  mutate(country_clean = tolower(country_clean))
+# Prepare country-level data for mapping, using the complete country dataset
+country_map_data <- country_studies_complete %>%
+  filter(total_studies > 0) %>%
+  select(country, total_studies, development_focus) %>%
+  mutate(country_clean = tolower(country))
 
 # Get world map data
 world_map <- map_data("world") %>%
@@ -360,11 +518,11 @@ capture.output({
   
   cat("2. COUNTRY-LEVEL PATTERNS:\n")
   cat("Most studied countries:\n")
-  print(country_studies %>% head(10) %>% select(country_clean, total_studies, molecular_pct, development_focus))
+  print(country_studies_complete %>% filter(total_studies > 0) %>% head(10) %>% select(country, total_studies, molecular_pct, development_focus))
   cat("\n")
   
   cat("Understudied high-biodiversity countries:\n")
-  print(understudied_countries %>% head(10) %>% select(country_clean, total_studies, molecular_pct))
+  print(understudied_countries %>% head(10) %>% select(country, total_studies, molecular_pct))
   cat("\n")
   
   cat("3. CONTINENTAL DISTRIBUTION:\n")
@@ -433,6 +591,41 @@ if (exists("equity_ratios")) {
   cat("✓ results/north_south_equity_ratios.csv\n")
 }
 cat("✓ results/geographic_bias_analysis_report.txt\n")
+
+cat("\n=== RESEARCH EQUITY SUMMARY ===\n")
+cat("Key findings including zero-study countries:\n\n")
+
+# Print summary of zero-study situation
+if (exists("zero_study_countries")) {
+  total_zero_studies <- sum(zero_study_countries$countries_with_zero_studies)
+  cat("CRITICAL FINDING: ", total_zero_studies, " countries have ZERO endophyte research studies\n")
+  print(zero_study_countries)
+}
+
+# Print comprehensive equity analysis
+if (exists("comprehensive_equity")) {
+  cat("\nCountry coverage by development status:\n")
+  print(comprehensive_equity)
+}
+
+# Print coverage ratios
+if (exists("coverage_ratios")) {
+  cat("\nResearch coverage disparities (accounting for ALL countries):\n")
+  print(coverage_ratios)
+}
+
+cat("\nThis analysis reveals the true scope of geographic bias by including countries\n")
+cat("with zero studies, providing a more accurate assessment of global research equity.\n")
+
+# Save comprehensive results
+if (exists("country_studies_complete")) {
+  write_csv(country_studies_complete, "results/country_analysis_with_zero_studies.csv")
+  cat("\n✓ results/country_analysis_with_zero_studies.csv\n")
+}
+if (exists("comprehensive_equity")) {
+  write_csv(comprehensive_equity, "results/global_north_south_comprehensive_equity.csv")
+  cat("✓ results/global_north_south_comprehensive_equity.csv\n")
+}
 
 cat("\n=== GEOGRAPHIC ANALYSIS COMPLETE ===\n")
 cat("Key insights identified:\n")

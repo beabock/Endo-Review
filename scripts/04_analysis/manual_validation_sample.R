@@ -28,8 +28,12 @@ cat("Total abstracts available:", nrow(comprehensive_data), "\n")
 # 3. Species detection (with vs without species)
 # 4. Information completeness (high vs low info)
 
-# Calculate sampling strata
+# Calculate sampling strata (ensuring unique abstracts)
 validation_data <- comprehensive_data %>%
+  # First group by id to get one row per abstract
+  group_by(id) %>%
+  slice(1) %>%
+  ungroup() %>%
   # Add confidence categories
   mutate(
     confidence_level = case_when(

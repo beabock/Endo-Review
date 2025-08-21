@@ -1,7 +1,6 @@
 # Simple Species Extraction for Classification Results
 # B. Bock  
-# July 30, 2025
-# Updated: July 31, 2025 - Using new comprehensive search results
+# July 30, 2ed: July 31, 2025 - Using new comprehensive search results
 #
 # Comprehensive script to extract:
 # 1. Species information (plants and fungi)
@@ -22,9 +21,13 @@ library(tictoc)
 library(janitor)
 
 # Source the detection functions
-#source("scripts/04_analysis/optimized_taxa_detection.R")
+source("scripts/04_analysis/optimized_taxa_detection.R") #Maybe remove the whole testing thing from that script bc its annoying when it runs every time.
 
-cat("=== COMPREHENSIVE EXTRACTION PIPELINE ===\n")
+# Load centralized reference data utilities
+source("scripts/04_analysis/reference_data_utils.R")
+
+cat("=== COMPREHENSIVE ENDOPHYTE EXTRACTION ===
+")
 cat("Processing weighted ensemble results (best ML performance)\n")
 cat("Extracting: Species | Plant Parts | Methods | Geography\n\n")
 
@@ -32,21 +35,8 @@ cat("Extracting: Species | Plant Parts | Methods | Geography\n\n")
 
 # Function to detect research methods in abstracts (from visualize_taxa_results.R)
 detect_research_methods <- function(text) {
-  # Define method categories and their keywords
-  method_categories <- list(
-    molecular = c("pcr", "dna", "rna", "sequenc", "primer", "amplif", "gene", "genom", 
-                 "transcript", "clone", "molecular", 
-                 "genetic", "marker", "polymorphism", "nucleotide", "hybridiz", 
-                 "rrna", "18s", "28s", "rdna", "barcode", "phylogeny"),
-    
-    culture_based = c("culture*", "isolat", "plate", "agar", "petri", "colony", 
-                     "sterile", "aseptic", "axenic", 
-                     "ferment", "broth", "in vitro"),
-    
-    microscopy = c("microscop*", "stain", "histolog", "ultrastructur", 
-                  "sem", "tem", "scanning electron", "transmission electron", 
-                  "confocal", "fluorescen", "magnification", "micrograph", "optical")
-  )
+  # Use centralized method keywords
+  method_categories <- get_method_keywords()
   
   text_lower <- tolower(text)
   results <- sapply(names(method_categories), function(category) {
@@ -61,7 +51,7 @@ detect_research_methods <- function(text) {
   methods_found <- names(results)[results]
   return(list(
     molecular = results["molecular"],
-    culture_based = results["culture_based"],
+    culture_based = results["culture"],
     microscopy = results["microscopy"],
     methods_detected = if(length(methods_found) > 0) paste(methods_found, collapse = "; ") else NA
   ))
@@ -69,96 +59,24 @@ detect_research_methods <- function(text) {
 
 # Function to detect geographic locations
 detect_geographic_locations <- function(text) {
-  # Comprehensive country lists categorized by Global North/South
-  # Based on UN classifications and economic development indicators
-  # Note: Special handling implemented for countries with problematic homonyms:
-  # - Niger (vs Aspergillus niger species)  
-  # - Turkey (vs turkey tail mushrooms)
-  # - Chile (vs chili peppers)
-  # - Guinea (vs guinea pig)
-  # - Mali (vs species names containing "mali")
+  # Use centralized country classifications and geographic keywords
+  all_countries <- get_all_countries()
+  global_north_countries <- get_global_north_countries()
+  global_south_countries <- get_global_south_countries()
   
-  global_north_countries <- c(
-  # North America
-  "united states", "usa", "america", "canada", "greenland", "bermuda",
+  # Get geographic regions from centralized utility
+  regions <- get_geographic_keywords()
   
-  # Europe (EU and high-income non-EU)
-  "united kingdom", "uk", "england", "scotland", "wales", "northern ireland",
-  "ireland", "germany", "france", "italy", "spain", "portugal", "netherlands",
-  "belgium", "luxembourg", "austria", "switzerland", "denmark", "sweden",
-  "norway", "finland", "iceland", "liechtenstein", "andorra", "monaco",
-  "san marino", "vatican", "vatican city", "czech republic", "slovakia",
-  "slovenia", "estonia", "latvia", "lithuania", "poland", "malta", "cyprus",
-  "greece", "hungary", "croatia",
-  
-  # Southeastern and Eastern Europe (borderline/high-income)
-  "romania", "bulgaria",
-
-  # Asia-Pacific High Income
-  "japan", "south korea", "republic of korea", "australia", "new zealand",
-  "singapore", "taiwan", "hong kong", "macao", "israel", "brunei",
-
-  # Others
-  "russia"
-)
-  
-  global_south_countries <- c(
-  # Latin America & Caribbean
-  "mexico", "brazil", "argentina", "chile", "colombia", "peru", "venezuela",
-  "ecuador", "bolivia", "paraguay", "uruguay", "guyana", "suriname",
-  "french guiana", "guatemala", "honduras", "el salvador", "nicaragua",
-  "costa rica", "panama", "cuba", "haiti", "dominican republic", "jamaica",
-  "trinidad and tobago", "barbados", "belize", "bahamas", "saint lucia",
-  "saint vincent and the grenadines", "grenada", "dominica", "antigua and barbuda",
-  "saint kitts and nevis", "saint kitts", "saint vincent", "antigua",
-  "curaçao", "aruba", "sint maarten", "bonaire",
-
-  # Africa.
-  "niger", "nigeria", "ethiopia", "egypt", "south africa", "kenya", "uganda",
-  "tanzania", "ghana", "mozambique", "madagascar", "cameroon",
-  "côte d’ivoire", "ivory coast", "niger", "mali", "zambia", "senegal",
-  "malawi", "burkina faso", "chad", "rwanda", "guinea", "benin", "tunisia",
-  "burundi", "liberia", "sierra leone", "lesotho", "namibia", "botswana",
-  "gabon", "gambia", "mauritania", "eswatini", "swaziland", "djibouti",
-  "central african republic", "republic of the congo", "congo", "democratic republic of the congo",
-  "angola", "zimbabwe", "sudan", "south sudan", "libya", "algeria",
-  "somalia", "eritrea", "guinea-bissau", "equatorial guinea",
-  "sao tome and principe", "comoros", "cape verde", "seychelles",
-  "reunion", "western sahara",
-
-  # Asia
-  "china", "india", "indonesia", "pakistan", "bangladesh", "vietnam",
-  "philippines", "thailand", "myanmar", "burma", "cambodia", "laos",
-  "nepal", "sri lanka", "malaysia", "bhutan", "maldives", "mongolia",
-  "afghanistan", "north korea", "timor-leste", "east timor", "kazakhstan",
-  "uzbekistan", "kyrgyzstan", "tajikistan", "turkmenistan",
-  "armenia", "azerbaijan", "georgia",
-
-  # Middle East. Note that Turkey may also be an issue because it is a somewhat common word (e.g. Turkeytail mushroom).
-  "turkey", "iran", "iraq", "syria", "jordan", "lebanon", "palestine",
-  "palestinian territories", "saudi arabia", "yemen", "united arab emirates",
-  "oman", "qatar", "bahrain", "kuwait",
-
-  # Pacific Islands
-  "papua new guinea", "fiji", "solomon islands", "vanuatu", "samoa",
-  "tonga", "kiribati", "palau", "nauru", "tuvalu", "marshall islands",
-  "micronesia", "federated states of micronesia", "cook islands", "niue",
-  "tokelau", "american samoa", "guam", "northern mariana islands",
-  "french polynesia", "new caledonia", "wallis and futuna"
-)
-  
-  # All countries combined
+  # Get country classifications from centralized utilities
+  global_north_countries <- get_global_north_countries()
+  global_south_countries <- get_global_south_countries()
   all_countries <- c(global_north_countries, global_south_countries)
   
-  continents <- c("africa", "asia", "europe", "north america", "south america", 
-                  "australia", "oceania", "antarctica")
-  
-  regions <- c("mediterranean", "tropical", "temperate", "boreal", "arctic", "alpine", 
-               "coastal", "mountain", "desert", "rainforest", "savanna", "grassland",
-               "wetland", "forest", "woodland", "prairie", "steppe", "tundra", "taiga",
-               "subtropical", "equatorial", "subantarctic", "subarctic", "montane",
-               "lowland", "highland", "riparian", "littoral", "estuarine", "mangrove",
-               "deciduous", "coniferous", "mixed forest", "cloud forest", "dry forest")
+  text_lower <- tolower(text)
+
+  # Get continent and region keywords from centralized utilities
+  continents <- get_continent_keywords()
+  regions <- get_region_keywords()
   
   text_lower <- tolower(text)
   
@@ -228,74 +146,8 @@ detect_geographic_locations <- function(text) {
 
 # Function to detect plant parts (enhanced from existing)
 detect_plant_parts <- function(text) {
-  # Comprehensive plant parts keywords (deduplicated)
-  plant_parts_keywords <- unique(c(
-    # Basic structures
-    "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
-    "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
-    "twig", "twigs", "shoot", "shoots", "bud", "buds", "trunk", "trunks",
-    
-    # Reproductive structures
-    "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
-    "sepal", "sepals", "petal", "petals", "stigma", "stigmas", 
-    "style", "styles", "ovary", "ovaries", "ovule", "ovules",
-    "calyx", "calyces", "corolla", "corollas", "pollen",
-    "inflorescence", "inflorescences", "floret", "florets",
-    "stamen", "stamens", "filament", "filaments", "receptacle",
-    "berry", "berries", "drupe", "drupes", "achene", "achenes",
-    "samara", "samaras", "capsule", "capsules", "silique", "siliques",
-    
-    # Specialized structures
-    "rhizome", "rhizomes", "tuber", "tubers", "bulb", "bulbs",
-    "corm", "corms", "tendril", "tendrils", "thorn", "thorns",
-    "needle", "needles", "spine", "spines", "scale", "scales",
-    "keel", "keels", "ligule", "ligules", "pulvinus", "pulvini",
-    "lenticel", "lenticels", "haustorium", "haustoria", "tiller", "tillers",
-    "cone", "cones", "pod", "pods", "runner", "runners", "stolon", "stolons",
-    "pseudobulb", "pseudobulbs", "phylloclade", "phylloclades",
-    
-    # Galls and abnormal structures
-    "gall", "galls", "witch broom", "witches broom", "canker", "cankers",
-    "tumor", "tumors", "neoplasm", "neoplasms", "hyperplasia", "hypertrophy",
-    "callus", "calli", "proliferation", "proliferations",
-    
-    # Anatomical features
-    "xylem", "phloem", "cortex", "cortices", "epidermis", "endodermis",
-    "mesophyll", "parenchyma", "sclerenchyma", "collenchyma",
-    "stoma", "stomata", "cuticle", "cuticles", "trichome", "trichomes",
-    "meristem", "meristems", "pericycle", "cambium", "cambia",
-    "resin duct", "resin ducts", "vascular bundle", "vascular bundles",
-    "pith", "guard cell", "guard cells", "lumen", "lumens",
-    "chloroplast", "chloroplasts", "amyloplast", "amyloplasts",
-    "vessel element", "vessel elements", "tracheid", "tracheids",
-    "sieve tube", "sieve tubes", "companion cell", "companion cells",
-    
-    # Leaf parts
-    "petiole", "petioles", "lamina", "laminae", "stipule", "stipules",
-    "leaflet", "leaflets", "node", "nodes", "internode", "internodes",
-    "midrib", "midribs", "vein", "veins", "margin", "margins",
-    "blade", "blades", "sheath", "sheaths", "ochrea", "ochreae",
-    
-    # Root parts
-    "taproot", "taproots", "fibrous root", "fibrous roots", "root hair", "root hairs",
-    "root cap", "root caps", "lateral root", "lateral roots",
-    "adventitious root", "adventitious roots", "aerial root", "aerial roots",
-    "prop root", "prop roots", "buttress root", "buttress roots",
-    
-    # Wood and bark features
-    "heartwood", "sapwood", "annual ring", "annual rings", "growth ring", "growth rings",
-    "ray", "rays", "tylosis", "tyloses", "extractive", "extractives",
-    "cellulose", "lignin", "hemicellulose", "pectin", "suberin",
-    
-    # Secretory structures
-    "resin canal", "resin canals", "oil duct", "oil ducts", "latex vessel", "latex vessels",
-    "mucilage canal", "mucilage canals", "secretory cell", "secretory cells",
-    "glandular hair", "glandular hairs", "nectary", "nectaries",
-    
-    # Surface features
-    "waxy bloom", "waxy blooms", "pubescence", "glaucous surface",
-    "papilla", "papillae", "emergences"
-  ))
+  # Use centralized plant parts keywords
+  plant_parts_keywords <- get_plant_parts_keywords()
   
   text_lower <- tolower(text)
   parts_found <- plant_parts_keywords[sapply(plant_parts_keywords, function(part) {
@@ -492,74 +344,8 @@ cat("  Loaded species reference data:", nrow(species), "species records\n")
 setup_parallel(workers = 2)
 lookup_tables <- create_lookup_tables(species)
 
-# Define plant parts keywords for species detection - comprehensive list (deduplicated)
-plant_parts_keywords_species <- unique(c(
-  # Basic structures
-  "fruit", "fruits", "root", "roots", "leaf", "leaves", "stem", "stems", 
-  "flower", "flowers", "seed", "seeds", "bark", "branch", "branches",
-  "twig", "twigs", "shoot", "shoots", "bud", "buds", "trunk", "trunks",
-  
-  # Reproductive structures
-  "pistil", "pistils", "anther", "anthers", "carpel", "carpels", 
-  "sepal", "sepals", "petal", "petals", "stigma", "stigmas", 
-  "style", "styles", "ovary", "ovaries", "ovule", "ovules",
-  "calyx", "calyces", "corolla", "corollas", "pollen",
-  "inflorescence", "inflorescences", "floret", "florets",
-  "stamen", "stamens", "filament", "filaments", "receptacle",
-  "berry", "berries", "drupe", "drupes", "achene", "achenes",
-  "samara", "samaras", "capsule", "capsules", "silique", "siliques",
-  
-  # Specialized structures
-  "rhizome", "rhizomes", "tuber", "tubers", "bulb", "bulbs",
-  "corm", "corms", "tendril", "tendrils", "thorn", "thorns",
-  "needle", "needles", "spine", "spines", "scale", "scales",
-  "keel", "keels", "ligule", "ligules", "pulvinus", "pulvini",
-  "lenticel", "lenticels", "haustorium", "haustoria", "tiller", "tillers",
-  "cone", "cones", "pod", "pods", "runner", "runners", "stolon", "stolons",
-  "pseudobulb", "pseudobulbs", "phylloclade", "phylloclades",
-  
-  # Galls and abnormal structures
-  "gall", "galls", "witch broom", "witches broom", "canker", "cankers",
-  "tumor", "tumors", "neoplasm", "neoplasms", "hyperplasia", "hypertrophy",
-  "callus", "calli", "proliferation", "proliferations",
-  
-  # Anatomical features
-  "xylem", "phloem", "cortex", "cortices", "epidermis", "endodermis",
-  "mesophyll", "parenchyma", "sclerenchyma", "collenchyma",
-  "stoma", "stomata", "cuticle", "cuticles", "trichome", "trichomes",
-  "meristem", "meristems", "pericycle", "cambium", "cambia",
-  "resin duct", "resin ducts", "vascular bundle", "vascular bundles",
-  "pith", "guard cell", "guard cells", "lumen", "lumens",
-  "chloroplast", "chloroplasts", "amyloplast", "amyloplasts",
-  "vessel element", "vessel elements", "tracheid", "tracheids",
-  "sieve tube", "sieve tubes", "companion cell", "companion cells",
-  
-  # Leaf parts
-  "petiole", "petioles", "lamina", "laminae", "stipule", "stipules",
-  "leaflet", "leaflets", "node", "nodes", "internode", "internodes",
-  "midrib", "midribs", "vein", "veins", "margin", "margins",
-  "blade", "blades", "sheath", "sheaths", "ochrea", "ochreae",
-  
-  # Root parts
-  "taproot", "taproots", "fibrous root", "fibrous roots", "root hair", "root hairs",
-  "root cap", "root caps", "lateral root", "lateral roots",
-  "adventitious root", "adventitious roots", "aerial root", "aerial roots",
-  "prop root", "prop roots", "buttress root", "buttress roots",
-  
-  # Wood and bark features
-  "heartwood", "sapwood", "annual ring", "annual rings", "growth ring", "growth rings",
-  "ray", "rays", "tylosis", "tyloses", "extractive", "extractives",
-  "cellulose", "lignin", "hemicellulose", "pectin", "suberin",
-  
-  # Secretory structures
-  "resin canal", "resin canals", "oil duct", "oil ducts", "latex vessel", "latex vessels",
-  "mucilage canal", "mucilage canals", "secretory cell", "secretory cells",
-  "glandular hair", "glandular hairs", "nectary", "nectaries",
-  
-  # Surface features
-  "waxy bloom", "waxy blooms", "pubescence", "glaucous surface",
-  "papilla", "papillae", "emergences"
-))
+# Get plant parts keywords from centralized utilities
+plant_parts_keywords_species <- get_plant_parts_keywords()
 
 # Process species detection in batches
 tic("Species detection")

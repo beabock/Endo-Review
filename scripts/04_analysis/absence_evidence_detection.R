@@ -227,6 +227,12 @@ if (any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %i
 if ("countries_detected" %in% names(absence_analysis_results)) {
   absence_geographic <- absence_analysis_results %>%
     filter(confidence_level %in% c("High", "Medium"), !is.na(countries_detected)) %>%
+    # First consolidate information per abstract
+    group_by(id) %>%
+    summarise(
+      countries_detected = paste(unique(na.omit(countries_detected)), collapse = "; "),
+      .groups = "drop"
+    ) %>%
     separate_rows(countries_detected, sep = "; ") %>%
     count(countries_detected, name = "absence_studies") %>%
     arrange(desc(absence_studies)) %>%
@@ -245,6 +251,12 @@ if (nrow(absence_geographic) > 0) {
 if ("plant_parts_detected" %in% names(absence_analysis_results)) {
   absence_plant_parts <- absence_analysis_results %>%
     filter(confidence_level %in% c("High", "Medium"), !is.na(plant_parts_detected)) %>%
+    # First consolidate information per abstract
+    group_by(id) %>%
+    summarise(
+      plant_parts_detected = paste(unique(na.omit(plant_parts_detected)), collapse = "; "),
+      .groups = "drop"
+    ) %>%
     separate_rows(plant_parts_detected, sep = "; ") %>%
     count(plant_parts_detected, name = "absence_studies") %>%
     arrange(desc(absence_studies)) %>%
