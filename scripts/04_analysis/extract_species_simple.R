@@ -326,8 +326,7 @@ detect_plant_parts <- function(text) {
 cat("Step 1: Preparing classification results for species detection...\n")
 
 # Load the relevant abstracts with predictions
-classification_results <- read_csv("results/relevant_abstracts_with_pa_predictions.csv")%>%
-  slice_sample(n=100)
+classification_results <- read_csv("results/relevant_abstracts_with_pa_predictions.csv")
 
 library(tidyverse)
 library(stringr)
@@ -516,6 +515,8 @@ batch_size <- 100  # Increased from 25
 n_batches <- ceiling(nrow(abstracts_for_species) / batch_size)
 
 cat("Processing", nrow(abstracts_for_species), "abstracts in", n_batches, "batches...\n")
+cat("⚙️  Batch configuration: ", batch_size, "abstracts per batch, 50 internal batch size, 1 worker per batch\n")
+cat("🕐 Species detection started at", format(Sys.time(), "%H:%M:%S"), "\n\n")
 
 all_species_results <- map_dfr(1:n_batches, function(i) {
   start_idx <- (i - 1) * batch_size + 1
@@ -559,7 +560,19 @@ all_species_results <- map_dfr(1:n_batches, function(i) {
 
 # Save species detection results
 write_csv(all_species_results, "results/species_detection_weighted_ensemble.csv")
-cat("Species detection completed. Results saved to: results/species_detection_weighted_ensemble.csv\n")
+
+# Final summary of species detection
+total_species_found <- sum(!is.na(all_species_results$resolved_name) | !is.na(all_species_results$canonicalName), na.rm = TRUE)
+unique_species <- length(unique(c(all_species_results$resolved_name, all_species_results$canonicalName)))
+unique_species <- unique_species - 1  # Remove NA count
+
+cat("🎉 Species detection completed at", format(Sys.time(), "%H:%M:%S"), "\n")
+cat("📈 Final Results:\n")
+cat("   - Total abstracts processed:", nrow(abstracts_for_species), "\n")
+cat("   - Abstracts with species found:", total_species_found, 
+    "(", round(100 * total_species_found / nrow(abstracts_for_species), 1), "%)\n")
+cat("   - Unique species detected:", unique_species, "\n")
+cat("💾 Results saved to: results/species_detection_weighted_ensemble.csv\n\n")
 
 toc()
 
@@ -589,12 +602,31 @@ methods_results <- map_dfr(1:n_batches, function(batch_num) {
   batch_text <- abstracts_text[start_idx:end_idx]
   batch_ids <- abstracts_for_species$id[start_idx:end_idx]
   
-  cat("    Batch", batch_num, "of", n_batches, "(", length(batch_text), "abstracts)\n")
+  cat("    🔍 Batch", batch_num, "of", n_batches, "(", length(batch_text), "abstracts) - Starting at", format(Sys.time(), "%H:%M:%S"), "\n")
   
   # Process entire batch at once using vectorized functions
+  cat("       Detecting research methods...\n")
   methods <- detect_research_methods_batch(batch_text)
+  
+  cat("       Detecting plant parts...\n")
   plant_parts <- detect_plant_parts_batch(batch_text)
+  
+  cat("       Detecting geographic locations...\n")
   geography <- detect_geographic_locations_batch(batch_text)
+  
+  # Quick summary of findings
+  methods_found <- sum(methods$molecular | methods$culture_based | methods$microscopy, na.rm = TRUE)
+  parts_found <- sum(!is.na(plant_parts$plant_parts_detected))
+  countries_found <- sum(!is.na(geography$countries_detected))
+  
+  cat("       ✅ Batch", batch_num, "completed - Found: Methods(", methods_found, "), Parts(", parts_found, "), Countries(", countries_found, ")\n")
+  
+  # Progress tracking
+  total_processed <- batch_num * batch_size
+  if (total_processed > length(abstracts_text)) total_processed <- length(abstracts_text)
+  progress_pct <- round(100 * total_processed / length(abstracts_text), 1)
+  cat("       📊 Progress:", total_processed, "/", length(abstracts_text), 
+      "abstracts (", progress_pct, "% complete)\n\n")
   
   # Combine results
   bind_cols(
