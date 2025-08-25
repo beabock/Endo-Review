@@ -171,8 +171,8 @@ countries_with_studies <- geographic_data %>%
   separate_rows(countries_detected, sep = "; ") %>%
   mutate(country_clean = str_trim(countries_detected)) %>%
   filter(country_clean != "") %>%
-  # Standardize country names using centralized utility
-  mutate(country_clean = sapply(country_clean, standardize_country_name)) %>%
+  # Standardize country names using centralized utility (vectorized)
+  mutate(country_clean = normalize_country_vector(country_clean)) %>%
   group_by(country_clean) %>%
   summarise(
     total_studies = n(),
@@ -399,9 +399,11 @@ hotspot_coverage <- geographic_data %>%
   filter(!is.na(countries_detected)) %>%
   separate_rows(countries_detected, sep = "; ") %>%
   mutate(
-    country_clean = str_trim(tolower(countries_detected)),
-    is_hotspot = country_clean %in% biodiversity_hotspots
+    country_clean = str_trim(countries_detected)
   ) %>%
+  filter(country_clean != "") %>%
+  mutate(country_clean = normalize_country_vector(country_clean),
+         is_hotspot = country_clean %in% get_biodiversity_hotspots()) %>%
   group_by(is_hotspot) %>%
   summarise(
     total_studies = n(),

@@ -20,6 +20,14 @@ library(treemapify)
 library(maps)
 library(countrycode)
 
+# Load centralized reference utilities (normalization helpers)
+utils_path <- "scripts/04_analysis/reference_data_utils.R"
+if (file.exists(utils_path)) {
+  source(utils_path)
+} else {
+  warning("reference_data_utils.R not found; country/plant-part normalization helpers unavailable")
+}
+
 # Need to adjust abstract counts throughout to group by abstract.id
 
 
@@ -152,85 +160,33 @@ cat("- With methods:", sum(abstract_summary$has_methods),
 
 cat("Creating species detection overview plots...\n")
 
-# Species detection by prediction type
-species_summary <- abstract_summary %>%
-  dplyr::group_by(predicted_label) %>%
-  dplyr::summarise(
-    total = n(),
-    with_species = sum(has_species),
-    species_rate = with_species / total,
-    .groups = "drop"
-  ) %>%
-  dplyr::filter(!is.na(predicted_label)) %>%  # Remove any NA prediction labels
-  dplyr::mutate(
-    predicted_label = as.character(predicted_label),  # Ensure character type
-    species_rate = ifelse(is.nan(species_rate), 0, species_rate)  # Handle NaN values
-  )
+# Overall species detection rate
+total_abstracts_species <- nrow(abstract_summary)
+abstracts_with_species <- sum(abstract_summary$has_species)
+species_rate <- abstracts_with_species / total_abstracts_species * 100
 
-# Debug: Check the data
-cat("Species summary data:\n")
-print(species_summary)
-
-p1_species_by_prediction <- species_summary %>%
-  ggplot(aes(x = forcats::fct_reorder(predicted_label, species_rate))) +
-  geom_col(aes(y = total), fill = "lightgray", alpha = 0.7, width = 0.7) +
-  geom_col(aes(y = with_species), fill = endo_palette[1], width = 0.7) +
-  geom_text(aes(y = with_species + total * 0.05, 
-                label = paste0(round(species_rate * 100, 1), "%")),
-            size = 3.5, fontface = "bold") +
+p1_species_detection <- data.frame(
+  Category = c("With Species", "Without Species"),
+  Count = c(abstracts_with_species, total_abstracts_species - abstracts_with_species),
+  Rate = c(species_rate, 100 - species_rate)
+) %>%
+  ggplot(aes(x = "All Abstracts", y = Count, fill = Category)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = paste0(Count, "\n(", round(Rate, 1), "%)")),
+            position = position_stack(vjust = 0.5), size = 4, fontface = "bold") +
+  scale_fill_manual(values = c("With Species" = endo_palette[1], "Without Species" = "lightgray")) +
   labs(
-    title = "Species Detection Rate by Prediction Type",
-    subtitle = "Green bars show abstracts with species detected, gray shows total abstracts",
-    x = "Prediction Type",
-    y = "Number of Abstracts"
+    title = "Overall Species Detection Rate",
+    subtitle = paste("Out of", format(total_abstracts_species, big.mark = ","), "total abstracts"),
+    x = "",
+    y = "Number of Abstracts",
+    caption = paste0("Species detection rate: ", round(species_rate, 1), "%")
   ) +
-  custom_theme
+  custom_theme +
+  theme(legend.position = "bottom")
 
-# Kingdom distribution pie chart
-kingdom_data <- results_clean %>%
-  dplyr::filter(has_species) %>%
-  dplyr::group_by(id) %>%
-  dplyr::slice(1) %>%  # Take first row per abstract to avoid double counting
-  dplyr::ungroup() %>%
-  dplyr::count(kingdom, name = "count") %>%
-  dplyr::filter(!is.na(kingdom)) %>%  # Remove any NA kingdoms
-  dplyr::mutate(
-    percentage = count / sum(count) * 100,
-    label = paste0(kingdom, "\n", count, " (", round(percentage, 1), "%)")
-  )
-
-# Only create pie chart if we have kingdom data
-if (nrow(kingdom_data) > 0) {
-  # Create color mapping based on available kingdoms
-  available_kingdoms <- unique(kingdom_data$kingdom)
-  kingdom_colors <- endo_palette[1:length(available_kingdoms)]
-  names(kingdom_colors) <- available_kingdoms
-  
-  p2_kingdom_dist <- kingdom_data %>%
-    ggplot(aes(x = "", y = count, fill = kingdom)) +
-    geom_bar(stat = "identity", width = 1) +
-    coord_polar("y", start = 0) +
-    scale_fill_manual(values = kingdom_colors) +
-    geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
-    labs(
-      title = "Species Distribution by Kingdom",
-      subtitle = paste("From", sum(abstract_summary$has_species), "abstracts with species detected")
-    ) +
-    theme_void() +
-    theme(
-      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-      plot.subtitle = element_text(size = 11, hjust = 0.5),
-      legend.position = "none"
-    )
-  
-  # Save species plots individually 
-  save_plot(p1_species_by_prediction, "figures/species_detection_by_prediction.png", height = 6)
-  save_plot(p2_kingdom_dist, "figures/species_kingdom_distribution.png", height = 6)
-} else {
-  # If no kingdom data, just save the species detection plot
-  cat("No kingdom data available for pie chart. Saving species detection plot only.\n")
-  save_plot(p1_species_by_prediction, "figures/species_detection_by_prediction.png", height = 6)
-}
+# Save species detection plot
+save_plot(p1_species_detection, "figures/species_detection_rate.png", height = 6)
 
 # 2. RESEARCH METHODS ANALYSIS -------------------------------------------
 
@@ -301,39 +257,9 @@ p4_methods_combined <- methods_combined_summary %>%
   custom_theme +
   theme(legend.position = "none")
 
-# Methods by prediction type
-p5_methods_by_prediction <- methods_abstract_summary %>%
-  left_join(abstract_summary %>% select(id, predicted_label), by = "id") %>%
-  group_by(predicted_label) %>%
-  summarise(
-    Molecular = sum(has_molecular),
-    Culture = sum(has_culture),
-    Microscopy = sum(has_microscopy),
-    Total = n(),
-    .groups = "drop"
-  ) %>%
-  pivot_longer(cols = c(Molecular, Culture, Microscopy), 
-               names_to = "Method", values_to = "Count") %>%
-  mutate(Rate = Count / Total) %>%
-  ggplot(aes(x = predicted_label, y = Rate, fill = Method)) +
-  geom_col(position = "dodge", width = 0.8) +
-  geom_text(aes(label = Count), position = position_dodge(width = 0.8),
-            vjust = -0.3, size = 3) +
-  scale_fill_manual(values = endo_palette[3:5]) +
-  scale_y_continuous(labels = percent_format()) +
-  labs(
-    title = "Research Methods by Prediction Type",
-    subtitle = "Method usage rates across presence vs absence predictions", 
-    x = "Prediction Type",
-    y = "Method Detection Rate",
-    fill = "Method"
-  ) +
-  custom_theme
-
 # Save methods plots individually
 save_plot(p3_methods_individual, "figures/methods_individual.png", height = 6)
 save_plot(p4_methods_combined, "figures/methods_combined.png", height = 6)
-save_plot(p5_methods_by_prediction, "figures/methods_by_prediction.png", height = 6)
 
 # 3. PLANT PARTS ANALYSIS ------------------------------------------------
 
@@ -341,26 +267,33 @@ cat("Creating plant parts analysis plots...\n")
 
 if (sum(results_clean$has_plant_parts) > 0) {
   
-  # Extract and count plant parts
+  # Extract and count plant parts - preserve all unique information per abstract
   plant_parts_data <- results_clean %>%
     filter(has_plant_parts) %>%
-    select(id, plant_parts_detected, predicted_label) %>%
+    select(id, plant_parts_detected) %>%
+    # First get all unique plant parts per abstract (avoiding double counting within abstracts)
     separate_rows(plant_parts_detected, sep = "; ") %>%
     filter(!is.na(plant_parts_detected), plant_parts_detected != "") %>%
-    count(plant_parts_detected, name = "frequency") %>%
-    arrange(desc(frequency)) %>%
-    slice_max(frequency, n = 20) %>%  # Top 20 most frequent
-    mutate(plant_parts_detected = fct_reorder(plant_parts_detected, frequency))
+    # Normalize plant part terms (singular/plural grouping)
+    mutate(plant_part_norm = if (exists("normalize_plant_part")) normalize_plant_part(plant_parts_detected) else tolower(plant_parts_detected)) %>%
+    # Get unique combinations per abstract to avoid losing information
+    distinct(id, plant_part_norm) %>%
+    # Count how many unique abstracts mention each plant part
+    count(plant_part_norm, name = "unique_abstracts") %>%
+    arrange(desc(unique_abstracts)) %>%
+    slice_max(unique_abstracts, n = 20) %>%  # Top 20 most frequent
+    mutate(plant_part_norm = fct_reorder(plant_part_norm, unique_abstracts),
+           plant_parts_detected = stringr::str_to_title(plant_part_norm))
   
   p6_plant_parts_freq <- plant_parts_data %>%
-    ggplot(aes(x = plant_parts_detected, y = frequency)) +
+    ggplot(aes(x = plant_parts_detected, y = unique_abstracts)) +
     geom_col(fill = endo_palette[1], width = 0.8) +
-    geom_text(aes(label = frequency), hjust = -0.1, size = 3) +
+    geom_text(aes(label = unique_abstracts), hjust = -0.1, size = 3) +
     labs(
       title = "Most Frequently Studied Plant Parts",
-      subtitle = paste("Top 20 plant parts from", sum(results_clean$has_plant_parts), "abstracts"),
+      subtitle = paste("Top 20 plant parts from", sum(abstract_summary$has_plant_parts), "unique abstracts"),
       x = "Plant Part",
-      y = "Frequency"
+      y = "Number of Unique Abstracts"
     ) +
     coord_flip() +
     custom_theme
@@ -429,11 +362,13 @@ if (sum(results_clean$has_geography) > 0) {
     filter(!is.na(countries_detected)) %>%
     select(countries_detected) %>%
     separate_rows(countries_detected, sep = "; ") %>%
-    filter(!is.na(countries_detected), countries_detected != "") %>%
-    count(countries_detected, name = "frequency") %>%
-    arrange(desc(frequency)) %>%
-    slice_max(frequency, n = 15) %>%
-    mutate(countries_detected = fct_reorder(countries_detected, frequency))
+  filter(!is.na(countries_detected), countries_detected != "") %>%
+  # Standardize country names and group synonyms
+  mutate(country_std = if (exists("normalize_country_vector")) normalize_country_vector(countries_detected) else stringr::str_to_title(countries_detected)) %>%
+  count(country_std, name = "frequency") %>%
+  arrange(desc(frequency)) %>%
+  slice_max(frequency, n = 15) %>%
+  mutate(countries_detected = fct_reorder(stringr::str_to_title(country_std), frequency))
   
   if (nrow(countries_data) > 0) {
     p8_countries <- countries_data %>%
@@ -632,24 +567,22 @@ capture.output({
   cat("Source: comprehensive_extraction_results.csv\n\n")
   
   cat("FILES GENERATED:\n")
-  cat("1. species_detection_by_prediction.png - Species detection rates by prediction type\n")
-  cat("2. species_kingdom_distribution.png - Species distribution by kingdom (if available)\n")
-  cat("3. methods_individual.png - Individual method frequencies\n")
-  cat("4. methods_combined.png - Combined method frequencies\n")
-  cat("5. methods_by_prediction.png - Methods by prediction type\n")
+  cat("1. species_detection_rate.png - Overall species detection rate\n")
+  cat("2. methods_individual.png - Individual method frequencies\n")
+  cat("3. methods_combined.png - Combined method frequencies\n")
   if (sum(results_clean$has_plant_parts) > 0) {
-    cat("6. plant_parts_frequency.png - Most studied plant parts\n")
-    cat("7. plant_parts_by_prediction.png - Plant parts detection by prediction type\n")
+    cat("4. plant_parts_frequency.png - Most studied plant parts\n")
+    cat("5. plant_parts_by_prediction.png - Plant parts detection by prediction type\n")
   }
   if (sum(results_clean$has_geography) > 0) {
-    cat("8. geographic_regions.png - Geographic distribution by region\n")
-    cat("9. top_countries.png - Most studied countries (if available)\n")
+    cat("6. geographic_regions.png - Geographic distribution by region\n")
+    cat("7. top_countries.png - Most studied countries (if available)\n")
   }
-  cat("10. confidence_distribution.png - Confidence distributions by prediction\n")
-  cat("11. completeness_by_confidence.png - Information completeness by confidence\n")
-  cat("12. quality_heatmap.png - Information detection rates heatmap\n")
-  cat("13. summary_text.png - Overall summary statistics\n")
-  cat("14. info_summary.png - Information detection overview\n\n")
+  cat("8. confidence_distribution.png - Confidence distributions by prediction\n")
+  cat("9. completeness_by_confidence.png - Information completeness by confidence\n")
+  cat("10. quality_heatmap.png - Information detection rates heatmap\n")
+  cat("11. summary_text.png - Overall summary statistics\n")
+  cat("12. info_summary.png - Information detection overview\n\n")
   
   cat("KEY FINDINGS:\n")
   cat("- Species detection rate:", round(species_rate, 1), "%\n")

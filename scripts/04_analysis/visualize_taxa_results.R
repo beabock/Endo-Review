@@ -1,500 +1,463 @@
-# Visualization Script for Taxa Detection Results
-# This script creates visualizations from the output of extract_species_simple.R
-# Updated to work with comprehensive_extraction_results.csv and filter extinct species
+# Focused Taxa Visualization Script - Phylum-Based Only
+# Creates phylum-based plots showing representation of plant and fungal taxa
+# Includes synonym resolution and extinct species exclusion
 
 library(tidyverse)
-library(rgbif)
 library(scales)
 
-# Custom theme for consistent visualization
-custom_theme <- theme_bw(base_size = 14)
-theme_set(custom_theme)
+# Load data exactly like user's working script
+setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
-# Custom color palette
-cus_pal <- c(
-  "#A1C181",  # soft sage green — for plants
-  "#619B8A",  # muted teal — evokes moss or lichens
-  "#C97E7E",  # dusty rose — for fungi like Russula or Hygrophoropsis
-  "#D9AE94"   # pale mushroom beige — for caps and forest floor tones
-)
+# Load the species data with extinct species exclusion (like in working script)
+species_data <- readRDS("models/species.rds")
 
-# Function to save plots with consistent dimensions and format
-save_plot <- function(filename, plot, width = 12, height = 8, units = "in", ...) {
-  dir.create(dirname(filename), showWarnings = FALSE, recursive = TRUE)
-  ggsave(filename, plot, width = width, height = height, units = units, dpi = 300, ...)
-  message("Saved plot to: ", filename)
-}
+# Filter for Plantae and Fungi species like in working script
+reference_species <- species_data %>%
+  filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "species")
 
-# Function to load and process PBDB data for extinct species filtering
-load_pbdb_extinct_species <- function(pbdb_file = "data/raw/pbdb_all.csv") {
-  if (!file.exists(pbdb_file)) {
-    warning("PBDB file not found at ", pbdb_file, ". Extinct species filtering will be skipped.")
-    return(NULL)
-  }
-  
-  message("Loading PBDB data to identify extinct species...")
-  
-  # Read PBDB data, skipping metadata rows
-  pbdb_data <- read_csv(pbdb_file, skip = 16, show_col_types = FALSE) %>%
-    janitor::clean_names()
-  
-  # Extract extinct species names
-  extinct_species <- pbdb_data %>%
-    filter(is_extant == "extinct") %>%
-    pull(accepted_name) %>%
-    unique() %>%
-    na.omit()
-  
-  message("Found ", length(extinct_species), " extinct taxa in PBDB dataset")
-  
-  return(extinct_species)
-}
+# Add extinct species exclusion if the data is available
+if ("species_lower" %in% colnames(reference_species) ||
+    all(c("canonicalName", "genus", "family", "order") %in% colnames(reference_species))) {
 
-# Function to filter out extinct species from taxa results
-filter_extinct_species <- function(taxa_results, extinct_species = NULL) {
-  if (is.null(extinct_species)) {
-    message("No extinct species list provided - returning original dataset")
-    return(taxa_results)
-  }
-  
-  initial_count <- nrow(taxa_results)
-  
-  # Filter out extinct species
-  filtered_results <- taxa_results %>%
-    filter(!canonicalName %in% extinct_species | is.na(canonicalName))
-  
-  final_count <- nrow(filtered_results)
-  message("Filtered out ", initial_count - final_count, " records of extinct species")
-  
-  return(filtered_results)
-}
-
-# MAIN VISUALIZATION FUNCTIONS -----------------------------------------------
-
-# Function to plot plant taxa diversity per phylum
-plot_plant_diversity_per_phylum <- function(taxa_results, reference_species_df, 
-                                           extinct_species = NULL, output_dir = "plots") {
-  
-  # Function to plot percent and count of families represented/not represented per phylum
-  plot_taxon_representation_per_phylum <- function(taxa_results, reference_species_df, extinct_species = NULL, output_dir = "plots", level = "family") {
-    # Supported levels: "family", "genus", "species"
-    stopifnot(level %in% c("family", "genus", "species"))
-    taxa_results_clean <- filter_extinct_species(taxa_results, extinct_species)
-    reference_clean <- filter_extinct_species(reference_species_df, extinct_species)
-
-    # Select column for level
-    level_col <- switch(level,
-      family = "family",
-      genus = "genus",
-      species = "canonicalName"
+  # Create lowercase versions for extinct species matching
+  reference_species <- reference_species %>%
+    mutate(
+      species_lower = tolower(canonicalName),
+      genus_lower = tolower(genus),
+      family_lower = tolower(family),
+      order_lower = tolower(order)
     )
 
-    # Focus on plant data only, filter for Presence only
-    plant_taxa <- taxa_results_clean %>%
-      filter(kingdom == "Plantae", !is.na(phylum), !is.na(.data[[level_col]]), predicted_label == "Presence") %>%
-      distinct(phylum, .data[[level_col]])
+  # Load PBDB extinct species data
+  tryCatch({
+    extinct_taxa <- read.csv("data/raw/pbdb_all.csv", skip = 16) %>%
+      filter(is_extant == "extinct") %>%
+      mutate(across(taxon_name:genus, tolower))
 
-    plant_reference <- reference_clean %>%
-      filter(kingdom == "Plantae", !is.na(phylum), !is.na(.data[[level_col]])) %>%
-      distinct(phylum, .data[[level_col]])
+    extinct_species <- extinct_taxa %>%
+      filter(taxon_rank == "species") %>%
+      distinct(taxon_name) %>%
+      pull(taxon_name)
 
-    # Count taxa found and total per phylum
-    taxa_found <- plant_taxa %>%
-      group_by(phylum) %>%
-      summarise(n_found = n_distinct(.data[[level_col]]), .groups = "drop")
+    extinct_genera <- extinct_taxa %>%
+      filter(taxon_rank == "genus") %>%
+      distinct(taxon_name) %>%
+      pull(taxon_name)
 
-    taxa_total <- plant_reference %>%
-      group_by(phylum) %>%
-      summarise(total = n_distinct(.data[[level_col]]), .groups = "drop")
+    extinct_families <- extinct_taxa %>%
+      filter(taxon_rank == "family") %>%
+      distinct(taxon_name) %>%
+      pull(taxon_name)
 
-    # Merge and calculate not represented
-    taxon_rep <- taxa_total %>%
-      left_join(taxa_found, by = "phylum") %>%
-      mutate(n_found = replace_na(n_found, 0),
-             n_not_found = total - n_found)
+    extinct_orders <- extinct_taxa %>%
+      filter(taxon_rank == "order") %>%
+      distinct(taxon_name) %>%
+      pull(taxon_name)
 
-    # Reshape for stacked bar
-    taxon_rep_long <- taxon_rep %>%
-      select(phylum, n_found, n_not_found) %>%
-      pivot_longer(cols = c(n_found, n_not_found),
-                   names_to = "status", values_to = "count") %>%
-      mutate(status = recode(status,
-                             n_found = "Represented",
-                             n_not_found = "Not Represented"))
+    # Exclude extinct species
+    reference_species <- reference_species %>%
+      filter(
+        !(species_lower %in% extinct_species),
+        !(genus_lower %in% extinct_genera),
+        !(family_lower %in% extinct_families),
+        !(order_lower %in% extinct_orders)
+      ) %>%
+      select(-species_lower, -genus_lower, -family_lower, -order_lower)
 
-    # Add percent for each phylum
-    taxon_rep_long <- taxon_rep_long %>%
-      group_by(phylum) %>%
-      mutate(percent = count / sum(count) * 100) %>%
-      ungroup()
+    message("Excluded extinct species from reference data")
+  }, error = function(e) {
+    message("Could not load extinct species data: ", e$message)
+  })
+}
 
-    # Plot actual counts with labels
-    count_plot <- ggplot(taxon_rep_long, aes(x = phylum, y = count, fill = status)) +
-      geom_col() +
-      geom_text(aes(label = count), position = position_stack(vjust = 0.5), size = 4) +
-      coord_flip() +
-      labs(
-        title = paste("Plant", stringr::str_to_title(level), "Representation per Phylum (Count)"),
-        x = "Phylum",
-        y = paste("Number of", stringr::str_to_title(level), "s"),
-        fill = "Status"
-      ) +
-      scale_fill_manual(values = c("Represented" = cus_pal[1], "Not Represented" = cus_pal[3])) +
-      theme_minimal()
+# Add synonym resolution
+if (all(c("taxonomicStatus", "acceptedNameUsageID", "taxonID") %in% colnames(reference_species))) {
+  message("Resolving synonyms to accepted names...")
 
-    save_plot(file.path(output_dir, paste0("plant_", level, "_representation_per_phylum_count.png")), count_plot)
+  # Get accepted species
+  accepted_species <- reference_species %>%
+    filter(taxonomicStatus == "accepted") %>%
+    select(taxonID, canonicalName) %>%
+    rename(canonicalName_accepted = canonicalName)
 
-    # Plot percent with labels
-    percent_plot <- ggplot(taxon_rep_long, aes(x = phylum, y = percent, fill = status)) +
-      geom_col() +
-      geom_text(aes(label = sprintf("%.1f%%", percent)), position = position_stack(vjust = 0.5), size = 4) +
-      coord_flip() +
-      labs(
-        title = paste("Plant", stringr::str_to_title(level), "Representation per Phylum (Percent)"),
-        x = "Phylum",
-        y = paste("Percent of", stringr::str_to_title(level), "s"),
-        fill = "Status"
-      ) +
-      scale_fill_manual(values = c("Represented" = cus_pal[1], "Not Represented" = cus_pal[3])) +
-      theme_minimal()
-
-    save_plot(file.path(output_dir, paste0("plant_", level, "_representation_per_phylum_percent.png")), percent_plot)
-
-    # Save summary CSV
-    write_csv(taxon_rep, file.path(output_dir, paste0(level, "_representation_per_phylum_summary.csv")))
-
-    return(list(
-      count_plot = count_plot,
-      percent_plot = percent_plot,
-      summary = taxon_rep
-    ))
-  }
-  # Filter out extinct species from both datasets
-  taxa_results_clean <- filter_extinct_species(taxa_results, extinct_species)
-  reference_clean <- filter_extinct_species(reference_species_df, extinct_species)
-  
-  # Focus on plant data only
-  plant_taxa <- taxa_results_clean %>%
-    filter(kingdom == "Plantae", !is.na(phylum)) %>%
-    # Remove duplicates and get unique taxa per level
-    distinct(id, phylum, family, genus, canonicalName, predicted_label)
-  
-  plant_reference <- reference_clean %>%
-    filter(kingdom == "Plantae", !is.na(phylum)) %>%
-    distinct(phylum, family, genus, canonicalName)
-  
-  # Count species per phylum in our dataset
-  species_per_phylum_dataset <- plant_taxa %>%
-    filter(!is.na(canonicalName)) %>%
-    group_by(phylum, predicted_label) %>%
-    summarise(n_species_found = n_distinct(canonicalName), .groups = "drop") %>%
-    complete(phylum, predicted_label = c("Presence", "Absence"), 
-             fill = list(n_species_found = 0))
-  
-  # Count total species per phylum in reference
-  species_per_phylum_reference <- plant_reference %>%
-    filter(!is.na(canonicalName)) %>%
-    group_by(phylum) %>%
-    summarise(total_species = n_distinct(canonicalName), .groups = "drop")
-  
-  # Combine for comparison
-  species_comparison <- species_per_phylum_dataset %>%
-    group_by(phylum) %>%
-    summarise(n_species_found = sum(n_species_found), .groups = "drop") %>%
-    left_join(species_per_phylum_reference, by = "phylum") %>%
+  # Resolve synonyms
+  reference_species <- reference_species %>%
+    left_join(accepted_species, by = c("acceptedNameUsageID" = "taxonID")) %>%
     mutate(
-      coverage_pct = (n_species_found / total_species) * 100,
-      n_species_missing = total_species - n_species_found
+      canonicalName_resolved = coalesce(canonicalName_accepted, canonicalName)
     ) %>%
-    arrange(desc(n_species_found))
-  
-  # Create species diversity plot
-  species_plot <- species_per_phylum_dataset %>%
-    ggplot(aes(x = reorder(phylum, n_species_found), y = n_species_found, fill = predicted_label)) +
-    geom_col() +
-    coord_flip() +
-    labs(
-      title = "Plant Species Diversity per Phylum in Dataset",
-      subtitle = "Number of unique species detected in endophyte research abstracts",
-      x = "Phylum",
-      y = "Number of Species",
-      fill = "Classification"
-    ) +
-    scale_fill_manual(values = cus_pal[1:2]) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size = 16, face = "bold"),
-      plot.subtitle = element_text(size = 12),
-      axis.text = element_text(size = 11)
+    select(-canonicalName_accepted)
+
+  message("Resolved synonyms in reference data")
+}
+
+message("Reference data loaded: ", nrow(reference_species), " species")
+
+# Load taxa results with synonym resolution and deduplication
+taxa_results <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+
+message("Taxa results loaded: ", nrow(taxa_results), " entries")
+
+# Handle synonym resolution for taxa_results (if columns exist)
+if (all(c("user_supplied_name", "resolved_name") %in% colnames(taxa_results))) {
+  message("Resolving synonyms in taxa_results...")
+
+  # Replace user_supplied_name with resolved_name where available
+  taxa_results <- taxa_results %>%
+    mutate(
+      canonicalName_resolved = coalesce(resolved_name, canonicalName),
+      genus_resolved = if_else(match_type == "species" & !is.na(resolved_name),
+                               word(resolved_name, 1), genus),
+      family_resolved = family  # Keep family as-is for now
     )
-  
-  save_plot(file.path(output_dir, "plant_species_per_phylum.png"), species_plot)
-  
-  # Coverage comparison plot
-  coverage_long <- species_comparison %>%
-    select(phylum, n_species_found, n_species_missing) %>%
-    pivot_longer(cols = c(n_species_found, n_species_missing),
-                 names_to = "status", values_to = "count") %>%
-    mutate(status = recode(status,
-                          n_species_found = "Found in Dataset",
-                          n_species_missing = "Missing from Dataset"))
-  
-  coverage_plot <- coverage_long %>%
-    ggplot(aes(x = reorder(phylum, count), y = count, fill = status)) +
-    geom_col() +
-    coord_flip() +
-    labs(
-      title = "Plant Species Coverage per Phylum",
-      subtitle = "Comparison of species found vs. total known species",
-      x = "Phylum",
-      y = "Number of Species",
-      fill = "Status"
-    ) +
-    scale_fill_manual(values = c("Found in Dataset" = cus_pal[1], 
-                                "Missing from Dataset" = cus_pal[3])) +
-    theme_minimal()
-  
-  save_plot(file.path(output_dir, "plant_species_coverage_per_phylum.png"), coverage_plot)
-  
-  # Family-level analysis
-  families_per_phylum_dataset <- plant_taxa %>%
-    filter(!is.na(family)) %>%
-    group_by(phylum, predicted_label) %>%
-    summarise(n_families_found = n_distinct(family), .groups = "drop") %>%
-    complete(phylum, predicted_label = c("Presence", "Absence"), 
-             fill = list(n_families_found = 0))
-  
-  families_per_phylum_reference <- plant_reference %>%
-    filter(!is.na(family)) %>%
-    group_by(phylum) %>%
-    summarise(total_families = n_distinct(family), .groups = "drop")
-  
-  families_plot <- families_per_phylum_dataset %>%
-    ggplot(aes(x = reorder(phylum, n_families_found), y = n_families_found, fill = predicted_label)) +
-    geom_col() +
-    coord_flip() +
-    labs(
-      title = "Plant Families per Phylum in Dataset",
-      subtitle = "Number of unique families detected in endophyte research abstracts",
-      x = "Phylum",
-      y = "Number of Families",
-      fill = "Classification"
-    ) +
-    scale_fill_manual(values = cus_pal[1:2]) +
-    theme_minimal()
-  
-  save_plot(file.path(output_dir, "plant_families_per_phylum.png"), families_plot)
-  
-  # Genus-level analysis
-  genera_per_phylum_dataset <- plant_taxa %>%
-    filter(!is.na(genus)) %>%
-    group_by(phylum, predicted_label) %>%
-    summarise(n_genera_found = n_distinct(genus), .groups = "drop") %>%
-    complete(phylum, predicted_label = c("Presence", "Absence"), 
-             fill = list(n_genera_found = 0))
-  
-  genera_per_phylum_reference <- plant_reference %>%
-    filter(!is.na(genus)) %>%
-    group_by(phylum) %>%
-    summarise(total_genera = n_distinct(genus), .groups = "drop")
-  
-  genera_plot <- genera_per_phylum_dataset %>%
-    ggplot(aes(x = reorder(phylum, n_genera_found), y = n_genera_found, fill = predicted_label)) +
-    geom_col() +
-    coord_flip() +
-    labs(
-      title = "Plant Genera per Phylum in Dataset",
-      subtitle = "Number of unique genera detected in endophyte research abstracts",
-      x = "Phylum",
-      y = "Number of Genera",
-      fill = "Classification"
-    ) +
-    scale_fill_manual(values = cus_pal[1:2]) +
-    theme_minimal()
-  
-  save_plot(file.path(output_dir, "plant_genera_per_phylum.png"), genera_plot)
-  
-  # Save summary statistics
-  summary_stats <- list(
-    species_summary = species_comparison,
-    families_dataset = families_per_phylum_dataset %>% 
-      group_by(phylum) %>% 
-      summarise(total_families_found = sum(n_families_found), .groups = "drop") %>%
-      left_join(families_per_phylum_reference, by = "phylum"),
-    genera_dataset = genera_per_phylum_dataset %>% 
-      group_by(phylum) %>% 
-      summarise(total_genera_found = sum(n_genera_found), .groups = "drop") %>%
-      left_join(genera_per_phylum_reference, by = "phylum")
-  )
-  
-  write_csv(summary_stats$species_summary, file.path(output_dir, "species_per_phylum_summary.csv"))
-  write_csv(summary_stats$families_dataset, file.path(output_dir, "families_per_phylum_summary.csv"))
-  write_csv(summary_stats$genera_dataset, file.path(output_dir, "genera_per_phylum_summary.csv"))
-  
-  return(list(
-    species_plot = species_plot,
-    coverage_plot = coverage_plot,
-    families_plot = families_plot,
-    genera_plot = genera_plot,
-    summary_stats = summary_stats
-  ))
+
+  message("Synonyms resolved in taxa_results")
+} else {
+  message("Synonym resolution columns not found in taxa_results")
+  taxa_results <- taxa_results %>%
+    mutate(
+      canonicalName_resolved = canonicalName,
+      genus_resolved = genus,
+      family_resolved = family
+    )
 }
 
-# Function to plot research methods summary
-plot_research_methods_summary <- function(taxa_results, output_dir = "plots") {
-  if (!"methods_summary" %in% colnames(taxa_results)) {
-    message("No methods_summary column found - skipping methods visualization")
+# Remove duplicate taxa within the same abstract to avoid double counting
+taxa_results_deduped <- taxa_results %>%
+  # First, apply synonym resolution consistently
+  mutate(
+    # For species, use resolved name if available, otherwise original
+    canonicalName_resolved = coalesce(resolved_name, canonicalName),
+    # For genus, extract from resolved species name or use resolved genus
+    genus_resolved = case_when(
+      match_type == "species" & !is.na(resolved_name) ~ word(resolved_name, 1),
+      match_type == "genus" & !is.na(resolved_name) ~ resolved_name,
+      TRUE ~ genus
+    ),
+    # For family, keep as is (resolved family not typically provided)
+    family_resolved = family
+  ) %>%
+  # Remove duplicates within the same abstract for the same taxon
+  distinct(id, kingdom, phylum, canonicalName_resolved, genus_resolved, family_resolved,
+           match_type, predicted_label, .keep_all = TRUE) %>%
+  # Create final resolved names for counting
+  mutate(
+    canonicalName_final = canonicalName_resolved,
+    genus_final = genus_resolved,
+    family_final = family_resolved
+  )
+
+message("Data prepared with synonym resolution and deduplication")
+
+# Create consistent phylum ordering function
+get_phylum_order <- function(kingdom_filter) {
+  reference_species %>%
+    filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
+    distinct(phylum, canonicalName) %>%
+    group_by(phylum) %>%
+    summarise(species_count = n(), .groups = "drop") %>%
+    arrange(desc(species_count)) %>%
+    pull(phylum)
+}
+
+# Get consistent ordering for each kingdom (reverse for correct plot orientation)
+plant_phylum_order <- rev(get_phylum_order("Plantae"))
+fungi_phylum_order <- rev(get_phylum_order("Fungi"))
+
+message("Plant phylum order (by species count, reversed for plot): ", paste(plant_phylum_order, collapse = ", "))
+message("Fungi phylum order (by species count, reversed for plot): ", paste(fungi_phylum_order, collapse = ", "))
+
+# Create phylum-based visualization function with hierarchical counting
+create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, output_name) {
+
+  # Get found taxa with hierarchical logic and synonym resolution
+  if (level_name == "Species") {
+    # For species, count direct species mentions using resolved names
+    found_by_phylum <- taxa_results_deduped %>%
+      filter(kingdom == kingdom_filter,
+             predicted_label == "Presence",
+             !is.na(canonicalName_final),
+             !is.na(phylum),
+             match_type == "species") %>%
+      distinct(phylum, canonicalName_final) %>%
+      group_by(phylum) %>%
+      summarise(found = n_distinct(canonicalName_final), .groups = "drop")
+  } else if (level_name == "Genus") {
+    # For genera, count both direct genus mentions AND genera that contain found species
+    direct_genus <- taxa_results_deduped %>%
+      filter(kingdom == kingdom_filter,
+             predicted_label == "Presence",
+             !is.na(genus_final),
+             !is.na(phylum),
+             match_type == "genus") %>%
+      distinct(phylum, genus_final)
+
+    # Get genera that contain found species (using resolved genus names)
+    species_in_genus <- taxa_results_deduped %>%
+      filter(kingdom == kingdom_filter,
+             predicted_label == "Presence",
+             !is.na(canonicalName_final),
+             !is.na(genus_final),
+             !is.na(phylum),
+             match_type == "species") %>%
+      distinct(phylum, genus_final)
+
+    # Combine direct and indirect genus mentions
+    all_genus <- bind_rows(
+      direct_genus %>% select(phylum, genus = genus_final),
+      species_in_genus %>% select(phylum, genus = genus_final)
+    ) %>%
+      distinct(phylum, genus)
+
+    found_by_phylum <- all_genus %>%
+      group_by(phylum) %>%
+      summarise(found = n_distinct(genus), .groups = "drop")
+  } else if (level_name == "Family") {
+    # For families, count both direct family mentions AND families that contain found genera/species
+    direct_family <- taxa_results_deduped %>%
+      filter(kingdom == kingdom_filter,
+             predicted_label == "Presence",
+             !is.na(family_final),
+             !is.na(phylum),
+             match_type == "family") %>%
+      distinct(phylum, family_final)
+
+    # Get families that contain found species
+    species_in_family <- taxa_results_deduped %>%
+      filter(kingdom == kingdom_filter,
+             predicted_label == "Presence",
+             !is.na(canonicalName_final),
+             !is.na(family_final),
+             !is.na(phylum),
+             match_type == "species") %>%
+      distinct(phylum, family_final)
+
+    # Get families that contain found genera
+    genus_in_family <- taxa_results_deduped %>%
+      filter(kingdom == kingdom_filter,
+             predicted_label == "Presence",
+             !is.na(genus_final),
+             !is.na(family_final),
+             !is.na(phylum),
+             match_type == "genus") %>%
+      distinct(phylum, family_final)
+
+    # Combine all family mentions
+    all_families <- bind_rows(
+      direct_family %>% select(phylum, family = family_final),
+      species_in_family %>% select(phylum, family = family_final),
+      genus_in_family %>% select(phylum, family = family_final)
+    ) %>%
+      distinct(phylum, family)
+
+    found_by_phylum <- all_families %>%
+      group_by(phylum) %>%
+      summarise(found = n_distinct(family), .groups = "drop")
+  }
+
+  # Get total taxa by phylum (always from reference data)
+  total_by_phylum <- reference_species %>%
+    filter(kingdom == kingdom_filter,
+           !is.na(.data[[column_name]]),
+           !is.na(phylum)) %>%
+    distinct(phylum, .data[[column_name]]) %>%
+    group_by(phylum) %>%
+    summarise(total = n_distinct(.data[[column_name]]), .groups = "drop")
+
+  # Combine data
+  phylum_data <- total_by_phylum %>%
+    left_join(found_by_phylum, by = "phylum") %>%
+    mutate(
+      found = replace_na(found, 0),
+      not_found = total - found,
+      percent_found = (found / total) * 100,
+      percent_not_found = (not_found / total) * 100
+    ) %>%
+    # Only include phyla with data
+    filter(total > 0)
+
+  if (nrow(phylum_data) == 0) {
+    message("No phylum data found for ", kingdom_filter, " ", level_name)
     return(NULL)
   }
-  
-  # Extract methods data
-  methods_data <- taxa_results %>%
-    filter(!is.na(methods_summary)) %>%
-    distinct(id, predicted_label, molecular_methods, culture_based_methods, microscopy_methods) %>%
-    pivot_longer(cols = ends_with("_methods"), 
-                 names_to = "method_type", 
-                 values_to = "detected") %>%
-    mutate(
-      method_type = str_remove(method_type, "_methods"),
-      method_type = str_to_title(str_replace_all(method_type, "_", " "))
-    ) %>%
-    filter(detected == TRUE) %>%
-    count(method_type, predicted_label, name = "n_abstracts")
-  
-  methods_plot <- methods_data %>%
-    ggplot(aes(x = method_type, y = n_abstracts, fill = predicted_label)) +
-    geom_col(position = "dodge") +
+
+  # Create count plot
+  count_data <- phylum_data %>%
+    select(phylum, found, not_found) %>%
+    pivot_longer(cols = c(found, not_found),
+                 names_to = "Status",
+                 values_to = "Count") %>%
+    mutate(Status = recode(Status, found = "Found", not_found = "Not Found"))
+
+  # Apply consistent phylum ordering
+  if (kingdom_filter == "Plantae") {
+    count_data <- count_data %>%
+      mutate(phylum = factor(phylum, levels = plant_phylum_order))
+  } else if (kingdom_filter == "Fungi") {
+    count_data <- count_data %>%
+      mutate(phylum = factor(phylum, levels = fungi_phylum_order))
+  }
+
+  count_plot <- ggplot(count_data, aes(x = phylum, y = Count, fill = Status)) +
+    geom_col(width = 0.8) +
+    geom_text(aes(label = Count), position = position_stack(vjust = 0.5), size = 3) +
+    coord_flip() +
     labs(
-      title = "Research Methods Used in Endophyte Studies",
-      x = "Method Type",
-      y = "Number of Abstracts",
-      fill = "Classification"
+      title = paste(kingdom_filter, level_name, "Representation by Phylum (Count)"),
+      subtitle = paste("Number of", tolower(level_name), "found vs. not found in each phylum (hierarchical)"),
+      x = "Phylum",
+      y = paste("Number of", level_name, "s")
     ) +
-    scale_fill_manual(values = cus_pal[1:2]) +
+    scale_fill_manual(values = c("Found" = "#2E8B57", "Not Found" = "#CD853F")) +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
-  save_plot(file.path(output_dir, "research_methods_summary.png"), methods_plot)
-  
-  return(methods_plot)
-}
+    theme(axis.text.y = element_text(size = 8))
 
-# Function to plot geographic distribution
-plot_geographic_distribution <- function(taxa_results, output_dir = "plots") {
-  if (!"countries_detected" %in% colnames(taxa_results)) {
-    message("No countries_detected column found - skipping geographic visualization")
-    return(NULL)
-  }
-  
-  # Extract geographic data
-  geo_data <- taxa_results %>%
-    filter(!is.na(countries_detected)) %>%
-    distinct(id, predicted_label, global_north_countries, global_south_countries) %>%
+  # Create percentage plot
+  percent_data <- phylum_data %>%
+    select(phylum, percent_found, percent_not_found) %>%
+    pivot_longer(cols = c(percent_found, percent_not_found),
+                 names_to = "Status",
+                 values_to = "Percent") %>%
     mutate(
-      has_global_north = !is.na(global_north_countries) & global_north_countries > 0,
-      has_global_south = !is.na(global_south_countries) & global_south_countries > 0,
-      region = case_when(
-        has_global_north & has_global_south ~ "Both",
-        has_global_north ~ "Global North",
-        has_global_south ~ "Global South",
-        TRUE ~ "Unknown"
-      )
-    ) %>%
-    count(region, predicted_label, name = "n_abstracts")
-  
-  geo_plot <- geo_data %>%
-    ggplot(aes(x = region, y = n_abstracts, fill = predicted_label)) +
-    geom_col(position = "dodge") +
+      Status = recode(Status, percent_found = "Found", percent_not_found = "Not Found")
+    )
+
+  # Apply consistent phylum ordering to percent data
+  if (kingdom_filter == "Plantae") {
+    percent_data <- percent_data %>%
+      mutate(phylum = factor(phylum, levels = plant_phylum_order))
+  } else if (kingdom_filter == "Fungi") {
+    percent_data <- percent_data %>%
+      mutate(phylum = factor(phylum, levels = fungi_phylum_order))
+  }
+
+  percent_plot <- ggplot(percent_data, aes(x = phylum, y = Percent, fill = Status)) +
+    geom_col(width = 0.8) +
+    geom_text(aes(label = sprintf("%.1f%%", Percent)), position = position_stack(vjust = 0.5), size = 3) +
+    coord_flip() +
     labs(
-      title = "Geographic Distribution of Endophyte Research",
-      x = "Region",
-      y = "Number of Abstracts",
-      fill = "Classification"
+      title = paste(kingdom_filter, level_name, "Representation by Phylum (Percent)"),
+      subtitle = paste("Percentage of", tolower(level_name), "found vs. not found in each phylum (hierarchical)"),
+      x = "Phylum",
+      y = paste("Percentage of", level_name, "s")
     ) +
-    scale_fill_manual(values = cus_pal[1:2]) +
-    theme_minimal()
-  
-  save_plot(file.path(output_dir, "geographic_distribution.png"), geo_plot)
-  
-  return(geo_plot)
+    scale_fill_manual(values = c("Found" = "#2E8B57", "Not Found" = "#CD853F")) +
+    theme_minimal() +
+    theme(axis.text.y = element_text(size = 8))
+
+  # Save both plots
+  ggsave(paste0("plots/", output_name, "_by_phylum_count.png"), count_plot, width = 12, height = 8)
+  ggsave(paste0("plots/", output_name, "_by_phylum_percent.png"), percent_plot, width = 12, height = 8)
+
+  message("Saved: plots/", output_name, "_by_phylum_count.png")
+  message("Saved: plots/", output_name, "_by_phylum_percent.png")
+  message("Used hierarchical counting: ", level_name, " includes constituent taxa")
+
+  return(list(count_plot = count_plot, percent_plot = percent_plot))
 }
 
-# Main function to run all visualizations
-visualize_comprehensive_results <- function(results_file = "results/comprehensive_extraction_results.csv",
-                                          species_file = "models/species.rds", 
-                                          pbdb_file = "data/raw/pbdb_all.csv",
-                                          output_dir = "plots") {
-  
-  # Create output directory
-  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
-  
-  # Load data
-  message("Loading comprehensive extraction results from ", results_file)
-  taxa_results <- read_csv(results_file, show_col_types = FALSE)
-  
-  message("Loading reference species data from ", species_file)
-  if (file.exists(species_file)) {
-    reference_species <- readRDS(species_file)
-  } else {
-    stop("Species reference file not found at ", species_file)
-  }
-  
-  # Load extinct species list
-  extinct_species <- load_pbdb_extinct_species(pbdb_file)
-  
-  # Run main visualizations
-  message("Creating plant diversity visualizations...")
-  diversity_plots <- plot_plant_diversity_per_phylum(taxa_results, reference_species, 
-                                                    extinct_species, output_dir)
-  
-  message("Creating research methods visualizations...")
-  methods_plot <- plot_research_methods_summary(taxa_results, output_dir)
-  
-  message("Creating geographic distribution visualizations...")
-  geo_plot <- plot_geographic_distribution(taxa_results, output_dir)
-  
-  # Create summary report
-  summary_report <- tibble(
-    visualization_type = c("Plant Species per Phylum", "Plant Families per Phylum", 
-                          "Plant Genera per Phylum", "Species Coverage", 
-                          "Research Methods", "Geographic Distribution"),
-    file_created = c("plant_species_per_phylum.png", "plant_families_per_phylum.png",
-                    "plant_genera_per_phylum.png", "plant_species_coverage_per_phylum.png",
-                    "research_methods_summary.png", "geographic_distribution.png"),
-    status = "completed"
-  )
-  
-  write_csv(summary_report, file.path(output_dir, "visualization_summary.csv"))
-  
-  message("All visualizations complete! Results saved to ", output_dir)
-  message("Key outputs:")
-  message("  - Plant species diversity per phylum")
-  message("  - Plant families diversity per phylum") 
-  message("  - Plant genera diversity per phylum")
-  message("  - Species coverage comparison with reference dataset")
-  message("  - Research methods summary")
-  message("  - Geographic distribution analysis")
-  
-  return(list(
-    diversity_plots = diversity_plots,
-    methods_plot = methods_plot,
-    geo_plot = geo_plot,
-    summary_report = summary_report
-  ))
+# Create output directory
+dir.create("plots", showWarnings = FALSE)
+
+# Create phylum-based representation plots (count and percent versions)
+message("Creating phylum-based visualization plots...")
+
+# Plant phylum plots
+create_phylum_taxa_plot("Plantae", "Family", "family", "plantae_family_representation")
+create_phylum_taxa_plot("Plantae", "Genus", "genus", "plantae_genus_representation")
+create_phylum_taxa_plot("Plantae", "Species", "canonicalName", "plantae_species_representation")
+
+# Fungi phylum plots
+create_phylum_taxa_plot("Fungi", "Family", "family", "fungi_family_representation")
+create_phylum_taxa_plot("Fungi", "Genus", "genus", "fungi_genus_representation")
+create_phylum_taxa_plot("Fungi", "Species", "canonicalName", "fungi_species_representation")
+
+# Create comprehensive list of unrepresented taxa
+create_unrepresented_taxa_csv <- function() {
+
+  # Get all unique taxa from reference data (with resolved synonyms)
+  all_reference_taxa <- reference_species %>%
+    distinct(kingdom, phylum, family, genus, canonicalName_resolved) %>%
+    rename(species = canonicalName_resolved)
+
+  # Get found taxa from deduplicated results
+  found_species <- taxa_results_deduped %>%
+    filter(match_type == "species", predicted_label == "Presence", !is.na(canonicalName_final)) %>%
+    distinct(kingdom, phylum, family, genus, species = canonicalName_final)
+
+  found_genera <- taxa_results_deduped %>%
+    filter(match_type == "genus", predicted_label == "Presence", !is.na(genus_final)) %>%
+    distinct(kingdom, phylum, family, genus = genus_final) %>%
+    mutate(species = NA_character_)
+
+  found_families <- taxa_results_deduped %>%
+    filter(match_type == "family", predicted_label == "Presence", !is.na(family_final)) %>%
+    distinct(kingdom, phylum, family = family_final) %>%
+    mutate(genus = NA_character_, species = NA_character_)
+
+  # Combine all found taxa
+  found_taxa <- bind_rows(found_species, found_genera, found_families) %>%
+    distinct()
+
+  # Find unrepresented taxa by anti-joining with found taxa
+  # For species-level comparison
+  unrepresented_species <- all_reference_taxa %>%
+    anti_join(found_species, by = c("kingdom", "phylum", "family", "genus", "species"))
+
+  # For genus-level comparison (genera not found at genus level)
+  unrepresented_genera <- all_reference_taxa %>%
+    distinct(kingdom, phylum, family, genus) %>%
+    anti_join(found_genera, by = c("kingdom", "phylum", "family", "genus")) %>%
+    anti_join(found_species %>% distinct(kingdom, phylum, family, genus),
+              by = c("kingdom", "phylum", "family", "genus")) %>%
+    mutate(species = NA_character_)
+
+  # For family-level comparison (families not found at any level)
+  unrepresented_families <- all_reference_taxa %>%
+    distinct(kingdom, phylum, family) %>%
+    anti_join(found_families, by = c("kingdom", "phylum", "family")) %>%
+    anti_join(found_genera %>% distinct(kingdom, phylum, family),
+              by = c("kingdom", "phylum", "family")) %>%
+    anti_join(found_species %>% distinct(kingdom, phylum, family),
+              by = c("kingdom", "phylum", "family")) %>%
+    mutate(genus = NA_character_, species = NA_character_)
+
+  # Combine all unrepresented taxa
+  unrepresented_taxa <- bind_rows(
+    unrepresented_species %>% mutate(taxa_level = "species"),
+    unrepresented_genera %>% mutate(taxa_level = "genus"),
+    unrepresented_families %>% mutate(taxa_level = "family")
+  ) %>%
+    arrange(kingdom, phylum, family, genus, species) %>%
+    filter(!is.na(phylum))  # Remove any entries without phylum
+
+  # Save to CSV
+  write_csv(unrepresented_taxa, "results/unrepresented_taxa.csv")
+
+  message("Saved comprehensive list of unrepresented taxa to: results/unrepresented_taxa.csv")
+  message("Total unrepresented taxa: ", nrow(unrepresented_taxa))
+  message("- Species: ", sum(unrepresented_taxa$taxa_level == "species"))
+  message("- Genera: ", sum(unrepresented_taxa$taxa_level == "genus"))
+  message("- Families: ", sum(unrepresented_taxa$taxa_level == "family"))
+
+  return(unrepresented_taxa)
 }
-# Example usage
-if (interactive()) {
-  message("To create visualizations from comprehensive extraction results:")
-  message('visualize_comprehensive_results()')
-  message('# or with custom paths:')
-  message('visualize_comprehensive_results(')
-  message('  results_file = "results/comprehensive_extraction_results.csv",')
-  message('  species_file = "models/species.rds",')
-  message('  pbdb_file = "data/raw/pbdb_all.csv",')
-  message('  output_dir = "plots"')
-  message(')')
-    message('To create family representation plots:')
-    message('plot_family_representation_per_phylum(')
-    message('  taxa_results, reference_species, extinct_species, output_dir = "plots"')
-    message(')')
-}
+
+# Create directory for results if it doesn't exist
+dir.create("results", showWarnings = FALSE)
+
+# Create the unrepresented taxa CSV
+unrepresented_taxa <- create_unrepresented_taxa_csv()
+
+message("All visualizations and data exports completed!")
+message("Created:")
+message("- 12 phylum-based plots (6 kingdoms × 2 versions each)")
+message("- 1 comprehensive CSV of unrepresented taxa")
+message("Total: 12 visualization files in plots/ directory + 1 data file")
+message("Features included:")
+message("- Synonym resolution to accepted names")
+message("- Extinct species exclusion")
+message("- Both count and percentage versions")
+message("- Phylum-level breakdown for both Plantae and Fungi")
+message("- Consistent phylum ordering by species count")
+message("- Comprehensive list of unrepresented taxa")

@@ -455,14 +455,21 @@ get_method_keywords <- function() {
 
 # Function to standardize country names (handles common variations and homonyms)
 standardize_country_name <- function(country_text) {
-  # Handle common variations and homonyms
-  country_text <- stringr::str_to_title(country_text)
-  
-  # Specific mappings for common variations
+  # Handle common variations and homonyms. Vectorized.
+  if (is.null(country_text)) return(NA_character_)
+  country_text <- as.character(country_text)
+  # Title case so mappings are predictable
+  country_title <- stringr::str_to_title(country_text)
+
+  # Specific mappings for common variations (includes additional synonyms)
   country_mappings <- c(
     "Usa" = "United States",
-    "Us" = "United States", 
+    "Us" = "United States",
+    "U\\.S\\.A\\." = "United States",
+    "U\\.S\\." = "United States",
     "United States Of America" = "United States",
+    "United States Of America" = "United States",
+    "America" = "United States",
     "Uk" = "United Kingdom",
     "Britain" = "United Kingdom",
     "Great Britain" = "United Kingdom",
@@ -471,15 +478,27 @@ standardize_country_name <- function(country_text) {
     "Burma" = "Myanmar",
     "Czechia" = "Czech Republic",
     "Holland" = "Netherlands",
-    "Uae" = "United Arab Emirates"
+    "Uae" = "United Arab Emirates",
+    "Republic Of Korea" = "South Korea",
+    "Korea" = "South Korea",
+    "South Korea" = "South Korea",
+    "North Korea" = "North Korea",
+    "Iran" = "Iran",
+    "Islamic Republic Of Iran" = "Iran",
+    "Viet Nam" = "Vietnam"
   )
-  
-  # Apply mappings
-  if (country_text %in% names(country_mappings)) {
-    return(country_mappings[country_text])
-  }
-  
-  return(country_text)
+
+  # Apply mappings; if no mapping exists, return the title-cased input
+  out <- vapply(country_title, function(ct) {
+    if (ct %in% names(country_mappings)) {
+      unname(country_mappings[ct])
+    } else {
+      ct
+    }
+  }, FUN.VALUE = "")
+
+  # Return as character vector
+  return(as.character(out))
 }
 
 # Function to handle problematic homonyms (e.g., Niger as country vs species)
@@ -560,6 +579,9 @@ cat("- standardize_country_name()\n")
 cat("- filter_country_homonyms()\n")
 cat("- get_biodiversity_hotspots()\n")
 cat("- test_reference_data() # for testing\n")
+cat("- standardize_country_name() # normalize country synonyms\n")
+cat("- normalize_country_vector() # vectorized wrapper that ensures canonical names\n")
+cat("- normalize_plant_part() # singular/plural normalization for plant parts\n")
 
 # Convenience function to get just continent keywords (subset of geographic keywords)
 get_continent_keywords <- function() {
@@ -578,4 +600,89 @@ get_region_keywords <- function() {
   
   regions <- setdiff(geographic_keywords, continents)
   return(regions)
+}
+
+# Vectorized wrapper that standardizes country names and optionally ensures membership
+# in the canonical country list from get_country_classifications().
+normalize_country_vector <- function(country_vec, ensure_in_classification = FALSE) {
+  country_vec <- as.character(country_vec)
+  standardized <- standardize_country_name(country_vec)
+
+  if (ensure_in_classification) {
+    canonical <- get_all_countries()
+    # If an element is not found in canonical list, keep standardized value but warn once
+    not_found <- setdiff(unique(standardized[!is.na(standardized)]), canonical)
+    if (length(not_found) > 0) {
+      warning("Some standardized country names not in classification: ", paste(not_found, collapse = ", "))
+    }
+  }
+
+  return(standardized)
+}
+
+
+# Normalize plant part terms so singular and plural forms map to the same canonical
+# token. This is intentionally conservative: prefer a mapping table for irregulars
+# and a small set of rules for regular plurals.
+normalize_plant_part <- function(part_text) {
+  # Handle vector input by processing each element
+  if (length(part_text) > 1) {
+    return(vapply(part_text, normalize_plant_part, FUN.VALUE = character(1), USE.NAMES = FALSE))
+  }
+
+  # Handle single value
+  if (length(part_text) == 0 || is.na(part_text) || part_text == "") return(NA_character_)
+
+  txt <- tolower(trimws(as.character(part_text)))
+
+  # Known irregular plural -> singular mappings
+  irregulars <- c(
+    "leaves" = "leaf",
+    "lenticels" = "lenticel",
+    "roots" = "root",
+    "stems" = "stem",
+    "blades" = "blade",
+    "berries" = "berry",
+    "drupes" = "drupe",
+    "axes" = "axis",
+    "galls" = "gall",
+    "hairs" = "hair",
+    "nodes" = "node",
+    "internodes" = "internode",
+    "buds" = "bud",
+    "flowers" = "flower",
+    "seeds" = "seed",
+    "fruits" = "fruit",
+    "sheaths" = "sheath",
+    "stomata" = "stoma",
+    "trichomes" = "trichome",
+    "runners" = "runner",
+    "tubers" = "tuber",
+    "bulbs" = "bulb",
+    "roots" = "root",
+    "cotyledons" = "cotyledon",
+    "embryos" = "embryo",
+    "pistils" = "pistil",
+    "stamens" = "stamen"
+  )
+
+  if (txt %in% names(irregulars)) return(irregulars[txt])
+
+  # Simple rules for regular plurals: words ending in 'ies' -> 'y', ending in 'ves' -> 'f',
+  # otherwise strip trailing 's' if present and result exists in plant parts keywords
+  if (grepl("ies$", txt)) {
+    candidate <- sub("ies$", "y", txt)
+  } else if (grepl("ves$", txt)) {
+    candidate <- sub("ves$", "f", txt)
+  } else if (grepl("s$", txt)) {
+    candidate <- sub("s$", "", txt)
+  } else {
+    candidate <- txt
+  }
+
+  # Validate candidate against known plant parts; if present, return it, else return original
+  known <- tolower(get_plant_parts_keywords())
+  if (candidate %in% known) return(candidate)
+
+  return(txt)
 }
