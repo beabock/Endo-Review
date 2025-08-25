@@ -136,7 +136,15 @@ create_sparse_dtm <- function(data, text_column = "abstract", id_column = "id",
     tidytext::cast_sparse(!!sym(id_column), word, n)
   
   cat("  DTM created:", nrow(dtm), "documents ×", ncol(dtm), "terms\n")
-  cat("  Sparsity:", round(100 * (1 - length(dtm@x) / (nrow(dtm) * ncol(dtm))), 1), "%\n")
+
+  # Handle large matrix size calculations to avoid integer overflow
+  matrix_size <- as.numeric(nrow(dtm)) * as.numeric(ncol(dtm))
+  if (!is.na(matrix_size) && matrix_size > 0) {
+    sparsity <- round(100 * (1 - length(dtm@x) / matrix_size), 1)
+    cat("  Sparsity:", sparsity, "%\n")
+  } else {
+    cat("  Sparsity: High (large matrix)\n")
+  }
   
   return(dtm)
 }

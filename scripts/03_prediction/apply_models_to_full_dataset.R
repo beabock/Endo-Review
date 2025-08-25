@@ -14,6 +14,10 @@
 
 setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
+# RESTART OPTION: Set to TRUE if you want to skip to P/A classification
+# (after relevance classification is already complete)
+RESTART_FROM_PA <- TRUE
+
 # Library loading ---------------------------------------------------------
 
 library(tidyverse)
@@ -194,95 +198,113 @@ toc()
 
 # STEP 1: Relevance Classification ----------------------------------------
 
-cat("\nStep 2: Relevance Classification...\n")
-tic("Relevance classification")
+if (!RESTART_FROM_PA) {
+  cat("\nStep 2: Relevance Classification...\n")
+  tic("Relevance classification")
 
-# Create DTM for relevance classification
-cat("  Creating document-term matrix...\n")
-dtm <- full_abstracts %>%
-  unnest_tokens(word, abstract, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  mutate(word = str_to_lower(word)) %>%
-  filter(!str_detect(word, "\\d")) %>%
-  count(id, word, sort = TRUE) %>%
-  ungroup() %>%
-  mutate(id = as.character(id)) %>%
-  cast_dtm(document = id, term = word, value = n)
+  # Create DTM for relevance classification
+  cat("  Creating document-term matrix...\n")
+  dtm <- full_abstracts %>%
+    unnest_tokens(word, abstract, token = "words") %>%
+    anti_join(stop_words, by = "word") %>%
+    mutate(word = str_to_lower(word)) %>%
+    filter(!str_detect(word, "\\d")) %>%
+    count(id, word, sort = TRUE) %>%
+    ungroup() %>%
+    mutate(id = as.character(id)) %>%
+    cast_dtm(document = id, term = word, value = n)
 
-# Convert to matrix and sanitize column names
-dtm_matrix <- as.matrix(dtm)
-colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
-rownames(dtm_matrix) <- dtm$dimnames$Docs
+  # Convert to matrix and sanitize column names
+  dtm_matrix <- as.matrix(dtm)
+  colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
+  rownames(dtm_matrix) <- dtm$dimnames$Docs
 
-# Optimize: Keep as matrix until needed, convert to sparse-friendly data frame
-cat("  Converting DTM to data frame (this may take a moment for large datasets)...\n")
-dtm_df <- as.data.frame(as.matrix(dtm_matrix))  # Explicit conversion for clarity
-stopifnot(!any(duplicated(colnames(dtm_df))))
+  # Optimize: Keep as matrix until needed, convert to sparse-friendly data frame
+  cat("  Converting DTM to data frame (this may take a moment for large datasets)...\n")
+  dtm_df <- as.data.frame(as.matrix(dtm_matrix))  # Explicit conversion for clarity
+  stopifnot(!any(duplicated(colnames(dtm_df))))
 
-cat("  DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
+  cat("  DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
 
-# Load trained relevance model
-cat("  Loading trained relevance model...\n")
-rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
-trained_vocab <- rel_model$finalModel$xNames
+  # Load trained relevance model
+  cat("  Loading trained relevance model...\n")
+  rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
+  trained_vocab <- rel_model$finalModel$xNames
 
-# Align features with training vocabulary
-missing_words <- setdiff(trained_vocab, colnames(dtm_df))
-if (length(missing_words) > 0) {
-  zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
-                        dimnames = list(rownames(dtm_df), missing_words))
-  dtm_df <- cbind(dtm_df, zero_matrix)
-}
+  # Align features with training vocabulary
+  missing_words <- setdiff(trained_vocab, colnames(dtm_df))
+  if (length(missing_words) > 0) {
+    zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
+                          dimnames = list(rownames(dtm_df), missing_words))
+    dtm_df <- cbind(dtm_df, zero_matrix)
+  }
 
-# Remove extra columns and reorder to match training
-dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
-dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
+  # Remove extra columns and reorder to match training
+  dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
+  dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
 
-cat("  Feature alignment complete:", ncol(dtm_df), "features\n")
+  cat("  Feature alignment complete:", ncol(dtm_df), "features\n")
 
-# Predict relevance
-cat("  Predicting relevance...\n")
-probs <- predict(rel_model, newdata = dtm_df, type = "prob")
-full_abstracts <- full_abstracts %>%
-  bind_cols(probs)
+  # Predict relevance
+  cat("  Predicting relevance...\n")
+  probs <- predict(rel_model, newdata = dtm_df, type = "prob")
+  full_abstracts <- full_abstracts %>%
+    bind_cols(probs)
 
-# Apply relevance thresholds
-relevance_thresholds <- list(
-  loose = 0.5,    # more willing to classify
-  medium = 0.6,   # balanced
-  strict = 0.8    # only classify with strong certainty
-)
-
-for (thresh_name in names(relevance_thresholds)) {
-  thresh_val <- relevance_thresholds[[thresh_name]]
-  col_name <- paste0("relevance_", thresh_name)
-  
-  full_abstracts[[col_name]] <- case_when(
-    full_abstracts$Relevant >= thresh_val ~ "Relevant",
-    full_abstracts$Irrelevant >= thresh_val ~ "Irrelevant",
-    TRUE ~ "Uncertain"
+  # Apply relevance thresholds
+  relevance_thresholds <- list(
+    loose = 0.5,    # more willing to classify
+    medium = 0.6,   # balanced
+    strict = 0.8    # only classify with strong certainty
   )
+
+  for (thresh_name in names(relevance_thresholds)) {
+    thresh_val <- relevance_thresholds[[thresh_name]]
+    col_name <- paste0("relevance_", thresh_name)
+
+    full_abstracts[[col_name]] <- case_when(
+      full_abstracts$Relevant >= thresh_val ~ "Relevant",
+      full_abstracts$Irrelevant >= thresh_val ~ "Irrelevant",
+      TRUE ~ "Uncertain"
+    )
+  }
+
+  # Report relevance classification results
+  relevance_summary <- full_abstracts %>%
+    select(relevance_loose, relevance_medium, relevance_strict) %>%
+    pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
+    count(threshold, label) %>%
+    pivot_wider(names_from = label, values_from = n, values_fill = 0)
+
+  cat("  Relevance classification results:\n")
+  print(relevance_summary)
+
+  # Filter to relevant abstracts for P/A classification
+  abstracts_for_pa <- full_abstracts %>%
+    filter(relevance_loose == "Relevant")  # Use loose threshold to be inclusive
+
+  cat("  Selected", nrow(abstracts_for_pa), "relevant abstracts for P/A classification\n")
+
+  write.csv(full_abstracts, "data/processed/full_abstracts_for_pa.csv", row.names = FALSE)
+
+  toc()
+} else {
+  cat("\n=== RESTARTING FROM P/A CLASSIFICATION ===\n")
+  cat("Loading previous relevance classification results...\n")
+
+  # Load the results from the previous run
+  if (file.exists("data/processed/full_abstracts_for_pa.csv")) {
+    full_abstracts <- read.csv("data/processed/full_abstracts_for_pa.csv")
+    cat("  Loaded", nrow(full_abstracts), "abstracts from previous run\n")
+
+    # Filter to relevant abstracts for P/A classification
+    abstracts_for_pa <- full_abstracts %>%
+      filter(relevance_loose == "Relevant")
+    cat("  Selected", nrow(abstracts_for_pa), "relevant abstracts for P/A classification\n")
+  } else {
+    stop("Could not find data/processed/full_abstracts_for_pa.csv from previous run")
+  }
 }
-
-# Report relevance classification results
-relevance_summary <- full_abstracts %>%
-  select(relevance_loose, relevance_medium, relevance_strict) %>%
-  pivot_longer(everything(), names_to = "threshold", values_to = "label") %>%
-  count(threshold, label) %>%
-  pivot_wider(names_from = label, values_from = n, values_fill = 0)
-
-cat("  Relevance classification results:\n")
-print(relevance_summary)
-
-# Filter to relevant abstracts for P/A classification
-abstracts_for_pa <- full_abstracts %>%
-  filter(relevance_loose == "Relevant")  # Use loose threshold to be inclusive
-
-cat("  Selected", nrow(abstracts_for_pa), "relevant abstracts for P/A classification\n")
-
-write.csv(full_abstracts, "data/processed/full_abstracts_for_pa.csv", row.names = FALSE)
-
-toc()
 
 # STEP 2: Presence/Absence Classification ---------------------------------
 
@@ -353,21 +375,36 @@ create_memory_optimized_pa_dtm <- function(data, max_features = 15000, min_term_
   # Combine unigrams and bigrams efficiently
   cat("  Combining unigram and bigram features...\n")
 
-  # Get common document IDs
-  common_docs <- intersect(rownames(dtm_unigrams), rownames(dtm_bigrams))
+  # Get all document IDs from original data to ensure no documents are lost
+  all_doc_ids <- as.character(data[[id_column]])
 
-  if (length(common_docs) == 0) {
-    cat("  Warning: No common documents found. Using unigrams only.\n")
-    dtm_combined <- dtm_unigrams
-  } else {
-    # Subset to common documents
-    dtm_unigrams_subset <- dtm_unigrams[common_docs, ]
-    dtm_bigrams_subset <- dtm_bigrams[common_docs, ]
+  # Ensure both matrices have all document IDs
+  missing_in_unigrams <- setdiff(all_doc_ids, rownames(dtm_unigrams))
+  missing_in_bigrams <- setdiff(all_doc_ids, rownames(dtm_bigrams))
 
-    # Combine sparse matrices
-    dtm_combined <- cbind(dtm_unigrams_subset, dtm_bigrams_subset)
-    cat("  Combined features:", ncol(dtm_combined), "total features\n")
+  # Add missing documents as zero rows
+  if (length(missing_in_unigrams) > 0) {
+    cat("  Adding", length(missing_in_unigrams), "missing documents to unigrams\n")
+    zero_rows <- Matrix::Matrix(0, nrow = length(missing_in_unigrams), ncol = ncol(dtm_unigrams), sparse = TRUE)
+    rownames(zero_rows) <- missing_in_unigrams
+    dtm_unigrams <- rbind(dtm_unigrams, zero_rows)
   }
+
+  if (length(missing_in_bigrams) > 0) {
+    cat("  Adding", length(missing_in_bigrams), "missing documents to bigrams\n")
+    zero_rows <- Matrix::Matrix(0, nrow = length(missing_in_bigrams), ncol = ncol(dtm_bigrams), sparse = TRUE)
+    rownames(zero_rows) <- missing_in_bigrams
+    dtm_bigrams <- rbind(dtm_bigrams, zero_rows)
+  }
+
+  # Reorder both matrices to match original document order
+  dtm_unigrams <- dtm_unigrams[all_doc_ids, , drop = FALSE]
+  dtm_bigrams <- dtm_bigrams[all_doc_ids, , drop = FALSE]
+
+  # Combine sparse matrices
+  dtm_combined <- cbind(dtm_unigrams, dtm_bigrams)
+  cat("  Combined features:", ncol(dtm_combined), "total features\n")
+  cat("  Documents preserved:", nrow(dtm_combined), "(should match input:", length(all_doc_ids), ")\n")
 
   # Apply feature selection to reduce dimensionality
   if (ncol(dtm_combined) > max_features) {
@@ -389,12 +426,65 @@ create_memory_optimized_pa_dtm <- function(data, max_features = 15000, min_term_
   return(dtm_combined)
 }
 
-# Create the optimized DTM
-dtm_sparse <- create_memory_optimized_pa_dtm(
+# Create memory-efficient sparse DTM (unigrams only for now - can extend for bigrams)
+cat("  Creating sparse DTM for unigrams...\n")
+dtm_unigrams_sparse <- create_sparse_dtm(
   data = abstracts_for_pa,
-  max_features = 10000,  # Limit features to reduce memory
-  min_term_freq = 2
+  text_column = "abstract",
+  id_column = "id",
+  min_term_freq = 2,
+  max_features = 8000
 )
+
+# Create bigrams separately with document preservation
+cat("  Creating bigrams...\n")
+
+# Get all document IDs to ensure no documents are lost
+all_doc_ids <- as.character(abstracts_for_pa$id)
+
+# Process bigrams with document preservation
+bigram_tokens <- abstracts_for_pa %>%
+  unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
+  filter(!is.na(bigram)) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word,
+         !word2 %in% stop_words$word,
+         !str_detect(word1, "\\d"),
+         !str_detect(word2, "\\d")) %>%
+  unite(bigram, word1, word2, sep = "_") %>%
+  mutate(bigram = str_to_lower(bigram)) %>%
+  group_by(bigram) %>%
+  filter(n() >= 2) %>%  # Keep only bigrams appearing in at least 2 documents
+  ungroup() %>%
+  count(id, bigram, sort = TRUE) %>%
+  mutate(id = as.character(id))
+
+# Create sparse matrix for bigrams
+if (nrow(bigram_tokens) > 0) {
+  dtm_bigrams_sparse <- bigram_tokens %>%
+    cast_sparse(id, bigram, n)
+
+  # Ensure all documents are present in bigram matrix
+  missing_docs <- setdiff(all_doc_ids, rownames(dtm_bigrams_sparse))
+  if (length(missing_docs) > 0) {
+    cat("  Adding", length(missing_docs), "documents with no valid bigrams as zero rows\n")
+    zero_rows <- Matrix::Matrix(0, nrow = length(missing_docs), ncol = ncol(dtm_bigrams_sparse), sparse = TRUE)
+    rownames(zero_rows) <- missing_docs
+    dtm_bigrams_sparse <- rbind(dtm_bigrams_sparse, zero_rows)
+  }
+
+  # Reorder to match document order
+  dtm_bigrams_sparse <- dtm_bigrams_sparse[all_doc_ids, , drop = FALSE]
+
+  # Combine unigrams and bigrams
+  cat("  Combining unigrams and bigrams...\n")
+  dtm_sparse <- cbind(dtm_unigrams_sparse, dtm_bigrams_sparse)
+  cat("  Combined DTM:", nrow(dtm_sparse), "documents ×", ncol(dtm_sparse), "features\n")
+
+} else {
+  cat("  No valid bigrams found, using unigrams only\n")
+  dtm_sparse <- dtm_unigrams_sparse
+}
 
 # Monitor memory after DTM creation
 mem_status <- monitor_memory(context = "After P/A DTM creation")
@@ -423,35 +513,49 @@ current_features <- colnames(dtm_sparse)
 # Find common features
 common_features <- intersect(current_features, trained_vocab_pa)
 missing_features <- setdiff(trained_vocab_pa, current_features)
-extra_features <- setdiff(current_features, trained_vocab_pa)
 
 cat("  Feature alignment summary:\n")
 cat("  - Common features:", length(common_features), "\n")
 cat("  - Missing features:", length(missing_features), "\n")
-cat("  - Extra features:", length(extra_features), "\n")
+cat("  - Total training features:", length(trained_vocab_pa), "\n")
 
-# Subset to common features and add missing features as zeros
+# Create aligned sparse matrix more efficiently
 if (length(common_features) > 0) {
-  dtm_aligned <- dtm_sparse[, common_features]
+  # Start with common features
+  dtm_aligned <- dtm_sparse[, common_features, drop = FALSE]
+
+  # Add missing features as sparse zero columns in smaller batches
+  if (length(missing_features) > 0) {
+    cat("  Adding", length(missing_features), "missing features in batches...\n")
+
+    # Process missing features in smaller batches to save memory
+    batch_size <- 1000
+    for (i in seq(1, length(missing_features), by = batch_size)) {
+      end_idx <- min(i + batch_size - 1, length(missing_features))
+      batch_features <- missing_features[i:end_idx]
+
+      # Create sparse zero matrix for this batch
+      zero_cols <- Matrix::Matrix(0, nrow = nrow(dtm_sparse), ncol = length(batch_features), sparse = TRUE)
+      colnames(zero_cols) <- batch_features
+      rownames(zero_cols) <- rownames(dtm_sparse)
+
+      # Combine with existing matrix
+      dtm_aligned <- cbind(dtm_aligned, zero_cols)
+
+      # Memory cleanup every few batches
+      if (i %% 3000 == 0) {
+        aggressive_gc(verbose = FALSE)
+      }
+    }
+  }
 } else {
   cat("  Warning: No common features found. Creating zero matrix.\n")
-  dtm_aligned <- Matrix::Matrix(0, nrow = nrow(dtm_sparse), ncol = 0, sparse = TRUE)
+  dtm_aligned <- Matrix::Matrix(0, nrow = nrow(dtm_sparse), ncol = length(trained_vocab_pa), sparse = TRUE)
+  colnames(dtm_aligned) <- trained_vocab_pa
+  rownames(dtm_aligned) <- rownames(dtm_sparse)
 }
 
-# Add missing features as sparse zero columns
-if (length(missing_features) > 0) {
-  cat("  Adding", length(missing_features), "missing features as zeros...\n")
-
-  # Create sparse zero matrix for missing features
-  zero_cols <- Matrix::Matrix(0, nrow = nrow(dtm_sparse), ncol = length(missing_features), sparse = TRUE)
-  colnames(zero_cols) <- missing_features
-  rownames(zero_cols) <- rownames(dtm_sparse)
-
-  # Combine matrices
-  dtm_aligned <- cbind(dtm_aligned, zero_cols)
-}
-
-# Reorder to match training vocabulary
+# Reorder to match training vocabulary (should already be in correct order, but just in case)
 dtm_aligned <- dtm_aligned[, trained_vocab_pa, drop = FALSE]
 
 # Memory cleanup
@@ -471,8 +575,15 @@ if (mem_status$above_threshold) {
 }
 
 # Convert sparse matrix to data frame in chunks if needed
-chunk_size <- 5000  # Process in chunks to avoid memory issues
+chunk_size <- 1000  # Smaller chunks for high memory usage
 total_docs <- nrow(dtm_aligned)
+
+# If memory usage is very high, use even smaller chunks
+mem_status <- monitor_memory(context = "Before chunking decision", threshold_gb = 6)
+if (mem_status$above_threshold) {
+  chunk_size <- 500  # Very small chunks for high memory situations
+  cat("⚠️ High memory detected. Using very small chunks (", chunk_size, " documents)\n")
+}
 
 if (total_docs > chunk_size) {
   cat("  Large dataset detected. Processing in chunks of", chunk_size, "documents\n")
@@ -658,6 +769,20 @@ final_results <- full_abstracts %>%
       relevance_strict == "Relevant" & pa_strict == "Presence" ~ "Presence",
       relevance_strict == "Relevant" & pa_strict == "Absence" ~ "Absence",
       TRUE ~ "Uncertain"
+    ),
+    # Calculate confidence scores
+    relevance_confidence = pmax(Relevant, Irrelevant, na.rm = TRUE),
+    pa_confidence = case_when(
+      !is.na(glmnet_prob_presence) & !is.na(glmnet_prob_absence) ~ 
+        pmax(glmnet_prob_presence, glmnet_prob_absence, na.rm = TRUE),
+      TRUE ~ NA_real_
+    ),
+    # Overall confidence combines both stages
+    confidence = case_when(
+      final_classification %in% c("Irrelevant", "Uncertain_Relevance") ~ relevance_confidence,
+      final_classification %in% c("Presence", "Absence") ~ 
+        pmin(relevance_confidence, pa_confidence, na.rm = TRUE),
+      TRUE ~ relevance_confidence
     )
   )
 

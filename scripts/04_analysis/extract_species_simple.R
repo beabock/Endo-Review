@@ -33,7 +33,64 @@ cat("Extracting: Species | Plant Parts | Methods | Geography\n\n")
 
 # Define extraction functions ------------------------------------------------
 
-# Function to detect research methods in abstracts (from visualize_taxa_results.R)
+# OPTIMIZATION: Enhanced lookup table creation function
+create_lookup_tables_optimized <- function(species_df) {
+  # Call the original function
+  lookup_tables <- create_lookup_tables(species_df)
+  
+  # Add performance optimizations
+  if (!is.null(lookup_tables$accepted_species)) {
+    lookup_tables$species_names_vector <- lookup_tables$accepted_species$canonicalName_lower
+  }
+  if (!is.null(lookup_tables$genus_list)) {
+    lookup_tables$genus_names_vector <- lookup_tables$genus_list$canonicalName_lower
+  }
+  if (!is.null(lookup_tables$family_list)) {
+    lookup_tables$family_names_vector <- lookup_tables$family_list$canonicalName_lower
+  }
+  
+  # Create hash tables for O(1) lookups if dataset is large
+  if (nrow(species_df) > 10000) {
+    if (!is.null(lookup_tables$species_names_vector)) {
+      lookup_tables$species_hash <- setNames(rep(TRUE, length(lookup_tables$species_names_vector)), 
+                                            lookup_tables$species_names_vector)
+    }
+    if (!is.null(lookup_tables$genus_names_vector)) {
+      lookup_tables$genus_hash <- setNames(rep(TRUE, length(lookup_tables$genus_names_vector)), 
+                                          lookup_tables$genus_names_vector)
+    }
+  }
+  
+  return(lookup_tables)
+}
+
+
+# OPTIMIZED: Vectorized function to detect research methods in abstracts
+detect_research_methods_batch <- function(text_vector) {
+  method_categories <- get_method_keywords()
+  
+  # Pre-compile patterns for better performance
+  patterns <- map(method_categories, ~paste(., collapse = "|"))
+  
+  text_lower <- str_to_lower(text_vector)
+  
+  results <- map_dfc(names(patterns), function(category) {
+    matches <- str_detect(text_lower, patterns[[category]])
+    setNames(list(matches), category)
+  })
+  
+  # Create methods summary
+  methods_detected <- pmap_chr(results, function(...) {
+    found <- names(list(...))[unlist(list(...))]
+    if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
+  })
+  
+  return(results %>% 
+    rename(molecular = molecular, culture_based = culture, microscopy = microscopy) %>%
+    mutate(methods_summary = methods_detected))
+}
+
+# Original function for backwards compatibility
 detect_research_methods <- function(text) {
   # Use centralized method keywords
   method_categories <- get_method_keywords()
@@ -57,7 +114,97 @@ detect_research_methods <- function(text) {
   ))
 }
 
-# Function to detect geographic locations
+# OPTIMIZED: Vectorized function to detect geographic locations
+detect_geographic_locations_batch <- function(text_vector) {
+  all_countries <- get_all_countries()
+  global_north <- get_global_north_countries()
+  global_south <- get_global_south_countries()
+  continents <- get_continent_keywords()
+  regions <- get_region_keywords()
+  
+  text_lower <- str_to_lower(text_vector)
+  
+  # Vectorized country detection with special handling
+  country_matches <- map(text_vector, function(text) {
+    text_lower_single <- str_to_lower(text)
+    
+    found <- character(0)
+    for(country in all_countries) {
+      if (country == "niger") {
+        if (str_detect(text, "\\bRepublic of Niger\\b") || 
+            (str_detect(text, "\\bNiger\\b") && 
+             !str_detect(text, "\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b"))) {
+          found <- c(found, country)
+        }
+      } else if (country == "turkey") {
+        if (str_detect(text, "\\bTurkey\\b") && 
+            !str_detect(text, "\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom)\\b") &&
+            !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi)\\b")) {
+          found <- c(found, country)
+        }
+      } else if (country == "chile") {
+        if (str_detect(text, "\\bChile\\b") && 
+            !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice)\\b")) {
+          found <- c(found, country)
+        }
+      } else if (country == "georgia") {
+        if (str_detect(text, "\\bGeorgia\\b") && 
+            !str_detect(text, "\\bgeorgia\\s+(pine|oak|southern)\\b")) {
+          found <- c(found, country)
+        }
+      } else if (country == "guinea") {
+        if (str_detect(text, "\\bGuinea\\b") && 
+            !str_detect(text, "\\bguinea\\s+pig\\b")) {
+          found <- c(found, country)
+        }
+      } else if (country == "mali") {
+        if (str_detect(text, "\\bMali\\b") && 
+            !str_detect(text, "\\b\\w+\\s+mali\\b")) {
+          found <- c(found, country)
+        }
+      } else {
+        if (str_detect(text_lower_single, paste0("\\b", country, "\\b"))) {
+          found <- c(found, country)
+        }
+      }
+    }
+    return(found)
+  })
+  
+  # Vectorized continent/region detection
+  continent_pattern <- paste0("\\b(", paste(continents, collapse = "|"), ")\\b")
+  region_pattern <- paste0("\\b(", paste(regions, collapse = "|"), ")\\b")
+  
+  continents_found <- str_extract_all(text_lower, continent_pattern)
+  regions_found <- str_extract_all(text_lower, region_pattern)
+  
+  # Coordinate detection
+  coord_pattern <- "\\b\\d{1,2}[°]?\\s*[NS]?\\s*,?\\s*\\d{1,3}[°]?\\s*[EW]?\\b"
+  has_coordinates <- str_detect(text_vector, coord_pattern)
+  
+  # Build results
+  tibble(
+    countries_detected = map_chr(country_matches, ~if(length(.) > 0) paste(., collapse = "; ") else NA_character_),
+    global_north_countries = map_chr(country_matches, ~{
+      found <- intersect(., global_north)
+      if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
+    }),
+    global_south_countries = map_chr(country_matches, ~{
+      found <- intersect(., global_south)
+      if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
+    }),
+    continents_detected = map_chr(continents_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
+    regions_detected = map_chr(regions_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
+    has_coordinates = has_coordinates,
+    geographic_summary = pmap_chr(list(country_matches, continents_found, regions_found), 
+                                  function(countries, continents, regions) {
+                                    all_geo <- c(countries, continents, regions)
+                                    if(length(all_geo) > 0) paste(all_geo, collapse = "; ") else NA_character_
+                                  })
+  )
+}
+
+# Original function for backwards compatibility
 detect_geographic_locations <- function(text) {
   # Use centralized country classifications and geographic keywords
   all_countries <- get_all_countries()
@@ -144,7 +291,21 @@ detect_geographic_locations <- function(text) {
 ))
 }
 
-# Function to detect plant parts (enhanced from existing)
+# OPTIMIZED: Vectorized function to detect plant parts
+detect_plant_parts_batch <- function(text_vector) {
+  plant_parts_keywords <- get_plant_parts_keywords()
+  pattern <- paste0("\\b(", paste(plant_parts_keywords, collapse = "|"), ")\\b")
+  
+  text_lower <- str_to_lower(text_vector)
+  parts_found <- str_extract_all(text_lower, pattern)
+  
+  tibble(
+    plant_parts_detected = map_chr(parts_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
+    parts_count = map_int(parts_found, ~length(unique(.)))
+  )
+}
+
+# Original function for backwards compatibility
 detect_plant_parts <- function(text) {
   # Use centralized plant parts keywords
   plant_parts_keywords <- get_plant_parts_keywords()
@@ -165,7 +326,8 @@ detect_plant_parts <- function(text) {
 cat("Step 1: Preparing classification results for species detection...\n")
 
 # Load the relevant abstracts with predictions
-classification_results <- read_csv("results/relevant_abstracts_with_pa_predictions.csv")
+classification_results <- read_csv("results/relevant_abstracts_with_pa_predictions.csv")%>%
+  slice_sample(n=100)
 
 library(tidyverse)
 library(stringr)
@@ -189,8 +351,11 @@ training_data <- training_data_raw %>%
   mutate(
     id = max(classification_results$id, na.rm = TRUE) + row_number(),  # Unique IDs
     # Map to classification_results column names
-    Relevant = ifelse(label == "Presence", TRUE, FALSE),
-    relevance_loose = ifelse(label == "Presence", TRUE, FALSE),
+    Relevant = ifelse(label == "Presence", 0.95, 0.05),
+    Irrelevant = ifelse(label == "Absence", 0.95, 0.05),
+    relevance_loose = ifelse(label == "Presence", "Relevant", "Irrelevant"),
+    relevance_medium = ifelse(label == "Presence", "Relevant", "Irrelevant"),
+    relevance_strict = ifelse(label == "Presence", "Relevant", "Irrelevant"),
     glmnet_pred = label,
     svm_pred = label,
     weighted_ensemble = label,
@@ -201,11 +366,10 @@ training_data <- training_data_raw %>%
     svm_prob_absence = ifelse(label == "Absence", 0.95, 0.05),
     ensemble_presence_prob = ifelse(label == "Presence", 0.95, 0.05),
     ensemble_absence_prob = ifelse(label == "Absence", 0.95, 0.05),
-    ensemble_prediction = ifelse(label == "Presence", TRUE, FALSE),
-    pa_loose = ifelse(label == "Presence", TRUE, FALSE),
-    pa_medium = ifelse(label == "Presence", TRUE, FALSE),
-    pa_strict = ifelse(label == "Presence", TRUE, FALSE),
-    pa_super_strict = ifelse(label == "Presence", TRUE, FALSE),
+    pa_loose = ifelse(label == "Presence", "Presence", "Absence"),
+    pa_medium = ifelse(label == "Presence", "Presence", "Absence"),
+    pa_strict = ifelse(label == "Presence", "Presence", "Absence"),
+    pa_super_strict = ifelse(label == "Presence", "Presence", "Absence"),
     final_classification = label,
     conservative_classification = label,
     source = "training"
@@ -216,19 +380,18 @@ training_data <- training_data_raw %>%
 
 cat("  Added", nrow(training_data), "training abstracts with valid DOIs\n")
 
-# Combine classification results with training data
+# Skip Irrelevant column creation - not needed for analysis
 combined_results <- classification_results %>%
   mutate(
     source = "classification",
-    # Ensure consistent data types
+    # Ensure consistent data types - only convert columns that exist
     publication_year = as.character(publication_year),
     Relevant = as.character(Relevant),
     relevance_loose = as.character(relevance_loose),
     pa_loose = as.character(pa_loose),
     pa_medium = as.character(pa_medium),
     pa_strict = as.character(pa_strict),
-    pa_super_strict = as.character(pa_super_strict),
-    ensemble_prediction = as.character(ensemble_prediction)
+    pa_super_strict = as.character(pa_super_strict)
   ) %>%
   bind_rows(
     training_data %>%
@@ -240,8 +403,7 @@ combined_results <- classification_results %>%
         pa_loose = as.character(pa_loose),
         pa_medium = as.character(pa_medium),
         pa_strict = as.character(pa_strict),
-        pa_super_strict = as.character(pa_super_strict),
-        ensemble_prediction = as.character(ensemble_prediction)
+        pa_super_strict = as.character(pa_super_strict)
       )
   )
 
@@ -252,14 +414,14 @@ cat("  Combined dataset:", nrow(combined_results), "total abstracts\n")
 # If `final_classification` is missing, populate it from other ensemble columns produced by earlier scripts
 if (!"final_classification" %in% names(combined_results)) {
   combined_results <- combined_results %>%
-    mutate(final_classification = coalesce(weighted_ensemble, ensemble_prediction, threshold_ensemble, conservative_classification, glmnet_pred, svm_pred))
+    mutate(final_classification = coalesce(weighted_ensemble, threshold_ensemble, conservative_classification, glmnet_pred, svm_pred))
 }
 
 # Create ensemble presence/absence probability columns if not present, pulling from available model probs
 if (!"ensemble_presence_prob" %in% names(combined_results)) {
   combined_results <- combined_results %>%
-    mutate(ensemble_presence_prob = coalesce(ensemble_presence_prob, glmnet_prob_presence, svm_prob_presence),
-           ensemble_absence_prob = coalesce(ensemble_absence_prob, glmnet_prob_absence, svm_prob_absence))
+    mutate(ensemble_presence_prob = coalesce(glmnet_prob_presence, svm_prob_presence),
+           ensemble_absence_prob = coalesce(glmnet_prob_absence, svm_prob_absence))
 }
 
 # Ensure model-specific probability columns exist (create as NA if missing) so downstream mutate() won't error
@@ -304,7 +466,7 @@ prediction_summary <- abstracts_for_species %>%
 cat("  Prediction breakdown:\n")
 print(prediction_summary)
 
-# Step 2: Run species detection -------------------------------------------
+# Step 2: Run species detection (OPTIMIZED) -------------------------------
 
 cat("\nStep 2: Running species detection...\n")
 
@@ -322,7 +484,7 @@ if (file.exists(species_file)) {
   cat("   ✅ Loaded", nrow(all_species_results), "existing species detection records\n")
   
   # Skip to step 2.5
-  skip_species_detection <- FALSE #Changing this right now to force it to run
+  skip_species_detection <- FALSE #Change to TRUE to skip, FALSE to rerun
 } else {
   skip_species_detection <- FALSE
 }
@@ -340,17 +502,17 @@ if (file.exists("species.rds")) {
 
 cat("  Loaded species reference data:", nrow(species), "species records\n")
 
-# Set up parallel processing and lookup tables
-setup_parallel(workers = 2)
-lookup_tables <- create_lookup_tables(species)
+# Set up parallel processing and lookup tables - MORE WORKERS
+setup_parallel(workers = min(6, parallel::detectCores() - 1))  # Increased from 2
+lookup_tables <- create_lookup_tables_optimized(species)
 
 # Get plant parts keywords from centralized utilities
 plant_parts_keywords_species <- get_plant_parts_keywords()
 
-# Process species detection in batches
+# Process species detection in LARGER batches for better performance
 tic("Species detection")
 
-batch_size <- 25
+batch_size <- 100  # Increased from 25
 n_batches <- ceiling(nrow(abstracts_for_species) / batch_size)
 
 cat("Processing", nrow(abstracts_for_species), "abstracts in", n_batches, "batches...\n")
@@ -361,23 +523,36 @@ all_species_results <- map_dfr(1:n_batches, function(i) {
   
   batch_data <- abstracts_for_species[start_idx:end_idx, ]
   
-  cat("  Processing batch", i, "of", n_batches, "(rows", start_idx, "to", end_idx, ")\n")
+  cat("  🔬 Processing batch", i, "of", n_batches, "(", nrow(batch_data), "abstracts: rows", start_idx, "to", end_idx, ")\n")
+  cat("     Starting species detection for batch", i, "at", format(Sys.time(), "%H:%M:%S"), "\n")
   
-  # Process this batch
+  # Process this batch with OPTIMIZED settings and verbose output
   batch_results <- process_abstracts_parallel(
     abstracts = batch_data,
     lookup_tables = lookup_tables,
     plant_parts_keywords = plant_parts_keywords_species,
-    batch_size = 10,
-    workers = 1
+    batch_size = 50,  # Increased internal batch size from 10
+    workers = 1       # Avoid nested parallelism
   )
   
-  # Save intermediate results every 10 batches to prevent data loss
-  if (i %% 10 == 0) {
+  # Report batch completion
+  species_found <- sum(!is.na(batch_results$resolved_name) | !is.na(batch_results$canonicalName), na.rm = TRUE)
+  cat("     ✅ Batch", i, "completed at", format(Sys.time(), "%H:%M:%S"), 
+      "- Found species in", species_found, "abstracts\n")
+  
+  # Save intermediate results every 5 batches (fewer saves, larger batches)
+  if (i %% 5 == 0) {
     temp_file <- paste0("results/temp_species_batch_", i, ".csv")
     write_csv(batch_results, temp_file)
-    cat("    ✅ Saved intermediate results to", temp_file, "\n")
+    cat("     💾 Saved intermediate results to", temp_file, "\n")
   }
+  
+  # Progress summary every batch
+  total_processed <- i * batch_size
+  if (total_processed > nrow(abstracts_for_species)) total_processed <- nrow(abstracts_for_species)
+  progress_pct <- round(100 * total_processed / nrow(abstracts_for_species), 1)
+  cat("     📊 Progress:", total_processed, "/", nrow(abstracts_for_species), 
+      "abstracts (", progress_pct, "% complete)\n\n")
   
   return(batch_results)
 })
@@ -390,44 +565,48 @@ toc()
 
 } # End of species detection if-block
 
-# Step 2.5: Extract additional information -----------------------------------
+# Step 2.5: Extract additional information (OPTIMIZED) ----------------------
 
 cat("\nStep 2.5: Extracting plant parts, methods, and geographic information...\n")
 tic("Additional information extraction")
 
-# Apply extraction functions to all abstracts
-cat("  Extracting research methods...\n")
-methods_results <- map_dfr(1:nrow(abstracts_for_species), function(i) {
-  if (i %% 100 == 0) cat("    Processed", i, "of", nrow(abstracts_for_species), "abstracts\n")
+# Process all abstracts at once using vectorized functions
+cat("  Extracting all information in optimized batches...\n")
+
+# Handle missing abstracts
+abstracts_text <- ifelse(is.na(abstracts_for_species$abstract), "", abstracts_for_species$abstract)
+
+# Process in memory-efficient batches
+batch_size <- 1000  # Process 1000 abstracts at a time
+n_batches <- ceiling(length(abstracts_text) / batch_size)
+
+cat("  Processing", length(abstracts_text), "abstracts in", n_batches, "batches...\n")
+
+methods_results <- map_dfr(1:n_batches, function(batch_num) {
+  start_idx <- (batch_num - 1) * batch_size + 1
+  end_idx <- min(batch_num * batch_size, length(abstracts_text))
   
-  abstract_text <- abstracts_for_species$abstract[i]
-  if (is.na(abstract_text)) abstract_text <- ""
+  batch_text <- abstracts_text[start_idx:end_idx]
+  batch_ids <- abstracts_for_species$id[start_idx:end_idx]
   
-  # Extract methods
-  methods <- detect_research_methods(abstract_text)
+  cat("    Batch", batch_num, "of", n_batches, "(", length(batch_text), "abstracts)\n")
   
-  # Extract plant parts  
-  plant_parts <- detect_plant_parts(abstract_text)
+  # Process entire batch at once using vectorized functions
+  methods <- detect_research_methods_batch(batch_text)
+  plant_parts <- detect_plant_parts_batch(batch_text)
+  geography <- detect_geographic_locations_batch(batch_text)
   
-  # Extract geographic info
-  geography <- detect_geographic_locations(abstract_text)
-  
-  return(data.frame(
-    id = abstracts_for_species$id[i],
-    molecular_methods = methods$molecular,
-    culture_based_methods = methods$culture_based,
-    microscopy_methods = methods$microscopy,
-    methods_summary = methods$methods_detected,
-    plant_parts_detected = plant_parts$plant_parts_detected,
-    parts_count = plant_parts$parts_count,
-    countries_detected = geography$countries,
-    global_north_countries = geography$global_north_countries,
-    global_south_countries = geography$global_south_countries,
-    continents_detected = geography$continents,
-    regions_detected = geography$regions,
-    has_coordinates = geography$has_coordinates,
-    geographic_summary = geography$geographic_info
-  ))
+  # Combine results
+  bind_cols(
+    tibble(id = batch_ids),
+    methods %>% rename(
+      molecular_methods = molecular,
+      culture_based_methods = culture_based,
+      microscopy_methods = microscopy
+    ),
+    plant_parts,
+    geography
+  )
 })
 
 cat("  Additional information extraction completed\n")
@@ -718,3 +897,4 @@ cat("3. Focus on abstracts with complete information for priority review\n")
 cat("4. Consider running visualization scripts for deeper analysis\n\n")
 
 cat("Comprehensive extraction pipeline complete! 🧬🔬🌍\n")
+
