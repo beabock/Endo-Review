@@ -103,6 +103,7 @@ detect_absence_evidence <- function(text) {
   ))
 }
 
+
 # Apply absence detection to all abstracts
 cat("Applying absence detection algorithm...\n")
 
@@ -129,7 +130,7 @@ absence_results <- map_dfr(1:nrow(relevant_data), function(i) {
   
   # Apply detection function
   absence_analysis <- detect_absence_evidence(combined_text)
-  
+
   return(data.frame(
     id = relevant_data$id[i],
     potential_absence = absence_analysis$potential_absence,
@@ -209,9 +210,8 @@ cat("Medium confidence absence:", medium_confidence_absence, "(", round(100 * me
 
 # Detailed analysis by prediction type
 absence_by_prediction <- absence_analysis_results %>%
-  group_by(id, final_classification) %>%
-  slice(1) %>% #Why slice...
-  ungroup() %>%
+  # Handle potential duplicates safely
+  distinct(id, final_classification, confidence_level, .keep_all = TRUE) %>%
   group_by(final_classification) %>%
   summarise(
     total = n(),
@@ -227,9 +227,8 @@ print(absence_by_prediction)
 
 # Cross-tabulation of ML predictions vs detected absence evidence
 absence_crosstab <- absence_analysis_results %>%
-  group_by(id) %>%
-  slice(1) %>%
-  ungroup() %>%
+  # Handle potential duplicates safely by keeping unique combinations
+  distinct(id, final_classification, confidence_level, .keep_all = TRUE) %>%
   mutate(
     detected_absence = confidence_level %in% c("High", "Medium"),
     prediction_category = case_when(
@@ -245,6 +244,7 @@ absence_crosstab <- absence_analysis_results %>%
 
 cat("\nAgreement between ML predictions and detected absence evidence:\n")
 print(absence_crosstab)
+
 
 # Analysis by research methods
 if (any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %in% names(absence_analysis_results))) {
@@ -316,9 +316,8 @@ if (nrow(absence_plant_parts) > 0) {
 
 # Temporal analysis
 absence_temporal <- absence_analysis_results %>%
-  group_by(id) %>%
-  slice(1) %>%
-  ungroup() %>%
+  # Handle potential duplicates safely
+  distinct(id, publication_year, confidence_level, .keep_all = TRUE) %>%
   mutate(publication_year = as.integer(publication_year)) %>%
   filter(!is.na(publication_year)) %>%
   mutate(
@@ -340,6 +339,34 @@ print(absence_temporal)
 
 # Save results
 write_csv(absence_analysis_results, "results/absence_evidence_analysis.csv")
+
+# Create comprehensive CSV of ALL papers with absence statement matches
+cat("Creating comprehensive CSV of all papers with absence statement matches...\n")
+
+all_absence_matches <- absence_analysis_results %>%
+  filter(potential_absence == TRUE | confidence_level %in% c("High", "Medium", "Low")) %>%
+  arrange(desc(absence_score), desc(method_score), confidence_level) %>%
+  select(
+    id, article_title, abstract, authors, source_title, publication_year, doi,
+    # ML predictions
+    final_classification, weighted_ensemble, conservative_classification,
+    Relevant, Irrelevant, confidence,
+    # Absence detection results
+    potential_absence, absence_score, method_score, confidence_level,
+    absence_terms, method_terms,
+    # Species information (if available)
+    any_of(c("canonicalName", "resolved_name", "acceptedScientificName")),
+    # Methods information (if available)
+    any_of(c("methods_summary", "molecular_methods", "culture_based_methods", "microscopy_methods")),
+    # Geographic information (if available)
+    any_of(c("countries_detected", "geographic_summary")),
+    # Plant parts (if available)
+    any_of(c("plant_parts_detected")),
+    # Note: Universality statement detection removed from this script
+  )
+
+write_csv(all_absence_matches, "results/all_papers_with_absence_matches.csv")
+cat("✓ Created results/all_papers_with_absence_matches.csv (", nrow(all_absence_matches), " papers with absence matches)\n")
 
 # Create high-confidence absence subset for manual review
 high_confidence_subset <- absence_analysis_results %>%
@@ -400,14 +427,16 @@ capture.output({
   cat("1. Expert review of high_confidence_absence_evidence.csv\n")
   cat("2. Quality assessment of methodological rigor\n")
   cat("3. Integration with species-level absence patterns\n")
-  cat("4. Comparison with universality claims in literature\n")
+  cat("4. Use absence_evidence_analysis.csv for further analysis\n")
   
 }, file = "results/absence_evidence_report.txt")
 
 cat("\nFiles created:\n")
 cat("✓ results/absence_evidence_analysis.csv (complete results)\n")
+cat("✓ results/all_papers_with_absence_matches.csv (ALL papers with absence statements)\n")
 cat("✓ results/high_confidence_absence_evidence.csv (priority cases for review)\n")
 cat("✓ results/absence_evidence_report.txt (detailed analysis report)\n")
+
 
 cat("\n=== ABSENCE DETECTION COMPLETE ===\n")
 cat("Key findings:\n")
