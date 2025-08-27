@@ -161,30 +161,47 @@ absence_analysis_results <- relevant_data %>%
     } else {
       FALSE
     },
-    predicted_relevant = predicted_label == "Presence",
-    predicted_absence = predicted_label == "Absence"
+    predicted_relevant = final_classification == "Presence",
+    predicted_absence = final_classification == "Absence",
+    weighted_ensemble_presence = weighted_ensemble == "Presence",
+    conservative_presence = conservative_classification == "Presence"
   )
 
 # Analysis of absence evidence
 cat("\n=== ABSENCE EVIDENCE ANALYSIS ===\n")
 
-# Calculate totals properly grouped by id to avoid double-counting
-total_abstracts <- absence_analysis_results %>% 
-  group_by(id) %>% 
-  slice(1) %>% 
-  nrow()
-high_confidence_absence <- absence_analysis_results %>% 
-  group_by(id) %>% 
-  slice(1) %>% 
-  summarise(high_confidence = any(confidence_level == "High", na.rm = TRUE), .groups = "drop") %>% 
-  pull(high_confidence) %>% 
-  sum(na.rm = TRUE)
-medium_confidence_absence <- absence_analysis_results %>% 
-  group_by(id) %>% 
-  slice(1) %>% 
-  summarise(medium_confidence = any(confidence_level == "Medium", na.rm = TRUE), .groups = "drop") %>% 
-  pull(medium_confidence) %>% 
-  sum(na.rm = TRUE)
+# Calculate totals properly - check for duplicates first
+cat("Checking for duplicate IDs in dataset...\n")
+duplicate_check <- absence_analysis_results %>%
+  count(id, name = "n_rows") %>%
+  filter(n_rows > 1)
+
+if (nrow(duplicate_check) > 0) {
+  cat("Warning:", nrow(duplicate_check), "IDs have multiple rows. Using distinct() to handle duplicates safely.\n")
+  
+  # Use distinct() instead of slice(1) to handle duplicates safely
+  total_abstracts <- absence_analysis_results %>% 
+    distinct(id, .keep_all = TRUE) %>%
+    nrow()
+    
+  high_confidence_absence <- absence_analysis_results %>% 
+    group_by(id) %>% 
+    summarise(high_confidence = any(confidence_level == "High", na.rm = TRUE), .groups = "drop") %>% 
+    pull(high_confidence) %>% 
+    sum(na.rm = TRUE)
+    
+  medium_confidence_absence <- absence_analysis_results %>% 
+    group_by(id) %>% 
+    summarise(medium_confidence = any(confidence_level == "Medium", na.rm = TRUE), .groups = "drop") %>% 
+    pull(medium_confidence) %>% 
+    sum(na.rm = TRUE)
+} else {
+  cat("No duplicate IDs found. Proceeding with full dataset.\n")
+  
+  total_abstracts <- nrow(absence_analysis_results)
+  high_confidence_absence <- sum(absence_analysis_results$confidence_level == "High", na.rm = TRUE)
+  medium_confidence_absence <- sum(absence_analysis_results$confidence_level == "Medium", na.rm = TRUE)
+}
 
 cat("Total abstracts analyzed:", total_abstracts, "\n")
 cat("High confidence absence:", high_confidence_absence, "(", round(100 * high_confidence_absence / total_abstracts, 2), "%)\n")
@@ -192,10 +209,10 @@ cat("Medium confidence absence:", medium_confidence_absence, "(", round(100 * me
 
 # Detailed analysis by prediction type
 absence_by_prediction <- absence_analysis_results %>%
-  group_by(id, predicted_label) %>%
-  slice(1) %>%
+  group_by(id, final_classification) %>%
+  slice(1) %>% #Why slice...
   ungroup() %>%
-  group_by(predicted_label) %>%
+  group_by(final_classification) %>%
   summarise(
     total = n(),
     high_confidence = sum(confidence_level == "High", na.rm = TRUE),
@@ -205,7 +222,7 @@ absence_by_prediction <- absence_analysis_results %>%
     .groups = "drop"
   )
 
-cat("\nAbsence evidence by ML prediction:\n")
+cat("\nAbsence evidence by ML prediction (final_classification):\n")
 print(absence_by_prediction)
 
 # Cross-tabulation of ML predictions vs detected absence evidence
@@ -216,10 +233,10 @@ absence_crosstab <- absence_analysis_results %>%
   mutate(
     detected_absence = confidence_level %in% c("High", "Medium"),
     prediction_category = case_when(
-      predicted_label == "Presence" & detected_absence ~ "ML:Presence, Evidence:Absence",
-      predicted_label == "Presence" & !detected_absence ~ "ML:Presence, Evidence:None", 
-      predicted_label == "Absence" & detected_absence ~ "ML:Absence, Evidence:Absence",
-      predicted_label == "Absence" & !detected_absence ~ "ML:Absence, Evidence:None",
+      final_classification == "Presence" & detected_absence ~ "ML:Presence, Evidence:Absence",
+      final_classification == "Presence" & !detected_absence ~ "ML:Presence, Evidence:None", 
+      final_classification == "Absence" & detected_absence ~ "ML:Absence, Evidence:Absence",
+      final_classification == "Absence" & !detected_absence ~ "ML:Absence, Evidence:None",
       TRUE ~ "Other"
     )
   ) %>%
@@ -329,7 +346,7 @@ high_confidence_subset <- absence_analysis_results %>%
   filter(confidence_level %in% c("High", "Medium")) %>%
   arrange(desc(absence_score), desc(method_score)) %>%
   select(
-    id, abstract, publication_year, predicted_label, confidence,
+    id, abstract, publication_year, final_classification, weighted_ensemble,
     canonicalName, resolved_name, acceptedScientificName, methods_summary, plant_parts_detected,
     countries_detected, absence_score, method_score, confidence_level,
     absence_terms, method_terms
