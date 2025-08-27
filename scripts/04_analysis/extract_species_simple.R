@@ -122,61 +122,76 @@ detect_geographic_locations_batch <- function(text_vector) {
   continents <- get_continent_keywords()
   regions <- get_region_keywords()
   
-  text_lower <- str_to_lower(text_vector)
+  # Convert country names to lowercase for consistent matching
+  all_countries_lower <- str_to_lower(all_countries)
   
   # Vectorized country detection with special handling
   country_matches <- map(text_vector, function(text) {
-    text_lower_single <- str_to_lower(text)
+    if (is.na(text) || text == "") return(character(0))
     
+    text_lower <- str_to_lower(text)
     found <- character(0)
-    for(country in all_countries) {
-      if (country == "niger") {
+    
+    for(i in seq_along(all_countries)) {
+      country <- all_countries[i]
+      country_lower <- all_countries_lower[i]
+      
+      if (country_lower == "niger") {
         if (str_detect(text, "\\bRepublic of Niger\\b") || 
             (str_detect(text, "\\bNiger\\b") && 
              !str_detect(text, "\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b"))) {
           found <- c(found, country)
         }
-      } else if (country == "turkey") {
+      } else if (country_lower == "turkey") {
         if (str_detect(text, "\\bTurkey\\b") && 
             !str_detect(text, "\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom)\\b") &&
             !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi)\\b")) {
           found <- c(found, country)
         }
-      } else if (country == "chile") {
+      } else if (country_lower == "chile") {
         if (str_detect(text, "\\bChile\\b") && 
             !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice)\\b")) {
           found <- c(found, country)
         }
-      } else if (country == "georgia") {
+      } else if (country_lower == "georgia") {
         if (str_detect(text, "\\bGeorgia\\b") && 
             !str_detect(text, "\\bgeorgia\\s+(pine|oak|southern)\\b")) {
           found <- c(found, country)
         }
-      } else if (country == "guinea") {
+      } else if (country_lower == "guinea") {
         if (str_detect(text, "\\bGuinea\\b") && 
             !str_detect(text, "\\bguinea\\s+pig\\b")) {
           found <- c(found, country)
         }
-      } else if (country == "mali") {
+      } else if (country_lower == "mali") {
         if (str_detect(text, "\\bMali\\b") && 
             !str_detect(text, "\\b\\w+\\s+mali\\b")) {
           found <- c(found, country)
         }
       } else {
-        if (str_detect(text_lower_single, paste0("\\b", country, "\\b"))) {
+        # Standard matching using lowercase versions
+        if (str_detect(text_lower, paste0("\\b", str_replace_all(country_lower, "\\s+", "\\\\s+"), "\\b"))) {
           found <- c(found, country)
         }
       }
     }
-    return(found)
+    return(unique(found))
   })
   
   # Vectorized continent/region detection
-  continent_pattern <- paste0("\\b(", paste(continents, collapse = "|"), ")\\b")
-  region_pattern <- paste0("\\b(", paste(regions, collapse = "|"), ")\\b")
+  if (length(continents) > 0) {
+    continent_pattern <- paste0("\\b(", paste(str_to_lower(continents), collapse = "|"), ")\\b")
+    continents_found <- str_extract_all(str_to_lower(text_vector), continent_pattern)
+  } else {
+    continents_found <- map(text_vector, ~character(0))
+  }
   
-  continents_found <- str_extract_all(text_lower, continent_pattern)
-  regions_found <- str_extract_all(text_lower, region_pattern)
+  if (length(regions) > 0) {
+    region_pattern <- paste0("\\b(", paste(str_to_lower(regions), collapse = "|"), ")\\b")
+    regions_found <- str_extract_all(str_to_lower(text_vector), region_pattern)
+  } else {
+    regions_found <- map(text_vector, ~character(0))
+  }
   
   # Coordinate detection
   coord_pattern <- "\\b\\d{1,2}[°]?\\s*[NS]?\\s*,?\\s*\\d{1,3}[°]?\\s*[EW]?\\b"
@@ -483,7 +498,7 @@ if (file.exists(species_file)) {
   cat("   ✅ Loaded", nrow(all_species_results), "existing species detection records\n")
   
   # Skip to step 2.5
-  skip_species_detection <- FALSE #Change to TRUE to skip, FALSE to rerun
+  skip_species_detection <- TRUE #Change to TRUE to skip, FALSE to rerun
 } else {
   skip_species_detection <- FALSE
 }

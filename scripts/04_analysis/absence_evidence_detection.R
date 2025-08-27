@@ -12,14 +12,14 @@ library(stringr)
 cat("=== ABSENCE EVIDENCE DETECTION ===\n")
 cat("Identifying studies that searched for but did not find fungal endophytes\n\n")
 
-# Load comprehensive extraction results
-if (!file.exists("results/comprehensive_extraction_results.csv")) {
-  stop("Please run extract_species_simple.R first to generate comprehensive results.")
+# Load relevant abstracts with species detection results
+if (!file.exists("results/relevant_abstracts_with_pa_predictions.csv")) {
+  stop("Please run apply_models_to_full_dataset.R first to generate species detection results.")
 }
 
-comprehensive_data <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+relevant_data <- read_csv("results/relevant_abstracts_with_pa_predictions.csv", show_col_types = FALSE)
 
-cat("Total abstracts for absence analysis:", nrow(comprehensive_data), "\n")
+cat("Total abstracts for absence analysis:", nrow(relevant_data), "\n")
 
 # Define absence detection function
 detect_absence_evidence <- function(text) {
@@ -106,10 +106,10 @@ detect_absence_evidence <- function(text) {
 # Apply absence detection to all abstracts
 cat("Applying absence detection algorithm...\n")
 
-absence_results <- map_dfr(1:nrow(comprehensive_data), function(i) {
-  if (i %% 500 == 0) cat("  Processed", i, "of", nrow(comprehensive_data), "abstracts\n")
+absence_results <- map_dfr(1:nrow(relevant_data), function(i) {
+  if (i %% 500 == 0) cat("  Processed", i, "of", nrow(relevant_data), "abstracts\n")
   
-  abstract_text <- comprehensive_data$abstract[i]
+  abstract_text <- relevant_data$abstract[i]
   
   # Use only abstract for analysis since title column is not available
   combined_text <- ifelse(is.na(abstract_text), "", abstract_text)
@@ -117,7 +117,7 @@ absence_results <- map_dfr(1:nrow(comprehensive_data), function(i) {
   if (nchar(combined_text) < 10) {
     # Skip very short texts
     return(data.frame(
-      id = comprehensive_data$id[i],
+      id = relevant_data$id[i],
       potential_absence = FALSE,
       absence_score = 0,
       method_score = 0,
@@ -131,7 +131,7 @@ absence_results <- map_dfr(1:nrow(comprehensive_data), function(i) {
   absence_analysis <- detect_absence_evidence(combined_text)
   
   return(data.frame(
-    id = comprehensive_data$id[i],
+    id = relevant_data$id[i],
     potential_absence = absence_analysis$potential_absence,
     absence_score = absence_analysis$absence_score,
     method_score = absence_analysis$method_score,
@@ -144,11 +144,15 @@ absence_results <- map_dfr(1:nrow(comprehensive_data), function(i) {
 cat("Absence detection completed.\n")
 
 # Combine with original data
-absence_analysis_results <- comprehensive_data %>%
+absence_analysis_results <- relevant_data %>%
   left_join(absence_results, by = "id") %>%
   mutate(
     # Add additional classification variables - check for any species information
-    has_species = !is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName),
+    has_species = if(all(c("canonicalName", "resolved_name", "acceptedScientificName") %in% names(.))) {
+      !is.na(canonicalName) | !is.na(resolved_name) | !is.na(acceptedScientificName)
+    } else {
+      FALSE
+    },
     # Check if methods_summary exists, if not check for individual method columns
     has_methods = if("methods_summary" %in% names(.)) {
       !is.na(methods_summary)
