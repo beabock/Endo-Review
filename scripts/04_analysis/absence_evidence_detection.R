@@ -161,7 +161,8 @@ absence_analysis_results <- relevant_data %>%
     } else {
       FALSE
     },
-    predicted_relevant = predicted_label == "Presence"
+    predicted_relevant = predicted_label == "Presence",
+    predicted_absence = predicted_label == "Absence"
   )
 
 # Analysis of absence evidence
@@ -206,6 +207,27 @@ absence_by_prediction <- absence_analysis_results %>%
 
 cat("\nAbsence evidence by ML prediction:\n")
 print(absence_by_prediction)
+
+# Cross-tabulation of ML predictions vs detected absence evidence
+absence_crosstab <- absence_analysis_results %>%
+  group_by(id) %>%
+  slice(1) %>%
+  ungroup() %>%
+  mutate(
+    detected_absence = confidence_level %in% c("High", "Medium"),
+    prediction_category = case_when(
+      predicted_label == "Presence" & detected_absence ~ "ML:Presence, Evidence:Absence",
+      predicted_label == "Presence" & !detected_absence ~ "ML:Presence, Evidence:None", 
+      predicted_label == "Absence" & detected_absence ~ "ML:Absence, Evidence:Absence",
+      predicted_label == "Absence" & !detected_absence ~ "ML:Absence, Evidence:None",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  count(prediction_category, name = "count") %>%
+  mutate(percentage = round(100 * count / sum(count), 2))
+
+cat("\nAgreement between ML predictions and detected absence evidence:\n")
+print(absence_crosstab)
 
 # Analysis by research methods
 if (any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %in% names(absence_analysis_results))) {

@@ -15,7 +15,7 @@ cat("Searching for the core premise statement and variations\n\n")
 core_statement_patterns <- list(
 
   # Primary patterns - exact matches for the core statement
-  primary = c(
+primary = c(
     "all plants host fungi",
     "all plants host fungal",
     "every plant hosts fungi",
@@ -25,12 +25,17 @@ core_statement_patterns <- list(
     "plants universally host fungi",
     "plants universally host fungal",
     "fungi are ubiquitous in plants",
-    "fungal endophytes are ubiquitous",
+    "endophytes are ubiquitous",
     "endophytic fungi are ubiquitous",
     "all plants harbor fungi",
     "all plants harbor fungal",
     "fungi colonize all plants",
-    "fungal colonization of all plants"
+    "fungal colonization of all plants",
+    "all plants have endophytes",
+    "every plant has endophytes",
+    "all plants are colonized by fungi",
+    "universal fungal endophytes",
+    "ubiquitous endophytic fungi"
   ),
 
   # Secondary patterns - variations and synonyms
@@ -46,7 +51,14 @@ core_statement_patterns <- list(
     "universal fungal colonization",
     "fungi found in all plants",
     "fungal endophytes in all plants",
-    "endophytic fungi in every plant"
+    "endophytic fungi in every plant",
+    "all plants are infected by fungi",
+    "universal fungal infection",
+    "plants are always colonized",
+    "constant fungal presence",
+    "invariable fungal colonization",
+    "fungi are always present",
+    "endophytes are always found"
   ),
 
   # Contextual patterns - statements that imply universality
@@ -60,7 +72,15 @@ core_statement_patterns <- list(
     "fungal inhabitants of all plants",
     "plants are colonized by fungi",
     "universal fungal symbionts",
-    "fungi are symbionts of all plants"
+    "fungi are symbionts of all plants",
+    "fungal endophytes are omnipresent",
+    "omnipresent fungal colonization",
+    "fungi are invariably present",
+    "inevitable fungal colonization",
+    "endophytes occur universally",
+    "universal endophytic association",
+    "consistent fungal presence",
+    "fungal endophytes are pervasive"
   ),
 
   # Scientific variations - more formal/academic phrasing
@@ -72,7 +92,17 @@ core_statement_patterns <- list(
     "universal occurrence of fungal endophytes",
     "ubiquitous nature of fungal endophytes",
     "fungal endophytes are cosmopolitan",
-    "cosmopolitan distribution of fungal endophytes"
+    "cosmopolitan distribution of fungal endophytes",
+    "endophytic fungi have global distribution",
+    "worldwide occurrence of endophytes",
+    "fungal endophytes are globally distributed",
+    "pan-global fungal endophytes",
+    "endophytes show universal distribution",
+    "universal fungal symbiosis",
+    "fungal endosymbionts are ubiquitous",
+    "ubiquitous endosymbiotic fungi",
+    "all terrestrial plants host fungi",
+    "fungal endophytes in all ecosystems"
   ),
 
   # Review/generalization patterns - statements about fungal ubiquity
@@ -84,7 +114,33 @@ core_statement_patterns <- list(
     "prevalent fungal colonization",
     "widespread fungal presence",
     "fungi are prevalent in plants",
-    "fungal endophytes are prevalent"
+    "fungal endophytes are prevalent",
+    "endophytes are found everywhere",
+    "fungal endophytes are common",
+    "fungi commonly colonize plants",
+    "frequent fungal colonization",
+    "regular fungal presence",
+    "routine fungal colonization",
+    "typical fungal endophytes",
+    "standard fungal colonization",
+    "normal fungal presence",
+    "expected fungal endophytes"
+  ),
+
+  # Quantitative patterns - numerical statements suggesting universality
+  quantitative = c(
+    "100% of plants host fungi",
+    "fungi in 100% of plants",
+    "endophytes in 100% of species",
+    "all plant families host fungi",
+    "fungi across all plant taxa",
+    "endophytes in every family",
+    "fungi in all plant groups",
+    "universal among plant species",
+    "across all plant lineages",
+    "in every plant clade",
+    "throughout the plant kingdom",
+    "across the entire plant kingdom"
   )
 )
 
@@ -252,6 +308,8 @@ find_all_plants_statement <- function(input_file = NULL, output_dir = "results")
             }
           }
         }
+        # Remove duplicate contexts (from overlapping patterns)
+        contexts <- unique(contexts)
       }
 
       # Return results
@@ -281,8 +339,8 @@ find_all_plants_statement <- function(input_file = NULL, output_dir = "results")
   statement_abstracts <- all_results %>%
     filter(has_statement)
 
-  # Perform analysis
-  analysis <- analyze_found_statements(statement_abstracts)
+  # Perform analysis on all results (not just filtered ones)
+  analysis <- analyze_found_statements(all_results)
 
   # Save results
   dir.create(output_dir, showWarnings = FALSE)
@@ -320,7 +378,18 @@ find_all_plants_statement <- function(input_file = NULL, output_dir = "results")
         cat("Title:", sample_abstracts$title[i], "\n")
         cat("DOI:", sample_abstracts$doi[i], "\n")
         cat("Found patterns:", paste(unlist(sample_abstracts$found_patterns[i]), collapse = "; "), "\n")
-        cat("Context:", paste(unlist(sample_abstracts$contexts[i]), collapse = " [...] ")[1], "\n\n")
+        # Display only first context or combine unique contexts intelligently
+        contexts <- unlist(sample_abstracts$contexts[i])
+        if (length(contexts) > 0) {
+          # Take first context and limit length
+          context_text <- contexts[1]
+          if (nchar(context_text) > 200) {
+            context_text <- paste0(substr(context_text, 1, 200), "...")
+          }
+          cat("Context:", context_text, "\n\n")
+        } else {
+          cat("Context: No context available\n\n")
+        }
       }
     }
 
