@@ -1,0 +1,51 @@
+=== DATASET SUBSAMPLING SUMMARY ===
+Generated: 2025-08-28 15:45:55 
+
+ORIGINAL DATASET:
+File: results/relevant_abstracts_with_pa_predictions.csv 
+Total abstracts: 19434 
+Columns: id, article_title, abstract, authors, source_title, publication_year, doi, Relevant, relevance_loose, glmnet_pred, svm_pred, weighted_ensemble, threshold_ensemble, glmnet_prob_presence, glmnet_prob_absence, svm_prob_presence, svm_prob_absence, pa_loose, pa_medium, pa_strict, pa_super_strict, final_classification, conservative_classification 
+
+CLASS DISTRIBUTION:
+# A tibble: 2 × 2
+  final_classification     n
+  <chr>                <int>
+1 Presence             19334
+2 Absence                100
+
+SAMPLING PARAMETERS:
+Method: random 
+Sample sizes: 100, 500 
+
+CREATED SUBSETS:
+- test_subset_random_100.csv 
+- test_subset_random_500.csv 
+
+USAGE RECOMMENDATIONS:
+1. Start with smallest subset (100) for quick testing
+2. Test pipeline components individually
+3. Gradually increase subset size
+4. Compare results across subset sizes
+5. Run full pipeline on largest subset
+6. Proceed to full dataset when confident
+
+EXAMPLE PIPELINE TESTING:
+# Test on small subset
+source('scripts/04_analysis/run_extraction_pipeline.R')
+run_extraction_pipeline(
+  input_file = 'test_data/test_subset_random_100.csv',
+  run_species = TRUE,
+  run_methods = TRUE,
+  run_parts = TRUE,
+  run_geography = TRUE,
+  run_merge = TRUE
+)
+
+PIPELINE TESTING CHECKLIST:
+□ Test each component individually
+□ Verify output file creation
+□ Check result quality and consistency
+□ Monitor memory usage
+□ Time each component
+□ Compare results across subset sizes
+□ Validate against known examples

@@ -1,0 +1,26 @@
+=== PIPELINE TEST RESULTS - 100 ABSTRACTS ===
+Generated: 2025-08-28 15:40:22 
+
+COMPONENT RESULTS:
+=================
+
+DATA_PREP DETECTION:
+  Abstracts processed: 100 
+  Processing time: 0.3 seconds
+  Status: completed 
+
+SPECIES DETECTION:
+  Abstracts processed: 353 
+  Species found: 339 
+  Detection rate: 96 %
+  Processing time: 269 seconds
+  Status: completed 
+
+PERFORMANCE SUMMARY:
+===================
+Total processing time: 269.3 seconds
+Average time per abstract: 2.693 seconds
+
+Component timing breakdown:
+  data_prep   :    0.3s ( 0.1%)
+  species     :  269.0s (99.9%)

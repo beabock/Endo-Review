@@ -453,51 +453,151 @@ get_method_keywords <- function() {
   )
 }
 
-# Function to standardize country names (handles common variations and homonyms)
+# Enhanced function to standardize country names with comprehensive synonym handling
 standardize_country_name <- function(country_text) {
-  # Handle common variations and homonyms. Vectorized.
-  if (is.null(country_text)) return(NA_character_)
+  # Handle NULL, empty, or missing inputs
+  if (is.null(country_text) || length(country_text) == 0) return(NA_character_)
   country_text <- as.character(country_text)
-  # Title case so mappings are predictable
-  country_title <- stringr::str_to_title(country_text)
 
-  # Specific mappings for common variations (includes additional synonyms)
+  # Remove extra whitespace and convert to title case for consistent matching
+  country_clean <- stringr::str_trim(country_text)
+  country_title <- stringr::str_to_title(country_clean)
+
+  # Comprehensive synonym mappings organized by category
   country_mappings <- c(
+    # United States and variants
     "Usa" = "United States",
     "Us" = "United States",
-    "U\\.S\\.A\\." = "United States",
-    "U\\.S\\." = "United States",
+    "U.S.A." = "United States",
+    "U.S." = "United States",
     "United States Of America" = "United States",
-    "United States Of America" = "United States",
-    "America" = "United States",
+    "America" = "United States",  # Note: This is ambiguous - could refer to continents
+    "The United States" = "United States",
+
+    # United Kingdom and variants
     "Uk" = "United Kingdom",
     "Britain" = "United Kingdom",
     "Great Britain" = "United Kingdom",
+    "England" = "United Kingdom",  # Note: England is part of UK
+    "Scotland" = "United Kingdom",
+    "Wales" = "United Kingdom",
+    "Northern Ireland" = "United Kingdom",
+
+    # Major Asian countries
     "Russian Federation" = "Russia",
-    "Drc" = "Democratic Republic of the Congo",
+    "Soviet Union" = "Russia",  # Historical
+    "Ussr" = "Russia",  # Historical
+    "People'S Republic Of China" = "China",
+    "Prc" = "China",
+    "Republic Of China" = "Taiwan",  # Note: Taiwan claims this name
+    "Republic Of Korea" = "South Korea",
+    "Korea" = "South Korea",  # Ambiguous - defaults to South Korea
+    "Dprk" = "North Korea",  # Democratic People's Republic of Korea
     "Burma" = "Myanmar",
+    "Viet Nam" = "Vietnam",
+    "Sri Lanka" = "Sri Lanka",  # No change needed but included for completeness
+
+    # Middle East and Gulf countries
+    "Uae" = "United Arab Emirates",
+    "Islamic Republic Of Iran" = "Iran",
+    "Persia" = "Iran",  # Historical/traditional name
+    "Saudi Arabia" = "Saudi Arabia",  # No change but included
+    "Kuwait" = "Kuwait",
+
+    # African countries
+    "Drc" = "Democratic Republic of the Congo",
+    "Democratic Republic Of Congo" = "Democratic Republic of the Congo",
+    "Republic Of The Congo" = "Republic of the Congo",
+    "Congo" = "Republic of the Congo",  # Ambiguous - defaults to Republic of the Congo
+    "Za" = "South Africa",  # Internet country code
+    "Rsa" = "South Africa",  # Republic of South Africa
+    "Ivory Coast" = "Côte d'Ivoire",
+    "Cote D'Ivoire" = "Côte d'Ivoire",
+    "Cote D’Ivoire" = "Côte d'Ivoire",
+    "Swaziland" = "Eswatini",  # Name change in 2018
+    "The Gambia" = "Gambia",
+    "Cape Verde" = "Cabo Verde",
+
+    # European countries
     "Czechia" = "Czech Republic",
     "Holland" = "Netherlands",
-    "Uae" = "United Arab Emirates",
-    "Republic Of Korea" = "South Korea",
-    "Korea" = "South Korea",
-    "South Korea" = "South Korea",
-    "North Korea" = "North Korea",
-    "Iran" = "Iran",
-    "Islamic Republic Of Iran" = "Iran",
-    "Viet Nam" = "Vietnam"
+    "The Netherlands" = "Netherlands",
+    "Macedonia" = "North Macedonia",  # Name change in 2019
+    "Fyrom" = "North Macedonia",  # Former Yugoslav Republic of Macedonia
+
+    # Latin American countries
+    "Brasil" = "Brazil",
+    "México" = "Mexico",
+    "Méjico" = "Mexico",  # Alternative spelling
+    "Argentine Republic" = "Argentina",
+    "Republic Of Argentina" = "Argentina",
+
+    # Oceania and Pacific
+    "East Timor" = "Timor-Leste",
+    "Timor Leste" = "Timor-Leste",
+    "Png" = "Papua New Guinea",
+
+    # Additional historical and alternative names
+    "Zaire" = "Democratic Republic of the Congo",  # Historical name
+    "Rhodesia" = "Zimbabwe",  # Historical name
+    "Bechuanaland" = "Botswana",  # Historical name
+    "Basutoland" = "Lesotho",  # Historical name
+    "Gold Coast" = "Ghana",  # Historical name
+    "Tanganyika" = "Tanzania",  # Historical name
+    "Formosa" = "Taiwan",  # Historical name
+    "Siam" = "Thailand",  # Historical name
+    "Ceylon" = "Sri Lanka",  # Historical name
+
+    # Sub-national entities that might be confused with countries
+    "Scotland" = "United Kingdom",
+    "Wales" = "United Kingdom",
+    "Northern Ireland" = "United Kingdom",
+    "Catalonia" = "Spain",  # Autonomous region
+    "Basque Country" = "Spain",
+    "Quebec" = "Canada",  # Province
+    "Texas" = "United States",  # State
+    "California" = "United States",
+    "Florida" = "United States",
+
+    # Alternative spellings and transliterations
+    "Moldova" = "Moldova",
+    "Moldavia" = "Moldova",  # Alternative name
+    "Belorussia" = "Belarus",  # Alternative name
+    "Byelorussia" = "Belarus",
+    "Kirghizia" = "Kyrgyzstan",  # Alternative spelling
+    "Kirgizstan" = "Kyrgyzstan",
+    "Tadjikistan" = "Tajikistan",  # Alternative spelling
+    "Tadzhikistan" = "Tajikistan",
+    "Turkmenia" = "Turkmenistan",  # Alternative name
+    "Azerbaijan" = "Azerbaijan",  # Note: Also a region in Iran
+    "Azerbaidjan" = "Azerbaijan",
+
+    # Special cases and abbreviations
+    "Uk" = "United Kingdom",
+    "Us" = "United States",
+    "Eu" = "European Union",  # Not a country but sometimes confused
+    "Un" = "United Nations",  # Not a country
+    "Who" = "World Health Organization"  # Not a country
   )
 
-  # Apply mappings; if no mapping exists, return the title-cased input
+  # Apply mappings using regex patterns for better matching
   out <- vapply(country_title, function(ct) {
+    # First try exact matches
     if (ct %in% names(country_mappings)) {
-      unname(country_mappings[ct])
-    } else {
-      ct
+      return(unname(country_mappings[ct]))
     }
+
+    # Try regex patterns for cases with special characters or variations
+    for (pattern in names(country_mappings)) {
+      if (grepl(pattern, ct, ignore.case = TRUE)) {
+        return(unname(country_mappings[pattern]))
+      }
+    }
+
+    # If no mapping found, return the title-cased input
+    return(ct)
   }, FUN.VALUE = "")
 
-  # Return as character vector
   return(as.character(out))
 }
 

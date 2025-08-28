@@ -14,7 +14,7 @@ library(ggplot2)
 library(viridis)
 library(scales)
 
-# Load centralized reference data utilities
+# Load centralized reference data utilities. Has country list in it.
 source("scripts/04_analysis/reference_data_utils.R")
 
 cat("=== GEOGRAPHIC BIAS ANALYSIS ===\n")

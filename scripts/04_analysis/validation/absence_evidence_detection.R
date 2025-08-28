@@ -102,7 +102,7 @@ detect_absence_evidence <- function(text, context_words = 15) {
     molecular_methods = c(
       "pcr", "amplified", "sequenced", "dna extracted", "primers",
       "18s", "28s", "rrna", "barcode", "metagenom*", "amplicon",
-      "qPCR", "real-time PCR", "sequencing", "illumina", "pyrosequencing",
+      "qpcr", "real-time pcr", "sequencing", "illumina", "pyrosequencing",
       "sanger", "cloning", "library preparation"
     ),
 
@@ -340,26 +340,26 @@ duplicate_check <- absence_analysis_results %>%
 
 if (nrow(duplicate_check) > 0) {
   cat("Warning:", nrow(duplicate_check), "IDs have multiple rows. Using distinct() to handle duplicates safely.\n")
-  
+
   # Use distinct() instead of slice(1) to handle duplicates safely
-  total_abstracts <- absence_analysis_results %>% 
+  total_abstracts <- absence_analysis_results %>%
     distinct(id, .keep_all = TRUE) %>%
     nrow()
-    
-  high_confidence_absence <- absence_analysis_results %>% 
-    group_by(id) %>% 
-    summarise(high_confidence = any(confidence_level == "High", na.rm = TRUE), .groups = "drop") %>% 
-    pull(high_confidence) %>% 
+
+  high_confidence_absence <- absence_analysis_results %>%
+    group_by(id) %>%
+    summarise(high_confidence = any(confidence_level == "High", na.rm = TRUE), .groups = "drop") %>%
+    pull(high_confidence) %>%
     sum(na.rm = TRUE)
-    
-  medium_confidence_absence <- absence_analysis_results %>% 
-    group_by(id) %>% 
-    summarise(medium_confidence = any(confidence_level == "Medium", na.rm = TRUE), .groups = "drop") %>% 
-    pull(medium_confidence) %>% 
+
+  medium_confidence_absence <- absence_analysis_results %>%
+    group_by(id) %>%
+    summarise(medium_confidence = any(confidence_level == "Medium", na.rm = TRUE), .groups = "drop") %>%
+    pull(medium_confidence) %>%
     sum(na.rm = TRUE)
 } else {
   cat("No duplicate IDs found. Proceeding with full dataset.\n")
-  
+
   total_abstracts <- nrow(absence_analysis_results)
   high_confidence_absence <- sum(absence_analysis_results$confidence_level == "High", na.rm = TRUE)
   medium_confidence_absence <- sum(absence_analysis_results$confidence_level == "Medium", na.rm = TRUE)
@@ -394,7 +394,7 @@ absence_crosstab <- absence_analysis_results %>%
     detected_absence = confidence_level %in% c("High", "Medium"),
     prediction_category = case_when(
       final_classification == "Presence" & detected_absence ~ "ML:Presence, Evidence:Absence",
-      final_classification == "Presence" & !detected_absence ~ "ML:Presence, Evidence:None", 
+      final_classification == "Presence" & !detected_absence ~ "ML:Presence, Evidence:None",
       final_classification == "Absence" & detected_absence ~ "ML:Absence, Evidence:Absence",
       final_classification == "Absence" & !detected_absence ~ "ML:Absence, Evidence:None",
       TRUE ~ "Other"
@@ -420,7 +420,7 @@ if (any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %i
       culture_pct = round(100 * with_culture / total_absence, 1),
       microscopy_pct = round(100 * with_microscopy / total_absence, 1)
     )
-  
+
   cat("\nMethod usage in absence studies:\n")
   print(absence_by_methods)
 } else {
@@ -564,48 +564,48 @@ capture.output({
   cat("Generated:", Sys.time(), "\n")
   cat("Purpose: Identify studies reporting absence of fungal endophytes\n")
   cat("Method: Automated text analysis with manual validation recommended\n\n")
-  
+
   cat("SUMMARY STATISTICS:\n")
   cat("Total abstracts analyzed:", total_abstracts, "\n")
   cat("High confidence absence:", high_confidence_absence, "\n")
   cat("Medium confidence absence:", medium_confidence_absence, "\n\n")
-  
+
   cat("ABSENCE BY PREDICTION TYPE:\n")
   print(absence_by_prediction)
   cat("\n")
-  
+
   cat("METHODOLOGICAL CONTEXT:\n")
   print(absence_by_methods)
   cat("\n")
-  
+
   cat("TEMPORAL TRENDS:\n")
   print(absence_temporal)
   cat("\n")
-  
+
   if (nrow(absence_geographic) > 0) {
     cat("GEOGRAPHIC PATTERNS:\n")
     print(absence_geographic)
     cat("\n")
   }
-  
+
   if (nrow(absence_plant_parts) > 0) {
     cat("PLANT PARTS PATTERNS:\n")
     print(absence_plant_parts)
     cat("\n")
   }
-  
+
   cat("QUALITY CONTROL RECOMMENDATIONS:\n")
   cat("1. Manual review of high-confidence absence cases recommended\n")
   cat("2. Verify methodological adequacy for studies claiming absence\n")
   cat("3. Check for potential false positives in absence detection\n")
   cat("4. Consider context of absence claims (e.g., specific conditions)\n\n")
-  
+
   cat("NEXT STEPS:\n")
   cat("1. Expert review of high_confidence_absence_evidence.csv\n")
   cat("2. Quality assessment of methodological rigor\n")
   cat("3. Integration with species-level absence patterns\n")
   cat("4. Use absence_evidence_analysis.csv for further analysis\n")
-  
+
 }, file = "results/absence_evidence_report.txt")
 
 cat("\nFiles created:\n")

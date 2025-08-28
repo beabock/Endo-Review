@@ -1,0 +1,21 @@
+=== PIPELINE TESTING COMPARISON REPORT ===
+Generated: 2025-08-28 15:40:22 
+
+TESTED SUBSET SIZES: 100 
+
+DATA_PREP DETECTION COMPARISON:
+===================================
+   100 abstracts: 0.3s
+
+SPECIES DETECTION COMPARISON:
+===================================
+   100 abstracts: 96 found (96.0%), 269.0s
+
+RECOMMENDATIONS:
+===============
+
+3. Next Steps:
+   □ Review component results for quality
+   □ Check for memory issues on larger subsets
+   □ Validate against known examples
+   □ Run full pipeline when confident

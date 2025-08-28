@@ -1,12 +1,15 @@
 # Simple Species Extraction for Classification Results
-# B. Bock  
+# B. Bock
 # July 30, 2ed: July 31, 2025 - Using new comprehensive search results
+# MODULAR VERSION: Run individual components or use pipeline script
 #
-# Comprehensive script to extract:
-# 1. Species information (plants and fungi)
-# 2. Plant parts studied
-# 3. Research methods (culture, microscopy, molecular)
-# 4. Geographic locations: one thing I need to fix is niger is both a species name and a country.... the country niger is showing up as represented more than it is
+# This script can be run in parts:
+# 1. Species information (plants and fungi) - MOST TIME-CONSUMING (~1-2 days)
+# 2. Plant parts studied - FAST (~10-30 min)
+# 3. Research methods - FAST (~10-30 min)
+# 4. Geographic locations - FAST (~10-30 min)
+#
+# For production use, consider running components separately or using the pipeline script
 #
 # Data Source: Web of Science search conducted July 31, 2025
 # Search Strategy: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi")
@@ -114,91 +117,157 @@ detect_research_methods <- function(text) {
   ))
 }
 
-# OPTIMIZED: Vectorized function to detect geographic locations
+# Enhanced geographic detection with comprehensive synonym handling and context-aware disambiguation
 detect_geographic_locations_batch <- function(text_vector) {
+  # Get comprehensive reference data
   all_countries <- get_all_countries()
   global_north <- get_global_north_countries()
   global_south <- get_global_south_countries()
   continents <- get_continent_keywords()
   regions <- get_region_keywords()
-  
-  # Convert country names to lowercase for consistent matching
-  all_countries_lower <- str_to_lower(all_countries)
-  
-  # Vectorized country detection with special handling
+
+  # Function to normalize country names using enhanced synonym system
+  normalize_country_batch <- function(country_vector) {
+    # Apply the enhanced standardize_country_name function to each country
+    map_chr(country_vector, function(country) {
+      if (is.na(country) || country == "") return(NA_character_)
+      result <- standardize_country_name(country)
+      # If standardization returns the same as input, it might be unrecognized
+      if (result == country && !country %in% all_countries) {
+        return(NA_character_)  # Mark as unrecognized
+      }
+      return(result)
+    })
+  }
+
+  # Context-aware country detection with enhanced synonym handling
   country_matches <- map(text_vector, function(text) {
     if (is.na(text) || text == "") return(character(0))
-    
+
     text_lower <- str_to_lower(text)
+    text_title <- str_to_title(text)  # For proper name matching
     found <- character(0)
-    
-    for(i in seq_along(all_countries)) {
-      country <- all_countries[i]
-      country_lower <- all_countries_lower[i]
-      
+
+    # First pass: Direct pattern matching with enhanced synonyms
+    for(country in all_countries) {
+      country_lower <- str_to_lower(country)
+
+      # Enhanced homonym handling with context awareness
       if (country_lower == "niger") {
-        if (str_detect(text, "\\bRepublic of Niger\\b") || 
-            (str_detect(text, "\\bNiger\\b") && 
-             !str_detect(text, "\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b"))) {
+        # Context-aware detection for Niger (country vs fungus)
+        if (str_detect(text, "\\bRepublic of Niger\\b|\\bNiger\\b.*\\b(africa|country|nation|west|sahel|niamey)\\b",
+                       ignore.case = TRUE) ||
+            (str_detect(text, "\\bNiger\\b") &&
+             !str_detect(text, "\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b",
+                        ignore.case = TRUE))) {
           found <- c(found, country)
         }
       } else if (country_lower == "turkey") {
-        if (str_detect(text, "\\bTurkey\\b") && 
-            !str_detect(text, "\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom)\\b") &&
-            !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi)\\b")) {
+        # Enhanced Turkey detection (country vs bird/fungus)
+        if (str_detect(text, "\\bTurkey\\b") &&
+            !str_detect(text, "\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry)\\b",
+                       ignore.case = TRUE) &&
+            !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi|mycology)\\b", ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "chile") {
-        if (str_detect(text, "\\bChile\\b") && 
-            !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice)\\b")) {
+        # Chile (country vs pepper)
+        if (str_detect(text, "\\bChile\\b") &&
+            !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder)\\b", ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "georgia") {
-        if (str_detect(text, "\\bGeorgia\\b") && 
-            !str_detect(text, "\\bgeorgia\\s+(pine|oak|southern)\\b")) {
+        # Georgia (country vs US state)
+        if (str_detect(text, "\\bGeorgia\\b") &&
+            !str_detect(text, "\\bgeorgia\\s+(pine|oak|southern|peach|usa|united\\s+states|america)\\b",
+                       ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "guinea") {
-        if (str_detect(text, "\\bGuinea\\b") && 
-            !str_detect(text, "\\bguinea\\s+pig\\b")) {
+        # Guinea (country vs animal)
+        if (str_detect(text, "\\bGuinea\\b") &&
+            !str_detect(text, "\\bguinea\\s+pig\\b", ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "mali") {
-        if (str_detect(text, "\\bMali\\b") && 
-            !str_detect(text, "\\b\\w+\\s+mali\\b")) {
+        # Mali (country vs fungus)
+        if (str_detect(text, "\\bMali\\b") &&
+            !str_detect(text, "\\b\\w+\\s+mali\\b", ignore.case = TRUE)) {
           found <- c(found, country)
         }
+      } else if (country == "South Korea" || country == "North Korea") {
+        # Context-aware Korea disambiguation
+        if (str_detect(text, "\\bkorea\\b", ignore.case = TRUE)) {
+          if (str_detect(text, "\\b(north|dprk|pyongyang|kim)\\b", ignore.case = TRUE)) {
+            if (country == "North Korea") found <- c(found, country)
+          } else {
+            # Default to South Korea for general "Korea" mentions
+            if (country == "South Korea") found <- c(found, country)
+          }
+        }
       } else {
-        # Standard matching using lowercase versions
-        if (str_detect(text_lower, paste0("\\b", str_replace_all(country_lower, "\\s+", "\\\\s+"), "\\b"))) {
+        # Standard pattern matching for other countries
+        country_pattern <- paste0("\\b", str_replace_all(country, "\\s+", "\\\\s+"), "\\b")
+        if (str_detect(text, country_pattern, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+
+        # Also try matching against title case version
+        if (str_detect(text_title, country_pattern)) {
           found <- c(found, country)
         }
       }
     }
+
+    # Second pass: Try to find synonyms using enhanced standardization
+    if (length(found) == 0) {
+      # Extract potential country names using pattern matching
+      potential_countries <- str_extract_all(text, "\\b[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*\\b")[[1]]
+
+      if (length(potential_countries) > 0) {
+        # Try to standardize each potential country name
+        standardized <- normalize_country_batch(potential_countries)
+        valid_countries <- standardized[!is.na(standardized) & standardized %in% all_countries]
+        found <- c(found, valid_countries)
+      }
+    }
+
     return(unique(found))
   })
-  
-  # Vectorized continent/region detection
+
+  # Enhanced continent and region detection using comprehensive keywords
   if (length(continents) > 0) {
     continent_pattern <- paste0("\\b(", paste(str_to_lower(continents), collapse = "|"), ")\\b")
     continents_found <- str_extract_all(str_to_lower(text_vector), continent_pattern)
   } else {
     continents_found <- map(text_vector, ~character(0))
   }
-  
+
+  # Enhanced ecosystem/region detection with comprehensive keywords
   if (length(regions) > 0) {
     region_pattern <- paste0("\\b(", paste(str_to_lower(regions), collapse = "|"), ")\\b")
     regions_found <- str_extract_all(str_to_lower(text_vector), region_pattern)
   } else {
     regions_found <- map(text_vector, ~character(0))
   }
-  
-  # Coordinate detection
-  coord_pattern <- "\\b\\d{1,2}[°]?\\s*[NS]?\\s*,?\\s*\\d{1,3}[°]?\\s*[EW]?\\b"
-  has_coordinates <- str_detect(text_vector, coord_pattern)
-  
-  # Build results
-  tibble(
+
+  # Enhanced coordinate detection
+  coord_patterns <- c(
+    # Standard formats: 45.5°N, 122.3°W or 45°30'N, 122°45'W
+    "\\b\\d{1,2}(?:\\.\\d+)?[°]?\\s*[NS]\\b.*?\\b\\d{1,3}(?:\\.\\d+)?[°]?\\s*[EW]\\b",
+    # Decimal degrees: 45.5, -122.3
+    "\\b-?\\d{1,2}(?:\\.\\d+)?\\s*,\\s*-?\\d{1,3}(?:\\.\\d+)?\\b",
+    # DMS format: 45°30'45"N, 122°45'30"W
+    "\\b\\d{1,2}[°]\\s*\\d{1,2}['′]?\\s*\\d{0,2}[″\"]?\\s*[NS]\\b.*?\\b\\d{1,3}[°]\\s*\\d{1,2}['′]?\\s*\\d{0,2}[″\"]?\\s*[EW]\\b"
+  )
+
+  has_coordinates <- map_lgl(text_vector, function(text) {
+    if (is.na(text)) return(FALSE)
+    any(map_lgl(coord_patterns, ~str_detect(text, .)))
+  })
+
+  # Build results with enhanced categorization
+  results <- tibble(
     countries_detected = map_chr(country_matches, ~if(length(.) > 0) paste(., collapse = "; ") else NA_character_),
     global_north_countries = map_chr(country_matches, ~{
       found <- intersect(., global_north)
@@ -211,12 +280,14 @@ detect_geographic_locations_batch <- function(text_vector) {
     continents_detected = map_chr(continents_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     regions_detected = map_chr(regions_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     has_coordinates = has_coordinates,
-    geographic_summary = pmap_chr(list(country_matches, continents_found, regions_found), 
+    geographic_summary = pmap_chr(list(country_matches, continents_found, regions_found),
                                   function(countries, continents, regions) {
                                     all_geo <- c(countries, continents, regions)
                                     if(length(all_geo) > 0) paste(all_geo, collapse = "; ") else NA_character_
                                   })
   )
+
+  return(results)
 }
 
 # Original function for backwards compatibility
@@ -944,4 +1015,3 @@ cat("3. Focus on abstracts with complete information for priority review\n")
 cat("4. Consider running visualization scripts for deeper analysis\n\n")
 
 cat("Comprehensive extraction pipeline complete! 🧬🔬🌍\n")
-
