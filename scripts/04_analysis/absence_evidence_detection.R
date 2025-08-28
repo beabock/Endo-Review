@@ -263,6 +263,16 @@ if (any(c("molecular_methods", "culture_based_methods", "microscopy_methods") %i
   cat("\nMethod usage in absence studies:\n")
   print(absence_by_methods)
 } else {
+  # Create empty data frame when method columns not available
+  absence_by_methods <- data.frame(
+    total_absence = 0,
+    with_molecular = 0,
+    with_culture = 0,
+    with_microscopy = 0,
+    molecular_pct = 0,
+    culture_pct = 0,
+    microscopy_pct = 0
+  )
   cat("\nMethod usage analysis skipped - method columns not available in dataset\n")
 }
 
@@ -319,7 +329,8 @@ absence_temporal <- absence_analysis_results %>%
   # Handle potential duplicates safely
   distinct(id, publication_year, confidence_level, .keep_all = TRUE) %>%
   mutate(publication_year = as.integer(publication_year)) %>%
-  filter(!is.na(publication_year)) %>%
+  # Filter for reasonable publication years (1800-2030)
+  filter(!is.na(publication_year), publication_year >= 1700, publication_year <= 2030) %>%
   mutate(
     decade = floor(publication_year / 10) * 10,
     five_year_period = floor(publication_year / 5) * 5
@@ -334,7 +345,7 @@ absence_temporal <- absence_analysis_results %>%
   ) %>%
   arrange(five_year_period)
 
-cat("\nTemporal trends in absence reporting:\n")
+cat("\nTemporal trends in absence reporting (filtered to 1700-2030):\n")
 print(absence_temporal)
 
 # Save results
@@ -350,7 +361,7 @@ all_absence_matches <- absence_analysis_results %>%
     id, article_title, abstract, authors, source_title, publication_year, doi,
     # ML predictions
     final_classification, weighted_ensemble, conservative_classification,
-    Relevant, Irrelevant, confidence,
+    Relevant,
     # Absence detection results
     potential_absence, absence_score, method_score, confidence_level,
     absence_terms, method_terms,
@@ -374,8 +385,12 @@ high_confidence_subset <- absence_analysis_results %>%
   arrange(desc(absence_score), desc(method_score)) %>%
   select(
     id, abstract, publication_year, final_classification, weighted_ensemble,
-    canonicalName, resolved_name, acceptedScientificName, methods_summary, plant_parts_detected,
-    countries_detected, absence_score, method_score, confidence_level,
+    # Species information (if available)
+    any_of(c("canonicalName", "resolved_name", "acceptedScientificName")),
+    # Methods and location information (if available)
+    any_of(c("methods_summary", "plant_parts_detected", "countries_detected")),
+    # Absence detection results
+    absence_score, method_score, confidence_level,
     absence_terms, method_terms
   )
 

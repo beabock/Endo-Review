@@ -745,12 +745,20 @@ if (mem_status$above_threshold) {
 # Create comprehensive results dataset
 final_results <- full_abstracts %>%
   left_join(
-    abstracts_for_pa %>% 
+    abstracts_for_pa %>%
       select(id, glmnet_pred, svm_pred, weighted_ensemble, threshold_ensemble,
-             glmnet_prob_presence, glmnet_prob_absence, 
+             glmnet_prob_presence, glmnet_prob_absence,
              svm_prob_presence, svm_prob_absence,
              pa_loose, pa_medium, pa_strict, pa_super_strict),
     by = "id"
+  ) %>%
+  # Add publication year validation: set strange years (< 1400) to NA
+  mutate(
+    publication_year = case_when(
+      is.na(publication_year) ~ NA_integer_,
+      publication_year < 1400 ~ NA_integer_,
+      TRUE ~ publication_year
+    )
   ) %>%
   # Add final classification combining relevance and P/A
   mutate(
