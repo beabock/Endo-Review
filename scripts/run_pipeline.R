@@ -59,7 +59,7 @@ PIPELINE_STAGES <- list(
   
   species_extraction = list(
     name = "Species and Information Extraction",
-    script = "scripts/04_analysis/extract_species_simple.R",
+    script = "scripts/04_analysis/archive/extract_species_simple.R",
     description = "Extract species, methods, geography, and plant parts",
     required_files = c("results/relevant_abstracts_with_pa_predictions.csv", INPUT_FILES$species_data),
     outputs = c("results/comprehensive_extraction_results.csv", "results/species_detection_weighted_ensemble.csv"),

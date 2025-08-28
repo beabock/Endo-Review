@@ -1,0 +1,51 @@
+id,molecular_methods,culture_based_methods,microscopy_methods,methods_summary
+1362,TRUE,TRUE,FALSE,molecular; culture
+7483,FALSE,TRUE,FALSE,culture
+15291,FALSE,TRUE,FALSE,culture
+15681,FALSE,TRUE,FALSE,culture
+7609,TRUE,TRUE,FALSE,molecular; culture
+1743,TRUE,TRUE,FALSE,molecular; culture
+11781,FALSE,FALSE,FALSE,NA
+9312,FALSE,FALSE,FALSE,NA
+11676,FALSE,TRUE,FALSE,culture
+1546,FALSE,TRUE,FALSE,culture
+10929,FALSE,FALSE,FALSE,NA
+16808,FALSE,TRUE,TRUE,culture; microscopy
+9864,FALSE,TRUE,FALSE,culture
+15808,TRUE,FALSE,FALSE,molecular
+13324,FALSE,TRUE,FALSE,culture
+2109,FALSE,FALSE,FALSE,NA
+17642,TRUE,TRUE,FALSE,molecular; culture
+15337,FALSE,TRUE,FALSE,culture
+8515,TRUE,TRUE,TRUE,molecular; culture; microscopy
+18827,TRUE,TRUE,FALSE,molecular; culture
+18748,FALSE,TRUE,FALSE,culture
+10945,FALSE,TRUE,FALSE,culture
+13392,FALSE,TRUE,FALSE,culture
+17371,TRUE,FALSE,FALSE,molecular
+18743,TRUE,TRUE,FALSE,molecular; culture
+9826,FALSE,FALSE,FALSE,NA
+11738,TRUE,FALSE,TRUE,molecular; microscopy
+9652,FALSE,TRUE,FALSE,culture
+5527,TRUE,TRUE,FALSE,molecular; culture
+20855,TRUE,TRUE,FALSE,molecular; culture
+4912,TRUE,TRUE,FALSE,molecular; culture
+3035,TRUE,FALSE,FALSE,molecular
+10508,FALSE,TRUE,FALSE,culture
+13880,FALSE,TRUE,TRUE,culture; microscopy
+3609,TRUE,FALSE,FALSE,molecular
+6059,FALSE,TRUE,FALSE,culture
+9910,TRUE,TRUE,FALSE,molecular; culture
+11136,FALSE,TRUE,FALSE,culture
+19620,FALSE,TRUE,FALSE,culture
+10518,FALSE,TRUE,FALSE,culture
+2667,TRUE,FALSE,FALSE,molecular
+2433,FALSE,TRUE,FALSE,culture
+18319,TRUE,TRUE,FALSE,molecular; culture
+9343,TRUE,TRUE,FALSE,molecular; culture
+21014,FALSE,TRUE,FALSE,culture
+18882,TRUE,TRUE,FALSE,molecular; culture
+12517,TRUE,TRUE,FALSE,molecular; culture
+13111,FALSE,TRUE,FALSE,culture
+277,TRUE,TRUE,FALSE,molecular; culture
+13580,FALSE,FALSE,FALSE,NA

@@ -1,0 +1,51 @@
+id,plant_parts_detected,parts_count
+1362,root,1
+7483,ray,1
+15291,stem; bark; leaves,3
+15681,leaves,1
+7609,NA,0
+1743,bark,1
+11781,scale; seed,2
+9312,NA,0
+11676,stems; tumor,2
+1546,leaf; foliage; branches; canopy; branch,5
+10929,apical meristem,1
+16808,lesions; crown; stems; branch; stem,5
+9864,roots; leaves; stems; leaf,4
+15808,NA,0
+13324,seeds; seed; leaves; fruits; fruit,5
+2109,spikes,1
+17642,leaves; stems; inflorescences; root; stem; roots; sporangia; scale,8
+15337,NA,0
+8515,root,1
+18827,seeds,1
+18748,cones; rhizomes; leaves; rhizome; inflorescences,5
+10945,NA,0
+13392,leaves; tumor,2
+17371,roots,1
+18743,NA,0
+9826,leaf,1
+11738,mycorrhizal; roots; root,3
+9652,seed,1
+5527,wood; branches,2
+20855,stem,1
+4912,NA,0
+3035,leaves; buds,2
+10508,roots; leaves,2
+13880,roots; root,2
+3609,roots; leaves; root,3
+6059,seeds,1
+9910,NA,0
+11136,leaf; leaves; foliage,3
+19620,NA,0
+10518,shoots; lesions; stems; lesion,4
+2667,NA,0
+2433,scale; seed,2
+18319,NA,0
+9343,seed,1
+21014,NA,0
+18882,roots,1
+12517,leaf; lesions,2
+13111,NA,0
+277,roots,1
+13580,NA,0

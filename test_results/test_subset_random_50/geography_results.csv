@@ -1,0 +1,51 @@
+id,countries_detected,global_north_countries,global_south_countries,continents_detected,regions_detected,has_coordinates,geographic_summary
+1362,USA; Canada; Scotland; Sweden; Finland; New Zealand; Chile,USA; Canada; Scotland; Sweden; Finland; New Zealand,Chile,europe,NA,FALSE,USA; Canada; Scotland; Sweden; Finland; New Zealand; Chile; europe; europe
+7483,United States,United States,NA,NA,NA,FALSE,United States
+15291,Indonesia,NA,Indonesia,NA,NA,FALSE,Indonesia
+15681,United States,United States,NA,NA,NA,FALSE,United States
+7609,United States,United States,NA,NA,NA,TRUE,United States
+1743,South Africa,NA,South Africa,africa,NA,FALSE,South Africa; africa
+11781,Iceland,Iceland,NA,europe,NA,FALSE,Iceland; europe
+9312,NA,NA,NA,NA,NA,FALSE,NA
+11676,NA,NA,NA,NA,NA,FALSE,NA
+1546,United States,United States,NA,NA,NA,FALSE,United States
+10929,NA,NA,NA,NA,caribbean,FALSE,caribbean
+16808,Italy; Colombia; Peru; Ecuador,Italy,Colombia; Peru; Ecuador,south america,NA,TRUE,Italy; Colombia; Peru; Ecuador; south america
+9864,China,NA,China,NA,NA,FALSE,China
+15808,China,NA,China,NA,tropical; subtropical,FALSE,China; tropical; subtropical
+13324,United States,United States,NA,NA,NA,TRUE,United States
+2109,United States,United States,NA,NA,NA,FALSE,United States
+17642,Italy,Italy,NA,africa,NA,FALSE,Italy; africa
+15337,China,NA,China,NA,NA,FALSE,China
+8515,NA,NA,NA,NA,NA,FALSE,NA
+18827,United States,United States,NA,NA,upland,FALSE,United States; upland
+18748,United States; Canada,United States; Canada,NA,NA,NA,FALSE,United States; Canada
+10945,NA,NA,NA,NA,NA,TRUE,NA
+13392,NA,NA,NA,NA,NA,FALSE,NA
+17371,NA,NA,NA,NA,NA,FALSE,NA
+18743,United States,United States,NA,NA,NA,FALSE,United States
+9826,United States,United States,NA,NA,NA,FALSE,United States
+11738,South Africa,NA,South Africa,NA,subalpine; grassland,FALSE,South Africa; subalpine; grassland
+9652,Canada; Australia,Canada; Australia,NA,australia,NA,FALSE,Canada; Australia; australia
+5527,China,NA,China,NA,tropical; rainforest,FALSE,China; tropical; rainforest; tropical; rainforest
+20855,United States,United States,NA,NA,NA,FALSE,United States
+4912,NA,NA,NA,africa,tropical,FALSE,africa; tropical
+3035,Norway,Norway,NA,NA,NA,FALSE,Norway
+10508,Mexico,NA,Mexico,NA,NA,FALSE,Mexico
+13880,NA,NA,NA,NA,NA,FALSE,NA
+3609,South Africa; United States,United States,South Africa,NA,NA,FALSE,South Africa; United States
+6059,NA,NA,NA,NA,NA,FALSE,NA
+9910,Portugal,Portugal,NA,NA,NA,FALSE,Portugal
+11136,NA,NA,NA,NA,NA,FALSE,NA
+19620,NA,NA,NA,NA,NA,FALSE,NA
+10518,NA,NA,NA,NA,NA,FALSE,NA
+2667,United States,United States,NA,NA,NA,FALSE,United States
+2433,New Zealand,New Zealand,NA,NA,NA,TRUE,New Zealand
+18319,NA,NA,NA,NA,NA,FALSE,NA
+9343,Iran,NA,Iran,NA,NA,FALSE,Iran
+21014,NA,NA,NA,NA,NA,FALSE,NA
+18882,United States,United States,NA,NA,NA,TRUE,United States
+12517,China,NA,China,NA,NA,FALSE,China
+13111,United States,United States,NA,NA,NA,FALSE,United States
+277,United States,United States,NA,NA,river,FALSE,United States; river
+13580,United States,United States,NA,NA,NA,FALSE,United States

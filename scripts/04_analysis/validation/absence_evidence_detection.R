@@ -305,9 +305,11 @@ absence_results <- map_dfr(1:nrow(relevant_data), function(i) {
 
 cat("\nEnhanced absence detection completed.\n")
 
-# Combine with original data
+# Combine with original data - explicitly handle many-to-many relationship
+# The relevant_data may have multiple rows per ID (one per fungal detection)
+# while absence_results has one row per ID, creating a many-to-one join
 absence_analysis_results <- relevant_data %>%
-  left_join(absence_results, by = "id") %>%
+  left_join(absence_results, by = "id", relationship = "many-to-one") %>%
   mutate(
     # Add additional classification variables - check for any species information
     has_species = if(all(c("canonicalName", "resolved_name", "acceptedScientificName") %in% names(.))) {
@@ -618,12 +620,13 @@ cat("✓ results/absence_evidence_report.txt (detailed analysis report)\n")
 cat("\n=== ABSENCE DETECTION COMPLETE ===\n")
 cat("Key findings:\n")
 
-# Calculate very high confidence cases
+# Calculate very high confidence cases - fixed sum function
 very_high_confidence_absence <- if (exists("absence_analysis_results")) {
   absence_analysis_results %>%
     distinct(id, confidence_level, .keep_all = TRUE) %>%
     pull(confidence_level) %>%
-    sum(. == "Very High", na.rm = TRUE)
+    `==`("Very High") %>%
+    sum(na.rm = TRUE)
 } else {
   0
 }
@@ -634,6 +637,4 @@ cat("📋 ", medium_confidence_absence, " medium-confidence absence cases found\
 cat("⏰ Temporal trends in absence reporting analyzed\n")
 cat("🌍 Geographic patterns in absence evidence mapped\n")
 cat("🌱 Plant parts commonly reported as endophyte-free documented\n")
-cat("🔍 Context snippets extracted for manual validation\n")
-cat("📈 Enhanced confidence scoring with 5-tier system\n")
 cat("\nRecommendation: Manual review of very high and high-confidence cases to validate absence claims!\n")

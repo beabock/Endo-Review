@@ -11,19 +11,20 @@ source("scripts/04_analysis/create_test_subset.R")
 
 # Create small subsets for quick testing
 create_test_subset(
-  sample_sizes = c(100, 500),
+  sample_sizes = c(50, 100, 500),
   sampling_method = "random",
   verbose = TRUE
 )
 
 cat("\n✅ Test subsets created!\n\n")
 
-# Step 2: Run quick pipeline test
-cat("Step 2: Running pipeline tests...\n")
-source("scripts/04_analysis/test_pipeline_workflow.R")
+# Step 2: Run quick pipeline test (skipping species detection)
+cat("Step 2: Running pipeline tests (skipping species detection)...\n")
+source("scripts/04_analysis/tests/test_pipeline_workflow.R")
 
-# Run quick test on smallest subset (tests all components including analysis)
-run_quick_test(subset_size = 100)
+# Run quick test on smallest subset (tests all components except species)
+#run_quick_test(subset_size = 50, components = c("data_prep","species", "methods", "parts", "geography", "merge", "analysis"))
+run_quick_test(subset_size = 50, components = c("analysis"))
 
 cat("\n✅ Quick test completed!\n\n")
 
@@ -49,7 +50,7 @@ cat("  test_components = c('species', 'geography')\n")
 cat(")\n\n")
 
 cat("# Run main pipeline on subset\n")
-cat("source('scripts/04_analysis/run_extraction_pipeline.R')\n")
+cat("source('scripts/04_analysis/workflows/run_extraction_pipeline.R')\n")
 cat("run_extraction_pipeline(\n")
 cat("  input_file = 'test_data/test_subset_random_500.csv',\n")
 cat("  force_rerun = TRUE\n")

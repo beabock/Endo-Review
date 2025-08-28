@@ -10,7 +10,7 @@ library(stringr)
 library(progress)
 
 # Source utilities
-source("scripts/04_analysis/reference_data_utils.R")
+source("scripts/04_analysis/utilities/reference_data_utils.R")
 
 cat("=== GEOGRAPHY DETECTION COMPONENT ===\n")
 cat("Extracting geographic location information\n\n")
@@ -53,50 +53,50 @@ detect_geographic_locations_batch <- function(text_vector) {
       # Enhanced homonym handling with context awareness
       if (country_lower == "niger") {
         # Context-aware detection for Niger (country vs fungus)
-        if (str_detect(text, "\\bRepublic of Niger\\b|\\bNiger\\b.*\\b(africa|country|nation|west|sahel|niamey)\\b",
-                       ignore.case = TRUE) ||
-            (str_detect(text, "\\bNiger\\b") &&
-             !str_detect(text, "\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b",
-                        ignore.case = TRUE))) {
+      if (grepl("\\bRepublic of Niger\\b|\\bNiger\\b.*\\b(africa|country|nation|west|sahel|niamey)\\b", text,
+                ignore.case = TRUE) ||
+          (str_detect(text, "\\bNiger\\b") &&
+           !grepl("\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b", text,
+                 ignore.case = TRUE))) {
           found <- c(found, country)
         }
       } else if (country_lower == "turkey") {
         # Enhanced Turkey detection (country vs bird/fungus)
         if (str_detect(text, "\\bTurkey\\b") &&
-            !str_detect(text, "\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry)\\b",
-                       ignore.case = TRUE) &&
-            !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi|mycology)\\b", ignore.case = TRUE)) {
+            !grepl("\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry)\\b", text,
+                   ignore.case = TRUE) &&
+            !grepl("\\bturkey\\s+(mushroom|fungus|fungi|mycology)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "chile") {
         # Chile (country vs pepper)
         if (str_detect(text, "\\bChile\\b") &&
-            !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder)\\b", ignore.case = TRUE)) {
+            !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "georgia") {
         # Georgia (country vs US state)
         if (str_detect(text, "\\bGeorgia\\b") &&
-            !str_detect(text, "\\bgeorgia\\s+(pine|oak|southern|peach|usa|united\\s+states|america)\\b",
-                       ignore.case = TRUE)) {
+            !grepl("\\bgeorgia\\s+(pine|oak|southern|peach|usa|united\\s+states|america)\\b", text,
+                   ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "guinea") {
         # Guinea (country vs animal)
         if (str_detect(text, "\\bGuinea\\b") &&
-            !str_detect(text, "\\bguinea\\s+pig\\b", ignore.case = TRUE)) {
+            !grepl("\\bguinea\\s+pig\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "mali") {
         # Mali (country vs fungus)
         if (str_detect(text, "\\bMali\\b") &&
-            !str_detect(text, "\\b\\w+\\s+mali\\b", ignore.case = TRUE)) {
+            !grepl("\\b\\w+\\s+mali\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country == "South Korea" || country == "North Korea") {
         # Context-aware Korea disambiguation
-        if (str_detect(text, "\\bkorea\\b", ignore.case = TRUE)) {
-          if (str_detect(text, "\\b(north|dprk|pyongyang|kim)\\b", ignore.case = TRUE)) {
+        if (grepl("\\bkorea\\b", text, ignore.case = TRUE)) {
+          if (grepl("\\b(north|dprk|pyongyang|kim)\\b", text, ignore.case = TRUE)) {
             if (country == "North Korea") found <- c(found, country)
           } else {
             # Default to South Korea for general "Korea" mentions
@@ -106,7 +106,7 @@ detect_geographic_locations_batch <- function(text_vector) {
       } else {
         # Standard pattern matching for other countries
         country_pattern <- paste0("\\b", str_replace_all(country, "\\s+", "\\\\s+"), "\\b")
-        if (str_detect(text, country_pattern, ignore.case = TRUE)) {
+        if (grepl(country_pattern, text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
 

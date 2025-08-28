@@ -10,7 +10,7 @@ library(stringr)
 library(progress)
 
 # Source utilities
-source("scripts/04_analysis/reference_data_utils.R")
+source("scripts/04_analysis/utilities/reference_data_utils.R")
 
 cat("=== METHODS DETECTION COMPONENT ===\n")
 cat("Extracting research methods information\n\n")

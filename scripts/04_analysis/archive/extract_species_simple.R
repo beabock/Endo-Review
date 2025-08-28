@@ -27,7 +27,7 @@ library(janitor)
 source("scripts/04_analysis/optimized_taxa_detection.R") #Maybe remove the whole testing thing from that script bc its annoying when it runs every time.
 
 # Load centralized reference data utilities
-source("scripts/04_analysis/reference_data_utils.R")
+source("scripts/04_analysis/utilities/reference_data_utils.R")
 
 cat("=== COMPREHENSIVE ENDOPHYTE EXTRACTION ===
 ")

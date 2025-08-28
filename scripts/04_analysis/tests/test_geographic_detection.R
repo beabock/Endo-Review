@@ -6,8 +6,8 @@ library(tidyverse)
 library(stringr)
 
 # Source the required functions
-source("scripts/04_analysis/reference_data_utils.R")
-source("scripts/04_analysis/extract_species_simple.R")
+source("scripts/04_analysis/utilities/reference_data_utils.R")
+source("scripts/04_analysis/archive/extract_species_simple.R")
 
 cat("=== GEOGRAPHIC DETECTION DEBUG TEST ===\n\n")
 

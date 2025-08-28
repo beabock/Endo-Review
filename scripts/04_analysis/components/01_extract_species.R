@@ -11,7 +11,7 @@ library(janitor)
 
 # Source required functions
 source("scripts/04_analysis/optimized_taxa_detection.R")
-source("scripts/04_analysis/reference_data_utils.R")
+source("scripts/04_analysis/utilities/reference_data_utils.R")
 
 cat("=== SPECIES DETECTION COMPONENT ===\n")
 cat("Extracting plant and fungal species information\n\n")

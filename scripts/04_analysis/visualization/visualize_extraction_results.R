@@ -21,7 +21,7 @@ library(maps)
 library(countrycode)
 
 # Load centralized reference utilities (normalization helpers)
-utils_path <- "scripts/04_analysis/reference_data_utils.R"
+utils_path <- "scripts/04_analysis/utilities/reference_data_utils.R"
 if (file.exists(utils_path)) {
   source(utils_path)
 } else {

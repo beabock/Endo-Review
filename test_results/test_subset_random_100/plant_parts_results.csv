@@ -1,0 +1,101 @@
+id,plant_parts_detected,parts_count
+1362,root,1
+7483,ray,1
+15291,stem; bark; leaves,3
+15681,leaves,1
+7609,NA,0
+1743,bark,1
+11781,scale; seed,2
+9312,NA,0
+11676,stems; tumor,2
+1546,leaf; foliage; branches; canopy; branch,5
+10929,apical meristem,1
+16808,lesions; crown; stems; branch; stem,5
+9864,roots; leaves; stems; leaf,4
+15808,NA,0
+13324,seeds; seed; leaves; fruits; fruit,5
+2109,spikes,1
+17642,leaves; stems; inflorescences; root; stem; roots; sporangia; scale,8
+15337,NA,0
+8515,root,1
+18827,seeds,1
+18748,cones; rhizomes; leaves; rhizome; inflorescences,5
+10945,NA,0
+13392,leaves; tumor,2
+17371,roots,1
+18743,NA,0
+9826,leaf,1
+11738,mycorrhizal; roots; root,3
+9652,seed,1
+5527,wood; branches,2
+20855,stem,1
+4912,NA,0
+3035,leaves; buds,2
+10508,roots; leaves,2
+13880,roots; root,2
+3609,roots; leaves; root,3
+6059,seeds,1
+9910,NA,0
+11136,leaf; leaves; foliage,3
+19620,NA,0
+10518,shoots; lesions; stems; lesion,4
+2667,NA,0
+2433,scale; seed,2
+18319,NA,0
+9343,seed,1
+21014,NA,0
+18882,roots,1
+12517,leaf; lesions,2
+13111,NA,0
+277,roots,1
+13580,NA,0
+6864,NA,0
+6908,NA,0
+8645,leaves; leaflets,2
+13515,NA,0
+21108,leaf,1
+2141,cankers; stems; seeds; seed,4
+928,NA,0
+18450,NA,0
+4021,NA,0
+7645,leaves,1
+8082,sheath,1
+15229,seed; seeds,2
+9620,rhizomes; roots; petioles; scale,4
+13161,leaves,1
+2861,roots; leaf; stem; root; sheath,5
+17754,root; roots,2
+15338,flowers,1
+13883,leaf; leaves; calyces; fruit; flower,5
+7899,wood,1
+7029,NA,0
+20651,root; stem,2
+19389,NA,0
+5860,leaf,1
+21414,leaves,1
+13659,mycorrhizal,1
+15251,wood,1
+1267,root; shoot,2
+15618,flowers; leaves; stems; roots,4
+6800,seed; seeds,2
+13141,seed,1
+9901,NA,0
+2087,NA,0
+15652,NA,0
+1315,NA,0
+8788,hull,1
+15060,stems; stem,2
+1692,stems,1
+38,shoot; lesion,2
+18298,seeds; seed; root; cortex; xylem; vessels; stem,7
+10151,seeds,1
+19194,NA,0
+19095,NA,0
+53,flowers,1
+5864,root; epidermis; cortex,3
+1045,NA,0
+763,NA,0
+20936,leaf; twigs; buds; leaves,4
+9043,root; leaf,2
+5693,root; cell wall,2
+20777,NA,0

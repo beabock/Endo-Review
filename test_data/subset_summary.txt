@@ -1,5 +1,5 @@
 === DATASET SUBSAMPLING SUMMARY ===
-Generated: 2025-08-28 15:45:55 
+Generated: 2025-08-28 16:54:24 
 
 ORIGINAL DATASET:
 File: results/relevant_abstracts_with_pa_predictions.csv 
@@ -15,9 +15,10 @@ CLASS DISTRIBUTION:
 
 SAMPLING PARAMETERS:
 Method: random 
-Sample sizes: 100, 500 
+Sample sizes: 50, 100, 500 
 
 CREATED SUBSETS:
+- test_subset_random_50.csv 
 - test_subset_random_100.csv 
 - test_subset_random_500.csv 
 

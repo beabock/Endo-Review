@@ -148,7 +148,7 @@ test_components_on_subset <- function(
     if (verbose) cat("   🔧 Testing data preparation...\n")
 
     start_time <- Sys.time()
-    source("scripts/04_analysis/run_extraction_pipeline.R")
+    source("scripts/04_analysis/workflows/run_extraction_pipeline.R")
     prep_result <- prepare_abstracts_data(
       input_file = subset_file,
       output_file = file.path(component_output_dir, "prepared_abstracts.csv"),
@@ -313,27 +313,30 @@ test_components_on_subset <- function(
     start_time <- Sys.time()
     source("scripts/04_analysis/components/05_merge_results.R")
 
-    # Temporarily move results to expected location for merging
-    temp_results_dir <- "results_temp"
-    dir.create(temp_results_dir, showWarnings = FALSE)
-
-    # Copy component results to temp location
-    component_files <- c(
-      "species_detection_results.csv",
-      "methods_detection_results.csv",
-      "plant_parts_detection_results.csv",
-      "geography_detection_results.csv"
-    )
-
-    for (file in component_files) {
-      temp_file <- file.path(component_output_dir, sub("_results", "", file))
-      if (file.exists(temp_file)) {
-        file.copy(temp_file, file.path(temp_results_dir, file), overwrite = TRUE)
-      }
-    }
-
     # Create prepared abstracts file
     write_csv(subset_data, file.path("results", "prepared_abstracts_for_extraction.csv"))
+
+    # Map test component output files to expected merge component files
+    file_mapping <- list(
+      "species_results.csv" = "species_detection_results.csv",
+      "methods_results.csv" = "methods_detection_results.csv",
+      "plant_parts_results.csv" = "plant_parts_detection_results.csv",
+      "geography_results.csv" = "geography_detection_results.csv"
+    )
+
+    # Copy component results to expected merge locations
+    for (source_file in names(file_mapping)) {
+      target_file <- file_mapping[[source_file]]
+      source_path <- file.path(component_output_dir, source_file)
+      target_path <- file.path("results", target_file)
+
+      if (file.exists(source_path)) {
+        file.copy(source_path, target_path, overwrite = TRUE)
+        if (verbose) cat("      📋 Copied", source_file, "to results/", target_file, "\n")
+      } else {
+        if (verbose) cat("      ⚠️  ", source_file, "not found in test output\n")
+      }
+    }
 
     merge_result <- merge_extraction_results(
       output_file = file.path(component_output_dir, "comprehensive_results.csv"),
@@ -341,8 +344,19 @@ test_components_on_subset <- function(
       verbose = FALSE
     )
 
-    # Clean up temp files
-    unlink(temp_results_dir, recursive = TRUE)
+    # Clean up copied files
+    for (target_file in unlist(file_mapping)) {
+      results_file <- file.path("results", target_file)
+      if (file.exists(results_file)) {
+        file.remove(results_file)
+      }
+    }
+
+    # Clean up prepared abstracts file
+    prepared_file <- file.path("results", "prepared_abstracts_for_extraction.csv")
+    if (file.exists(prepared_file)) {
+      file.remove(prepared_file)
+    }
 
     end_time <- Sys.time()
     timing$merge <- as.numeric(difftime(end_time, start_time, units = "secs"))
@@ -371,49 +385,52 @@ test_components_on_subset <- function(
     dir.create(analysis_output_dir, showWarnings = FALSE, recursive = TRUE)
 
     # Run analysis components using the unified workflow
-    source("scripts/04_analysis/analysis_workflow.R")
+    source("scripts/04_analysis/workflows/analysis_workflow.R")
 
-    # Test each analysis component individually on the subset
-    analysis_results <- list()
+    # Run analysis on the merged comprehensive results for this subset
+    comprehensive_results_file <- file.path(component_output_dir, "comprehensive_results.csv")
+    analysis_output_dir <- file.path(component_output_dir, "analysis")
+    dir.create(analysis_output_dir, showWarnings = FALSE, recursive = TRUE)
 
-    # Test absence detection
-    if (verbose) cat("      🔍 Running absence analysis...\n")
-    tryCatch({
-      source("scripts/04_analysis/validation/absence_evidence_detection.R")
-      absence_result <- detect_absence_evidence(subset_data$abstract[1]) # Test on first abstract
-      analysis_results$absence <- list(status = "completed", test_abstracts = 1)
-    }, error = function(e) {
-      analysis_results$absence <- list(status = "error", error = as.character(e))
-    })
+    # Run analysis components on the test subset (not full dataset)
+    if (file.exists(comprehensive_results_file)) {
+      analysis_results <- run_analysis_workflow(
+        input_file = comprehensive_results_file,
+        output_dir = analysis_output_dir,
+        force_rerun = TRUE,
+        verbose = FALSE
+      )
+      analysis_success <- TRUE
+    } else {
+      if (verbose) cat("      ⚠️  Comprehensive results file not found for analysis\n")
+      analysis_success <- FALSE
+    }
 
-    # Test validation sampling
-    if (verbose) cat("      📋 Running validation sampling...\n")
-    tryCatch({
-      source("scripts/04_analysis/validation/manual_validation_sample.R")
-      # Just test that the function loads without running full sampling
-      analysis_results$validation <- list(status = "completed", test_mode = TRUE)
-    }, error = function(e) {
-      analysis_results$validation <- list(status = "error", error = as.character(e))
-    })
+    if (analysis_success) {
+      if (verbose) cat("      ✅ Analysis workflow completed successfully\n")
+    } else {
+      if (verbose) cat("      ❌ Analysis workflow failed\n")
+    }
 
-    # Test temporal analysis
-    if (verbose) cat("      📈 Running temporal analysis...\n")
-    tryCatch({
-      source("scripts/04_analysis/temporal/temporal_trend_analysis.R")
-      # Test basic functionality without full analysis
-      analysis_results$temporal <- list(status = "completed", test_mode = TRUE)
-    }, error = function(e) {
-      analysis_results$temporal <- list(status = "error", error = as.character(e))
-    })
+    # Prepare analysis results summary
+    if (analysis_success) {
+      analysis_summary <- analysis_results$results
 
-    # Test visualization
-    if (verbose) cat("      📊 Running visualization...\n")
-    tryCatch({
-      source("scripts/04_analysis/visualization/run_taxa_visualizations.R")
-      analysis_results$visualization <- list(status = "completed", test_mode = TRUE)
-    }, error = function(e) {
-      analysis_results$visualization <- list(status = "error", error = as.character(e))
-    })
+      # Create unified analysis results structure
+      analysis_results <- list(
+        absence = if (!is.null(analysis_summary$absence)) analysis_summary$absence else list(status = "not_run", error = "Component skipped"),
+        validation = if (!is.null(analysis_summary$validation)) analysis_summary$validation else list(status = "not_run", error = "Component skipped"),
+        temporal = if (!is.null(analysis_summary$temporal)) analysis_summary$temporal else list(status = "not_run", error = "Component skipped"),
+        visualization = if (!is.null(analysis_summary$visualization)) analysis_summary$visualization else list(status = "not_run", error = "Component skipped")
+      )
+    } else {
+      analysis_results <- list(
+        absence = list(status = "error", error = "Comprehensive results not available"),
+        validation = list(status = "error", error = "Comprehensive results not available"),
+        temporal = list(status = "error", error = "Comprehensive results not available"),
+        visualization = list(status = "error", error = "Comprehensive results not available")
+      )
+    }
 
     end_time <- Sys.time()
     timing$analysis <- as.numeric(difftime(end_time, start_time, units = "secs"))
