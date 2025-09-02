@@ -550,7 +550,8 @@ generate_comparison_report <- function(test_results, timing_results, subset_size
           cat(sprintf("  %4d abstracts: ", size))
 
           if (component == "species" || component == "parts") {
-            cat(sprintf("%d found (%.1f%%), %.1fs\n",
+            # detection_rate is numeric (percent). First value is number found; use numeric format.
+            cat(sprintf("%.0f found (%.1f%%), %.1fs\n",
                        results$detection_rate * size / 100,
                        results$detection_rate,
                        timing))

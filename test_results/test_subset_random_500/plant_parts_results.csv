@@ -1,0 +1,501 @@
+id,plant_parts_detected,parts_count
+17947,NA,0
+8535,NA,0
+14302,root,1
+6893,root; shoot,2
+20618,xylem; phloem; pith; leaf; stem; cortex; root,7
+11993,leaves; leaf,2
+13887,leaf; root; seed,3
+20895,leaf; leaves,2
+9551,leaves,1
+2380,root,1
+13520,seed; seeds,2
+17858,leaves; stomatal; leaf,3
+21409,NA,0
+244,roots,1
+9875,mycorrhizal,1
+4409,leaf,1
+509,NA,0
+3003,NA,0
+8209,scale; root,2
+19211,ray,1
+11392,fiber,1
+14556,leaf,1
+7500,leaves; stem; root,3
+12148,NA,0
+16957,root,1
+2990,fruit; mycorrhizal,2
+2914,NA,0
+15648,root; stem; leaf; roots; stems; leaves; branches,7
+18256,rhizome,1
+6107,roots; stems; leaves; proliferation; vascular bundles; root; stem; leaf; phloem; vascular bundle,10
+20739,root; stem; leaf,3
+1810,NA,0
+3161,NA,0
+4488,NA,0
+10432,NA,0
+20768,NA,0
+4496,lesion; leaves,2
+17423,NA,0
+7709,ray,1
+10708,seeds,1
+19969,NA,0
+12343,seed; seeds; root; shoot,4
+5799,root,1
+17736,root,1
+6465,ray,1
+19092,root,1
+17628,NA,0
+7430,NA,0
+18697,mycorrhizae; mycorrhizal,2
+3819,leaves; roots; seeds; leaf; seed,5
+1430,leaf; seed; leaves,3
+7329,NA,0
+17200,seeds,1
+10397,root,1
+20383,NA,0
+6305,leaves; twigs; buds,3
+14353,NA,0
+13142,NA,0
+10633,fruit; fruits,2
+7448,leaf; leaves; stems; roots,4
+3466,NA,0
+2008,NA,0
+21024,leaves,1
+11953,leaf; lamina,2
+3073,NA,0
+18741,NA,0
+9483,NA,0
+18167,leaves; lesions,2
+16181,wood,1
+16019,NA,0
+13148,NA,0
+12177,seeds; root,2
+1545,seed; parenchyma; seeds; embryo; foliage; root,6
+19390,NA,0
+13321,NA,0
+5336,NA,0
+12593,roots,1
+14596,cell walls,1
+11342,leaf; stem,2
+19444,leaf,1
+20344,NA,0
+11072,NA,0
+13532,NA,0
+1103,leaves; embryo; branches; leaf; phloem,5
+7316,NA,0
+17883,NA,0
+20898,aerial roots; roots,2
+18062,NA,0
+7446,fiber,1
+75,leaves; seeds,2
+18608,stem,1
+14164,ray,1
+4934,root; mycorrhizal; roots,3
+1895,NA,0
+2711,seed,1
+12061,leaves; lesion,2
+10581,seed,1
+15312,NA,0
+21186,scale,1
+10025,foliage; leaf,2
+257,leaves; leaf; midribs,3
+16210,leaf,1
+20976,NA,0
+8548,leaves,1
+19105,root; seed,2
+7783,NA,0
+5759,flower; buds; bud,3
+8909,roots; lenticel,2
+20793,mycorrhizae; root; mycorrhizal,3
+3970,mycorrhizal; shoot; root,3
+12404,leaf,1
+16557,NA,0
+18404,seeds; seed; shoot; root,4
+20146,stem,1
+11762,shoot; leaf,2
+1520,cell walls; root; roots,3
+696,inflorescences; seeds; seed,3
+12098,leaf,1
+18890,NA,0
+8467,roots; mycorrhizal; root,3
+9610,bark; proliferation,2
+3085,wood; trunk; trunks,3
+6348,NA,0
+1338,NA,0
+18174,root; roots,2
+13665,leaf,1
+1944,seed,1
+19128,root; shoot; stem; petiole; leaves,5
+4069,seeds; seed; radicle,3
+10485,mycorrhizal,1
+4971,seeds; root; stem; roots; stems; leaves,6
+14760,NA,0
+15155,fruit,1
+17128,NA,0
+19064,NA,0
+21325,NA,0
+17136,NA,0
+18035,phloem,1
+4117,NA,0
+13344,roots; rhizomes,2
+2374,root; shoot; leaves,3
+14885,NA,0
+15403,seed; seeds,2
+13086,root; roots; mycorrhizal,3
+6817,bark; exocarp; fruits; branches,4
+13481,roots,1
+17988,NA,0
+9971,NA,0
+8417,NA,0
+14274,NA,0
+4870,cell wall,1
+10436,seed; roots,2
+1958,leaves; stems; roots,3
+14986,leaf,1
+7524,roots,1
+20327,lesions,1
+15947,shoots,1
+17020,root; roots; gall,3
+1156,NA,0
+11193,mycorrhizae; mycorrhizal; leaves,3
+18312,NA,0
+15823,shoot; root; roots,3
+16884,seed,1
+4732,root; roots; galls,3
+5295,NA,0
+5109,seed,1
+777,twigs; bark; leaves; proliferation,4
+9575,leaf; ray,2
+9268,NA,0
+19425,root; leaf; roots,3
+7273,leaves; leaf,2
+676,NA,0
+6120,leaves,1
+15239,leaves; seed,2
+15405,NA,0
+19447,ray,1
+3114,mycorrhizal; root,2
+6894,NA,0
+13948,NA,0
+19914,seed; root; stem; petiole; leaf,5
+1069,leaves,1
+10256,root,1
+1332,root,1
+21206,NA,0
+7224,stem,1
+6149,leaf; leaves; epidermis,3
+6394,stem; leaf; berry; seed; leaves,5
+6441,NA,0
+19008,NA,0
+20732,fiber,1
+3200,leaf; leaves,2
+11224,NA,0
+17702,NA,0
+15909,proliferation; tumor; leaves,3
+20,seed; roots; seeds,3
+18347,NA,0
+16949,leaf; lesions,2
+363,leaves,1
+3511,NA,0
+17186,stem; leaves; roots,3
+849,NA,0
+9319,NA,0
+13610,seed,1
+19652,NA,0
+2439,root; leaf; stem; roots; leaves,5
+14878,mycorrhizae; root,2
+13679,root; leaves; stomatal; shoots,4
+1798,root,1
+19205,NA,0
+10199,NA,0
+13861,shoots,1
+7663,leaves,1
+13595,seed,1
+9846,NA,0
+9082,leaves,1
+8048,roots; leaves,2
+16610,leaves; leaf,2
+8167,strobili; shoots,2
+8262,root; vessel,2
+17952,NA,0
+20673,NA,0
+10693,seed,1
+1381,NA,0
+20553,seed; seeds,2
+19042,shoot; branches; leaves,3
+7278,mycorrhizal; roots; root,3
+15753,roots,1
+19545,NA,0
+17434,cuticles,1
+6965,roots; leaf; blades; blade,4
+14510,NA,0
+1528,canker; wood; lesions; branches; stems; cankers; leaf; foliage; buds; fruit,10
+6742,root; roots,2
+2088,leaves,1
+20149,seeds,1
+666,NA,0
+18032,NA,0
+12761,mycorrhizal; root; roots,3
+21232,root; leaf,2
+12305,seed; roots; xylem; vessels; leaves; root,6
+3646,root; roots,2
+1822,leaves,1
+14318,seed,1
+8581,NA,0
+16294,leaves; branches,2
+13355,leaf; leaves; seeds,3
+20455,seed; root; galls; style,4
+9009,NA,0
+12968,NA,0
+11201,leaves,1
+7049,tumor,1
+14516,leaves; fruits,2
+3088,NA,0
+18131,root; shoot,2
+17205,NA,0
+18044,NA,0
+17206,NA,0
+5643,stem,1
+17866,hair; seed,2
+8306,leaves,1
+9161,hairs,1
+8460,root; fruit; roots; seed,4
+8742,NA,0
+11848,leaves; leaf,2
+19119,roots,1
+12585,callus,1
+6315,twig,1
+14896,NA,0
+15189,root; leaf; stomatal; stomata,4
+5299,NA,0
+8606,NA,0
+13048,NA,0
+4432,roots; stomatal,2
+19779,leaf,1
+4696,mycorrhizal,1
+6980,NA,0
+11009,tumor,1
+8283,roots; shoot,2
+16544,NA,0
+10819,root; roots; shoot; leaf; stem; leaves,6
+17897,root,1
+19838,NA,0
+15914,leaves,1
+9401,NA,0
+9924,NA,0
+2742,root; mycorrhizal; roots,3
+1367,mycorrhizal; roots; mycorrhiza; mycorrhizae,4
+3442,NA,0
+491,stem; seed; flower,3
+15223,canker; leaves; cankers,3
+17003,seeds,1
+11780,roots; mycorrhizal; root; shoots,4
+4325,NA,0
+6795,stems,1
+13314,seed,1
+17622,flowers; berries; seeds; fruits; berry; epidermis; xylem; ovary; flower; ovules; intercellular spaces; cell walls; root,13
+4111,NA,0
+17067,leaves,1
+11833,mycorrhizal; root,2
+8996,seed; seeds; roots; leaves; root; stem; leaf,7
+17943,ray,1
+1738,roots,1
+17446,fruit,1
+15851,scales; stems; roots,3
+2624,NA,0
+2905,NA,0
+2815,blade; stem; root; shoot,4
+16057,roots; stem,2
+21314,cell walls,1
+20922,root; meristems,2
+19528,leaf; leaves,2
+21265,root,1
+18513,root,1
+2353,leaves; seed; seeds,3
+19359,leaves; leaf,2
+9511,seeds; lesions; epicotyl; hypocotyl; seed,5
+18687,shoot; root; shoots,3
+15444,NA,0
+14018,leaves; ray,2
+9440,roots,1
+20081,leaves; leaf; root,3
+7281,NA,0
+3374,leaf; shoot; root,3
+17520,NA,0
+14404,leaves; tumor,2
+15685,stem,1
+13394,seeds; seed,2
+19360,root; nodes,2
+6469,NA,0
+12598,NA,0
+1194,mycorrhizal,1
+15457,leaves,1
+20501,NA,0
+13498,root; mycorrhizal,2
+6733,NA,0
+15361,NA,0
+19331,NA,0
+113,ray,1
+18668,NA,0
+14858,tumor,1
+12420,NA,0
+3724,NA,0
+13224,root; rhizome,2
+5745,leaves; stems; roots,3
+19948,NA,0
+10018,root; seed,2
+1458,shoot; stomatal; roots,3
+10442,roots; mycorrhizal; mycorrhiza,3
+9419,seed; shoot,2
+8366,NA,0
+12467,NA,0
+6731,NA,0
+20478,sheath; seed,2
+11423,root; fruit,2
+3160,NA,0
+2738,leaves; leaf,2
+16317,roots; seeds; leaves; root,4
+17469,xylem; petioles; midribs; leaves,4
+12672,root; mycorrhizal,2
+7855,pod; stems; leaves; seed,4
+21275,NA,0
+11229,NA,0
+512,NA,0
+9823,NA,0
+11026,seeds; inflorescences; seed; panicles; wood,5
+16055,NA,0
+17120,NA,0
+3478,hair,1
+17941,NA,0
+15869,NA,0
+1935,NA,0
+20813,rhizome,1
+3294,adventitious roots; root; roots,3
+16010,NA,0
+17378,leaves; stems; scale,3
+11955,cankers; stem; canker,3
+4968,NA,0
+16453,seed; flower; radicle; roots; leaves; crown; root,7
+1200,leaf; root; scale,3
+10187,leaf; leaves,2
+11585,cell wall; seeds,2
+15531,flowers; stems; leaves; fruit; flower; stem; leaf; husk,8
+3963,seed,1
+9813,NA,0
+9987,fruit; fruits,2
+15343,leaf,1
+19487,NA,0
+8043,stem; bark,2
+9329,NA,0
+19770,NA,0
+4376,root; trunk,2
+15100,stems; leaves,2
+14902,scale,1
+8812,ray,1
+6353,seed,1
+14723,leaves; stem,2
+15995,leaves; pneumatophores; root,3
+16665,NA,0
+3821,mycorrhizal; root,2
+3645,NA,0
+7312,root; shoot; leaves; roots; leaf,5
+937,root,1
+12887,seed; seeds; lesions,3
+16376,leaves,1
+10720,seed; seeds,2
+14060,roots,1
+9690,seeds; seed; shoot,3
+14517,NA,0
+15335,leaves; stems; roots; fruits; flowers; seeds,6
+19804,seed; seeds,2
+5640,NA,0
+18166,stems; roots; root,3
+13104,NA,0
+7440,roots; root,2
+10045,leaf,1
+20244,seed,1
+11578,root; panicle; lateral roots,3
+15825,seed; seeds,2
+11599,seed; seeds; roots; root,4
+2991,root,1
+3971,root,1
+11932,seed,1
+4523,leaves; leaf,2
+20695,NA,0
+21335,NA,0
+19068,seeds; seed,2
+15204,root,1
+4594,mycorrhizal; root; roots,3
+914,mycorrhizal; mycorrhiza; roots,3
+6364,NA,0
+9635,leaf,1
+1392,leaf; sheaths; seeds; seed,4
+10009,roots,1
+11447,leaves; leaf,2
+8459,leaf; mycorrhizal,2
+332,NA,0
+11982,NA,0
+993,NA,0
+17722,root; roots,2
+3778,pod; pods,2
+19761,leaf; roots; root,3
+10888,seed; leaves; seeds; siliques,4
+19175,bark,1
+11868,NA,0
+17489,seed; shoot; root,3
+341,root,1
+1094,mycorrhizal; roots; shoots,3
+7054,scale; leaves,2
+15915,leaf; root; roots,3
+16281,roots; stems; leaves; fruits; seeds; leaf; stem; fruit; seed; root,10
+8435,leaves,1
+6681,NA,0
+6399,leaf; inflorescence,2
+6217,shoot,1
+3820,roots; root; mycorrhiza; wood; trunk,5
+20810,NA,0
+13339,NA,0
+2577,fruits; seeds; root; leaves; shoot,5
+20359,leaves,1
+3939,stem; root,2
+18763,leaves; roots,2
+8520,root; shoot,2
+10126,NA,0
+14080,NA,0
+7519,roots; stems; leaves,3
+15016,shoot; shoots,2
+12779,NA,0
+18769,NA,0
+12701,roots; seeds,2
+18201,roots; root,2
+21068,NA,0
+13233,seeds; fruits; fruit; seed,4
+10141,root,1
+21373,NA,0
+20525,stem; pod; seed; pods,4
+7612,root; roots,2
+15549,root,1
+13987,shoot; root,2
+5298,NA,0
+20912,leaves,1
+10012,NA,0
+20521,root,1
+14984,NA,0
+18185,scale,1
+3300,roots; root,2
+21165,NA,0
+8806,NA,0
+18134,root,1
+15252,leaves; tumor,2
+13787,leaves,1
+1165,roots; root,2
+16416,leaf; stem; root,3
+15774,NA,0
+15795,roots; cell wall,2
+19868,NA,0
+915,roots,1
+11757,NA,0
+14308,root; mycorrhizal; roots,3
+16062,NA,0
+7652,NA,0

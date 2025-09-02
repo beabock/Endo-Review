@@ -1,0 +1,106 @@
+=== INTEGRATED ANALYSIS SUMMARY ===
+Generated: 2025-09-02 13:42:19 
+
+ANALYSIS COMPONENTS EXECUTED:
+=============================
+
+ABSENCE ANALYSIS:
+  Status: completed 
+  Processing time: 143.1 seconds
+  High-confidence absence cases: 0 
+  Medium-confidence absence cases: 4 
+  Output files: test_results/test_subset_random_200/analysis/absence_evidence_analysis.csv, test_results/test_subset_random_200/analysis/all_papers_with_absence_matches.csv, test_results/test_subset_random_200/analysis/high_confidence_absence_evidence.csv, test_results/test_subset_random_200/analysis/absence_evidence_report.txt 
+
+VALIDATION ANALYSIS:
+  Status: completed 
+  Processing time: 2.8 seconds
+  Validation sample size: 908 
+  Validation strata: 4 
+  Output files: test_results/test_subset_random_200/analysis/validation_sample_for_manual_review.csv, test_results/test_subset_random_200/analysis/VALIDATION_INSTRUCTIONS.md, test_results/test_subset_random_200/analysis/validation_progress_tracker.csv 
+
+TEMPORAL ANALYSIS:
+  Status: completed 
+  Processing time: 0.1 seconds
+  Year range: 1950-2020 
+  Time periods analyzed: 8 
+  Output files: test_results/test_subset_random_200/analysis/temporal_analysis_summary.csv 
+
+VISUALIZATION ANALYSIS:
+  Status: completed 
+  Processing time: 44.6 seconds
+  Plots generated: 1 
+  Output files: test_results/test_subset_random_200/analysis/ensemble_pa_confusion_matrix_heatmap.png, test_results/test_subset_random_200/analysis/fungi_family_representation.png, test_results/test_subset_random_200/analysis/fungi_family_representation_by_phylum_count.png, test_results/test_subset_random_200/analysis/fungi_family_representation_by_phylum_percent.png, test_results/test_subset_random_200/analysis/fungi_genus_representation.png, test_results/test_subset_random_200/analysis/fungi_genus_representation_by_phylum_count.png, test_results/test_subset_random_200/analysis/fungi_genus_representation_by_phylum_percent.png, test_results/test_subset_random_200/analysis/fungi_species_representation.png, test_results/test_subset_random_200/analysis/fungi_species_representation_by_phylum_count.png, test_results/test_subset_random_200/analysis/fungi_species_representation_by_phylum_percent.png, test_results/test_subset_random_200/analysis/geographic_distribution.png, test_results/test_subset_random_200/analysis/global_research_intensity_heatmap.png, test_results/test_subset_random_200/analysis/manuscript_confidence_distribution.png, test_results/test_subset_random_200/analysis/manuscript_confusion_matrix.png, test_results/test_subset_random_200/analysis/manuscript_feature_importance.png, test_results/test_subset_random_200/analysis/manuscript_model_performance.png, test_results/test_subset_random_200/analysis/model_performance_comparison.png, test_results/test_subset_random_200/analysis/pa_ensemble_weighted_performance_metrics.png, test_results/test_subset_random_200/analysis/plant_families_per_phylum.png, test_results/test_subset_random_200/analysis/plant_family_representation_per_phylum_count.png, test_results/test_subset_random_200/analysis/plant_family_representation_per_phylum_percent.png, test_results/test_subset_random_200/analysis/plant_genera_per_phylum.png, test_results/test_subset_random_200/analysis/plant_genus_representation_per_phylum_count.png, test_results/test_subset_random_200/analysis/plant_genus_representation_per_phylum_percent.png, test_results/test_subset_random_200/analysis/plant_species_coverage_per_phylum.png, test_results/test_subset_random_200/analysis/plant_species_per_phylum.png, test_results/test_subset_random_200/analysis/plant_species_representation_per_phylum_count.png, test_results/test_subset_random_200/analysis/plant_species_representation_per_phylum_percent.png, test_results/test_subset_random_200/analysis/plantae_family_representation.png, test_results/test_subset_random_200/analysis/plantae_family_representation_by_phylum.png, test_results/test_subset_random_200/analysis/plantae_family_representation_by_phylum_count.png, test_results/test_subset_random_200/analysis/plantae_family_representation_by_phylum_percent.png, test_results/test_subset_random_200/analysis/plantae_genus_representation.png, test_results/test_subset_random_200/analysis/plantae_genus_representation_by_phylum.png, test_results/test_subset_random_200/analysis/plantae_genus_representation_by_phylum_count.png, test_results/test_subset_random_200/analysis/plantae_genus_representation_by_phylum_percent.png, test_results/test_subset_random_200/analysis/plantae_species_representation.png, test_results/test_subset_random_200/analysis/plantae_species_representation_by_phylum.png, test_results/test_subset_random_200/analysis/plantae_species_representation_by_phylum_count.png, test_results/test_subset_random_200/analysis/plantae_species_representation_by_phylum_percent.png, test_results/test_subset_random_200/analysis/publication_volume_over_time.png, test_results/test_subset_random_200/analysis/relevance_confusion_matrix_heatmap.png, test_results/test_subset_random_200/analysis/relevance_performance_comparison.png, test_results/test_subset_random_200/analysis/research_methods_summary.png, test_results/test_subset_random_200/analysis/visualization_summary.csv 
+
+PERFORMANCE SUMMARY:
+===================
+Total analysis time: 190.5 seconds
+
+Component timing breakdown:
+  absence        :  143.1s (75.1%)
+  validation     :    2.8s ( 1.4%)
+  temporal       :    0.1s ( 0.0%)
+  visualization  :   44.6s (23.4%)
+
+OUTPUT FILES GENERATED:
+======================
+  ✓ test_results/test_subset_random_200/analysis/absence_evidence_analysis.csv 
+  ✓ test_results/test_subset_random_200/analysis/absence_evidence_report.txt 
+  ✓ test_results/test_subset_random_200/analysis/all_papers_with_absence_matches.csv 
+  ✓ test_results/test_subset_random_200/analysis/ensemble_pa_confusion_matrix_heatmap.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_family_representation.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_family_representation_by_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_family_representation_by_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_genus_representation.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_genus_representation_by_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_genus_representation_by_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_species_representation.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_species_representation_by_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/fungi_species_representation_by_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/geographic_distribution.png 
+  ✓ test_results/test_subset_random_200/analysis/global_research_intensity_heatmap.png 
+  ✓ test_results/test_subset_random_200/analysis/high_confidence_absence_evidence.csv 
+  ✓ test_results/test_subset_random_200/analysis/integrated_analysis_summary.txt 
+  ✓ test_results/test_subset_random_200/analysis/manuscript_confidence_distribution.png 
+  ✓ test_results/test_subset_random_200/analysis/manuscript_confusion_matrix.png 
+  ✓ test_results/test_subset_random_200/analysis/manuscript_feature_importance.png 
+  ✓ test_results/test_subset_random_200/analysis/manuscript_model_performance.png 
+  ✓ test_results/test_subset_random_200/analysis/model_performance_comparison.png 
+  ✓ test_results/test_subset_random_200/analysis/pa_ensemble_weighted_performance_metrics.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_families_per_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_family_representation_per_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_family_representation_per_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_genera_per_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_genus_representation_per_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_genus_representation_per_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_species_coverage_per_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_species_per_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_species_representation_per_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/plant_species_representation_per_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_family_representation.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_family_representation_by_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_family_representation_by_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_family_representation_by_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_genus_representation.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_genus_representation_by_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_genus_representation_by_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_genus_representation_by_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_species_representation.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_species_representation_by_phylum.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_species_representation_by_phylum_count.png 
+  ✓ test_results/test_subset_random_200/analysis/plantae_species_representation_by_phylum_percent.png 
+  ✓ test_results/test_subset_random_200/analysis/publication_volume_over_time.png 
+  ✓ test_results/test_subset_random_200/analysis/relevance_confusion_matrix_heatmap.png 
+  ✓ test_results/test_subset_random_200/analysis/relevance_performance_comparison.png 
+  ✓ test_results/test_subset_random_200/analysis/research_methods_summary.png 
+  ✓ test_results/test_subset_random_200/analysis/temporal_analysis_summary.csv 
+  ✓ test_results/test_subset_random_200/analysis/VALIDATION_INSTRUCTIONS.md 
+  ✓ test_results/test_subset_random_200/analysis/validation_progress_tracker.csv 
+  ✓ test_results/test_subset_random_200/analysis/validation_sample_for_manual_review.csv 
+  ✓ test_results/test_subset_random_200/analysis/visualization_summary.csv 
+
+NEXT STEPS:
+===========
+1. Review component-specific results in detail
+2. Validate analysis quality and accuracy
+3. Generate manuscript-ready figures and tables
+4. Integrate findings into research narrative

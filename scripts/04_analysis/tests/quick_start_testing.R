@@ -23,8 +23,8 @@ cat("Step 2: Running pipeline tests (skipping species detection)...\n")
 source("scripts/04_analysis/tests/test_pipeline_workflow.R")
 
 # Run quick test on smallest subset (tests all components except species)
-#run_quick_test(subset_size = 50, components = c("data_prep","species", "methods", "parts", "geography", "merge", "analysis"))
-run_quick_test(subset_size = 50, components = c("analysis"))
+run_quick_test(subset_size = 500, components = c("methods", "parts", "geography", "merge", "analysis"))
+#run_quick_test(subset_size = 50, components = c("analysis"))
 
 cat("\n✅ Quick test completed!\n\n")
 

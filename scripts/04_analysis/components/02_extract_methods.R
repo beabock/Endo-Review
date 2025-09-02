@@ -20,17 +20,17 @@ detect_research_methods_batch <- function(text_vector) {
   method_categories <- get_method_keywords()
 
   # Pre-compile patterns for better performance
-  patterns <- map(method_categories, ~paste(., collapse = "|"))
+  patterns <- purrr::map(method_categories, ~paste(., collapse = "|"))
 
   text_lower <- str_to_lower(text_vector)
 
-  results <- map_dfc(names(patterns), function(category) {
+  results <- purrr::map_dfc(names(patterns), function(category) {
     matches <- str_detect(text_lower, patterns[[category]])
     setNames(list(matches), category)
   })
 
   # Create methods summary
-  methods_detected <- pmap_chr(results, function(...) {
+  methods_detected <- purrr::pmap_chr(results, function(...) {
     found <- names(list(...))[unlist(list(...))]
     if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
   })

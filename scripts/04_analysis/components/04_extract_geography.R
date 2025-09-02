@@ -27,7 +27,7 @@ detect_geographic_locations_batch <- function(text_vector) {
   # Function to normalize country names using enhanced synonym system
   normalize_country_batch <- function(country_vector) {
     # Apply the enhanced standardize_country_name function to each country
-    map_chr(country_vector, function(country) {
+    purrr::map_chr(country_vector, function(country) {
       if (is.na(country) || country == "") return(NA_character_)
       result <- standardize_country_name(country)
       # If standardization returns the same as input, it might be unrecognized
@@ -39,7 +39,7 @@ detect_geographic_locations_batch <- function(text_vector) {
   }
 
   # Context-aware country detection with enhanced synonym handling
-  country_matches <- map(text_vector, function(text) {
+  country_matches <- purrr::map(text_vector, function(text) {
     if (is.na(text) || text == "") return(character(0))
 
     text_lower <- str_to_lower(text)
@@ -138,7 +138,7 @@ detect_geographic_locations_batch <- function(text_vector) {
     continent_pattern <- paste0("\\b(", paste(str_to_lower(continents), collapse = "|"), ")\\b")
     continents_found <- str_extract_all(str_to_lower(text_vector), continent_pattern)
   } else {
-    continents_found <- map(text_vector, ~character(0))
+    continents_found <- purrr::map(text_vector, ~character(0))
   }
 
   # Enhanced ecosystem/region detection with comprehensive keywords
@@ -146,7 +146,7 @@ detect_geographic_locations_batch <- function(text_vector) {
     region_pattern <- paste0("\\b(", paste(str_to_lower(regions), collapse = "|"), ")\\b")
     regions_found <- str_extract_all(str_to_lower(text_vector), region_pattern)
   } else {
-    regions_found <- map(text_vector, ~character(0))
+    regions_found <- purrr::map(text_vector, ~character(0))
   }
 
   # Enhanced coordinate detection
@@ -166,12 +166,12 @@ detect_geographic_locations_batch <- function(text_vector) {
 
   # Build results with enhanced categorization
   results <- tibble(
-    countries_detected = map_chr(country_matches, ~if(length(.) > 0) paste(., collapse = "; ") else NA_character_),
-    global_north_countries = map_chr(country_matches, ~{
+    countries_detected = purrr::map_chr(country_matches, ~if(length(.) > 0) paste(., collapse = "; ") else NA_character_),
+    global_north_countries = purrr::map_chr(country_matches, ~{
       found <- intersect(., global_north)
       if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
     }),
-    global_south_countries = map_chr(country_matches, ~{
+    global_south_countries = purrr::map_chr(country_matches, ~{
       found <- intersect(., global_south)
       if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
     }),
@@ -228,7 +228,7 @@ extract_geography_data <- function(
     )
   }
 
-  geography_results <- map_dfr(1:n_batches, function(batch_num) {
+  geography_results <- purrr::map_dfr(1:n_batches, function(batch_num) {
     start_idx <- (batch_num - 1) * batch_size + 1
     end_idx <- min(batch_num * batch_size, length(abstracts_text))
 

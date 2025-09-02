@@ -203,10 +203,21 @@ run_absence_analysis <- function(data, output_dir, force_rerun = FALSE, verbose 
       output_files <- c(output_files, file.path(output_dir, "absence_evidence_report.txt"))
     }
 
+    # Load the absence analysis results to get confidence counts
+    absence_results_file <- "results/absence_evidence_analysis.csv"
+    if (file.exists(absence_results_file)) {
+      absence_data <- read_csv(absence_results_file, show_col_types = FALSE)
+      high_confidence_count <- sum(absence_data$confidence_level == "High", na.rm = TRUE)
+      medium_confidence_count <- sum(absence_data$confidence_level == "Medium", na.rm = TRUE)
+    } else {
+      high_confidence_count <- 0
+      medium_confidence_count <- 0
+    }
+
     return(list(
       status = "completed",
-      high_confidence_count = sum(data$confidence_level == "High", na.rm = TRUE),
-      medium_confidence_count = sum(data$confidence_level == "Medium", na.rm = TRUE),
+      high_confidence_count = high_confidence_count,
+      medium_confidence_count = medium_confidence_count,
       output_files = output_files
     ))
 
@@ -292,63 +303,145 @@ run_temporal_analysis <- function(data, output_dir, force_rerun = FALSE, verbose
   # Create output directory
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
-  # For now, create a simple temporal summary
+  # Filter out publication years before 1700 to focus on modern scientific literature
   if ("publication_year" %in% names(data)) {
     temporal_summary <- data %>%
       mutate(publication_year = as.numeric(publication_year)) %>%
-      filter(!is.na(publication_year)) %>%
+      filter(!is.na(publication_year) & publication_year >= 1700) %>%  # Exclude pre-1700 publications
       group_by(decade = floor(publication_year / 10) * 10) %>%
       summarise(count = n(), .groups = "drop") %>%
       arrange(decade)
 
-    write_csv(temporal_summary, file.path(output_dir, "temporal_analysis_summary.csv"))
+    # Only proceed if we have data after filtering
+    if (nrow(temporal_summary) > 0) {
+      write_csv(temporal_summary, file.path(output_dir, "temporal_analysis_summary.csv"))
 
-    year_range <- if (nrow(temporal_summary) > 0) {
-      c(min(temporal_summary$decade), max(temporal_summary$decade))
+      year_range <- c(min(temporal_summary$decade), max(temporal_summary$decade))
+
+      if (verbose) {
+        cat("  📊 Analyzed", sum(temporal_summary$count), "publications from",
+            min(temporal_summary$decade), "to", max(temporal_summary$decade), "\n")
+        cat("  📈 Filtered out", sum(is.na(data$publication_year) | data$publication_year < 1700),
+            "publications before 1700\n")
+      }
+
+      return(list(
+        status = "completed",
+        year_range = year_range,
+        periods_analyzed = nrow(temporal_summary),
+        publications_analyzed = sum(temporal_summary$count),
+        output_files = file.path(output_dir, "temporal_analysis_summary.csv")
+      ))
     } else {
-      c(2020, 2025)
+      if (verbose) cat("  ⚠️  No publications found after 1700\n")
+      return(list(
+        status = "completed",
+        year_range = c(2020, 2025),
+        periods_analyzed = 0,
+        publications_analyzed = 0,
+        output_files = c()
+      ))
     }
-
-    return(list(
-      status = "completed",
-      year_range = year_range,
-      periods_analyzed = nrow(temporal_summary),
-      output_files = file.path(output_dir, "temporal_analysis_summary.csv")
-    ))
   } else {
+    if (verbose) cat("  ⚠️  No publication_year column found\n")
     return(list(
       status = "completed",
       year_range = c(2020, 2025),
       periods_analyzed = 0,
+      publications_analyzed = 0,
       output_files = c()
     ))
   }
 }
 
 run_visualization_analysis <- function(data, output_dir, force_rerun = FALSE, verbose = FALSE) {
-  if (verbose) cat("Running visualization analysis...\n")
+  if (verbose) cat("Running comprehensive visualization analysis...\n")
 
   # Create output directory
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
-  # Create a simple visualization data summary
-  vis_summary <- data.frame(
-    component = c("species", "methods", "geography", "plant_parts"),
-    records_analyzed = c(
-      nrow(data),
-      nrow(data),
-      nrow(data),
-      nrow(data)
+  # Temporarily save input data to the expected file location
+  expected_input_file <- "results/comprehensive_extraction_results.csv"
+
+  # Backup original file if it exists
+  if (file.exists(expected_input_file)) {
+    file.rename(expected_input_file, paste0(expected_input_file, ".backup"))
+    backup_exists <- TRUE
+  } else {
+    backup_exists <- FALSE
+  }
+
+  tryCatch({
+    # Save our test data to expected location
+    write_csv(data, expected_input_file)
+
+    # Source and run the main visualization scripts
+    plots_created <- c()
+    output_files <- c()
+
+    # Run taxa representation visualizations
+    if (file.exists("scripts/04_analysis/visualization/visualize_taxa_results.R")) {
+      if (verbose) cat("  Running taxa representation visualizations...\n")
+      source("scripts/04_analysis/visualization/visualize_taxa_results.R")
+
+      # Check if the main function exists and run it
+      if (exists("create_taxa_representation_visualizations")) {
+        taxa_results <- create_taxa_representation_visualizations(
+          results_file = "results/comprehensive_extraction_results.csv",
+          species_file = "models/species.rds",
+          pbdb_file = "data/raw/pbdb_all.csv",
+          output_dir = "plots"
+        )
+        plots_created <- c(plots_created, "taxa_representation")
+        if (verbose) cat("    ✓ Taxa visualizations completed\n")
+      }
+    }
+
+    # Run extraction results visualizations
+    if (file.exists("scripts/04_analysis/visualization/visualize_extraction_results.R")) {
+      if (verbose) cat("  Running extraction results visualizations...\n")
+      source("scripts/04_analysis/visualization/visualize_extraction_results.R")
+
+      # The script should run automatically when sourced
+      plots_created <- c(plots_created, "extraction_results")
+      if (verbose) cat("    ✓ Extraction results visualizations completed\n")
+    }
+
+    # Copy visualization outputs to test output directory
+    plots_dir <- "plots"
+    if (dir.exists(plots_dir)) {
+      plot_files <- list.files(plots_dir, pattern = "\\.png$", full.names = TRUE)
+      for (plot_file in plot_files) {
+        file.copy(plot_file, file.path(output_dir, basename(plot_file)), overwrite = TRUE)
+        output_files <- c(output_files, file.path(output_dir, basename(plot_file)))
+      }
+    }
+
+    # Create a summary of visualizations created
+    vis_summary <- data.frame(
+      visualization_type = plots_created,
+      timestamp = Sys.time(),
+      output_directory = output_dir
     )
-  )
 
-  write_csv(vis_summary, file.path(output_dir, "visualization_data_summary.csv"))
+    write_csv(vis_summary, file.path(output_dir, "visualization_summary.csv"))
+    output_files <- c(output_files, file.path(output_dir, "visualization_summary.csv"))
 
-  return(list(
-    status = "completed",
-    plots_created = c("data_summary"),
-    output_files = file.path(output_dir, "visualization_data_summary.csv")
-  ))
+    return(list(
+      status = "completed",
+      plots_created = plots_created,
+      output_files = output_files
+    ))
+
+  }, finally = {
+    # Clean up temporary file and restore backup
+    if (file.exists(expected_input_file)) {
+      file.remove(expected_input_file)
+    }
+    if (backup_exists && file.exists(paste0(expected_input_file, ".backup"))) {
+      file.rename(paste0(expected_input_file, ".backup"), expected_input_file)
+    }
+  })
 }
 
 # Generate integrated analysis summary

@@ -305,11 +305,15 @@ absence_results <- map_dfr(1:nrow(relevant_data), function(i) {
 
 cat("\nEnhanced absence detection completed.\n")
 
-# Combine with original data - explicitly handle many-to-many relationship
-# The relevant_data may have multiple rows per ID (one per fungal detection)
-# while absence_results has one row per ID, creating a many-to-one join
+# Combine with original data - handle the join safely
+# Ensure absence_results has unique IDs before joining (one absence result per abstract)
+absence_results_unique <- absence_results %>%
+  group_by(id) %>%
+  slice(1) %>%  # Take the first row for each ID (they should all be identical)
+  ungroup()
+
 absence_analysis_results <- relevant_data %>%
-  left_join(absence_results, by = "id", relationship = "many-to-one") %>%
+  left_join(absence_results_unique, by = "id", relationship = "many-to-one") %>%
   mutate(
     # Add additional classification variables - check for any species information
     has_species = if(all(c("canonicalName", "resolved_name", "acceptedScientificName") %in% names(.))) {

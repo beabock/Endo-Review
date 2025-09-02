@@ -139,7 +139,7 @@ taxa_results_deduped <- taxa_results %>%
   ) %>%
   # Remove duplicates within the same abstract for the same taxon
   distinct(id, kingdom, phylum, canonicalName_resolved, genus_resolved, family_resolved,
-           match_type, predicted_label, .keep_all = TRUE) %>%
+           match_type, final_classification, .keep_all = TRUE) %>%
   # Create final resolved names for counting
   mutate(
     canonicalName_final = canonicalName_resolved,
@@ -175,7 +175,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     # For species, count direct species mentions using resolved names
     found_by_phylum <- taxa_results_deduped %>%
       filter(kingdom == kingdom_filter,
-             predicted_label == "Presence",
+             final_classification == "Presence",
              !is.na(canonicalName_final),
              !is.na(phylum),
              match_type == "species") %>%
@@ -186,7 +186,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     # For genera, count both direct genus mentions AND genera that contain found species
     direct_genus <- taxa_results_deduped %>%
       filter(kingdom == kingdom_filter,
-             predicted_label == "Presence",
+             final_classification == "Presence",
              !is.na(genus_final),
              !is.na(phylum),
              match_type == "genus") %>%
@@ -195,7 +195,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     # Get genera that contain found species (using resolved genus names)
     species_in_genus <- taxa_results_deduped %>%
       filter(kingdom == kingdom_filter,
-             predicted_label == "Presence",
+             final_classification == "Presence",
              !is.na(canonicalName_final),
              !is.na(genus_final),
              !is.na(phylum),
@@ -216,7 +216,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     # For families, count both direct family mentions AND families that contain found genera/species
     direct_family <- taxa_results_deduped %>%
       filter(kingdom == kingdom_filter,
-             predicted_label == "Presence",
+             final_classification == "Presence",
              !is.na(family_final),
              !is.na(phylum),
              match_type == "family") %>%
@@ -225,7 +225,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     # Get families that contain found species
     species_in_family <- taxa_results_deduped %>%
       filter(kingdom == kingdom_filter,
-             predicted_label == "Presence",
+             final_classification == "Presence",
              !is.na(canonicalName_final),
              !is.na(family_final),
              !is.na(phylum),
@@ -235,7 +235,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     # Get families that contain found genera
     genus_in_family <- taxa_results_deduped %>%
       filter(kingdom == kingdom_filter,
-             predicted_label == "Presence",
+             final_classification == "Presence",
              !is.na(genus_final),
              !is.na(family_final),
              !is.na(phylum),
@@ -382,16 +382,16 @@ create_unrepresented_taxa_csv <- function() {
 
   # Get found taxa from deduplicated results
   found_species <- taxa_results_deduped %>%
-    filter(match_type == "species", predicted_label == "Presence", !is.na(canonicalName_final)) %>%
+    filter(match_type == "species", final_classification == "Presence", !is.na(canonicalName_final)) %>%
     distinct(kingdom, phylum, family, genus, species = canonicalName_final)
 
   found_genera <- taxa_results_deduped %>%
-    filter(match_type == "genus", predicted_label == "Presence", !is.na(genus_final)) %>%
+    filter(match_type == "genus", final_classification == "Presence", !is.na(genus_final)) %>%
     distinct(kingdom, phylum, family, genus = genus_final) %>%
     mutate(species = NA_character_)
 
   found_families <- taxa_results_deduped %>%
-    filter(match_type == "family", predicted_label == "Presence", !is.na(family_final)) %>%
+    filter(match_type == "family", final_classification == "Presence", !is.na(family_final)) %>%
     distinct(kingdom, phylum, family = family_final) %>%
     mutate(genus = NA_character_, species = NA_character_)
 

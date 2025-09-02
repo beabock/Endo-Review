@@ -34,8 +34,14 @@ validation_data <- comprehensive_data %>%
   group_by(id) %>%
   slice(1) %>%
   ungroup() %>%
-  # Add confidence categories
+  # Add confidence categories based on available probability columns
   mutate(
+    # Create confidence score from available probability columns
+    confidence = pmax(
+      coalesce(glmnet_prob_presence, 0),
+      coalesce(svm_prob_presence, 0),
+      na.rm = TRUE
+    ),
     confidence_level = case_when(
       confidence >= 0.9 ~ "High (≥0.9)",
       confidence >= 0.7 ~ "Medium (0.7-0.9)",
@@ -57,6 +63,8 @@ validation_data <- comprehensive_data %>%
     ),
     # Species detection status
     has_species = ifelse(!is.na(canonicalName), "Species detected", "No species"),
+    # Use final_classification as predicted_label for stratification
+    predicted_label = final_classification,
     # Create unique combination for stratification
     stratum = paste(predicted_label, confidence_level, has_species, sep = " | ")
   )

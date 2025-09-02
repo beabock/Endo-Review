@@ -5,7 +5,7 @@
 setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
 
 # Source the visualization script
-source("scripts/04_analysis/visualize_taxa_results.R")
+source("visualize_taxa_results.R")
 
 # Run the analysis with your specific file paths
 message("Starting taxa representation analysis...")

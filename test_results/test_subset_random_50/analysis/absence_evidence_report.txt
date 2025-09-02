@@ -1,0 +1,53 @@
+=== ABSENCE EVIDENCE DETECTION REPORT ===
+Generated: 1756841525 
+Purpose: Identify studies reporting absence of fungal endophytes
+Method: Automated text analysis with manual validation recommended
+
+SUMMARY STATISTICS:
+Total abstracts analyzed: 50 
+High confidence absence: 0 
+Medium confidence absence: 0 
+
+ABSENCE BY PREDICTION TYPE:
+# A tibble: 1 × 6
+  final_classification total high_confidence medium_confidence
+  <chr>                <int>           <int>             <int>
+1 Presence                50               0                 0
+# ℹ 2 more variables: high_confidence_rate <dbl>, medium_confidence_rate <dbl>
+
+METHODOLOGICAL CONTEXT:
+# A tibble: 1 × 7
+  total_absence with_molecular with_culture with_microscopy molecular_pct
+          <int>          <int>        <int>           <int>         <dbl>
+1             0              0            0               0           NaN
+# ℹ 2 more variables: culture_pct <dbl>, microscopy_pct <dbl>
+
+TEMPORAL TRENDS:
+# A tibble: 11 × 5
+   five_year_period total_studies high_confidence_absence medium_confidence_ab…¹
+              <dbl>         <int>                   <int>                  <int>
+ 1             1950             1                       0                      0
+ 2             1975             1                       0                      0
+ 3             1980             1                       0                      0
+ 4             1990             1                       0                      0
+ 5             1995             2                       0                      0
+ 6             2000             3                       0                      0
+ 7             2005             3                       0                      0
+ 8             2010             6                       0                      0
+ 9             2015             8                       0                      0
+10             2020            20                       0                      0
+11             2025             4                       0                      0
+# ℹ abbreviated name: ¹​medium_confidence_absence
+# ℹ 1 more variable: high_confidence_rate <dbl>
+
+QUALITY CONTROL RECOMMENDATIONS:
+1. Manual review of high-confidence absence cases recommended
+2. Verify methodological adequacy for studies claiming absence
+3. Check for potential false positives in absence detection
+4. Consider context of absence claims (e.g., specific conditions)
+
+NEXT STEPS:
+1. Expert review of high_confidence_absence_evidence.csv
+2. Quality assessment of methodological rigor
+3. Integration with species-level absence patterns
+4. Use absence_evidence_analysis.csv for further analysis

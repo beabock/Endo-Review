@@ -1,0 +1,64 @@
+=== PIPELINE TEST RESULTS - 200 ABSTRACTS ===
+Generated: 2025-09-02 13:42:19 
+
+COMPONENT RESULTS:
+=================
+
+DATA_PREP DETECTION:
+  Abstracts processed: 200 
+  Processing time: 0.1 seconds
+  Status: completed 
+
+SPECIES DETECTION:
+  Abstracts processed: 908 
+  Species found: 869 
+  Detection rate: 95.7 %
+  Processing time: 1104.9 seconds
+  Status: completed 
+
+METHODS DETECTION:
+  Abstracts processed: 200 
+  Molecular methods: 76 
+  Culture methods: 147 
+  Microscopy methods: 16 
+  Processing time: 6 seconds
+  Status: completed 
+
+PARTS DETECTION:
+  Abstracts processed: 200 
+  Plant parts found: 139 
+  Detection rate: 69.5 %
+  Processing time: 4 seconds
+  Status: completed 
+
+GEOGRAPHY DETECTION:
+  Abstracts processed: 200 
+  Countries found: 131 
+  Continents found: 10 
+  Regions found: 31 
+  Processing time: 29.8 seconds
+  Status: completed 
+
+MERGE DETECTION:
+  Abstracts processed: 908 
+  Total columns: 393 
+  Processing time: 1.3 seconds
+  Status: completed 
+
+ANALYSIS DETECTION:
+  Processing time: 191.4 seconds
+  Status: completed 
+
+PERFORMANCE SUMMARY:
+===================
+Total processing time: 1337.5 seconds
+Average time per abstract: 6.688 seconds
+
+Component timing breakdown:
+  data_prep   :    0.1s ( 0.0%)
+  species     : 1104.9s (82.6%)
+  methods     :    6.0s ( 0.5%)
+  parts       :    4.0s ( 0.3%)
+  geography   :   29.8s ( 2.2%)
+  merge       :    1.3s ( 0.1%)
+  analysis    :  191.4s (14.3%)

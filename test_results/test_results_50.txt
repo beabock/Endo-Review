@@ -1,0 +1,14 @@
+=== PIPELINE TEST RESULTS - 50 ABSTRACTS ===
+Generated: 2025-09-02 12:32:33 
+
+COMPONENT RESULTS:
+=================
+
+ANALYSIS DETECTION:
+  Processing time: 45.5 seconds
+  Status: completed 
+
+PERFORMANCE SUMMARY:
+===================
+Total processing time: 45.5 seconds
+Average time per abstract: 0.91 seconds

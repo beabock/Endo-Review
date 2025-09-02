@@ -74,6 +74,30 @@ if (!file.exists("results/comprehensive_extraction_results.csv")) {
 }
 
 # Load main results
+if (!file.exists("results/comprehensive_extraction_results.csv")) {
+  stop("File results/comprehensive_extraction_results.csv not found. Please ensure the extraction pipeline has been run first.")
+}
+
+# Check if the file has the expected structure for visualization
+results_check <- read_csv("results/comprehensive_extraction_results.csv", n_max = 5, show_col_types = FALSE)
+expected_cols <- c("id", "predicted_label")  # Minimum required columns
+missing_cols <- setdiff(expected_cols, names(results_check))
+
+# If predicted_label is missing, try to use final_classification as a fallback
+if ("predicted_label" %in% missing_cols && "final_classification" %in% names(results_check)) {
+  cat("⚠️  predicted_label column not found, using final_classification as fallback\n")
+  expected_cols <- c("id", "final_classification")
+  missing_cols <- setdiff(expected_cols, names(results_check))
+}
+
+if (length(missing_cols) > 0) {
+  cat("❌ File structure issue: Missing columns:", paste(missing_cols, collapse = ", "), "\n")
+  cat("This visualization script is designed for comprehensive extraction results.\n")
+  cat("For absence detection results, use the absence-specific visualization or run the full extraction pipeline first.\n")
+  stop("Incompatible data structure for visualization")
+}
+
+# Load the full dataset
 results <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 cat("Loaded", nrow(results), "abstracts with comprehensive extraction data\n")
@@ -81,9 +105,14 @@ cat("Loaded", nrow(results), "abstracts with comprehensive extraction data\n")
 # Data preparation and summary statistics
 results_clean <- results %>%
   mutate(
+    # Handle prediction labels - use final_classification as the main prediction column
+    predicted_label = if("final_classification" %in% names(results)) {
+      final_classification  # Use final_classification as the main prediction
+    } else {
+      "Unknown"  # Default fallback
+    },
     # Clean prediction labels
     predicted_label = case_when(
-      is.na(predicted_label) ~ "Unknown",
       predicted_label == "Presence" ~ "Presence",
       predicted_label == "Absence" ~ "Absence",
       TRUE ~ as.character(predicted_label)
@@ -111,15 +140,35 @@ results_clean <- results %>%
     has_plant_parts = !is.na(plant_parts_detected),
     has_geography = !is.na(geographic_summary),
     
-    # Confidence categories
-    confidence_cat = case_when(
-      is.na(confidence) ~ "Unknown",
-      confidence >= 0.9 ~ "Very High (≥90%)",
-      confidence >= 0.8 ~ "High (80-90%)",
-      confidence >= 0.7 ~ "Medium (70-80%)",
-      confidence >= 0.6 ~ "Low (60-70%)",
-      TRUE ~ "Very Low (<60%)"
-    ),
+    # Confidence categories - handle model-specific probability columns
+    confidence_cat = {
+      # Try ensemble probabilities first (most comprehensive)
+      if("ensemble_presence_prob" %in% names(results) && any(!is.na(results$ensemble_presence_prob))) {
+        ensemble_conf <- pmax(results$ensemble_presence_prob, results$ensemble_absence_prob, na.rm = TRUE)
+        case_when(
+          !is.na(ensemble_conf) & ensemble_conf >= 0.9 ~ "Very High (≥90%)",
+          !is.na(ensemble_conf) & ensemble_conf >= 0.8 ~ "High (80-90%)",
+          !is.na(ensemble_conf) & ensemble_conf >= 0.7 ~ "Medium (70-80%)",
+          !is.na(ensemble_conf) & ensemble_conf >= 0.6 ~ "Low (60-70%)",
+          !is.na(ensemble_conf) ~ "Very Low (<60%)",
+          TRUE ~ "Unknown"
+        )
+      } else if("glmnet_prob_presence" %in% names(results) && any(!is.na(results$glmnet_prob_presence))) {
+        # Use glmnet probabilities as fallback
+        glmnet_conf <- pmax(results$glmnet_prob_presence, results$glmnet_prob_absence, na.rm = TRUE)
+        case_when(
+          !is.na(glmnet_conf) & glmnet_conf >= 0.9 ~ "Very High (≥90%)",
+          !is.na(glmnet_conf) & glmnet_conf >= 0.8 ~ "High (80-90%)",
+          !is.na(glmnet_conf) & glmnet_conf >= 0.7 ~ "Medium (70-80%)",
+          !is.na(glmnet_conf) & glmnet_conf >= 0.6 ~ "Low (60-70%)",
+          !is.na(glmnet_conf) ~ "Very Low (<60%)",
+          TRUE ~ "Unknown"
+        )
+      } else {
+        # No probability columns available
+        "Unknown"
+      }
+    },
     
     # Geographic regions
     has_global_north = !is.na(global_north_countries),
@@ -362,13 +411,22 @@ if (sum(results_clean$has_geography) > 0) {
     filter(!is.na(countries_detected)) %>%
     select(countries_detected) %>%
     separate_rows(countries_detected, sep = "; ") %>%
-  filter(!is.na(countries_detected), countries_detected != "") %>%
-  # Standardize country names and group synonyms
-  mutate(country_std = if (exists("normalize_country_vector")) normalize_country_vector(countries_detected) else stringr::str_to_title(countries_detected)) %>%
-  count(country_std, name = "frequency") %>%
-  arrange(desc(frequency)) %>%
-  slice_max(frequency, n = 15) %>%
-  mutate(countries_detected = fct_reorder(stringr::str_to_title(country_std), frequency))
+    filter(!is.na(countries_detected), countries_detected != "") %>%
+    # Debug: Print what countries are being detected
+    { cat("DEBUG: Raw countries detected:", paste(unique(.$countries_detected), collapse = ", "), "\n"); . } %>%
+    # Standardize country names and group synonyms
+    mutate(country_std = if (exists("normalize_country_vector")) {
+      normalized <- normalize_country_vector(countries_detected)
+      cat("DEBUG: After normalization:", paste(unique(normalized), collapse = ", "), "\n")
+      normalized
+    } else {
+      cat("DEBUG: normalize_country_vector not found, using title case\n")
+      stringr::str_to_title(countries_detected)
+    }) %>%
+    count(country_std, name = "frequency") %>%
+    arrange(desc(frequency)) %>%
+    slice_max(frequency, n = 15) %>%
+    mutate(countries_detected = fct_reorder(stringr::str_to_title(country_std), frequency))
   
   if (nrow(countries_data) > 0) {
     p8_countries <- countries_data %>%
@@ -400,30 +458,72 @@ if (sum(results_clean$has_geography) > 0) {
 
 cat("Creating prediction quality analysis plots...\n")
 
-# Confidence distribution
-p9_confidence <- results_clean %>%
-  filter(!is.na(confidence)) %>%
-  ggplot(aes(x = confidence, fill = predicted_label)) +
-  geom_histogram(bins = 20, alpha = 0.7) +
-  facet_wrap(~predicted_label, scales = "free_y") +
-  scale_fill_manual(values = c("Presence" = endo_palette[6], "Absence" = endo_palette[7])) +
-  labs(
-    title = "Prediction Confidence Distribution",
-    subtitle = "Model confidence scores by prediction type",
-    x = "Confidence Score",
-    y = "Number of Abstracts",
-    fill = "Prediction"
-  ) +
-  custom_theme +
-  theme(legend.position = "none")
+# Confidence distribution - handle both confidence types with conditional plotting
+if (sum(!is.na(results_clean$confidence) & is.numeric(results_clean$confidence)) > 0) {
+  # Numeric confidence scores available
+  p9_confidence <- results_clean %>%
+    filter(!is.na(confidence)) %>%
+    ggplot(aes(x = confidence, fill = predicted_label)) +
+    geom_histogram(bins = 20, alpha = 0.7) +
+    facet_wrap(~predicted_label, scales = "free_y") +
+    scale_fill_manual(values = c("Presence" = endo_palette[6], "Absence" = endo_palette[7])) +
+    labs(
+      title = "Prediction Confidence Distribution",
+      subtitle = "Model confidence scores by prediction type",
+      x = "Confidence Score",
+      y = "Number of Abstracts",
+      fill = "Prediction"
+    ) +
+    custom_theme +
+    theme(legend.position = "none")
+} else if (sum(!is.na(results_clean$confidence_level)) > 0) {
+  # Categorical confidence levels available (absence detection)
+  conf_dist_data <- results_clean %>%
+    filter(!is.na(confidence_level), !is.na(predicted_label)) %>%
+    count(confidence_level, predicted_label)
 
-# Information completeness by confidence
-completeness_data <- results_clean %>%
-  filter(!is.na(confidence)) %>%
+  p9_confidence <- conf_dist_data %>%
+    ggplot(aes(x = confidence_level, y = n, fill = predicted_label)) +
+    geom_col(position = "dodge", alpha = 0.7) +
+    scale_fill_manual(values = c("Presence" = endo_palette[6], "Absence" = endo_palette[7], "Unknown" = "lightgray")) +
+    labs(
+      title = "Confidence Level Distribution",
+      subtitle = "Confidence levels by prediction type",
+      x = "Confidence Level",
+      y = "Number of Abstracts",
+      fill = "Prediction"
+    ) +
+    custom_theme
+} else {
+  # No confidence data available - create placeholder
+  p9_confidence <- ggplot() +
+    annotate("text", x = 0.5, y = 0.5, label = "No confidence data available",
+             size = 6, alpha = 0.7) +
+    xlim(0, 1) + ylim(0, 1) +
+    theme_void()
+}
+
+# Information completeness by confidence - handle both confidence types
+completeness_base <- results_clean %>%
   mutate(
-    completeness_score = (as.numeric(has_species) + as.numeric(has_plant_parts) + 
+    completeness_score = (as.numeric(has_species) + as.numeric(has_plant_parts) +
                          as.numeric(has_geography) + as.numeric(methods_combined != "No methods detected")) / 4
-  ) %>%
+  )
+
+# Use different confidence filters based on available data
+if (sum(!is.na(completeness_base$confidence) & is.numeric(completeness_base$confidence)) > 0) {
+  completeness_data <- completeness_base %>%
+    filter(!is.na(confidence))
+} else if (sum(!is.na(completeness_base$confidence_level)) > 0) {
+  completeness_data <- completeness_base %>%
+    filter(!is.na(confidence_level))
+} else {
+  # No confidence data - use all data but warn
+  completeness_data <- completeness_base
+  warning("No confidence data available for completeness analysis")
+}
+
+completeness_data <- completeness_data %>%
   group_by(confidence_cat, predicted_label) %>%
   summarise(
     avg_completeness = mean(completeness_score),
