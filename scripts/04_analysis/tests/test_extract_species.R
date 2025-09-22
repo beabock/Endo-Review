@@ -12,7 +12,7 @@
 # Dependencies: tidyverse, tictoc, janitor
 #
 # Author: Auto-generated test script
-# Date: 2024-09-22
+# Date: 2025-09-22
 #
 # Inputs/Outputs: Uses test data from test_data/ and creates mock data; outputs
 # test results to console and optionally to file.
@@ -74,7 +74,7 @@ test_species_processing <- function() {
   mock_abstracts <- tibble(
     id = 1:5,
     article_title = c("Test Paper 1", "Test Paper 2", "Test Paper 3", "Test Paper 4", "Test Paper 5"),
-    abstract = c(
+    text = c(
       "This study examines the effects of drought on Quercus robur and Pinus sylvestris growth patterns.",
       "Research on Triticum aestivum and Glycine max reveals important genetic interactions.",
       "Analysis of Arabidopsis thaliana and Oryza sativa provides insights into plant responses.",
@@ -154,7 +154,7 @@ test_accuracy <- function() {
   mock_abstracts <- tibble(
     id = 1:5,
     article_title = c("Test Paper 1", "Test Paper 2", "Test Paper 3", "Test Paper 4", "Test Paper 5"),
-    abstract = c(
+    text = c(
       "This study examines the effects of drought on Quercus robur and Pinus sylvestris growth patterns.",
       "Research on Triticum aestivum and Glycine max reveals important genetic interactions.",
       "Analysis of Arabidopsis thaliana and Oryza sativa provides insights into plant responses.",
@@ -330,7 +330,7 @@ test_error_handling <- function() {
     empty_data <- tibble(
       id = integer(0),
       article_title = character(0),
-      abstract = character(0),
+      text = character(0),
       authors = character(0),
       source_title = character(0),
       publication_year = integer(0),
@@ -378,7 +378,7 @@ test_error_handling <- function() {
       mock_abstracts <- tibble(
         id = 1,
         article_title = "Test",
-        abstract = "Test abstract",
+        text = "Test abstract",
         authors = "Test",
         source_title = "Test",
         publication_year = 2023,
@@ -510,7 +510,7 @@ test_typo_handling <- function() {
       "Test Paper 1", "Test Paper 2", "Test Paper 3", "Test Paper 4",
       "Test Paper 5", "Test Paper 6", "Test Paper 7"
     ),
-    abstract = c(
+    text = c(
       "This study examines quercus alba in drought conditions.",  # lowercase genus
       "Research on Quercus Alba reveals genetic information.",     # missing capital in species
       "Analysis of Quercus  alba and other species.",              # extra spaces

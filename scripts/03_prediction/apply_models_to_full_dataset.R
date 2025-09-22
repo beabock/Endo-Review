@@ -86,7 +86,7 @@ setwd(here())
 
 # RESTART OPTION: Set to TRUE if you want to skip to P/A classification
 # (after relevance classification is already complete)
-RESTART_FROM_PA <- TRUE
+RESTART_FROM_PA <- FALSE
 
 # =============================================================================
 # LIBRARY LOADING & SETUP
@@ -317,52 +317,102 @@ if (!RESTART_FROM_PA) {
   cat("\nStep 2: Relevance Classification...\n")
   tic("Relevance classification")
 
-  # Create DTM for relevance classification
+  # Create memory-efficient sparse DTM
   cat("  Creating document-term matrix...\n")
-  dtm <- full_abstracts %>%
-    unnest_tokens(word, abstract, token = "words") %>%
-    anti_join(stop_words, by = "word") %>%
-    mutate(word = str_to_lower(word)) %>%
-    filter(!str_detect(word, "\\d")) %>%
-    count(id, word, sort = TRUE) %>%
-    ungroup() %>%
-    mutate(id = as.character(id)) %>%
-    cast_dtm(document = id, term = word, value = n)
+  dtm <- create_sparse_dtm(
+    data = full_abstracts,
+    text_column = "abstract",
+    id_column = "id",
+    min_term_freq = 2,
+    max_features = 15000
+  )
 
-  # Convert to matrix and sanitize column names
-  dtm_matrix <- as.matrix(dtm)
-  colnames(dtm_matrix) <- make.names(colnames(dtm_matrix), unique = TRUE)
-  rownames(dtm_matrix) <- dtm$dimnames$Docs
-
-  # Optimize: Keep as matrix until needed, convert to sparse-friendly data frame
-  cat("  Converting DTM to data frame (this may take a moment for large datasets)...\n")
-  dtm_df <- as.data.frame(as.matrix(dtm_matrix))  # Explicit conversion for clarity
-  stopifnot(!any(duplicated(colnames(dtm_df))))
-
-  cat("  DTM created:", nrow(dtm_df), "documents ×", ncol(dtm_df), "terms\n")
+  cat("  DTM created:", nrow(dtm), "documents ×", ncol(dtm), "terms\n")
 
   # Load trained relevance model
   cat("  Loading trained relevance model...\n")
   rel_model <- readRDS("models/best_model_relevance_glmnet.rds")
   trained_vocab <- rel_model$finalModel$xNames
 
-  # Align features with training vocabulary
-  missing_words <- setdiff(trained_vocab, colnames(dtm_df))
+  # Memory-efficient feature alignment on sparse matrix
+  cat("  Performing memory-efficient feature alignment...\n")
+  current_features <- colnames(dtm)
+
+  # Find missing features
+  missing_words <- setdiff(trained_vocab, current_features)
+
+  cat("  Feature alignment summary:\n")
+  cat("  - Common features:", length(intersect(current_features, trained_vocab)), "\n")
+  cat("  - Missing features:", length(missing_words), "\n")
+  cat("  - Total training features:", length(trained_vocab), "\n")
+
+  # Add missing features as sparse zero columns
   if (length(missing_words) > 0) {
-    zero_matrix <- matrix(0, nrow = nrow(dtm_df), ncol = length(missing_words),
-                          dimnames = list(rownames(dtm_df), missing_words))
-    dtm_df <- cbind(dtm_df, zero_matrix)
+    cat("  Adding", length(missing_words), "missing features...\n")
+    zero_cols <- Matrix::Matrix(0, nrow = nrow(dtm), ncol = length(missing_words), sparse = TRUE)
+    colnames(zero_cols) <- missing_words
+    rownames(zero_cols) <- rownames(dtm)
+    dtm <- cbind(dtm, zero_cols)
   }
 
-  # Remove extra columns and reorder to match training
-  dtm_df <- dtm_df[, colnames(dtm_df) %in% trained_vocab]
-  dtm_df <- dtm_df[, trained_vocab, drop = FALSE]
+  # Remove extra columns and reorder to match training vocabulary
+  dtm <- dtm[, colnames(dtm) %in% trained_vocab, drop = FALSE]
+  dtm <- dtm[, trained_vocab, drop = FALSE]
 
-  cat("  Feature alignment complete:", ncol(dtm_df), "features\n")
+  cat("  Feature alignment complete:", ncol(dtm), "features\n")
 
-  # Predict relevance
+  # Monitor memory before predictions
+  mem_status <- monitor_memory(context = "Before relevance predictions")
+  if (mem_status$above_threshold) {
+    cat("⚠️ High memory usage. Using chunked prediction.\n")
+  }
+
+  # Predict relevance with memory-efficient chunked processing
   cat("  Predicting relevance...\n")
-  probs <- predict(rel_model, newdata = dtm_df, type = "prob")
+  total_docs <- nrow(dtm)
+  chunk_size <- 1000  # Adjust based on available memory
+
+  if (total_docs > chunk_size) {
+    cat("  Large dataset detected. Processing in chunks of", chunk_size, "documents\n")
+
+    all_probs <- list()
+    for (start_idx in seq(1, total_docs, by = chunk_size)) {
+      end_idx <- min(start_idx + chunk_size - 1, total_docs)
+
+      cat("  Processing documents", start_idx, "to", end_idx, "\n")
+
+      # Extract chunk and convert to data frame (necessary for caret)
+      chunk_dtm <- dtm[start_idx:end_idx, , drop = FALSE]
+      chunk_df <- as.data.frame(as.matrix(chunk_dtm))
+
+      # Predict chunk
+      chunk_probs <- predict(rel_model, newdata = chunk_df, type = "prob")
+      all_probs[[length(all_probs) + 1]] <- chunk_probs
+
+      # Memory cleanup
+      rm(chunk_df, chunk_dtm)
+      if (start_idx %% (chunk_size * 2) == 0) {
+        aggressive_gc(verbose = FALSE)
+      }
+    }
+
+    # Combine results
+    probs <- do.call(rbind, all_probs)
+    rm(all_probs)
+    aggressive_gc(verbose = FALSE)
+
+  } else {
+    # Process all at once for smaller datasets
+    dtm_df <- as.data.frame(as.matrix(dtm))
+    probs <- predict(rel_model, newdata = dtm_df, type = "prob")
+    rm(dtm_df)
+    aggressive_gc(verbose = FALSE)
+  }
+
+  # Monitor memory after predictions
+  monitor_memory(context = "After relevance predictions")
+
+  # Add predictions to dataset
   full_abstracts <- full_abstracts %>%
     bind_cols(probs)
 

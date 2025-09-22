@@ -45,7 +45,8 @@ prepare_abstracts_data <- function(
   prepared_data <- classification_results %>%
     mutate(
       text_join = paste(article_title, abstract, sep = " - "),
-      text_join = ifelse(is.na(text_join), "", text_join)
+      text_join = ifelse(is.na(text_join), "", text_join),
+      text = text_join  # Add text column as expected by extract_species_data
     )
 
   # Filter for relevant records
