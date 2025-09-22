@@ -1,8 +1,10 @@
+library(here)
+source("scripts/utils/plot_utils.R")
 # Simple script to run the taxa representation visualizations
 # This script calls the main function with proper parameters
 
 # Set working directory
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd(here())
 
 # Source the visualization script
 source("visualize_taxa_results.R")

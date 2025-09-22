@@ -1,12 +1,14 @@
+library(here)
 # Focused Taxa Visualization Script - Phylum-Based Only
 # Creates phylum-based plots showing representation of plant and fungal taxa
 # Includes synonym resolution and extinct species exclusion
 
 library(tidyverse)
 library(scales)
+source("scripts/utils/plot_utils.R")
 
 # Load data exactly like user's working script
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd(here())
 
 # Load the species data with extinct species exclusion (like in working script)
 species_data <- readRDS("models/species.rds")
@@ -308,8 +310,8 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       x = "Phylum",
       y = paste("Number of", level_name, "s")
     ) +
-    scale_fill_manual(values = c("Found" = "#2E8B57", "Not Found" = "#CD853F")) +
-    theme_minimal() +
+    scale_fill_manual(values = endo_colors$found_not_found) +
+    endo_theme() +
     theme(axis.text.y = element_text(size = 8))
 
   # Create percentage plot
@@ -341,8 +343,8 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       x = "Phylum",
       y = paste("Percentage of", level_name, "s")
     ) +
-    scale_fill_manual(values = c("Found" = "#2E8B57", "Not Found" = "#CD853F")) +
-    theme_minimal() +
+    scale_fill_manual(values = endo_colors$found_not_found) +
+    endo_theme() +
     theme(axis.text.y = element_text(size = 8))
 
   # Save both plots

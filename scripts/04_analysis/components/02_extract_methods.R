@@ -1,9 +1,20 @@
-# Research Methods Detection Component
-# B. Bock - Modular Version
-# July 31, 2025 - Methods extraction (fast ~10-30 min)
+# =============================================================================
+# 02_extract_methods.R - Research methods detection component
+# =============================================================================
 #
-# This script detects research methods (molecular, culture, microscopy)
-# Part of the modular extraction pipeline
+# Purpose: Detect research methods from abstracts using keyword matching
+#
+# Description: Script that detects research methods (molecular, culture-based, microscopy) using optimized
+# vectorized functions for efficient keyword matching and batch processing.
+#
+# Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs methods detection results to results/methods_detection_results.csv
+#
+# =============================================================================
 
 library(tidyverse)
 library(stringr)

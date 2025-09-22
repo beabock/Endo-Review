@@ -1,7 +1,20 @@
-# Error Handling and Validation Utilities
-# B. Bock
-# Robust error handling, validation, and recovery functions for the pipeline
-
+# =============================================================================
+# error_handling.R - Error handling and validation utilities for pipeline
+# =============================================================================
+#
+# Purpose: Provide robust error handling, validation, and recovery functions
+#
+# Description: Comprehensive error handling utilities including safe execution wrappers, file validation,
+# data recovery, progress tracking, memory-safe processing with chunking, backup creation, and
+# time estimation functions for the endophyte review pipeline.
+#
+# Dependencies: None
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Logs errors to results/logs/pipeline_errors.log; creates backup files in results/backups/
+#
 # =============================================================================
 # ERROR HANDLING UTILITIES
 # =============================================================================

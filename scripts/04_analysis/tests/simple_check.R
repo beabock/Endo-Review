@@ -1,5 +1,6 @@
+library(here)
 # Simple check of the species.rds file
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd(here())
 
 # Try to read the species.rds file
 data <- readRDS("models/species.rds")

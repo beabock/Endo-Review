@@ -6,6 +6,9 @@
 library(tidyverse)
 
 cat("=== PIPELINE TESTING WORKFLOW ===\n")
+cat("DEBUG: Starting at", Sys.time(), "\n")
+cat("Systematic testing of extraction pipeline on data subsets\n\n")
+cat("=== PIPELINE TESTING WORKFLOW ===\n")
 cat("Systematic testing of extraction pipeline on data subsets\n\n")
 
 # Main testing workflow function
@@ -134,6 +137,36 @@ test_components_on_subset <- function(
   timing <- list()
 
   # Load subset info
+  # Load subset info
+  cat("DEBUG: Loading subset file:", subset_file, "\n")
+  if (file.exists(subset_file)) {
+    cat("DEBUG: File exists, reading CSV...\n")
+    subset_data <- read_csv(subset_file, show_col_types = FALSE)
+    cat("DEBUG: Loaded", nrow(subset_data), "rows\n")
+    if (verbose) {
+  # Test data preparation
+  if ("data_prep" %in% components) {
+    cat("DEBUG: Starting data_prep component\n")
+    if (verbose) cat("   🔧 Testing data preparation...\n")
+
+    start_time <- Sys.time()
+    cat("DEBUG: Sourcing run_extraction_pipeline.R\n")
+    source("scripts/04_analysis/workflows/run_extraction_pipeline.R")
+    cat("DEBUG: Calling prepare_abstracts_data\n")
+    prep_result <- prepare_abstracts_data(
+      input_file = subset_file,
+      output_file = file.path(component_output_dir, "prepared_abstracts.csv"),
+      force_rerun = TRUE,
+      verbose = FALSE
+    )
+    cat("DEBUG: data_prep completed\n")
+    end_time <- Sys.time()
+      cat("   Loaded", nrow(subset_data), "abstracts\n")
+    }
+  } else {
+    cat("DEBUG: ERROR - Subset file not found:", subset_file, "\n")
+    stop("Subset file not found: ", subset_file)
+  }
   if (file.exists(subset_file)) {
     subset_data <- read_csv(subset_file, show_col_types = FALSE)
     if (verbose) {
@@ -168,6 +201,23 @@ test_components_on_subset <- function(
       cat("      ✅ Completed in", round(timing$data_prep, 1), "seconds\n")
     }
   }
+  # Test methods detection
+  if ("methods" %in% components) {
+    cat("DEBUG: Starting methods component\n")
+    if (verbose) cat("   🔬 Testing methods detection...\n")
+
+    start_time <- Sys.time()
+    cat("DEBUG: Sourcing 02_extract_methods.R\n")
+    source("scripts/04_analysis/components/02_extract_methods.R")
+    cat("DEBUG: Calling extract_methods_data\n")
+    methods_result <- extract_methods_data(
+      subset_data,
+      output_file = file.path(component_output_dir, "methods_results.csv"),
+      force_rerun = TRUE,
+      verbose = FALSE
+    )
+    cat("DEBUG: methods completed\n")
+    end_time <- Sys.time()
 
   # Test species detection
   if ("species" %in% components) {
@@ -220,6 +270,23 @@ test_components_on_subset <- function(
     # Analyze methods results
     molecular_found <- sum(methods_result$molecular_methods, na.rm = TRUE)
     culture_found <- sum(methods_result$culture_based_methods, na.rm = TRUE)
+  # Test geography detection
+  if ("geography" %in% components) {
+    cat("DEBUG: Starting geography component\n")
+    if (verbose) cat("   🌍 Testing geography detection...\n")
+
+    start_time <- Sys.time()
+    cat("DEBUG: Sourcing 04_extract_geography.R\n")
+    source("scripts/04_analysis/components/04_extract_geography.R")
+    cat("DEBUG: Calling extract_geography_data\n")
+    geography_result <- extract_geography_data(
+      subset_data,
+      output_file = file.path(component_output_dir, "geography_results.csv"),
+      force_rerun = TRUE,
+      verbose = FALSE
+    )
+    cat("DEBUG: geography completed\n")
+    end_time <- Sys.time()
     microscopy_found <- sum(methods_result$microscopy_methods, na.rm = TRUE)
 
     results$methods <- list(

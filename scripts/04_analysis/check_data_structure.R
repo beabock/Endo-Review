@@ -1,5 +1,6 @@
+library(here)
 # Check data structure script
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd(here())
 
 # Check species data structure
 species <- readRDS("models/species.rds")

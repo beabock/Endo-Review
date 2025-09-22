@@ -156,49 +156,49 @@ detect_geographic_locations_batch <- function(text_vector) {
       if (country_lower == "niger") {
         # Context-aware detection for Niger (country vs fungus)
         if (str_detect(text, "\\bRepublic of Niger\\b|\\bNiger\\b.*\\b(africa|country|nation|west|sahel|niamey)\\b",
-                       ignore.case = TRUE) ||
+                       case_insensitive = TRUE) ||
             (str_detect(text, "\\bNiger\\b") &&
              !str_detect(text, "\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b",
-                        ignore.case = TRUE))) {
+                        case_insensitive = TRUE))) {
           found <- c(found, country)
         }
       } else if (country_lower == "turkey") {
         # Enhanced Turkey detection (country vs bird/fungus)
         if (str_detect(text, "\\bTurkey\\b") &&
             !str_detect(text, "\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry)\\b",
-                       ignore.case = TRUE) &&
-            !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi|mycology)\\b", ignore.case = TRUE)) {
+                       case_insensitive = TRUE) &&
+            !str_detect(text, "\\bturkey\\s+(mushroom|fungus|fungi|mycology)\\b", case_insensitive = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "chile") {
         # Chile (country vs pepper)
         if (str_detect(text, "\\bChile\\b") &&
-            !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder)\\b", ignore.case = TRUE)) {
+            !str_detect(text, "\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder)\\b", case_insensitive = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "georgia") {
         # Georgia (country vs US state)
         if (str_detect(text, "\\bGeorgia\\b") &&
             !str_detect(text, "\\bgeorgia\\s+(pine|oak|southern|peach|usa|united\\s+states|america)\\b",
-                       ignore.case = TRUE)) {
+                       case_insensitive = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "guinea") {
         # Guinea (country vs animal)
         if (str_detect(text, "\\bGuinea\\b") &&
-            !str_detect(text, "\\bguinea\\s+pig\\b", ignore.case = TRUE)) {
+            !str_detect(text, "\\bguinea\\s+pig\\b", case_insensitive = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "mali") {
         # Mali (country vs fungus)
         if (str_detect(text, "\\bMali\\b") &&
-            !str_detect(text, "\\b\\w+\\s+mali\\b", ignore.case = TRUE)) {
+            !str_detect(text, "\\b\\w+\\s+mali\\b", case_insensitive = TRUE)) {
           found <- c(found, country)
         }
       } else if (country == "South Korea" || country == "North Korea") {
         # Context-aware Korea disambiguation
-        if (str_detect(text, "\\bkorea\\b", ignore.case = TRUE)) {
-          if (str_detect(text, "\\b(north|dprk|pyongyang|kim)\\b", ignore.case = TRUE)) {
+        if (str_detect(text, "\\bkorea\\b", case_insensitive = TRUE)) {
+          if (str_detect(text, "\\b(north|dprk|pyongyang|kim)\\b", case_insensitive = TRUE)) {
             if (country == "North Korea") found <- c(found, country)
           } else {
             # Default to South Korea for general "Korea" mentions
@@ -208,7 +208,7 @@ detect_geographic_locations_batch <- function(text_vector) {
       } else {
         # Standard pattern matching for other countries
         country_pattern <- paste0("\\b", str_replace_all(country, "\\s+", "\\\\s+"), "\\b")
-        if (str_detect(text, country_pattern, ignore.case = TRUE)) {
+        if (str_detect(text, country_pattern, case_insensitive = TRUE)) {
           found <- c(found, country)
         }
 
@@ -318,25 +318,25 @@ detect_geographic_locations <- function(text) {
     if (country == "niger") {
       # Match only if "Niger" appears capitalized in original text or as "Republic of Niger"
       # Exclude if preceded by species-like terms
-      grepl("\\bRepublic of Niger\\b", text, ignore.case = TRUE) ||
-      (grepl("\\bNiger\\b", text) && !grepl("\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b", text, ignore.case = TRUE))
+      grepl("\\bRepublic of Niger\\b", text, case_insensitive = TRUE) ||
+      (grepl("\\bNiger\\b", text) && !grepl("\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b", text, case_insensitive = TRUE))
     } else if (country == "turkey") {
       # Match only if "Turkey" appears capitalized and not as "turkey tail" or similar mushroom contexts
       grepl("\\bTurkey\\b", text) && 
-      !grepl("\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom)\\b", text, ignore.case = TRUE) &&
-      !grepl("\\bturkey\\s+(mushroom|fungus|fungi)\\b", text, ignore.case = TRUE)
+      !grepl("\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom)\\b", text, case_insensitive = TRUE) &&
+      !grepl("\\bturkey\\s+(mushroom|fungus|fungi)\\b", text, case_insensitive = TRUE)
     } else if (country == "chile") {
       # Match "Chile" (country) but not "chili" (pepper) - use capitalization
-      grepl("\\bChile\\b", text) && !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice)\\b", text, ignore.case = TRUE)
+      grepl("\\bChile\\b", text) && !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice)\\b", text, case_insensitive = TRUE)
     } else if (country == "georgia") {
       # Match "Georgia" but prefer if it's clearly a country (with state/region context or capitalized)
-      grepl("\\bGeorgia\\b", text) && !grepl("\\bgeorgia\\s+(pine|oak|southern)\\b", text, ignore.case = TRUE)
+      grepl("\\bGeorgia\\b", text) && !grepl("\\bgeorgia\\s+(pine|oak|southern)\\b", text, case_insensitive = TRUE)
     } else if (country == "guinea") {
       # Match "Guinea" but not "guinea pig" contexts
-      grepl("\\bGuinea\\b", text) && !grepl("\\bguinea\\s+pig\\b", text, ignore.case = TRUE)
+      grepl("\\bGuinea\\b", text) && !grepl("\\bguinea\\s+pig\\b", text, case_insensitive = TRUE)
     } else if (country == "mali") {
       # Match "Mali" but not in species contexts (some fungi have "mali" in names)
-      grepl("\\bMali\\b", text) && !grepl("\\b\\w+\\s+mali\\b", text, ignore.case = TRUE)
+      grepl("\\bMali\\b", text) && !grepl("\\b\\w+\\s+mali\\b", text, case_insensitive = TRUE)
     } else {
       # Standard lowercase matching for other countries
       grepl(paste0("\\b", country, "\\b"), text_lower)

@@ -6,7 +6,7 @@ This document summarizes the centralization of reference data across the analysi
 ## Changes Made
 
 ### 1. Created Central Utility File
-**File**: `scripts/04_analysis/reference_data_utils.R`
+**File**: `scripts/04_analysis/utilities/reference_data_utils.R`
 
 **Purpose**: Single source of truth for all reference data used across analysis scripts.
 
@@ -86,13 +86,13 @@ This document summarizes the centralization of reference data across the analysi
 ## Future Usage
 
 ### For New Analysis Scripts
-1. Source the reference utilities: `source("scripts/04_analysis/reference_data_utils.R")`
+1. Source the reference utilities: `source("scripts/04_analysis/utilities/reference_data_utils.R")`
 2. Use centralized functions instead of hardcoded definitions
 3. Apply country name standardization: `standardize_country_name()`
 4. Filter homonyms when needed: `filter_country_homonyms()`
 
 ### For Maintenance
-- All reference data updates should be made in `reference_data_utils.R`
+- All reference data updates should be made in `utilities/reference_data_utils.R`
 - Test changes using `test_reference_data()`
 - Ensure all dependent scripts continue to work after changes
 

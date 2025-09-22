@@ -1,9 +1,20 @@
-# Plant Parts Detection Component
-# B. Bock - Modular Version
-# July 31, 2025 - Plant parts extraction (fast ~10-30 min)
+# =============================================================================
+# 03_extract_plant_parts.R - Plant parts detection component
+# =============================================================================
 #
-# This script detects plant parts studied (roots, leaves, stems, etc.)
-# Part of the modular extraction pipeline
+# Purpose: Detect plant parts studied from abstracts using keyword matching
+#
+# Description: Script that detects plant parts (roots, leaves, stems, etc.) using regex patterns
+# and keyword matching with batch processing for efficient text analysis.
+#
+# Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs plant parts detection results to results/plant_parts_detection_results.csv
+#
+# =============================================================================
 
 library(tidyverse)
 library(stringr)

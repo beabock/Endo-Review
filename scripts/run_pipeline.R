@@ -1,7 +1,22 @@
-# Master Pipeline Runner for Endophyte Review Project
-# B. Bock
-# Comprehensive pipeline to run the complete endophyte analysis workflow
-
+# =============================================================================
+# run_pipeline.R - Master pipeline runner for endophyte analysis workflow
+# =============================================================================
+#
+# Purpose: Orchestrate and execute the complete endophyte analysis pipeline
+#
+# Description: Comprehensive pipeline runner that manages the execution of all stages
+# in the endophyte review project, including model training, full dataset prediction,
+# species and information extraction, geographic analysis, temporal analysis,
+# absence evidence detection, and validation sample generation. Provides error
+# handling, progress tracking, and flexible execution options.
+#
+# Dependencies: tidyverse, tidytext, caret, Matrix, text, tm, recipes, themis, janitor, tictoc, maps, ggplot2, viridis, scales, lubridate, stringr; scripts/config/pipeline_config.R
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Sources pipeline_config.R for configuration; produces various result files in results/ directory including predictions, extraction results, analysis reports, and validation samples
+#
 # =============================================================================
 # SETUP AND CONFIGURATION
 # =============================================================================

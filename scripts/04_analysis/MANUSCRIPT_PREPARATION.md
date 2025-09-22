@@ -4,7 +4,7 @@
 This document provides comprehensive recommendations for preparing the endophyte research systematic review manuscript based on the machine learning pipeline and extraction results.
 
 ## Current Status ✅
-- [x] Updated comprehensive literature search conducted (July 31, 2025)
+- [x] Updated comprehensive literature search conducted (September 22, 2025)
 - [x] New search strategy implemented with expanded host organism coverage
 - [x] Machine learning models trained and validated (89.8% accuracy)
 - [x] Comprehensive species extraction pipeline implemented
@@ -13,12 +13,33 @@ This document provides comprehensive recommendations for preparing the endophyte
 - [x] Visualization framework established
 - [x] Duplicate keyword issues resolved
 
-## Data Collection Update (July 31, 2025)
+## Data Collection Update (September 22, 2025)
 **New Comprehensive Search Strategy:**
 - **Previous**: Endophyt* AND (fung* OR mycolog*)
 - **Updated**: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi") AND (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR algae OR green alga* OR macroalga* OR cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
 - **Rationale**: More precise fungal endophyte focus + expanded host organism coverage including bryophytes, algae, and lichen symbionts
 - **Impact**: Enhanced literature coverage and reduced false positives
+
+## Reproducibility Information
+
+### Computational Environment
+- **R Version**: 4.3.1 or higher recommended
+- **Key Packages**:
+  - tidyverse (data manipulation and visualization)
+  - caret (machine learning)
+  - glmnet (regularized regression)
+  - randomForest (ensemble methods)
+  - xgboost (gradient boosting)
+  - tm (text mining)
+  - stringr (string operations)
+  - dplyr (data manipulation)
+  - ggplot2 (visualization)
+  - sf (spatial data)
+  - rnaturalearth (world maps)
+
+### Random Seed
+- Use `set.seed(1998)` for reproducible random sampling and model initialization
+- Applied consistently across all data subset creation and model training steps
 
 ## Next Steps for Manuscript Preparation
 

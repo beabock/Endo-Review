@@ -82,7 +82,7 @@ print(stratum_summary)
 # Priority: High confidence + species detected abstracts
 # Balance: Ensure representation across all categories
 
-set.seed(12345)  # For reproducible sampling
+set.seed(1998)  # For reproducible sampling
 
 sample_strategy <- stratum_summary %>%
   mutate(

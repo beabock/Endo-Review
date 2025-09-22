@@ -15,7 +15,7 @@ create_test_subset <- function(
   sample_sizes = c(100, 500, 1000),
   sampling_method = "random",  # "random", "stratified", "balanced"
   stratification_column = "final_classification",
-  seed = 42,
+  seed = 1998,
   verbose = TRUE
 ) {
 

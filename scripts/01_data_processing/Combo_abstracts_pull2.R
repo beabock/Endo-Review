@@ -1,10 +1,159 @@
-#8/1/25
-#BB
-#Merging all abstract datasets
-
-#This file will create the final, all abstracts accounted for in WOS + Scopus using the search string ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungi" OR "endophytic fungus") AND plan. This search was done the final time on 11/18/24 by BB, and all abstracts were downloaded in tsv (WOS) or csv formats. I will combine all of these into one dataset then deduplicate them. WOS only allows you to export 1000 abstracts at a time, so that's why there are 8 WOS files that need to be combod.
-
-#This is from pull two, completed in 2025.
+# =============================================================================
+# Combo_abstracts_pull2.R - Combined abstract dataset creation (Pull 2)
+# =============================================================================
+#
+# Purpose: Combine and deduplicate scientific abstracts from multiple bibliographic databases
+#
+# Description: This script combines and deduplicates scientific abstracts from Web of Science (WoS),
+# Scopus, and PubMed databases to create a comprehensive dataset for analysis of fungal endophyte research.
+# The script processes data collected in the second pull (2025) using a specific search query for fungal
+# endophytes across various plant types and publication years. The workflow involves reading raw data files,
+# standardizing column names across databases, combining datasets, filtering for quality and relevance,
+# and performing multi-stage deduplication (DOI-based, abstract-based, document type filtering, title-based).
+#
+# Dependencies: readr, dplyr, tidyr, stringr, digest, here
+#
+# Author: BB
+# Date: 2024-09-22
+# Version: 2.0
+#
+# Inputs/Outputs: Reads WoS .txt files, Scopus .csv files, and PubMed .csv file from data/raw/All_abstracts_8-14-25/;
+# produces intermediate combined files (wos_combined.csv, scopus_combined.csv) and final deduplicated dataset
+# (All_abstracts_deduped.csv) in data/processed/
+#
+# =============================================================================
+#'
+#' @description This script combines and deduplicates scientific abstracts from multiple bibliographic databases
+#' to create a comprehensive dataset for analysis of fungal endophyte research. The script processes data
+#' collected in the second pull (2025) using the search query:TITLE-ABS-KEY(
+ # (
+  #  "fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR 
+  #  "latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR 
+  #  "internal fungi" OR "resident fungi" OR "seed-borne fungi" OR "seed-transmitted fungi" OR 
+  #  "dark septate endophyte" OR "dark septate fungi" OR "DSE fungi"
+  #)
+  #AND
+  #(
+  #  plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR 
+  #  pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR 
+  #  crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR 
+  #  stem* OR twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR 
+  #  "red alga*" OR "brown alga*" OR hydrophyte* OR kelp OR seaweed* OR seagrass* OR 
+  #  cyanobacteria OR cyanobiont* OR photobiont* OR lichen*
+  #)
+#)
+#AND (DOCTYPE(ar))
+#'
+#' @details
+#' ## Overview
+#' This data processing pipeline creates a unified dataset of abstracts from Web of Science (WoS),
+#' Scopus, and PubMed databases. The workflow involves reading raw data files, standardizing column
+#' names across databases, combining datasets, filtering for quality and relevance, and performing
+#' multi-stage deduplication to ensure data integrity.
+#'
+#' ## Data Sources
+#' - **Web of Science (WoS)**: Multiple tab-separated value (.txt) files exported in batches of 1000 records
+#'   each due to export limitations. Data collected on 11/18/24 by BB.
+#' - **Scopus**: Multiple comma-separated value (.csv) files containing bibliographic records.
+#' - **PubMed**: Single comma-separated value (.csv) file with publication metadata.
+#'
+#' All source data is located in the `data/raw/All_abstracts_8-14-25/` directory structure.
+#'
+#' ## Processing Workflow
+#'
+#' ### 1. Data Loading
+#' - Read all WoS files from `data/raw/All_abstracts_8-14-25/WoS/` directory
+#' - Read all Scopus files from `data/raw/All_abstracts_8-14-25/Scopus/` directory
+#' - Read PubMed file: `data/raw/All_abstracts_8-14-25/pubmed_pull_8-14-25.csv`
+#' - Convert all columns to character type for consistent handling
+#' - Generate intermediate combined files for each source
+#'
+#' ### 2. Column Standardization
+#' - Map WoS abbreviated column names to descriptive full names using predefined mapping
+#' - Rename Scopus and PubMed columns to match WoS standardized names
+#' - Add 'Source' column to track original database for each record
+#' - Align column structures across all datasets by adding missing columns with NA values
+#'
+#' ### 3. Data Integration
+#' - Combine all three datasets into single dataframe
+#' - Filter out records with missing, empty, or unavailable abstracts
+#' - Prioritize records by metadata richness (WoS > Scopus > PubMed)
+#'
+#' ### 4. Deduplication Process
+#'
+#' #### Methods and Criteria
+#' Deduplication occurs in multiple stages with increasing stringency:
+#'
+#' - **Stage 1: DOI-based deduplication**
+#'   - Exact matching on Digital Object Identifier (DOI) field
+#'   - Preserves NA/missing DOI records separately to avoid false matches
+#'   - Most reliable method for identifying true duplicates
+#'
+#' - **Stage 2: Abstract-based deduplication**
+#'   - Text normalization: convert to lowercase, remove punctuation, collapse whitespace
+#'   - Exact matching on normalized abstract content
+#'   - Applied after DOI deduplication to catch records without DOIs
+#'
+#' - **Stage 3: Document type filtering**
+#'   - Restrict to "Article" document types only
+#'   - Removes conference abstracts, reviews, and other non-article content
+#'
+#' - **Stage 4: Title-based deduplication**
+#'   - Text normalization: convert to lowercase, remove punctuation, collapse whitespace
+#'   - Exact matching on normalized titles
+#'   - Final cleanup for remaining duplicates
+#'
+#' ### 5. Data Cleaning and Filtering
+#' - Remove temporary normalized text columns
+#' - Reorder columns for consistency and readability
+#' - Relocate key columns (Title, Authors, Year, Source.title, Abstract, DOI) to front
+#'
+#' ## Output Description
+#' The final deduplicated dataset is saved as `data/processed/All_abstracts_deduped.csv` with the following structure:
+#' - Columns: Title, Authors, Year, Source.title, Abstract, DOI, and additional standardized metadata fields
+#' - Row count: Deduplicated records only (varies based on input data)
+#' - Format: Comma-separated values (.csv) without row names
+#' - Encoding: UTF-8 (default R behavior)
+#'
+#' ## Specific Parameters and Settings
+#' - **Search Query**: ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR "latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR "internal fungi" OR "resident fungi" OR "seed-borne fungi" OR "seed-transmitted fungi" OR "dark septate endophyte" OR "dark septate fungi" OR "DSE fungi") AND (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR tree* OR forest* OR shrub* OR grass* OR graminoid* OR herb* OR crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR "red alga*" OR "brown alga*" OR hydrophyte* OR kelp OR seaweed* OR seagrass* OR cyanobacteria OR cyanobiont* OR photobiont* OR lichen*) AND DOCTYPE(ar)
+#' - **Document Types**: Restricted to "Article" only
+#' - **Abstract Filtering**: Removes records with "[No abstract available]", NA, or empty abstracts
+#' - **Text Normalization**: Removes punctuation, converts to lowercase, trims whitespace
+#' - **Source Prioritization**: WoS > Scopus > PubMed for duplicate resolution
+#'
+#' ## Reproducibility Notes
+#' - **Data Collection Date**: Final search performed on 8/14/25
+#' - **Data Pull Version**: Pull 2, completed in 2025
+#' - **Random Seeds**: None used (deterministic text processing)
+#' - **Package Versions**: Uses tidyverse ecosystem (dplyr, tidyr, stringr, readr)
+#' - **R Version**: Tested with R 4.3.0 (backward compatible)
+#' - **Dependencies**: readr, dplyr, tidyr, stringr, digest, here
+#' - **File Paths**: Relative to project root using `here()` package
+#' - **Intermediate Files**: WoS and Scopus combined files saved for verification
+#'
+#' @author BB (Primary data collector and processor)
+#' @date 2025-01-08 (Script creation), 2025-08-14 (Data processing)
+#' @keywords data processing, bibliographic databases, deduplication, fungal endophytes
+#'
+#' @section Dependencies:
+#' Requires the following R packages:
+#' - readr: for reading CSV/TSV files
+#' - dplyr: for data manipulation
+#' - tidyr: for data tidying
+#' - stringr: for string operations
+#' - digest: for hashing (not actively used in this script)
+#' - here: for relative path management
+#'
+#' @section File Inputs:
+#' - data/raw/All_abstracts_8-14-25/WoS/*.txt (multiple WoS export files)
+#' - data/raw/All_abstracts_8-14-25/Scopus/*.csv (multiple Scopus export files)
+#' - data/raw/All_abstracts_8-14-25/pubmed_pull_8-14-25.csv (single PubMed file)
+#'
+#' @section File Outputs:
+#' - data/processed/wos_combined.csv (intermediate WoS combined file)
+#' - data/processed/scopus_combined.csv (intermediate Scopus combined file)
+#' - data/processed/All_abstracts_deduped.csv (final deduplicated dataset)
 
 library(readr)
 library(dplyr)
@@ -12,7 +161,8 @@ library(tidyr)
 library(stringr)
 library(digest)
 
-setwd("C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+library(here)
+setwd(here())
 
 wos_folder <- "data/raw/All_abstracts_8-14-25/WoS"
 
@@ -227,6 +377,7 @@ ds <- bind_rows(wos, scopus, pubmed) %>%
   arrange(factor(Source, levels = c("WoS", "Scopus", "PubMed")))  # Prioritize by metadata richness
 
 cat("Combined dataset rows:", nrow(ds), "\n")
+write.csv(ds, "data/processed/intermediate_after_combined.csv", row.names = FALSE)
 
 # --- Deduplication Process ---
 normalize_text <- function(x) {
@@ -243,6 +394,7 @@ ds_na <- ds %>% filter(is.na(DOI) | DOI == "")
 deduplicated <- ds_no_na %>% distinct(DOI, .keep_all = TRUE)
 deduplicated <- bind_rows(deduplicated, ds_na)
 cat("After DOI deduplication:", nrow(deduplicated), "\n")
+write.csv(deduplicated, "data/processed/intermediate_after_doi_dedup.csv", row.names = FALSE)
 
 # Step 2: Create normalized text columns for further deduplication
 deduplicated <- deduplicated %>%
@@ -251,19 +403,22 @@ deduplicated <- deduplicated %>%
          Authors_norm = normalize_text(Authors))
 
 # Step 3: Deduplicate by abstract
-deduplicated <- deduplicated %>% 
+deduplicated <- deduplicated %>%
   distinct(Abstract_norm, .keep_all = TRUE)
 cat("After abstract deduplication:", nrow(deduplicated), "\n")
+write.csv(deduplicated, "data/processed/intermediate_after_abstract_dedup.csv", row.names = FALSE)
 
 # Step 4: Filter to articles only
 deduplicated <- deduplicated %>%
   filter(Document.Type %in% c("Article", NA))
 cat("After filtering to articles:", nrow(deduplicated), "\n")
+write.csv(deduplicated, "data/processed/intermediate_after_articles_filter.csv", row.names = FALSE)
 
 # Step 5: Final deduplication by title
 deduplicated <- deduplicated %>%
   distinct(Title_norm, .keep_all = TRUE)
 cat("After title deduplication:", nrow(deduplicated), "\n")
+write.csv(deduplicated, "data/processed/intermediate_after_title_dedup.csv", row.names = FALSE)
 
 
 # --- Final cleanup and output ---

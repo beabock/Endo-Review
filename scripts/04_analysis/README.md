@@ -8,10 +8,10 @@ Purpose: provide a short description, inputs, outputs, and quick usage notes for
 
 ## Reference Data Utilities
 
-- `reference_data_utils.R`
+- `utilities/reference_data_utils.R`
   - Purpose: **Centralized reference data definitions** for consistent analysis across all scripts. Provides standardized country classifications (Global North/South), plant parts keywords, research method keywords, geographic terms, and utility functions for data standardization.
   - Functions: `get_country_classifications()`, `get_plant_parts_keywords()`, `get_method_keywords()`, `get_geographic_keywords()`, `get_continent_keywords()`, `get_region_keywords()`, `standardize_country_name()`, `filter_country_homonyms()`, `get_biodiversity_hotspots()`.
-  - Usage: Source this file at the top of analysis scripts: `source("scripts/04_analysis/reference_data_utils.R")`.
+  - Usage: Source this file at the top of analysis scripts: `source("scripts/04_analysis/utilities/reference_data_utils.R")`.
   - Benefits: Single source of truth for all reference data, eliminates code duplication, ensures consistency across analyses, handles problematic homonyms (e.g., Niger as country vs. species name).
   - Notes: This utility file is automatically loaded by `extract_species_simple.R` and `geographic_bias_analysis.R`. Other scripts should also source this file to use standardized definitions.
 
@@ -69,9 +69,9 @@ Purpose: provide a short description, inputs, outputs, and quick usage notes for
 
 When creating new analysis scripts or modifying existing ones:
 
-1. **Always source the reference data utilities first**: 
+1. **Always source the reference data utilities first**:
    ```r
-   source("scripts/04_analysis/reference_data_utils.R")
+   source("scripts/04_analysis/utilities/reference_data_utils.R")
    ```
 
 2. **Use centralized functions instead of hardcoded definitions**:
@@ -98,7 +98,41 @@ When creating new analysis scripts or modifying existing ones:
 This approach ensures consistency across all analyses and makes the codebase more maintainable.
 
 - `MANUSCRIPT_PREPARATION.md` / `COLLABORATOR_FINDINGS.*`
-  - Purpose: Project-specific notes and outputs (manuscript preparation notes, collaborator findings in PDF/MD/HTML). Not a script, but useful documentation for downstream reporting.
+   - Purpose: Project-specific notes and outputs (manuscript preparation notes, collaborator findings in PDF/MD/HTML). Not a script, but useful documentation for downstream reporting.
+
+---
+
+## Subdirectory Organization
+
+### `components/`
+- Modular pipeline components for specific analysis tasks
+- Individual extraction functions: species detection, methods analysis, geography extraction, plant parts identification
+- Reusable building blocks for the main extraction pipeline
+
+### `tests/`
+- Testing utilities and validation scripts
+- Pipeline testing workflows and quick-start validation
+- Test data generation and component verification
+
+### `utilities/`
+- Shared utility functions and reference data
+- Centralized data definitions and standardization functions
+- Helper scripts for data processing and analysis consistency
+
+### `validation/`
+- Validation and quality control scripts
+- Absence evidence detection and manual validation sampling
+- Quality assurance and error checking tools
+
+### `visualization/`
+- Data visualization and plotting scripts
+- Publication-ready figure generation
+- Geographic and temporal trend visualizations
+
+### `workflows/`
+- High-level analysis workflows and orchestration scripts
+- End-to-end analysis pipelines and automation
+- Workflow management and process coordination
 
 ---
 

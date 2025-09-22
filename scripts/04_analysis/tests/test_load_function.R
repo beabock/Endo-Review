@@ -1,7 +1,8 @@
+library(here)
 # Test the load_gbif_backbone function specifically
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd(here())
 
-source("scripts/04_analysis/visualize_taxa_results.R")
+source("scripts/04_analysis/visualization/visualize_taxa_results.R")
 
 message("Testing load_gbif_backbone function...")
 

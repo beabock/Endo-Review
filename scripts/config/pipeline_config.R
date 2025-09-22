@@ -1,8 +1,19 @@
-# Pipeline Configuration File
-# B. Bock
-# Centralized configuration for Endophyte Review Pipeline
-# This file defines all file paths, column mappings, and parameters used across scripts
-
+# =============================================================================
+# pipeline_config.R - Centralized configuration for endophyte review pipeline
+# =============================================================================
+#
+# Purpose: Define all file paths, column mappings, and parameters for the pipeline
+#
+# Description: Centralized configuration file that defines file paths, column name mappings,
+# model parameters, processing settings, validation parameters, and utility functions used
+# across all scripts in the endophyte review pipeline. Ensures consistency and maintainability.
+#
+# Dependencies: None
+#
+# Author: B. Bock
+# Date: 2024-09-22
+# Version: 1.0
+#
 # =============================================================================
 # FILE PATHS CONFIGURATION
 # =============================================================================

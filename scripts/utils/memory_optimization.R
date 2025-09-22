@@ -1,7 +1,18 @@
-# Memory Optimization Utilities
-# B. Bock
-# Memory-efficient processing utilities for large datasets
-
+# =============================================================================
+# memory_optimization.R - Memory optimization utilities for large datasets
+# =============================================================================
+#
+# Purpose: Provide memory-efficient processing utilities for large datasets
+#
+# Description: Comprehensive memory optimization utilities including memory monitoring, aggressive garbage collection,
+# sparse matrix creation, chunked processing of large datasets, temporary file management for intermediate results,
+# and data structure optimization for handling large datasets in the endophyte review pipeline.
+#
+# Dependencies: Matrix, tidytext (for sparse matrix operations); readr (for file I/O)
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
 # =============================================================================
 # MEMORY MANAGEMENT UTILITIES
 # =============================================================================

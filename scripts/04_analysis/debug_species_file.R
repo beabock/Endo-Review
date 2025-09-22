@@ -1,5 +1,6 @@
+library(here)
 # Debug the species.rds file to understand its format
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd(here())
 
 rds_file <- "models/species.rds"
 

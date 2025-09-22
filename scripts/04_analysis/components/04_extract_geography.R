@@ -1,9 +1,21 @@
-# Geographic Locations Detection Component
-# B. Bock - Modular Version
-# July 31, 2025 - Geography extraction (fast ~10-30 min)
+# =============================================================================
+# 04_extract_geography.R - Geographic locations detection component
+# =============================================================================
 #
-# This script detects geographic locations (countries, continents, regions)
-# Part of the modular extraction pipeline
+# Purpose: Detect geographic locations from abstracts using comprehensive matching
+#
+# Description: Script that detects countries, continents, regions, and coordinates from abstracts
+# using advanced keyword matching, synonym handling, and context-aware homonym disambiguation
+# for accurate geographic information extraction.
+#
+# Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs geography detection results to results/geography_detection_results.csv
+#
+# =============================================================================
 
 library(tidyverse)
 library(stringr)

@@ -14,6 +14,7 @@ library(lubridate)
 library(ggplot2)
 library(viridis)
 library(scales)
+source("scripts/utils/plot_utils.R")
 
 
 cat("=== TEMPORAL TREND ANALYSIS ===\n")
@@ -100,10 +101,10 @@ period_growth <- period_counts %>%
 cat("\nGenerating publication volume plot over time...\n")
 
 pubs_plot <- ggplot(annual_counts, aes(x = publication_year, y = publications)) +
-  geom_col(fill = "#2c7bb6", alpha = 0.8) +
-  geom_line(color = "#d7191c", size = 1) +
-  geom_point(color = "#d7191c", size = 2) +
-  theme_minimal() +
+  geom_col(fill = endo_colors$presence_absence["Presence"], alpha = 0.8) +
+  geom_line(color = endo_colors$presence_absence["Absence"], size = 1) +
+  geom_point(color = endo_colors$presence_absence["Absence"], size = 2) +
+  endo_theme() +
   labs(
     title = "Endophyte Research Publications Over Time",
     x = "Year",

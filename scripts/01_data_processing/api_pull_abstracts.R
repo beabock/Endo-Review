@@ -1,11 +1,23 @@
 
 
-# ==========================================
-# R Script: Pull abstracts from PubMed, Scopus, and Web of Science
-#BB
-#8-13-25
-#PubMed works great, WoS and Scopus are bad. Will need to do those manually from their websites. I requested an API key from WoS and they said no :(
-# ==========================================
+# =============================================================================
+# api_pull_abstracts.R - Pull abstracts from PubMed, Scopus, and Web of Science
+# =============================================================================
+#
+# Purpose: Fetch and parse abstracts from multiple academic databases
+#
+# Description: Script to retrieve abstracts from PubMed, Scopus, and Web of Science using their respective APIs,
+# with functions for batch processing and XML parsing. Focuses on endophyte-related literature with specific
+# search criteria covering fungal endophytes across various plant types and publication years.
+#
+# Dependencies: rentrez (PubMed), rscopus (Scopus), wosr (Web of Science), dplyr, tibble, purrr, xml2
+#
+# Author: BB
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Outputs CSV files containing abstracts: pubmed_pull_8-14-25.csv, scopus_results.csv, wos_results.csv
+#
+# =============================================================================
 
 # Load required libraries
 library(rentrez)       # PubMed

@@ -1,9 +1,22 @@
-# Merge Results Component
-# B. Bock - Modular Version
-# July 31, 2025 - Results merging (fast ~5-15 min)
+# =============================================================================
+# 05_merge_results.R - Merge results component
+# =============================================================================
 #
-# This script merges all extraction results into comprehensive dataset
-# Part of the modular extraction pipeline
+# Purpose: Merge all extraction results into comprehensive dataset
+#
+# Description: Script that combines species, methods, plant parts, and geography detection results
+# from individual extraction components into a single comprehensive dataset for downstream analysis
+# and reporting.
+#
+# Dependencies: tidyverse
+#
+# Author: B. Bock
+# Date: 2024-09-22
+#
+# Inputs/Outputs: Reads individual component result CSV files (species, methods, plant_parts, geography);
+# outputs comprehensive_extraction_results.csv with merged data
+#
+# =============================================================================
 
 library(tidyverse)
 

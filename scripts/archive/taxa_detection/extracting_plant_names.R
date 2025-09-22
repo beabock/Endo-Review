@@ -7,7 +7,7 @@
 
 # Load necessary libraries
 
-library(tidyverse)  
+library(tidyverse)
 library(quanteda)
 library(rgbif)
 library(furrr)
@@ -15,7 +15,10 @@ library(janitor)
 library(vroom)
 library(irlba)
 
-custom_theme <- theme_bw(base_size = 18)
+# Source central plotting utilities
+source("scripts/utils/plot_utils.R")
+
+custom_theme <- endo_theme(base_size = 18)
 
 theme_set(custom_theme)
 
@@ -24,12 +27,7 @@ set.seed(123)
 
 getwd()
 
-cus_pal <- c(
-  "#A1C181",  # soft sage green — for plants
-  "#619B8A",  # muted teal — evokes moss or lichens
-  "#C97E7E",  # dusty rose — for fungi like Russula or Hygrophoropsis
-  "#D9AE94"   # pale mushroom beige — for caps and forest floor tones
-)
+cus_pal <- endo_colors$presence_absence
 
 save_plot <- function(filename, plot, width = 12, height = 7, units = "in", ...) {
   ggsave(filename, plot, width = width, height = height, units = units, ...)
@@ -965,10 +963,7 @@ families_long <- families_coverage %>%
   )
 
 # Color palette
-family_pal <- c(
-  "Found" = "#A1C181",   # calm sage green — presence
-  "Missing" = "#C97E7E"  # dusty rose — absence
-)
+family_pal <- endo_colors$found_not_found
 
 # Plot: Raw family counts found vs missing
 fams <- ggplot(families_long, aes(x = phylum, y = count, fill = status)) +
@@ -1093,7 +1088,7 @@ genera_long <- genera_coverage %>%
     phylum = factor(phylum, levels = phylum_order)
   )
 
-gen_pal <- c("Found" = "#A1C181", "Missing" = "#C97E7E")
+gen_pal <- endo_colors$found_not_found
 
 gens <- ggplot(genera_long, aes(x = phylum, y = count, fill = status)) +
   geom_col() +
@@ -1185,7 +1180,7 @@ species_long <- species_coverage %>%
     phylum = factor(phylum, levels = phylum_order)
   )
 
-species_pal <- c("Found" = "#A1C181", "Missing" = "#C97E7E")
+species_pal <- endo_colors$found_not_found
 
 specs <- ggplot(species_long, aes(x = phylum, y = count, fill = status)) +
   geom_col() +
@@ -1303,7 +1298,7 @@ generate_species_coverage <- function(
       phylum = factor(phylum, levels = phylum_order)
     )
   
-  pal <- c("Found" = "#A1C181", "Missing" = "#C97E7E")
+  pal <- endo_colors$found_not_found
   
   raw_plot <- ggplot(long_data, aes(x = phylum, y = count, fill = status)) +
     geom_col() +

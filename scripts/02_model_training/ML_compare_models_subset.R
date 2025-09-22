@@ -1,9 +1,98 @@
-#B. Bock
-#Started 6/19/25
-#this is adapted from ML_bigger.R. 
-#Goal: take a bunch of abstracts related to fungal endophytes and 1) sort or relevance to my question (do all plants host fungi), and 2) sort them into presnece/absence of fungi in plants
+#===============================================================================
+# ML_compare_models_subset.R
+# Machine Learning Model Training for Endophyte Research Classification
+#===============================================================================
 
-#As of 8/11/25, this is the best script to use for training models on the Endo Review project. Use this file!
+# PROJECT: Endophyte Review - Systematic Review of Fungal Endophytes in Plants
+# AUTHOR: B. Bock
+# DATE CREATED: June 19, 2025
+# LAST MODIFIED: August 11, 2025
+# VERSION: 2.0
+
+# DESCRIPTION:
+# This script trains machine learning models to classify scientific abstracts
+# related to fungal endophytes in plants. It performs two-stage classification:
+# 1) Relevance Classification: Identifies abstracts relevant to the research question
+#    "Do all plants host fungal endophytes?"
+# 2) Presence/Absence Classification: Classifies relevant abstracts as reporting
+#    fungal presence vs. absence in plants
+#
+# The script implements an ensemble approach combining glmnet (logistic regression)
+# and SVM models for optimal performance on both classification tasks.
+
+# PURPOSE:
+# - Train and evaluate machine learning models for automated abstract screening
+# - Optimize classification accuracy while prioritizing absence detection
+# - Generate publication-ready figures, tables, and documentation
+# - Save trained models for application to full dataset
+
+# INPUTS:
+# - Training data: INPUT_FILES$training_labeled (from pipeline_config.R)
+# - Backup data: INPUT_FILES$training_backup (optional fallback)
+# - Configuration: scripts/config/pipeline_config.R
+# - Utilities: scripts/utils/error_handling.R
+
+# OUTPUTS:
+# - Trained models: models/best_model_relevance_*.rds
+# - Ensemble models: models/best_model_presence_*_ensemble.rds
+# - Evaluation tables: results/evaluation_table_*.csv
+# - Performance plots: plots/*_performance*.png
+# - Confusion matrices: plots/*confusion_matrix*.png
+# - ROC curves: plots/manuscript_roc_curve_*.png
+# - Precision-recall curves: plots/manuscript_pr_curve_*.png
+# - Threshold analysis: plots/manuscript_threshold_analysis_*.png
+# - Model comparison matrices: plots/manuscript_model_comparison_*.png
+# - Ensemble weight sensitivity: plots/manuscript_ensemble_weight_sensitivity.png
+# - Feature importance comparison: plots/manuscript_feature_importance_comparison_*.png
+# - Learning curves: plots/manuscript_learning_curves_*.png
+# - Class distribution plots: plots/manuscript_class_distribution_*.png
+# - Manuscript outputs: results/manuscript_*.csv/txt, plots/manuscript_*.png
+
+# DEPENDENCIES:
+# - R packages: tidyverse, caret, glmnet, themis, tidytext, tm, recipes
+# - Custom scripts: pipeline_config.R, error_handling.R
+# - Data files: Labeled training abstracts with DOI, title, abstract, labels
+
+# METHODOLOGY:
+# 1. Data Loading & Preprocessing:
+#    - Load labeled abstracts with error handling
+#    - Clean and preprocess text (tokenization, stop words, lowercase)
+#    - Remove duplicates and artificial examples
+# 2. Feature Engineering:
+#    - Create document-term matrices (unigrams + bigrams)
+#    - Apply TF weighting and feature selection
+# 3. Model Training:
+#    - Relevance classification with SMOTE balancing
+#    - Presence/absence classification with ensemble approach
+#    - Cross-validation and hyperparameter tuning
+# 4. Model Evaluation:
+#    - Performance metrics (accuracy, recall, specificity, F1)
+#    - Confusion matrix analysis
+#    - Threshold optimization for ensemble predictions
+# 5. Results Generation:
+#    - Publication-ready figures and tables
+#    - Feature importance analysis
+#    - Model documentation for manuscript
+
+# KEY FEATURES:
+# - Ensemble modeling for improved absence detection
+# - Class balancing with SMOTE to handle imbalanced data
+# - Comprehensive evaluation with multiple metrics
+# - Automatic generation of manuscript-ready outputs
+# - Robust error handling and data validation
+
+# USAGE NOTES:
+# - This is the primary model training script for the Endo Review project
+# - Run after data preparation and before full dataset prediction
+# - Requires labeled training data in expected format
+# - Models are saved for use in apply_models_to_full_dataset.R
+# - Check results/ and plots/ directories for outputs
+
+# VERSION HISTORY:
+# v1.0 (6/19/25): Initial adaptation from ML_bigger.R
+# v2.0 (8/11/25): Added ensemble approach, manuscript outputs, improved documentation
+
+#===============================================================================
 
 # Library loading ---------------------------------------------------------
 
@@ -21,23 +110,27 @@ library(recipes)
 library(themis)
 library(janitor)
 library(tictoc)
+library(pROC)
+library(PRROC)
+
+source("scripts/utils/plot_utils.R")
+
+theme_set(endo_theme())
 
 cat("=== ENDOPHYTE MODEL TRAINING PIPELINE ===\n")
 cat("Training relevance and presence/absence classification models\n\n")
 
-cus_pal <- c(
-  "#A1C181",  # soft sage green — for plants
-  "#619B8A",  # muted teal — evokes moss or lichens
-  "#C97E7E",  # dusty rose — for fungi like Russula or Hygrophoropsis
-  "#D9AE94"   # pale mushroom beige — for caps and forest floor tones
-)
+#===============================================================================
+# RELEVANCE CLASSIFICATION (Relevant vs Irrelevant)
+#===============================================================================
+# This section trains a model to classify abstracts as relevant or irrelevant
+# to the research question: "Do all plants host fungal endophytes?"
+#===============================================================================
 
-# Relevance Classification (Relevant vs Irrelevant) ----------------------
+set.seed(1998)  # For reproducible results
 
-
-set.seed(1998)
-
-# Use safe file reading with configuration
+# Load training data with error handling and fallback options
+# This ensures robust data loading even if primary file is missing
 safe_read_result <- safe_read_csv(
   INPUT_FILES$training_labeled,
   backup_files = c(INPUT_FILES$training_backup),
@@ -53,18 +146,26 @@ labeled_abstracts <- safe_read_result$result %>%
   mutate(id = row_number()) %>%
   filter(label != "") %>%
   mutate(
+    # Create binary relevance classification: Relevant vs Irrelevant
+    # This first stage filters abstracts related to fungal endophyte research question
     relevance = case_when(
-      label %in% c("Presence", "Absence", "Both") ~ "Relevant", #Both is when an abstract mentions both presence and absence of fungi in plants. We're lumping Both into Presence.
-      label %in% c("Review", "Other") ~ "Irrelevant", #We do not want Review papers or other unrelated abtracts.
+      label %in% c("Presence", "Absence", "Both") ~ "Relevant",
+      # "Both" = abstracts mentioning both presence and absence - treated as relevant
+      # since they address the research question
+      label %in% c("Review", "Other") ~ "Irrelevant",
+      # Exclude review papers (synthesis/meta-analysis) and unrelated abstracts
       TRUE ~ NA_character_
     ),
     relevance = factor(relevance)
   ) %>%
   mutate(
+    # Create presence/absence classification for relevant abstracts only
+    # This second stage classifies relevant abstracts by their findings
     presence_both_absence = case_when(
-      label == "Presence" ~ "Presence",
-      label == "Absence" ~ "Absence",
-      label == "Both" ~ "Presence", #Both lumped into Presence
+      label == "Presence" ~ "Presence",     # Clear fungal presence reported
+      label == "Absence" ~ "Absence",       # Clear fungal absence reported
+      label == "Both" ~ "Presence",         # Lump "Both" into Presence for binary classification
+      # (treats mixed findings as positive evidence of fungal-plant interactions)
       TRUE ~ NA_character_
     ),
     presence_both_absence = factor(presence_both_absence, levels = c("Presence", "Absence"))
@@ -142,6 +243,49 @@ train_recipe <- recipe(relevance ~ ., data = train_df) %>%
   step_smote(relevance) %>%
   prep() #Prepares the recipe (estimates parameters, creates synthetic samples)
 balanced_train <- juice(train_recipe) #Extracts the balanced training data
+
+# 7. Class Distribution Before/After Balancing (Relevance)
+cat("Generating class distribution plots for relevance classification...\n")
+
+# Create data for plotting
+original_dist <- train_df %>%
+  count(relevance) %>%
+  mutate(dataset = "Original", percentage = n / sum(n) * 100)
+
+balanced_dist <- balanced_train %>%
+  count(relevance) %>%
+  mutate(dataset = "Balanced (SMOTE)", percentage = n / sum(n) * 100)
+
+combined_dist <- bind_rows(original_dist, balanced_dist) %>%
+  mutate(dataset = factor(dataset, levels = c("Original", "Balanced (SMOTE)")))
+
+# Create bar plot
+balancing_plot <- ggplot(combined_dist, aes(x = relevance, y = n, fill = relevance)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = sprintf("%d\n(%.1f%%)", n, percentage)), vjust = -0.5) +
+  facet_wrap(~ dataset, scales = "free_y") +
+  scale_fill_manual(values = endo_colors$relevant_irrelevant) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  labs(
+    title = "Class Distribution: Before vs After SMOTE Balancing",
+    subtitle = "Relevance classification training data",
+    x = "Class",
+    y = "Sample Count",
+    fill = "Class"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major.y = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold")
+  )
+
+ggsave("plots/manuscript_class_distribution_relevance.png", balancing_plot,
+       width = 10, height = 6, dpi = 300)
+cat("✓ Saved class distribution plots for relevance classification\n")
 
 # Train Control
 train_control <- trainControl(
@@ -274,8 +418,8 @@ plt <- ggplot(eval_long, aes(x = model, y = value, fill = metric)) +
   labs(title = "Model Performance Comparison",
        y = "Score",
        x = "Model") +
-  scale_fill_brewer(palette = "Set2") +
-  theme_minimal()
+  scale_fill_manual(values = get_endo_colors(4)) +
+  endo_theme()
 
 # Save the plot
 ggsave("plots/relevance_performance_comparison.png", width = 8, height = 5, dpi = 300)
@@ -303,7 +447,7 @@ performance_plot <- ggplot(eval_long, aes(x = metric, y = value, fill = model)) 
   geom_bar(stat = "identity", position = position_dodge(width = 0.8), alpha = 0.8) +
   geom_text(aes(label = sprintf("%.3f", value)),
             position = position_dodge(width = 0.8), vjust = -0.5, size = 3) +
-  scale_fill_manual(values = c("glmnet" = "#2E86AB")) +
+  scale_fill_manual(values = c("glmnet" = get_endo_colors(1)[1])) +
   scale_y_continuous(limits = c(0, 1), expand = expansion(mult = c(0, 0.1))) +
   labs(
     title = "Model Performance Metrics",
@@ -312,7 +456,7 @@ performance_plot <- ggplot(eval_long, aes(x = metric, y = value, fill = model)) 
     y = "Score",
     fill = "Model"
   ) +
-  theme_minimal(base_size = 12) +
+  endo_theme(base_size = 12) +
   theme(
     plot.title = element_text(face = "bold", hjust = 0.5),
     plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
@@ -341,14 +485,14 @@ cm_plot <- ggplot(cm_df, aes(x = Actual, y = Predicted, fill = Freq)) +
   geom_tile(color = "white", size = 0.5) +
   geom_text(aes(label = sprintf("%d\n(%.1f%%)", Freq, Percentage)),
             color = "black", size = 4, fontface = "bold") +
-  scale_fill_gradient(low = "#F8F9FA", high = "#2E86AB", name = "Frequency") +
+  scale_fill_gradient(low = endo_colors$presence_absence[2], high = endo_colors$presence_absence[1], name = "Frequency") +
   labs(
     title = "Confusion Matrix: Relevance Classification",
     subtitle = paste("Model:", evaluation_table$model[1], "| Accuracy:", sprintf("%.3f", evaluation_table$accuracy[1])),
     x = "Actual Class",
     y = "Predicted Class"
   ) +
-  theme_minimal(base_size = 12) +
+  endo_theme(base_size = 12) +
   theme(
     plot.title = element_text(face = "bold", hjust = 0.5),
     plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
@@ -462,7 +606,8 @@ if (exists("best_model")) {
   feature_plot <- ggplot(coef_df, aes(x = reorder(feature, abs_coef), y = abs_coef, fill = direction)) +
     geom_bar(stat = "identity", alpha = 0.8) +
     coord_flip() +
-    scale_fill_manual(values = c("Positive (Relevant)" = "#2E86AB", "Negative (Irrelevant)" = "#F24236")) +
+    scale_fill_manual(values = c("Positive (Relevant)" = endo_colors$relevant_irrelevant["Relevant"],
+                                 "Negative (Irrelevant)" = endo_colors$relevant_irrelevant["Irrelevant"])) +
     labs(
       title = "Top 20 Most Important Features",
       subtitle = "Feature importance based on absolute coefficient values",
@@ -470,7 +615,7 @@ if (exists("best_model")) {
       y = "Absolute Coefficient",
       fill = "Class Association"
     ) +
-    theme_minimal(base_size = 12) +
+    endo_theme(base_size = 12) +
     theme(
       plot.title = element_text(face = "bold", hjust = 0.5),
       plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
@@ -561,12 +706,26 @@ cat("\n=== MANUSCRIPT FIGURES AND TABLES GENERATED ===\n")
 cat("Files saved to results/ and plots/ directories:\n")
 cat("• manuscript_model_performance.png - Performance metrics plot\n")
 cat("• manuscript_confusion_matrix.png - Confusion matrix heatmap\n")
+cat("• manuscript_roc_curve_relevance.png - ROC curve for relevance classification\n")
+cat("• manuscript_roc_curve_presence_absence.png - ROC curve for presence/absence ensemble\n")
+cat("• manuscript_pr_curve_relevance.png - Precision-recall curve for relevance\n")
+cat("• manuscript_pr_curve_presence_absence.png - Precision-recall curve for ensemble\n")
+cat("• manuscript_threshold_analysis_ensemble.png - Threshold performance analysis\n")
+cat("• manuscript_model_comparison_relevance.png - Model comparison matrix (relevance)\n")
+cat("• manuscript_model_comparison_presence_absence.png - Model comparison matrix (P/A)\n")
+cat("• manuscript_ensemble_weight_sensitivity.png - Ensemble weight sensitivity analysis\n")
+cat("• manuscript_feature_importance_comparison_pa.png - Feature importance comparison\n")
+cat("• manuscript_learning_curves_relevance.png - Learning curves (relevance)\n")
+cat("• manuscript_learning_curves_presence_absence.png - Learning curves (ensemble)\n")
+cat("• manuscript_class_distribution_relevance.png - Class distribution before/after SMOTE\n")
+cat("• manuscript_class_distribution_presence_absence.png - Class distribution P/A\n")
 cat("• manuscript_feature_importance.png - Top 20 important features\n")
 cat("• manuscript_training_data_summary.csv - Training data statistics\n")
 cat("• manuscript_model_details.txt - Model information for Methods\n")
 cat("• manuscript_model_evaluation_table.csv - Performance table\n")
 cat("• manuscript_data_processing_workflow.txt - Processing workflow\n")
 cat("• manuscript_feature_importance.csv - Feature importance data\n")
+cat("• manuscript_feature_comparison_pa.csv - Feature comparison data\n")
 cat("\nAll files are publication-ready and follow academic formatting standards!\n")
 
 cm <- confusion_matrices[[evaluation_table$model[1]]]$table
@@ -579,61 +738,262 @@ colnames(cm_df) <- c("Prediction", "Reference", "Freq")
 ggplot(cm_df, aes(x = Reference, y = Prediction, fill = Freq)) +
   geom_tile(color = "white") +
   geom_text(aes(label = Freq), color = "black", size = 6) +
-  scale_fill_gradient(low = "#F0E442", high = "#009E73") +
+  scale_fill_gradient(low = endo_colors$presence_absence[2], high = endo_colors$presence_absence[1]) +
   labs(title = "Confusion Matrix Heatmap",
-       x = "Actual",
-       y = "Predicted") +
-  theme_minimal()
+        x = "Actual",
+        y = "Predicted") +
+  endo_theme()
 
 # Save the plot
 ggsave("plots/relevance_confusion_matrix_heatmap.png", width = 5, height = 4, dpi = 300)
 
-# Presence/Absence Classification ====================================
+# 3. ROC Curve for Relevance Classification
+cat("\nGenerating ROC curve for relevance classification...\n")
 
+# Get predicted probabilities for the best relevance model
+relevance_probs <- predict(best_model, newdata = test_df, type = "prob")
+roc_obj <- roc(test_df$relevance, relevance_probs$Relevant,
+               levels = c("Irrelevant", "Relevant"), direction = "<")
+
+# Create ROC curve plot
+roc_plot <- ggroc(roc_obj, color = get_endo_colors(1)[1], size = 1.2) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "ROC Curve: Relevance Classification",
+    subtitle = sprintf("AUC = %.3f", auc(roc_obj)),
+    x = "False Positive Rate (1 - Specificity)",
+    y = "True Positive Rate (Sensitivity)"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("plots/manuscript_roc_curve_relevance.png", roc_plot,
+       width = 8, height = 6, dpi = 300)
+cat("✓ Saved ROC curve for relevance classification\n")
+
+# 4. Precision-Recall Curve for Relevance Classification
+cat("Generating precision-recall curve for relevance classification...\n")
+
+# Calculate precision-recall curve
+pr_obj <- pr.curve(scores.class0 = relevance_probs$Relevant,
+                   weights.class0 = as.numeric(test_df$relevance) - 1,  # 0 for Irrelevant, 1 for Relevant
+                   curve = TRUE)
+
+# Create PR curve plot
+pr_df <- data.frame(
+  recall = pr_obj$curve[, 1],
+  precision = pr_obj$curve[, 2],
+  threshold = pr_obj$curve[, 3]
+)
+
+pr_plot <- ggplot(pr_df, aes(x = recall, y = precision)) +
+  geom_line(color = "#2E86AB", size = 1.2) +
+  geom_hline(yintercept = sum(test_df$relevance == "Relevant") / nrow(test_df),
+             linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Precision-Recall Curve: Relevance Classification",
+    subtitle = sprintf("AUC = %.3f", pr_obj$auc.integral),
+    x = "Recall (Sensitivity)",
+    y = "Precision"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("plots/manuscript_pr_curve_relevance.png", pr_plot,
+       width = 8, height = 6, dpi = 300)
+cat("✓ Saved precision-recall curve for relevance classification\n")
+
+# 5. Model Performance Comparison Matrix (Relevance)
+cat("Generating model comparison matrix for relevance classification...\n")
+
+# Reshape evaluation table for heatmap
+eval_heatmap <- evaluation_table %>%
+  pivot_longer(cols = c(accuracy, sensitivity_relevant, specificity, f1_score),
+               names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("accuracy", "sensitivity_relevant", "specificity", "f1_score"),
+                    labels = c("Accuracy", "Recall\nRelevant", "Specificity", "F1 Score")),
+    model = factor(model, levels = evaluation_table$model[order(evaluation_table$sensitivity_relevant, decreasing = TRUE)])
+  )
+
+# Create heatmap
+comparison_plot_rel <- ggplot(eval_heatmap, aes(x = metric, y = model, fill = value)) +
+  geom_tile(color = "white", size = 0.5) +
+  geom_text(aes(label = sprintf("%.3f", value)), color = "black", size = 3, fontface = "bold") +
+  scale_fill_gradient(low = endo_colors$presence_absence[2], high = endo_colors$presence_absence[1],
+                      name = "Score", limits = c(0, 1)) +
+  labs(
+    title = "Model Performance Comparison Matrix",
+    subtitle = "Relevance Classification - All Models",
+    x = "Performance Metric",
+    y = "Model"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank(),
+    legend.position = "bottom"
+  ) +
+  coord_fixed()
+
+ggsave("plots/manuscript_model_comparison_relevance.png", comparison_plot_rel,
+       width = 12, height = 7, dpi = 300)
+cat("✓ Saved model comparison matrix for relevance classification\n")
+
+# 6. Learning Curves for Relevance Classification
+cat("Generating learning curves for relevance classification...\n")
+
+# Create learning curve data by training on different sample sizes
+set.seed(1998)
+sample_sizes <- seq(0.2, 1.0, by = 0.2)  # 20%, 40%, 60%, 80%, 100%
+learning_curve_data <- list()
+
+for (size in sample_sizes) {
+  # Sample subset of training data
+  n_samples <- round(size * nrow(balanced_train))
+  train_subset_idx <- sample(1:nrow(balanced_train), n_samples)
+  train_subset <- balanced_train[train_subset_idx, ]
+
+  # Train model on subset
+  temp_model <- train(
+    relevance ~ .,
+    data = train_subset,
+    method = "glmnet",
+    metric = "ROC",
+    trControl = trainControl(method = "cv", number = 3, classProbs = TRUE, summaryFunction = twoClassSummary),
+    tuneLength = 5
+  )
+
+  # Evaluate on test set
+  temp_preds <- predict(temp_model, newdata = test_df)
+  temp_cm <- confusionMatrix(temp_preds, test_df$relevance, positive = "Relevant")
+
+  learning_curve_data[[as.character(size)]] <- list(
+    sample_size = n_samples,
+    proportion = size,
+    accuracy = temp_cm$overall["Accuracy"],
+    sensitivity = temp_cm$byClass["Sensitivity"],
+    specificity = temp_cm$byClass["Specificity"],
+    f1 = temp_cm$byClass["F1"]
+  )
+}
+
+# Convert to data frame for plotting
+learning_df <- data.frame(
+  proportion = as.numeric(names(learning_curve_data)),
+  sample_size = sapply(learning_curve_data, function(x) x$sample_size),
+  accuracy = sapply(learning_curve_data, function(x) x$accuracy),
+  sensitivity = sapply(learning_curve_data, function(x) x$sensitivity),
+  specificity = sapply(learning_curve_data, function(x) x$specificity),
+  f1_score = sapply(learning_curve_data, function(x) x$f1)
+)
+
+# Reshape for plotting
+learning_long <- learning_df %>%
+  pivot_longer(cols = c(accuracy, sensitivity, specificity, f1_score),
+               names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("accuracy", "sensitivity", "specificity", "f1_score"),
+                    labels = c("Accuracy", "Recall\nRelevant", "Specificity", "F1 Score"))
+  )
+
+# Create learning curve plot
+learning_plot <- ggplot(learning_long, aes(x = sample_size, y = value, color = metric, group = metric)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3, alpha = 0.8) +
+  scale_x_continuous(labels = scales::comma) +
+  scale_color_manual(values = get_endo_colors(4)) +
+  labs(
+    title = "Learning Curves: Relevance Classification",
+    subtitle = "Model performance vs. training sample size (GLMNet)",
+    x = "Training Sample Size",
+    y = "Performance Score",
+    color = "Metric"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  )
+
+ggsave("plots/manuscript_learning_curves_relevance.png", learning_plot,
+       width = 10, height = 6, dpi = 300)
+cat("✓ Saved learning curves for relevance classification\n")
+
+#===============================================================================
+# PRESENCE/ABSENCE CLASSIFICATION
+#===============================================================================
+# This section trains models to classify relevant abstracts as reporting
+# fungal presence vs. absence in plants using unigrams + bigrams features
+#===============================================================================
+
+# Filter to only relevant abstracts for presence/absence classification
 labeled_abstracts <- labeled_abstracts %>%
   filter(relevance == "Relevant")
 
+# Check class distribution for presence/absence labels
 labeled_abstracts %>%
   count(presence_both_absence)
 
-# Create unigrams
+#===============================================================================
+# FEATURE ENGINEERING: Text Preprocessing and N-gram Creation
+#===============================================================================
+
+# Create unigram features (single words) with filtering and cleaning
 dtm_unigrams <- labeled_abstracts %>%
-  unnest_tokens(word, abstract, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  mutate(word = str_to_lower(word)) %>%
-  filter(!str_detect(word, "\\d")) %>%
-  # Keep words that appear in at least 2 documents (reduce noise)
+  unnest_tokens(word, abstract, token = "words") %>%  # Tokenize into individual words
+  anti_join(stop_words, by = "word") %>%               # Remove common stop words
+  mutate(word = str_to_lower(word)) %>%               # Convert to lowercase
+  filter(!str_detect(word, "\\d")) %>%                # Remove numeric tokens
+  # Filter rare words: keep only words appearing in at least 2 documents to reduce noise
   group_by(word) %>%
   filter(n() >= 2) %>%
   ungroup() %>%
-  count(id, word, sort = TRUE) %>%
+  count(id, word, sort = TRUE) %>%  # Count word frequencies per document
   ungroup() %>%
-  mutate(id = as.character(id))
+  mutate(id = as.character(id))  # Ensure consistent ID format
 
-# Create bigrams (standard approach - let data decide what's important)
+# Create bigram features (two-word combinations) for contextual information
 dtm_bigrams <- labeled_abstracts %>%
-  unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%
-  filter(!is.na(bigram)) %>%
-  # Standard bigram filtering - no manual override
+  unnest_tokens(bigram, abstract, token = "ngrams", n = 2) %>%  # Extract word pairs
+  filter(!is.na(bigram)) %>%  # Remove any NA bigrams
+  # Split and filter bigram components
   separate(bigram, c("word1", "word2"), sep = " ") %>%
-  filter(!word1 %in% stop_words$word,
+  filter(!word1 %in% stop_words$word,  # Remove stop words from either position
          !word2 %in% stop_words$word,
-         !str_detect(word1, "\\d"),
+         !str_detect(word1, "\\d"),     # Remove numeric tokens
          !str_detect(word2, "\\d")) %>%
-  unite(bigram, word1, word2, sep = "_") %>%
-  mutate(bigram = str_to_lower(bigram)) %>%
-  # Keep bigrams that appear in at least 2 documents (let data decide importance)
+  unite(bigram, word1, word2, sep = "_") %>%  # Rejoin as underscore-separated
+  mutate(bigram = str_to_lower(bigram)) %>%   # Convert to lowercase
+  # Filter rare bigrams: keep only those appearing in at least 2 documents
   group_by(bigram) %>%
   filter(n() >= 2) %>%
   ungroup() %>%
-  count(id, bigram, sort = TRUE) %>%
+  count(id, bigram, sort = TRUE) %>%  # Count bigram frequencies per document
   ungroup() %>%
   mutate(id = as.character(id)) %>%
-  rename(word = bigram)  # Rename for consistency
+  rename(word = bigram)  # Rename to match unigram format for combining
 
-# Combine unigrams and bigrams
+# Combine unigrams and bigrams into unified document-term matrix
 dtm_combined <- bind_rows(dtm_unigrams, dtm_bigrams) %>%
-  cast_dtm(document = id, term = word, value = n)
+  cast_dtm(document = id, term = word, value = n)  # Create sparse DTM with TF counts
 
 # Preserve row names BEFORE converting
 rownames_dtm <- dtm_combined$dimnames$Docs  # Extract doc IDs from DTM
@@ -695,6 +1055,49 @@ train_recipe <- recipe(presence_both_absence ~ ., data = train_df) %>%
   step_smote(presence_both_absence) %>%
   prep()
 balanced_train <- juice(train_recipe)
+
+# 15. Class Distribution Before/After Balancing (Presence/Absence)
+cat("Generating class distribution plots for presence/absence classification...\n")
+
+# Create data for plotting P/A
+original_dist_pa <- train_df %>%
+  count(presence_both_absence) %>%
+  mutate(dataset = "Original", percentage = n / sum(n) * 100)
+
+balanced_dist_pa <- balanced_train %>%
+  count(presence_both_absence) %>%
+  mutate(dataset = "Balanced (SMOTE)", percentage = n / sum(n) * 100)
+
+combined_dist_pa <- bind_rows(original_dist_pa, balanced_dist_pa) %>%
+  mutate(dataset = factor(dataset, levels = c("Original", "Balanced (SMOTE)")))
+
+# Create bar plot for P/A
+balancing_plot_pa <- ggplot(combined_dist_pa, aes(x = presence_both_absence, y = n, fill = presence_both_absence)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = sprintf("%d\n(%.1f%%)", n, percentage)), vjust = -0.5) +
+  facet_wrap(~ dataset, scales = "free_y") +
+  scale_fill_manual(values = endo_colors$presence_absence) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  labs(
+    title = "Class Distribution: Before vs After SMOTE Balancing",
+    subtitle = "Presence/Absence classification training data",
+    x = "Class",
+    y = "Sample Count",
+    fill = "Class"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major.y = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold")
+  )
+
+ggsave("plots/manuscript_class_distribution_presence_absence.png", balancing_plot_pa,
+       width = 10, height = 6, dpi = 300)
+cat("✓ Saved class distribution plots for presence/absence classification\n")
 
 # Train Control
 train_control <- trainControl(
@@ -823,25 +1226,33 @@ for (m in names(confusion_matrices)) {
 glmnet_model <- results[["glmnet"]]  # Best for Absence detection (100% recall)
 svm_model <- results[["svmLinear"]]   # Best for Presence detection (95.8% recall)
 
-# Create ensemble predictions
+#===============================================================================
+# ENSEMBLE MODEL DEVELOPMENT
+#===============================================================================
+# This section develops and optimizes an ensemble approach combining GLMNet and SVM
+# models to improve absence detection while maintaining presence identification accuracy.
+#===============================================================================
+
+# Create ensemble predictions using complementary model strengths
 cat("\n=== ENSEMBLE APPROACH ===\n")
 cat("Using glmnet for Absence detection and svmLinear for Presence detection\n")
 
-# Get predictions from both models
-glmnet_preds <- predict(glmnet_model, newdata = test_df)
-svm_preds <- predict(svm_model, newdata = test_df)
+# Get predictions from both models for ensemble construction
+glmnet_preds <- predict(glmnet_model, newdata = test_df)  # Conservative absence detection
+svm_preds <- predict(svm_model, newdata = test_df)        # Aggressive presence detection
 
-# Get probabilities for more nuanced ensemble
+# Get predicted probabilities for weighted ensemble combination
 glmnet_probs <- predict(glmnet_model, newdata = test_df, type = "prob")
 svm_probs <- predict(svm_model, newdata = test_df, type = "prob")
 
-# Debug: Check probability distributions
+# Diagnostic checks: Examine probability distributions to understand model behavior
 cat("GLMnet Absence prob range:", range(glmnet_probs$Absence), "\n")
 cat("SVM Presence prob range:", range(svm_probs$Presence), "\n")
 cat("GLMnet predicts Absence (>0.5):", sum(glmnet_probs$Absence > 0.5), "out of", nrow(test_df), "\n")
 cat("SVM predicts Presence (>0.5):", sum(svm_probs$Presence > 0.5), "out of", nrow(test_df), "\n")
 
-# Ensemble strategy: Test multiple thresholds to find optimal balance
+# Test different threshold strategies to find optimal ensemble balance
+# Goal: Maximize absence recall while maintaining acceptable presence recall
 cat("Testing different ensemble thresholds:\n")
 
 thresholds_to_test <- c(0.5, 0.6, 0.7, 0.8)
@@ -906,11 +1317,11 @@ colnames(cm_weighted_df) <- c("Prediction", "Reference", "Freq")
 ggplot(cm_weighted_df, aes(x = Reference, y = Prediction, fill = Freq)) +
   geom_tile(color = "white") +
   geom_text(aes(label = Freq), color = "black", size = 6) +
-  scale_fill_gradient(low = "#F0E442", high = "#009E73") +
+  scale_fill_gradient(low = endo_colors$presence_absence[2], high = endo_colors$presence_absence[1]) +
   labs(title = "Weighted Ensemble Confusion Matrix Heatmap",
-       x = "Actual",
-       y = "Predicted") +
-  theme_minimal()
+        x = "Actual",
+        y = "Predicted") +
+  endo_theme()
 
 # Save the plot
 ggsave("plots/ensemble_pa_confusion_matrix_heatmap.png", width = 5, height = 4, dpi = 300)
@@ -930,9 +1341,9 @@ ensemble_metrics <- tibble(
 ggplot(ensemble_metrics, aes(x = Metric, y = Value, fill = Metric)) +
   geom_bar(stat = "identity", width = 0.7) +
   labs(title = "Weighted Ensemble Model Performance Metrics",
-       y = "Score",
-       x = "Metric") +
-  scale_fill_brewer(palette = "Set2") 
+        y = "Score",
+        x = "Metric") +
+  scale_fill_manual(values = get_endo_colors(4))
 
 # Save the plot
 ggsave("plots/pa_ensemble_weighted_performance_metrics.png", width = 7, height = 5, dpi = 300)
@@ -1103,9 +1514,485 @@ ensemble_cm <- confusionMatrix(ensemble_preds, test_df$presence_both_absence, po
 
 cat("\nEnsemble Performance:\n")
 cat("Accuracy:", round(ensemble_cm$overall["Accuracy"], 3), "\n")
-cat("Presence Recall:", round(ensemble_cm$byClass["Sensitivity"], 3), "\n") 
+cat("Presence Recall:", round(ensemble_cm$byClass["Sensitivity"], 3), "\n")
 cat("Absence Recall:", round(ensemble_cm$byClass["Specificity"], 3), "\n")
 cat("F1 Score:", round(ensemble_cm$byClass["F1"], 3), "\n")
+
+# 8. ROC Curve for Presence/Absence Ensemble Classification
+cat("\nGenerating ROC curve for presence/absence ensemble...\n")
+
+# For ensemble, we need to compute the ensemble probabilities on test data
+glmnet_probs_pa <- predict(glmnet_model, newdata = test_df, type = "prob")
+svm_probs_pa <- predict(svm_model, newdata = test_df, type = "prob")
+
+# Recompute ensemble probabilities for test data (using the best config)
+svm_weight_presence <- best_config$svm_pres
+glm_weight_absence <- best_config$glm_abs
+
+ensemble_presence_prob_test <- (svm_probs_pa$Presence * svm_weight_presence +
+                               glmnet_probs_pa$Presence * (1 - svm_weight_presence))
+ensemble_absence_prob_test <- (glmnet_probs_pa$Absence * glm_weight_absence +
+                              svm_probs_pa$Absence * (1 - glm_weight_absence))
+
+# Create ROC curve for ensemble (using presence probability for positive class)
+roc_obj_pa <- roc(test_df$presence_both_absence, ensemble_presence_prob_test,
+                  levels = c("Absence", "Presence"), direction = "<")
+
+# Create ROC curve plot for P/A
+roc_plot_pa <- ggroc(roc_obj_pa, color = endo_colors$presence_absence["Presence"], size = 1.2) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "ROC Curve: Presence/Absence Ensemble Classification",
+    subtitle = sprintf("AUC = %.3f", auc(roc_obj_pa)),
+    x = "False Positive Rate (1 - Specificity)",
+    y = "True Positive Rate (Sensitivity)"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("plots/manuscript_roc_curve_presence_absence.png", roc_plot_pa,
+       width = 8, height = 6, dpi = 300)
+cat("✓ Saved ROC curve for presence/absence classification\n")
+
+# 9. Precision-Recall Curve for Presence/Absence Ensemble
+cat("Generating precision-recall curve for presence/absence ensemble...\n")
+
+# Calculate precision-recall curve for ensemble
+pr_obj_pa <- pr.curve(scores.class0 = ensemble_presence_prob_test,
+                      weights.class0 = as.numeric(test_df$presence_both_absence) - 1,  # 0 for Absence, 1 for Presence
+                      curve = TRUE)
+
+# Create PR curve plot for P/A
+pr_df_pa <- data.frame(
+  recall = pr_obj_pa$curve[, 1],
+  precision = pr_obj_pa$curve[, 2],
+  threshold = pr_obj_pa$curve[, 3]
+)
+
+pr_plot_pa <- ggplot(pr_df_pa, aes(x = recall, y = precision)) +
+  geom_line(color = "#619B8A", size = 1.2) +
+  geom_hline(yintercept = sum(test_df$presence_both_absence == "Presence") / nrow(test_df),
+             linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Precision-Recall Curve: Presence/Absence Ensemble",
+    subtitle = sprintf("AUC = %.3f", pr_obj_pa$auc.integral),
+    x = "Recall (Sensitivity)",
+    y = "Precision"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("plots/manuscript_pr_curve_presence_absence.png", pr_plot_pa,
+       width = 8, height = 6, dpi = 300)
+cat("✓ Saved precision-recall curve for presence/absence classification\n")
+
+# 10. Threshold Performance Analysis for Ensemble
+cat("Generating threshold performance analysis for ensemble...\n")
+
+# Create threshold analysis data from the threshold_results calculated earlier
+threshold_df <- data.frame(
+  threshold = as.numeric(names(threshold_results)),
+  accuracy = sapply(threshold_results, function(x) x$accuracy),
+  presence_recall = sapply(threshold_results, function(x) x$presence_recall),
+  absence_recall = sapply(threshold_results, function(x) x$absence_recall),
+  f1_score = sapply(threshold_results, function(x) x$f1_score)
+)
+
+# Reshape for plotting
+threshold_long <- threshold_df %>%
+  pivot_longer(cols = c(accuracy, presence_recall, absence_recall, f1_score),
+               names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("accuracy", "presence_recall", "absence_recall", "f1_score"),
+                    labels = c("Accuracy", "Presence Recall", "Absence Recall", "F1 Score"))
+  )
+
+# Find optimal threshold based on balanced criteria
+optimal_idx <- which.max((threshold_df$presence_recall + threshold_df$absence_recall) / 2)
+optimal_thresh <- threshold_df$threshold[optimal_idx]
+
+# Create threshold analysis plot
+threshold_plot <- ggplot(threshold_long, aes(x = threshold, y = value, color = metric)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  geom_vline(xintercept = optimal_thresh, linetype = "dashed", color = "red", alpha = 0.7) +
+  geom_text(data = data.frame(x = optimal_thresh, y = 0.95, label = sprintf("Optimal: %.2f", optimal_thresh)),
+            aes(x = x, y = y, label = label),
+            hjust = -0.1, color = "red", fontface = "bold") +
+  scale_color_manual(values = get_endo_colors(4)) +
+  labs(
+    title = "Ensemble Performance vs. Decision Threshold",
+    subtitle = "Threshold analysis for presence/absence classification",
+    x = "Decision Threshold",
+    y = "Performance Score",
+    color = "Metric"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  )
+
+ggsave("plots/manuscript_threshold_analysis_ensemble.png", threshold_plot,
+       width = 10, height = 6, dpi = 300)
+cat("✓ Saved threshold performance analysis for ensemble\n")
+
+# 11. Model Performance Comparison Matrix (Presence/Absence)
+cat("Generating model comparison matrix for presence/absence classification...\n")
+
+# Reshape comparison results for heatmap
+comparison_heatmap <- comparison_results %>%
+  pivot_longer(cols = c(accuracy, presence_recall, absence_recall, f1_score),
+               names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("accuracy", "presence_recall", "absence_recall", "f1_score"),
+                    labels = c("Accuracy", "Recall\nPresence", "Recall\nAbsence", "F1 Score")),
+    approach = factor(approach, levels = comparison_results$approach[order(comparison_results$absence_recall, decreasing = TRUE)])
+  )
+
+# Create heatmap for P/A
+comparison_plot_pa <- ggplot(comparison_heatmap, aes(x = metric, y = approach, fill = value)) +
+  geom_tile(color = "white", size = 0.5) +
+  geom_text(aes(label = sprintf("%.3f", value)), color = "black", size = 3, fontface = "bold") +
+  scale_fill_gradient(low = endo_colors$presence_absence[2], high = endo_colors$presence_absence[1],
+                      name = "Score", limits = c(0, 1)) +
+  labs(
+    title = "Model Performance Comparison Matrix",
+    subtitle = "Presence/Absence Classification - Individual vs Ensemble Models",
+    x = "Performance Metric",
+    y = "Approach"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank(),
+    legend.position = "bottom"
+  ) +
+  coord_fixed()
+
+ggsave("plots/manuscript_model_comparison_presence_absence.png", comparison_plot_pa,
+       width = 12, height = 6, dpi = 300)
+cat("✓ Saved model comparison matrix for presence/absence classification\n")
+
+# 12. Ensemble Weight Sensitivity Analysis
+cat("Generating ensemble weight sensitivity analysis...\n")
+
+# Create data frame from weight_results
+weight_sensitivity_df <- data.frame(
+  config = names(weight_results),
+  svm_weight_presence = sapply(weight_configs[names(weight_results)], function(x) x$svm_pres),
+  glm_weight_absence = sapply(weight_configs[names(weight_results)], function(x) x$glm_abs),
+  accuracy = sapply(weight_results, function(x) x$accuracy),
+  presence_recall = sapply(weight_results, function(x) x$presence_recall),
+  absence_recall = sapply(weight_results, function(x) x$absence_recall),
+  f1_score = sapply(weight_results, function(x) x$f1_score)
+)
+
+# Add the current best config marker
+weight_sensitivity_df$is_optimal <- weight_sensitivity_df$config == "current"
+
+# Create sensitivity plot for key metrics
+weight_plot_data <- weight_sensitivity_df %>%
+  pivot_longer(cols = c(accuracy, presence_recall, absence_recall, f1_score),
+               names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("accuracy", "presence_recall", "absence_recall", "f1_score"),
+                    labels = c("Accuracy", "Presence Recall", "Absence Recall", "F1 Score"))
+  )
+
+# Create plot showing weight combinations and performance
+weight_sensitivity_plot <- ggplot(weight_plot_data, aes(x = svm_weight_presence, y = glm_weight_absence,
+                                                         size = value, color = value)) +
+  geom_point(alpha = 0.8) +
+  geom_text(aes(label = config), vjust = -1, size = 3, fontface = "bold") +
+  facet_wrap(~ metric, scales = "free") +
+  scale_color_gradient(low = endo_colors$presence_absence[2], high = endo_colors$presence_absence[1], name = "Performance") +
+  scale_size_continuous(name = "Performance", range = c(3, 8)) +
+  labs(
+    title = "Ensemble Weight Sensitivity Analysis",
+    subtitle = "How different SVM/GLMNet weight combinations affect performance",
+    x = "SVM Weight for Presence Detection",
+    y = "GLMNet Weight for Absence Detection"
+  ) +
+  endo_theme(base_size = 10) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold")
+  )
+
+ggsave("plots/manuscript_ensemble_weight_sensitivity.png", weight_sensitivity_plot,
+       width = 13, height = 10, dpi = 300)
+cat("✓ Saved ensemble weight sensitivity analysis\n")
+
+# 13. Feature Importance Comparison Across Models (Presence/Absence)
+cat("Generating feature importance comparison across P/A models...\n")
+
+# Extract feature importance using caret's varImp for robust handling
+if (exists("glmnet_model")) {
+  glmnet_imp <- varImp(glmnet_model, scale = FALSE)
+  glmnet_features <- data.frame(
+    feature = rownames(glmnet_imp),
+    glmnet_coefficient = glmnet_imp$Overall
+  )
+  glmnet_features$glmnet_coefficient[is.na(glmnet_features$glmnet_coefficient)] <- 0
+  glmnet_features$glmnet_abs_coef <- abs(glmnet_features$glmnet_coefficient)
+  glmnet_features$glmnet_direction <- ifelse(glmnet_features$glmnet_coefficient > 0, "Presence", ifelse(glmnet_features$glmnet_coefficient < 0, "Absence", "Neutral"))
+  glmnet_features <- glmnet_features[order(-glmnet_features$glmnet_abs_coef), ]
+  glmnet_features <- head(glmnet_features, 15)  # Top 15 features
+} else {
+  glmnet_features <- data.frame(feature = character(), glmnet_coefficient = numeric())
+}
+
+# DIAGNOSTIC LOGGING FOR SVM FEATURE IMPORTANCE
+cat("\n=== DIAGNOSTIC: SVM FEATURE IMPORTANCE ===\n")
+cat("svm_model exists:", exists("svm_model"), "\n")
+if (exists("svm_model")) {
+  cat("svm_model class:", class(svm_model), "\n")
+  cat("svm_model method:", svm_model$method, "\n")
+  cat("svm_model trained:", !is.null(svm_model$finalModel), "\n")
+}
+
+if (exists("svm_model") && svm_model$method == "svmLinear") {
+  cat("Attempting varImp on svm_model (with error handling)...\n")
+  tryCatch({
+    svm_imp <- varImp(svm_model, scale = FALSE)
+    cat("varImp successful for SVM\n")
+
+    svm_features <- data.frame(
+      feature = rownames(svm_imp),
+      svm_coefficient = svm_imp$Overall
+    )
+
+    svm_features$svm_abs_coef <- abs(svm_features$svm_coefficient)
+    svm_features$svm_direction <- ifelse(svm_features$svm_coefficient > 0, "Presence", "Absence")
+    svm_features <- svm_features[order(-svm_features$svm_abs_coef), ]
+    svm_features <- head(svm_features, 15)  # Top 15 features
+    cat("SVM feature importance extraction completed successfully\n")
+  }, error = function(e) {
+    cat("ERROR in varImp for SVM:", e$message, "\n")
+    cat("Skipping SVM feature importance (will use GLMNet features only)\n")
+    svm_features <- data.frame(feature = character(), svm_coefficient = numeric())
+  })
+} else {
+  cat("svm_model does not exist or method != svmLinear\n")
+  svm_features <- data.frame(feature = character(), svm_coefficient = numeric())
+}
+
+# Combine and compare top features from both models
+if (nrow(glmnet_features) > 0 && nrow(svm_features) > 0) {
+  # Merge by feature name to compare
+  combined_features <- full_join(
+    glmnet_features %>% select(feature, glmnet_coefficient, glmnet_direction),
+    svm_features %>% select(feature, svm_coefficient, svm_direction),
+    by = "feature"
+  ) %>%
+    mutate(
+      # Handle non-numeric or NA coefficients to prevent abs() errors
+      glmnet_coefficient = ifelse(is.na(glmnet_coefficient) | !is.numeric(glmnet_coefficient),
+                                  0, as.numeric(glmnet_coefficient)),
+      svm_coefficient = ifelse(is.na(svm_coefficient) | !is.numeric(svm_coefficient),
+                               0, as.numeric(svm_coefficient)),
+      # Calculate combined importance score for ranking
+      combined_importance = (abs(glmnet_coefficient) + abs(svm_coefficient)) / 2,
+      # Determine if directions agree (handle cases where coefficients are now 0)
+      glmnet_direction = ifelse(abs(glmnet_coefficient) < 1e-6, "Neutral",
+                                ifelse(glmnet_coefficient > 0, "Presence", "Absence")),
+      svm_direction = ifelse(abs(svm_coefficient) < 1e-6, "Neutral",
+                             ifelse(svm_coefficient > 0, "Presence", "Absence")),
+      direction_agreement = ifelse(is.na(glmnet_direction) | is.na(svm_direction),
+                                  "One model only",
+                                  ifelse(glmnet_direction == svm_direction,
+                                        "Agreement", "Disagreement"))
+    )
+
+  # DIAGNOSTIC LOGGING: Check combined_features before arrange and head
+  cat("Combined features class before arrange:", class(combined_features), "\n")
+  cat("Combined features dimensions before arrange:", dim(combined_features), "\n")
+  cat("Combined features column classes:", sapply(combined_features, class), "\n")
+
+  combined_features <- combined_features %>%
+    arrange(desc(combined_importance)) %>%
+    head(20)  # Top 20 for comparison
+
+  # DIAGNOSTIC LOGGING: Check after head
+  cat("Combined features class after head:", class(combined_features), "\n")
+  cat("Combined features dimensions after head:", dim(combined_features), "\n")
+
+  # DIAGNOSTIC LOGGING: Check glmnet_features before abs() computation
+  cat("DIAGNOSTIC: glmnet_features dimensions:", dim(combined_features), "\n")
+  cat("DIAGNOSTIC: glmnet_coefficient class:", class(combined_features$glmnet_coefficient), "\n")
+  cat("DIAGNOSTIC: glmnet_coefficient summary:\n")
+  print(summary(combined_features$glmnet_coefficient))
+  cat("DIAGNOSTIC: Number of NA in glmnet_coefficient:", sum(is.na(combined_features$glmnet_coefficient)), "\n")
+  cat("DIAGNOSTIC: Non-numeric values in glmnet_coefficient:", sum(!is.numeric(combined_features$glmnet_coefficient)), "\n")
+  if (any(!is.na(combined_features$glmnet_coefficient))) {
+    cat("DIAGNOSTIC: Sample non-NA glmnet_coefficient values:", head(combined_features$glmnet_coefficient[!is.na(combined_features$glmnet_coefficient)], 5), "\n")
+  }
+
+  # Create comparison plot
+  feature_comparison_plot <- ggplot(combined_features, aes(x = reorder(feature, combined_importance))) +
+    geom_point(aes(y = abs(glmnet_coefficient), color = "GLMNet", shape = glmnet_direction),
+               size = 3, alpha = 0.8) +
+    geom_point(aes(y = abs(svm_coefficient), color = "SVM", shape = svm_direction),
+               size = 3, alpha = 0.8) +
+    geom_segment(aes(xend = reorder(feature, combined_importance),
+                     y = abs(glmnet_coefficient), yend = abs(svm_coefficient)),
+                 alpha = 0.3, linetype = "dashed") +
+    coord_flip() +
+    scale_color_manual(values = setNames(get_endo_colors(2), c("GLMNet", "SVM"))) +
+    scale_shape_manual(values = c("Presence" = 16, "Absence" = 17),
+                      name = "Class Association") +
+    labs(
+      title = "Feature Importance Comparison: GLMNet vs SVM",
+      subtitle = "Presence/Absence classification - Top 20 features",
+      x = "Feature",
+      y = "Absolute Coefficient Value",
+      color = "Model",
+      shape = "Class Association"
+    ) +
+    endo_theme(base_size = 10) +
+    theme(
+      plot.title = element_text(face = "bold", hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+      axis.text.y = element_text(size = 8),
+      legend.position = "bottom",
+      panel.grid.major.y = element_blank()
+    )
+
+  ggsave("plots/manuscript_feature_importance_comparison_pa.png", feature_comparison_plot,
+         width = 14, height = 10, dpi = 300)
+
+  # Save feature comparison data
+  write.csv(combined_features, "results/manuscript_feature_comparison_pa.csv", row.names = FALSE)
+  cat("✓ Saved feature importance comparison across P/A models\n")
+}
+
+# 14. Learning Curves for Ensemble Presence/Absence Classification
+cat("Generating learning curves for ensemble P/A classification...\n")
+
+# Create learning curve data for ensemble by training on different sample sizes
+set.seed(1998)
+sample_sizes_pa <- seq(0.3, 1.0, by = 0.2)  # 30%, 50%, 70%, 90%, 100%
+learning_curve_pa_data <- list()
+
+for (size in sample_sizes_pa) {
+  # Sample subset of training data
+  n_samples <- round(size * nrow(balanced_train))
+  train_subset_idx <- sample(1:nrow(balanced_train), n_samples)
+  train_subset <- balanced_train[train_subset_idx, ]
+
+  # Train both models on subset (simplified training for speed)
+  temp_glmnet <- train(
+    presence_both_absence ~ .,
+    data = train_subset,
+    method = "glmnet",
+    metric = "ROC",
+    trControl = trainControl(method = "cv", number = 3, classProbs = TRUE, summaryFunction = twoClassSummary),
+    tuneLength = 3  # Reduced for speed
+  )
+
+  temp_svm <- train(
+    presence_both_absence ~ .,
+    data = train_subset,
+    method = "svmLinear",
+    metric = "ROC",
+    trControl = trainControl(method = "cv", number = 3, classProbs = TRUE, summaryFunction = twoClassSummary),
+    tuneLength = 3
+  )
+
+  # Get ensemble predictions using the same logic as final ensemble
+  temp_glmnet_probs <- predict(temp_glmnet, newdata = test_df, type = "prob")
+  temp_svm_probs <- predict(temp_svm, newdata = test_df, type = "prob")
+
+  # Apply ensemble weights
+  temp_ensemble_presence <- (temp_svm_probs$Presence * best_config$svm_pres +
+                            temp_glmnet_probs$Presence * (1 - best_config$svm_pres))
+  temp_ensemble_absence <- (temp_glmnet_probs$Absence * best_config$glm_abs +
+                           temp_svm_probs$Absence * (1 - best_config$glm_abs))
+
+  temp_ensemble_preds <- ifelse(temp_ensemble_presence > temp_ensemble_absence, "Presence", "Absence")
+  temp_ensemble_preds <- factor(temp_ensemble_preds, levels = c("Presence", "Absence"))
+
+  # Evaluate ensemble
+  temp_cm <- confusionMatrix(temp_ensemble_preds, test_df$presence_both_absence, positive = "Presence")
+
+  learning_curve_pa_data[[as.character(size)]] <- list(
+    sample_size = n_samples,
+    proportion = size,
+    accuracy = temp_cm$overall["Accuracy"],
+    presence_recall = temp_cm$byClass["Sensitivity"],
+    absence_recall = temp_cm$byClass["Specificity"],
+    f1 = temp_cm$byClass["F1"]
+  )
+}
+
+# Convert to data frame for plotting
+learning_pa_df <- data.frame(
+  proportion = as.numeric(names(learning_curve_pa_data)),
+  sample_size = sapply(learning_curve_pa_data, function(x) x$sample_size),
+  accuracy = sapply(learning_curve_pa_data, function(x) x$accuracy),
+  presence_recall = sapply(learning_curve_pa_data, function(x) x$presence_recall),
+  absence_recall = sapply(learning_curve_pa_data, function(x) x$absence_recall),
+  f1_score = sapply(learning_curve_pa_data, function(x) x$f1)
+)
+
+# Reshape for plotting
+learning_pa_long <- learning_pa_df %>%
+  pivot_longer(cols = c(accuracy, presence_recall, absence_recall, f1_score),
+               names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("accuracy", "presence_recall", "absence_recall", "f1_score"),
+                    labels = c("Accuracy", "Recall\nPresence", "Recall\nAbsence", "F1 Score"))
+  )
+
+# Create learning curve plot for P/A
+learning_pa_plot <- ggplot(learning_pa_long, aes(x = sample_size, y = value, color = metric, group = metric)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3, alpha = 0.8) +
+  scale_x_continuous(labels = scales::comma) +
+  scale_color_manual(values = get_endo_colors(4)) +
+  labs(
+    title = "Learning Curves: Presence/Absence Ensemble Classification",
+    subtitle = "Ensemble model performance vs. training sample size",
+    x = "Training Sample Size",
+    y = "Performance Score",
+    color = "Metric"
+  ) +
+  endo_theme(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40"),
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  )
+
+ggsave("plots/manuscript_learning_curves_presence_absence.png", learning_pa_plot,
+       width = 10, height = 6, dpi = 300)
+cat("✓ Saved learning curves for presence/absence ensemble\n")
 
 # Compare all approaches including weighted ensemble
 comparison_results <- tibble(
@@ -1153,15 +2040,19 @@ cat("Best F1 Score:", comparison_results$approach[which.max(comparison_results$f
     sprintf("(%.1f%%)\n", max(comparison_results$f1_score) * 100))
 
 # Overall recommendation - prioritize based on your research needs
+# Different scoring strategies for different research priorities:
+# 1. Balanced: Equal weight to accuracy and both recall metrics
+# 2. Conservative: Higher weight on absence recall (avoid missing absence studies)
+# 3. Aggressive: Higher weight on presence recall (find all presence studies)
 best_balanced <- comparison_results %>%
   mutate(
     combined_recall = (presence_recall + absence_recall) / 2,
     # Adjust weights based on your priorities:
-    # Option 1: Balanced approach (current)
+    # Option 1: Balanced approach (current) - equal importance to all metrics
     balanced_score = 0.4 * accuracy + 0.3 * presence_recall + 0.3 * absence_recall,
-    # Option 2: Prioritize avoiding missed Absence studies (conservative)
+    # Option 2: Prioritize avoiding missed Absence studies (conservative approach)
     conservative_score = 0.3 * accuracy + 0.2 * presence_recall + 0.5 * absence_recall,
-    # Option 3: Prioritize finding Presence studies (aggressive)  
+    # Option 3: Prioritize finding Presence studies (aggressive approach)
     aggressive_score = 0.3 * accuracy + 0.5 * presence_recall + 0.2 * absence_recall
   ) %>%
   arrange(desc(balanced_score))

@@ -20,6 +20,7 @@ library(treemapify)
 library(maps)
 library(countrycode)
 
+source("scripts/utils/plot_utils.R")
 # Load centralized reference utilities (normalization helpers)
 utils_path <- "scripts/04_analysis/utilities/reference_data_utils.R"
 if (file.exists(utils_path)) {
@@ -32,7 +33,7 @@ if (file.exists(utils_path)) {
 
 
 # Custom theme for consistent visualization
-custom_theme <- theme_bw(base_size = 12) +
+custom_theme <- endo_theme(base_size = 12) +
   theme(
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
     plot.subtitle = element_text(size = 11, hjust = 0.5),
@@ -43,18 +44,6 @@ custom_theme <- theme_bw(base_size = 12) +
     plot.margin = margin(10, 10, 10, 10)
   )
 
-# Custom color palette for endophyte research
-endo_palette <- c(
-  "#2E8B57",  # Sea green - for plants
-  "#8B4513",  # Saddle brown - for fungi
-  "#4682B4",  # Steel blue - for molecular methods
-  "#CD853F",  # Peru - for culture methods
-  "#9370DB",  # Medium purple - for microscopy
-  "#DC143C",  # Crimson - for presence
-  "#228B22",  # Forest green - for absence
-  "#FF8C00",  # Dark orange - for uncertain
-  "#708090"   # Slate gray - for other
-)
 
 # Function to save plots with consistent format
 save_plot <- function(plot, filename, width = 12, height = 8, dpi = 300) {
@@ -223,7 +212,7 @@ p1_species_detection <- data.frame(
   geom_col(width = 0.6) +
   geom_text(aes(label = paste0(Count, "\n(", round(Rate, 1), "%)")),
             position = position_stack(vjust = 0.5), size = 4, fontface = "bold") +
-  scale_fill_manual(values = c("With Species" = endo_palette[1], "Without Species" = "lightgray")) +
+  scale_fill_manual(values = c("With Species" = "#46ACC8", "Without Species" = "#B40F20")) +
   labs(
     title = "Overall Species Detection Rate",
     subtitle = paste("Out of", format(total_abstracts_species, big.mark = ","), "total abstracts"),
@@ -268,7 +257,7 @@ p3_methods_individual <- methods_summary %>%
   geom_col(width = 0.7) +
   geom_text(aes(label = paste0(Count, "\n(", round(Percentage, 1), "%)")),
             vjust = -0.3, size = 4, fontface = "bold") +
-  scale_fill_manual(values = endo_palette[3:5]) +
+  scale_fill_manual(values = get_endo_colors(3)) +
   labs(
     title = "Research Methods Detection",
     subtitle = "Individual method frequencies across all abstracts",
@@ -466,7 +455,7 @@ if (sum(!is.na(results_clean$confidence) & is.numeric(results_clean$confidence))
     ggplot(aes(x = confidence, fill = predicted_label)) +
     geom_histogram(bins = 20, alpha = 0.7) +
     facet_wrap(~predicted_label, scales = "free_y") +
-    scale_fill_manual(values = c("Presence" = endo_palette[6], "Absence" = endo_palette[7])) +
+    scale_fill_manual(values = endo_colors$presence_absence) +
     labs(
       title = "Prediction Confidence Distribution",
       subtitle = "Model confidence scores by prediction type",
@@ -485,7 +474,7 @@ if (sum(!is.na(results_clean$confidence) & is.numeric(results_clean$confidence))
   p9_confidence <- conf_dist_data %>%
     ggplot(aes(x = confidence_level, y = n, fill = predicted_label)) +
     geom_col(position = "dodge", alpha = 0.7) +
-    scale_fill_manual(values = c("Presence" = endo_palette[6], "Absence" = endo_palette[7], "Unknown" = "lightgray")) +
+    scale_fill_manual(values = c(endo_colors$presence_absence, "Unknown" = "lightgray")) +
     labs(
       title = "Confidence Level Distribution",
       subtitle = "Confidence levels by prediction type",
@@ -538,7 +527,7 @@ p10_completeness <- completeness_data %>%
   geom_col(position = "dodge", width = 0.8) +
   geom_text(aes(label = count), position = position_dodge(width = 0.8),
             vjust = -0.3, size = 3) +
-  scale_fill_manual(values = c("Presence" = endo_palette[6], "Absence" = endo_palette[7])) +
+  scale_fill_manual(values = endo_colors$presence_absence) +
   scale_y_continuous(labels = percent_format()) +
   labs(
     title = "Information Completeness by Confidence Level",
@@ -642,7 +631,7 @@ p_info_summary <- info_summary %>%
   geom_col(width = 0.7) +
   geom_text(aes(label = paste0(Count, "\n(", round(Percentage, 1), "%)")),
             vjust = -0.3, size = 3.5, fontface = "bold") +
-  scale_fill_manual(values = endo_palette[1:4]) +
+  scale_fill_manual(values = get_endo_colors(4)) +
   labs(
     title = "Information Detection Overview",
     subtitle = "Extraction success rates across all abstracts",
