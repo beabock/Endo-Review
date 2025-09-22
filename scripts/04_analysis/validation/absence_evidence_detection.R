@@ -1,20 +1,107 @@
-# Absence Evidence Detection for Endophyte Research
-# B. Bock
-# July 31, 2025 - Enhanced Version
+# =============================================================================
+# VALIDATION OF ML PRESENCE/ABSENCE PREDICTIONS FOR ENDOPHYTE RESEARCH
+# =============================================================================
 #
-# Specialized script to identify and analyze studies reporting absence of fungal endophytes
-# Part of the systematic investigation of endophyte universality in plants
+# DESCRIPTION:
+# This script validates the output of ML models that labeled scientific abstracts
+# as either presence or absence of fungal endophytes using a simpler string
+# detection method. It cross-references automated ML predictions with pattern-
+# matching algorithms to assess agreement and validate prediction accuracy.
+#
+# AUTHOR: B. Bock
+# DATE: September 22, 2025
+# VERSION: Enhanced Version
+#
+# PURPOSE:
+# - Validate ML presence/absence predictions using string-based absence detection
+# - Cross-reference automated predictions with rule-based evidence detection
+# - Identify agreement/disagreement between ML and string detection methods
+# - Assess confidence levels of both prediction approaches
+# - Generate datasets for manual validation of ML model outputs
+# - Support quality assessment of automated classification systems
+#
+# INPUTS:
+# - results/relevant_abstracts_with_pa_predictions.csv: CSV file containing
+#   processed abstracts with ML presence/absence predictions and metadata
+#   (output from apply_models_to_full_dataset.R script)
+#
+# OUTPUTS:
+# - results/absence_evidence_analysis.csv: Complete analysis results with all
+#   absence detection metrics
+# - results/all_papers_with_absence_matches.csv: All papers containing absence
+#   statement matches (any confidence level)
+# - results/high_confidence_absence_evidence.csv: High-confidence cases for
+#   priority manual review
+# - results/absence_evidence_report.txt: Comprehensive summary report
+#
+# DEPENDENCIES:
+# - tidyverse: Data manipulation and visualization
+# - stringr: String operations and pattern matching
+# - stringi: Advanced string processing
+# - progress: Progress bar for long-running operations
+#
+# =============================================================================
+
+# =============================================================================
+# DEPENDENCY LOADING
+# =============================================================================
+# Load required R packages for the absence detection analysis
+# These packages provide essential functionality for:
+# - tidyverse: Data manipulation, cleaning, and visualization
+# - stringr: String processing and regular expressions
+# - stringi: Advanced string operations and Unicode handling
+# - progress: Progress bar display for long-running operations
+# =============================================================================
 
 library(tidyverse)
 library(stringr)
+library(stringi)
 library(progress)
+
+# =============================================================================
+# DATA LOADING AND PREPARATION
+# =============================================================================
+# Load the input dataset containing processed abstracts with ML predictions
+# This file serves as the foundation for absence evidence detection and should
+# contain columns: id, abstract, and various ML classification results
+# =============================================================================
 
 cat("=== ABSENCE EVIDENCE DETECTION ===\n")
 cat("Identifying studies that searched for but did not find fungal endophytes\n\n")
 
 # Load relevant abstracts with species detection results
+# =============================================================================
+# CORE ABSENCE DETECTION FUNCTION
+# =============================================================================
+# detect_absence_evidence()
+# Main function for identifying absence evidence in scientific abstracts
+#
+# Parameters:
+#   text: Character string containing the abstract text to analyze
+#   context_words: Integer specifying words around matched patterns for context (default: 15)
+#
+# Returns: List containing:
+#   - potential_absence: Boolean indicating if absence evidence was detected
+#   - absence_score: Numeric score based on absence pattern matches and weights
+#   - method_score: Numeric score based on methodological pattern matches
+#   - absence_terms: Semicolon-separated string of matched absence patterns
+#   - method_terms: Semicolon-separated string of matched method patterns
+#   - confidence_level: Categorical confidence rating (Very High/High/Medium/Low/None)
+#   - context_snippets: Text snippets showing absence patterns in context
+#   - method_context: Text snippets showing methodological patterns in context
+#   - absence_categories: Categories of absence patterns matched
+#   - method_categories: Categories of method patterns matched
+#
+# Algorithm Overview:
+# 1. Input validation and preprocessing
+# 2. Pattern matching against comprehensive absence and method dictionaries
+# 3. Context extraction for matched patterns
+# 4. Weighted scoring based on pattern categories
+# 5. Confidence level assignment based on combined scores
+# =============================================================================
+
 if (!file.exists("results/relevant_abstracts_with_pa_predictions.csv")) {
-  stop("Please run apply_models_to_full_dataset.R first to generate species detection results.")
+  stop("Test data file not found.")
 }
 
 relevant_data <- read_csv("results/relevant_abstracts_with_pa_predictions.csv", show_col_types = FALSE)
@@ -35,6 +122,10 @@ detect_absence_evidence <- function(text, context_words = 15) {
       method_context = NA
     ))
   }
+
+  # Define comprehensive pattern dictionaries for absence and method detection
+  # Each category has associated weight scores for confidence calculation
+  # Patterns use specific terminology common in scientific literature
 
   text_lower <- tolower(text)
 
@@ -95,7 +186,7 @@ detect_absence_evidence <- function(text, context_words = 15) {
     culture_methods = c(
       "cultured", "isolated", "isolation", "culture", "plated", "incubated",
       "medium", "agar", "petri", "colony", "sterile", "aseptic", "plate count",
-      "dilution plating", "spread plate", "pour plate"
+      "dilution plating", "spread plate", "pour plate", "PDA", "MEA", "selective media", "antibiotic amended", "CFU", "viable plate count"
     ),
 
     # Molecular methods (weight = 2)
@@ -103,7 +194,7 @@ detect_absence_evidence <- function(text, context_words = 15) {
       "pcr", "amplified", "sequenced", "dna extracted", "primers",
       "18s", "28s", "rrna", "barcode", "metagenom*", "amplicon",
       "qpcr", "real-time pcr", "sequencing", "illumina", "pyrosequencing",
-      "sanger", "cloning", "library preparation"
+      "sanger", "cloning", "library preparation", "ITS", "ITS1", "ITS2", "DGGE", "T-RFLP", "FISH", "TaqMan", "SYBR Green", "CTAB extraction"
     ),
 
     # Microscopy methods (weight = 2)
@@ -111,7 +202,7 @@ detect_absence_evidence <- function(text, context_words = 15) {
       "sectioned", "stained", "microscopy", "examined", "observed",
       "histological", "cleared", "mounted", "visualized", "stained slides",
       "light microscopy", "fluorescence", "confocal", "electron microscopy",
-      "histology", "cytology", "aniline blue", "lactophenol"
+      "histology", "cytology", "aniline blue", "lactophenol", "calcofluor white", "PAS", "Giemsa", "toluidine blue", "trypan blue", "epifluorescence", "phase contrast", "dark field", "DIC", "embedded", "fixed", "dehydrated"
     ),
 
     # General investigation terms (weight = 1)
@@ -257,6 +348,10 @@ detect_absence_evidence <- function(text, context_words = 15) {
     absence_score = absence_score,
     method_score = method_score,
     absence_terms = if(length(absence_terms_found) > 0) paste(absence_terms_found, collapse = "; ") else NA,
+  # Calculate confidence levels based on combined absence and method scores
+  # Higher scores and multiple evidence types indicate stronger confidence
+  # Thresholds determined through iterative testing and validation
+
     method_terms = if(length(method_terms_found) > 0) paste(method_terms_found, collapse = "; ") else NA,
     confidence_level = confidence_level,
     context_snippets = if(length(context_snippets) > 0) paste(context_snippets, collapse = " | ") else NA,
@@ -265,6 +360,14 @@ detect_absence_evidence <- function(text, context_words = 15) {
     method_categories = paste(names(method_matches), collapse = "; ")
   ))
 }
+
+# =============================================================================
+# ABSENCE DETECTION APPLICATION
+# =============================================================================
+# Apply the detect_absence_evidence function to all abstracts in the dataset
+# This section processes each abstract and collects absence detection results
+# Uses parallel processing via map_dfr for efficient batch analysis
+# =============================================================================
 
 
 # Apply enhanced absence detection to all abstracts
@@ -283,6 +386,18 @@ absence_results <- map_dfr(1:nrow(relevant_data), function(i) {
   abstract_text <- relevant_data$abstract[i]
 
   # Use only abstract for analysis since title column is not available
+# =============================================================================
+# RESULTS ANALYSIS AND STATISTICS
+# =============================================================================
+# Analyze the absence detection results to understand patterns and distributions
+# This section performs comprehensive statistical analysis including:
+# - Summary statistics of absence detection rates
+# - Cross-tabulation with ML predictions
+# - Methodological analysis
+# - Geographic and temporal patterns
+# - Plant parts analysis
+# =============================================================================
+
   combined_text <- ifelse(is.na(abstract_text), "", abstract_text)
 
   # Apply enhanced detection function with context extraction
@@ -491,6 +606,16 @@ if (nrow(absence_plant_parts) > 0) {
   print(absence_plant_parts)
 }
 
+# =============================================================================
+# RESULTS EXPORT AND FILE GENERATION
+# =============================================================================
+# Save analysis results to multiple output files for different use cases:
+# - Complete analysis dataset for further processing
+# - Comprehensive matches file for all detected absence evidence
+# - High-confidence subset for priority manual review
+# - Summary report with key findings and recommendations
+# =============================================================================
+
 # Temporal analysis
 absence_temporal <- absence_analysis_results %>%
   # Handle potential duplicates safely
@@ -531,6 +656,17 @@ all_absence_matches <- absence_analysis_results %>%
     Relevant,
     # Enhanced absence detection results
     potential_absence, absence_score, method_score, confidence_level,
+# =============================================================================
+# FINAL REPORTING AND SUMMARY
+# =============================================================================
+# Generate comprehensive reports and provide execution summary
+# This section creates:
+# - Detailed text report with all analysis findings
+# - File creation confirmations
+# - Key findings summary with visual indicators
+# - Recommendations for next steps and manual validation
+# =============================================================================
+
     absence_terms, method_terms, context_snippets, method_context,
     absence_categories, method_categories,
     # Species information (if available)
@@ -566,10 +702,10 @@ write_csv(high_confidence_subset, "results/high_confidence_absence_evidence.csv"
 
 # Generate summary report
 capture.output({
-  cat("=== ABSENCE EVIDENCE DETECTION REPORT ===\n")
+  cat("=== ML PREDICTION VALIDATION REPORT ===\n")
   cat("Generated:", Sys.time(), "\n")
-  cat("Purpose: Identify studies reporting absence of fungal endophytes\n")
-  cat("Method: Automated text analysis with manual validation recommended\n\n")
+  cat("Purpose: Validate ML presence/absence predictions using string detection\n")
+  cat("Method: Cross-reference ML predictions with rule-based absence detection\n\n")
 
   cat("SUMMARY STATISTICS:\n")
   cat("Total abstracts analyzed:", total_abstracts, "\n")

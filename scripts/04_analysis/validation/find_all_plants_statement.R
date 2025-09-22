@@ -1,19 +1,62 @@
-# Find "All Plants Host Fungi" Statement and Variations
-# B. Bock
-# Script to identify abstracts containing the core statement that "all plants host fungi"
-# or variations thereof, which is the foundational premise of the research
+# ==============================================================================
+# FIND ALL PLANTS HOST ENDOPHYTES STATEMENT
+# ==============================================================================
+#
+# PURPOSE:
+# This script documents how frequently scientific abstracts make the statement that
+# all plants host fungal endophytes (or variations thereof), providing background
+# for the Endo-Review project. The project investigates the premise that "all plants
+# host fungi" as a foundational assumption in fungal endophyte research literature.
+#
+# DESCRIPTION:
+# Searches scientific abstracts for variations of the core statement "all plants
+# host fungi" or "all plants host endophytes". Uses pattern matching (exact and
+# fuzzy) to identify these claims across different phrasings and contexts. Provides
+# quantitative analysis of statement frequency and detailed reports for validation.
+#
+# AUTHOR: B. Bock
+# DATE: 2024-09-22
+#
+# INPUTS:
+# - CSV file containing abstracts with required columns:
+#   * id: Unique identifier for each abstract
+#   * article_title: Title of the scientific article
+#   * abstract: Full text of the abstract (required)
+#   * doi: Optional DOI identifier
+# - If no input file specified, script attempts to load from:
+#   * results/relevant_abstracts_with_pa_predictions.csv
+#   * results/predictions_with_abstracts.csv
+#   * data/processed_abstracts.csv
+#
+# OUTPUTS:
+# - all_plants_statement_search_all.csv: Complete search results for all processed abstracts
+# - all_plants_statement_found.csv: Filtered results containing only abstracts with statements
+# - all_plants_statement_analysis.txt: Detailed analysis report with statistics, patterns, and examples
+#
+# DEPENDENCIES:
+# - tidyverse: Data manipulation and analysis
+# - stringr: String operations and pattern matching
+# - stringi: Advanced string processing
+# - stringdist: Fuzzy string matching (Levenshtein distance)
+# - tictoc: Performance timing
+# - progress: Progress bar display
+#
+# ==============================================================================
 
-library(tidyverse)
-library(stringr)
-library(stringi)
-library(stringdist)
-library(tictoc)
-library(progress)
+# Load required libraries for text processing and analysis
+library(tidyverse)  # Data manipulation, including dplyr and readr for data handling
+library(stringr)    # String operations and regex patterns for text matching
+library(stringi)    # Advanced string processing, particularly for text positioning
+library(stringdist) # Fuzzy string matching using Levenshtein distance for approximate matches
+library(tictoc)     # Performance timing to measure execution time
+library(progress)   # Progress bars for long-running batch processing
 
+# Display initialization message to user
 cat("=== FINDING 'ALL PLANTS HOST FUNGI' STATEMENT ===\n")
 cat("Searching for the core premise statement and variations\n\n")
 
-# Configuration - can be modified for different use cases
+# Configuration settings - these control search behavior and can be modified for different use cases
+# Higher fuzzy_threshold = stricter matching, lower = more lenient (but potentially more false positives)
 config <- list(
   # Search parameters
   fuzzy_threshold = 0.9,      # Similarity threshold for fuzzy matching (0-1)
@@ -37,7 +80,14 @@ cat("Configuration loaded - Fuzzy threshold:", config$fuzzy_threshold,
     "| Context words:", config$context_words,
     "| Batch size:", config$batch_size, "\n\n")
 
-# Define comprehensive patterns for the core statement
+# Define comprehensive patterns for the core statement "all plants host fungi"
+# Patterns are categorized by strength of implication to allow analysis by confidence level
+# Primary: Direct statements of universal hosting (highest confidence)
+# Secondary: Strong implications of universality (high confidence)
+# Contextual: Statements implying universality through negation or general claims
+# Scientific: Formal academic terminology suggesting universality
+# Review: General statements about ubiquity (lower confidence)
+# Quantitative: Numerical claims suggesting universality
 core_statement_patterns <- list(
 
   # Primary patterns - exact matches for the core statement
@@ -170,10 +220,13 @@ primary = c(
   )
 )
 
-# OPTIMIZED: Pre-compile patterns for much faster matching
+# Pre-compile patterns for optimized matching to avoid repeated computation during search
+# This significantly improves performance when processing thousands of abstracts
 compiled_patterns <- NULL
 
-# Function to initialize compiled patterns
+# Function to initialize compiled patterns for efficient searching
+# Pre-computes lowercase versions, regex patterns, and word splits to avoid
+# redundant processing during the main search loop
 init_compiled_patterns <- function(patterns_list, fuzzy_threshold = 0.9) {
   compiled <- list()
 
@@ -184,14 +237,15 @@ init_compiled_patterns <- function(patterns_list, fuzzy_threshold = 0.9) {
     for (pattern in patterns) {
       pattern_lower <- str_to_lower(pattern)
 
-      # Create regex pattern with word boundaries for exact matching
+      # Create regex pattern with word boundaries to ensure exact phrase matching
+      # This prevents partial matches within words (e.g., "plant" matching "plants")
       regex_pattern <- paste0("\\b", str_replace_all(pattern_lower, "\\s+", "\\\\s+"), "\\b")
 
       category_patterns[[pattern]] <- list(
-        original = pattern,
-        lower = pattern_lower,
-        regex = regex_pattern,
-        words = str_split(pattern_lower, "\\s+")[[1]]
+        original = pattern,           # Keep original for reporting
+        lower = pattern_lower,        # Pre-lowercased for case-insensitive matching
+        regex = regex_pattern,        # Compiled regex for exact matching
+        words = str_split(pattern_lower, "\\s+")[[1]]  # Pre-split for fuzzy matching
       )
     }
 
@@ -201,14 +255,17 @@ init_compiled_patterns <- function(patterns_list, fuzzy_threshold = 0.9) {
   return(compiled)
 }
 
-# HIGHLY OPTIMIZED: Vectorized pattern search with fast fuzzy matching
+# Highly optimized pattern search function using multi-stage matching strategy
+# Algorithm prioritizes speed: exact matches first, then targeted fuzzy matching only when needed
+# Returns list of found patterns organized by category, with fuzzy matches annotated
 search_patterns_optimized <- function(text, compiled_patterns, fuzzy_threshold = 0.9) {
+  # Skip processing for invalid or too-short texts to avoid false positives
   if (is.na(text) || text == "" || nchar(text) < 10) return(list())
 
   text_lower <- str_to_lower(text)
   found_patterns <- list()
 
-  # Pre-split text for fuzzy matching
+  # Pre-split text into words once for efficient fuzzy matching operations
   text_words <- str_split(text_lower, "\\s+")[[1]]
 
   for (category in names(compiled_patterns)) {
@@ -221,24 +278,25 @@ search_patterns_optimized <- function(text, compiled_patterns, fuzzy_threshold =
       regex_pattern <- pattern_info$regex
       pattern_words <- pattern_info$words
 
-      # Fast exact match first (most common case)
+      # STAGE 1: Fast exact regex matching (most common case, very fast)
       if (str_detect(text_lower, regex_pattern)) {
         category_matches <- c(category_matches, pattern)
       } else {
-        # OPTIMIZED FUZZY MATCHING: Only for patterns that could fit
+        # STAGE 2: OPTIMIZED FUZZY MATCHING - only when exact match fails
+        # Skip if pattern is longer than text (impossible match)
         if (length(pattern_words) <= length(text_words)) {
-          # Use grep for fast substring search first
+          # Quick pre-filter: check if first word exists (fast substring search)
           if (str_detect(text_lower, pattern_words[1])) {
-            # Quick similarity check using simple Levenshtein distance
-            # Much faster than Jaccard-Winkler for most cases
+            # Compute fuzzy similarity using sliding window approach
+            # Uses Levenshtein distance normalized by string length for similarity score
             best_similarity <- 0
 
-            # Slide window through text (optimized)
+            # Slide window through text to find best matching substring
             for (i in seq(1, length(text_words) - length(pattern_words) + 1, by = 1)) {
               window <- text_words[i:(i + length(pattern_words) - 1)]
               window_text <- paste(window, collapse = " ")
 
-              # Fast Levenshtein distance (much faster than Jaccard-Winkler)
+              # Calculate normalized Levenshtein distance (faster than Jaccard-Winkler)
               lev_dist <- adist(window_text, pattern_lower)[1, 1]
               max_len <- max(nchar(window_text), nchar(pattern_lower))
               similarity <- 1 - (lev_dist / max_len)
@@ -247,10 +305,11 @@ search_patterns_optimized <- function(text, compiled_patterns, fuzzy_threshold =
                 best_similarity <- similarity
               }
 
-              # Early exit if we find a good enough match
+              # Early exit optimization: stop searching if threshold exceeded
               if (best_similarity >= fuzzy_threshold) break
             }
 
+            # Accept fuzzy match if similarity meets threshold
             if (best_similarity >= fuzzy_threshold) {
               category_matches <- c(category_matches, paste0(pattern, " (fuzzy: ", round(best_similarity, 2), ")"))
             }
@@ -267,25 +326,29 @@ search_patterns_optimized <- function(text, compiled_patterns, fuzzy_threshold =
   return(found_patterns)
 }
 
-# Function to extract context around found patterns
+# Function to extract contextual text around found patterns for validation
+# Returns surrounding words to show how the pattern appears in context
+# Handles both exact and approximate matches with careful boundary detection
 extract_context <- function(text, pattern, context_words = 10) {
+  # Handle edge cases
   if (is.na(text) || text == "") return(NA_character_)
 
-  # Clean and prepare text
+  # Clean and prepare text for processing
   text_clean <- str_trim(text)
   if (text_clean == "") return(NA_character_)
 
   text_lower <- str_to_lower(text_clean)
   pattern_lower <- str_to_lower(str_trim(pattern))
 
-  # Try exact match first
+  # Find pattern position using two-stage approach for robustness
+  # STAGE 1: Exact string matching (fastest, most reliable)
   pattern_pos <- stri_locate_first_fixed(text_lower, pattern_lower)
 
-  # If no exact match, try with word boundaries for better accuracy
+  # STAGE 2: Word-based matching if exact match fails (handles spacing variations)
   if (is.na(pattern_pos[1])) {
     pattern_words <- str_split(pattern_lower, "\\s+")[[1]]
     if (length(pattern_words) > 1) {
-      # For multi-word patterns, look for word sequence
+      # For multi-word patterns, find consecutive word sequence
       words <- str_split(text_lower, "\\s+")[[1]]
       pattern_start <- NA
 
@@ -297,37 +360,38 @@ extract_context <- function(text, pattern, context_words = 10) {
       }
 
       if (!is.na(pattern_start)) {
-        # Convert word position back to character position
+        # Convert word position to character position for precise extraction
         words_split <- str_split(text_clean, "\\s+")[[1]]
         char_start <- sum(nchar(words_split[1:(pattern_start-1)])) +
-                     (pattern_start - 1) + 1  # Add space characters
+                      (pattern_start - 1) + 1  # Add space characters
         char_end <- char_start + sum(nchar(words_split[pattern_start:(pattern_start+length(pattern_words)-1)])) +
-                   (length(pattern_words) - 1)  # Add space characters between pattern words
+                    (length(pattern_words) - 1)  # Add space characters between pattern words
 
         pattern_pos <- c(char_start, char_end)
       }
     }
   }
 
+  # Return NA if pattern not found
   if (is.na(pattern_pos[1])) return(NA_character_)
 
-  # Extract context with character-based positioning for better accuracy
-  start_pos <- max(1, pattern_pos[1] - (context_words * 6))  # Estimate ~6 chars per word
+  # Extract context window around the pattern
+  # Use character-based positioning for precision (estimate ~6 chars per word)
+  start_pos <- max(1, pattern_pos[1] - (context_words * 6))
   end_pos <- min(nchar(text_clean), pattern_pos[2] + (context_words * 6))
 
-  # Find word boundaries for clean extraction
   context_text <- substr(text_clean, start_pos, end_pos)
 
-  # Clean up context (remove partial words at boundaries)
+  # Clean up context to avoid truncated words at boundaries
   context_words_list <- str_split(context_text, "\\s+")[[1]]
   if (length(context_words_list) > 0) {
-    # Remove first word if it looks truncated (doesn't start with capital or common start)
+    # Remove first word if it appears truncated (not starting with capital, number, or long lowercase)
     if (length(context_words_list) > 1 &&
         !str_detect(context_words_list[1], "^[A-Z]|^[0-9]|^[a-z]{4,}")) {
       context_words_list <- context_words_list[-1]
     }
 
-    # Remove last word if it looks truncated
+    # Remove last word if it appears truncated (not ending with punctuation or long enough)
     if (length(context_words_list) > 1 &&
         !str_detect(context_words_list[length(context_words_list)], "[.!?]$|[a-z]{4,}$")) {
       context_words_list <- context_words_list[-length(context_words_list)]
@@ -335,7 +399,7 @@ extract_context <- function(text, pattern, context_words = 10) {
 
     context <- paste(context_words_list, collapse = " ")
 
-    # Ensure reasonable length
+    # Limit context length for readability
     if (nchar(context) > 500) {
       context <- paste0(substr(context, 1, 500), "...")
     }
@@ -346,48 +410,53 @@ extract_context <- function(text, pattern, context_words = 10) {
   return(NA_character_)
 }
 
-# Function to analyze found statements
+# Function to perform statistical analysis on search results
+# Computes frequency distributions and summary statistics for validation and reporting
+# Returns structured analysis object with multiple views of the data
 analyze_found_statements <- function(results_df) {
   analysis <- list()
 
-  # Count by category
+  # Analysis 1: Frequency count by pattern category (primary, secondary, etc.)
+  # Shows which types of statements are most common in the literature
   analysis$by_category <- results_df %>%
     select(id, found_categories) %>%
-    unnest(found_categories) %>%
+    unnest(found_categories) %>%  # Flatten list column to individual rows
     count(found_categories, name = "count") %>%
     arrange(desc(count))
 
-  # Count by specific pattern
+  # Analysis 2: Frequency count by specific pattern text
+  # Identifies the most commonly used exact phrases in the literature
   analysis$by_pattern <- results_df %>%
     select(id, found_patterns) %>%
-    unnest(found_patterns) %>%
+    unnest(found_patterns) %>%   # Flatten pattern matches
     count(found_patterns, name = "count") %>%
     arrange(desc(count))
 
-  # Summary statistics
+  # Analysis 3: Summary statistics for overall assessment
   analysis$summary <- list(
-    total_abstracts = nrow(results_df),
-    abstracts_with_statement = sum(results_df$has_statement),
-    percentage_with_statement = round(100 * sum(results_df$has_statement) / nrow(results_df), 2),
-    total_patterns_found = sum(lengths(results_df$found_patterns))
+    total_abstracts = nrow(results_df),  # Total abstracts processed
+    abstracts_with_statement = sum(results_df$has_statement),  # Abstracts containing any statement
+    percentage_with_statement = round(100 * sum(results_df$has_statement) / nrow(results_df), 2),  # Percentage
+    total_patterns_found = sum(lengths(results_df$found_patterns))  # Total pattern matches across all abstracts
   )
 
   return(analysis)
 }
 
-# Main execution function
+# Main execution function - orchestrates the entire statement search workflow
+# Handles data loading, validation, batch processing, analysis, and output generation
 find_all_plants_statement <- function(input_file = NULL,
-                                     output_dir = "results",
-                                     batch_size = 1000,
-                                     fuzzy_threshold = 0.9,
-                                     use_fuzzy_matching = TRUE,
-                                     context_words = 10,
-                                     verbose = TRUE) {
+                                      output_dir = "results",
+                                      batch_size = 1000,
+                                      fuzzy_threshold = 0.9,
+                                      use_fuzzy_matching = TRUE,
+                                      context_words = 10,
+                                      verbose = TRUE) {
 
   cat("Starting search for 'all plants host fungi' statement...\n")
-  tic("Statement search")
+  tic("Statement search")  # Start timing the entire process
 
-  # Validate inputs
+  # INPUT VALIDATION: Ensure parameters are valid before processing
   if (!is.null(input_file) && !file.exists(input_file)) {
     stop("Input file does not exist: ", input_file)
   }
@@ -400,18 +469,20 @@ find_all_plants_statement <- function(input_file = NULL,
     stop("context_words must be a positive integer")
   }
 
-  # Determine input data source
+  # DATA LOADING: Find and load abstracts data from various possible sources
+  # Supports flexible input - either specified file or automatic detection
   if (is.null(input_file)) {
-    # Try to load from results
+    # Automatic file detection - try common output files from the pipeline
     possible_files <- c(
-      "results/relevant_abstracts_with_pa_predictions.csv",
-      "results/predictions_with_abstracts.csv",
-      "data/processed_abstracts.csv"
+      "results/relevant_abstracts_with_pa_predictions.csv",  # Primary: ML predictions
+      "results/predictions_with_abstracts.csv",              # Alternative predictions
+      "data/processed_abstracts.csv"                         # Fallback processed data
     )
 
     data <- NULL
-    text_column <- "abstract"
+    text_column <- "abstract"  # Expected column name for abstract text
 
+    # Load first available file
     for (file_path in possible_files) {
       if (file.exists(file_path)) {
         if (verbose) cat("Loading data from:", file_path, "\n")
@@ -424,19 +495,20 @@ find_all_plants_statement <- function(input_file = NULL,
       stop("No suitable data file found. Please specify input_file or ensure data files exist in expected locations.")
     }
   } else {
+    # Load user-specified input file
     if (verbose) cat("Loading specified file:", input_file, "\n")
     data <- read_csv(input_file, show_col_types = FALSE)
-    text_column <- "abstract"
+    text_column <- "abstract"  # Assume standard column name
   }
 
-  # Validate required columns
+  # DATA VALIDATION: Ensure required columns exist
   required_cols <- c("id", "article_title", text_column)
   missing_cols <- setdiff(required_cols, names(data))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
   }
 
-  # Remove rows with missing abstracts
+  # DATA CLEANING: Remove abstracts with missing or empty text
   original_n <- nrow(data)
   data <- data %>% filter(!is.na(.data[[text_column]]), .data[[text_column]] != "")
   if (verbose && nrow(data) < original_n) {
@@ -449,15 +521,16 @@ find_all_plants_statement <- function(input_file = NULL,
 
   if (verbose) cat("Processing", nrow(data), "abstracts...\n")
 
-  # Initialize compiled patterns for optimized matching
+  # PATTERN INITIALIZATION: Pre-compile patterns for efficient searching
   if (verbose) cat("Pre-compiling patterns for optimized matching...\n")
   compiled_patterns <- init_compiled_patterns(core_statement_patterns, fuzzy_threshold)
 
-  # Process abstracts in batches for efficiency
+  # BATCH PROCESSING: Divide work into chunks for memory efficiency and progress tracking
+  # Large datasets are processed in batches to avoid memory issues and provide feedback
   n_batches <- ceiling(nrow(data) / batch_size)
   results_list <- list()
 
-  # Initialize progress bar
+  # Initialize progress bar for user feedback during long operations
   if (verbose) {
     pb <- progress_bar$new(
       format = "Processing [:bar] :percent | ETA: :eta | Batch :current/:total",
@@ -543,23 +616,23 @@ find_all_plants_statement <- function(input_file = NULL,
     results_list[[batch_num]] <- batch_results
   }
 
-  # Combine all results
+  # RESULTS AGGREGATION: Combine batch results into single dataset
   all_results <- bind_rows(results_list)
 
-  # Filter to only abstracts containing the statement
+  # RESULTS FILTERING: Extract only abstracts containing statements for focused analysis
   statement_abstracts <- all_results %>%
     filter(has_statement)
 
-  # Perform analysis on all results (not just filtered ones)
+  # STATISTICAL ANALYSIS: Generate frequency distributions and summary statistics
   analysis <- analyze_found_statements(all_results)
 
-  # Save results
-  dir.create(output_dir, showWarnings = FALSE)
+  # OUTPUT GENERATION: Save results to files for further analysis and validation
+  dir.create(output_dir, showWarnings = FALSE)  # Ensure output directory exists
 
-  # Save all results
+  # Save complete results (all abstracts with search metadata)
   write_csv(all_results, file.path(output_dir, "all_plants_statement_search_all.csv"))
 
-  # Save only abstracts with statement
+  # Save filtered results (only abstracts containing statements)
   write_csv(statement_abstracts, file.path(output_dir, "all_plants_statement_found.csv"))
 
   # Save analysis summary
@@ -628,7 +701,8 @@ find_all_plants_statement <- function(input_file = NULL,
   ))
 }
 
-# Run the analysis with default configuration
+# SCRIPT EXECUTION: Run the main analysis function when script is executed
+# Only runs if in interactive mode or forced (allows sourcing without execution)
 if (interactive() || TRUE) {  # Allow running when sourced
   results <- find_all_plants_statement(
     output_dir = config$output_dir,
@@ -639,29 +713,34 @@ if (interactive() || TRUE) {  # Allow running when sourced
   )
 }
 
+# Completion message with emoji for visual confirmation
 cat("\nStatement search complete! 🔍📄\n")
 
-# USAGE EXAMPLES:
+# ==============================================================================
+# USAGE EXAMPLES AND API DOCUMENTATION
+# ==============================================================================
+# This script can be used in multiple ways depending on your needs:
 #
-# Basic usage (uses default config):
+# BASIC USAGE (automatic file detection):
 # results <- find_all_plants_statement()
 #
-# Custom parameters:
+# CUSTOM PARAMETERS for different sensitivity levels:
 # results <- find_all_plants_statement(
-#   fuzzy_threshold = 0.8,     # More lenient fuzzy matching
-#   context_words = 15,        # More context words
-#   batch_size = 1000          # Larger batches for faster processing
+#   fuzzy_threshold = 0.8,     # More lenient fuzzy matching (0.1-1.0)
+#   context_words = 15,        # Extract more context around matches
+#   batch_size = 1000          # Adjust for memory/performance balance
 # )
 #
-# Specify input file:
+# SPECIFY CUSTOM INPUT FILE:
 # results <- find_all_plants_statement(
 #   input_file = "path/to/your/data.csv"
 # )
 #
-# Quiet mode (no progress messages):
+# QUIET MODE (suppress progress messages):
 # results <- find_all_plants_statement(verbose = FALSE)
 #
-# RESULTS ACCESS:
-# All results: results$all_results
-# Only statements: results$statement_abstracts
-# Analysis summary: results$analysis
+# ACCESSING RESULTS:
+# All results with metadata: results$all_results
+# Only abstracts with statements: results$statement_abstracts
+# Statistical analysis: results$analysis
+# ==============================================================================
