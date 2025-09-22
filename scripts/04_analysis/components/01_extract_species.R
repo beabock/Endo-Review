@@ -85,8 +85,8 @@ extract_species_data <- function(
   if (!is.data.frame(abstracts_data)) {
     stop("'abstracts_data' must be a data frame.")
   }
-  if (!"text" %in% colnames(abstracts_data)) {
-    stop("'abstracts_data' must contain a 'text' column for abstracts.")
+  if (!"abstract" %in% colnames(abstracts_data)) {
+    stop("'abstracts_data' must contain a 'abstract' column for abstracts.")
   }
 
   # Handle empty datasets

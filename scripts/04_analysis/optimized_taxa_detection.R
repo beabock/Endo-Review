@@ -7,23 +7,26 @@ library(rgbif)
 library(stringr)
 library(furrr)  # For parallel processing
 library(future)
+library(data.table)  # For faster joins and data manipulation
+library(purrr)  # For vectorized operations
 
 # By default do not run the internal tests/examples when this file is sourced.
 # Set run_examples <- TRUE below (or override in your environment) to enable.
 run_examples <- FALSE
 
-# Set up parallel processing
+# Enhanced parallel processing setup
 setup_parallel <- function(workers = NULL) {
   if (is.null(workers)) {
-    workers <- min(4, availableCores() - 1)  # Default to 4 or less if fewer cores
+    # Optimization: Increase workers for large datasets while reserving one core for system
+    workers <- min(8, availableCores() - 1)
   }
-  
+
   # Set a higher memory limit for large datasets
   options(future.globals.maxSize = 4000 * 1024^2)  # 4GB limit
-  
+
   # Use multisession for Windows compatibility
   plan(multisession, workers = workers)
-  
+
   message("Parallel processing set up with ", workers, " workers")
 }
 
@@ -71,14 +74,42 @@ create_lookup_tables <- function(species_df) {
     ungroup() %>%
     distinct()  # Remove any remaining duplicate entries
   
-  return(list(
+  # Integration: Add hash tables for O(1) lookups (from 01_extract_species.R optimizations)
+  # Optimization: Pre-compute hash tables for faster lookups on large datasets
+  result <- list(
     species_df = species_df,
     accepted_species = accepted_species,
     genus_list = genus_list,
     family_list = family_list,
     synonyms = synonyms,
     synonym_resolution = synonym_resolution
-  ))
+  )
+
+  # Add vectorized name lists for fast lookups
+  if (!is.null(accepted_species)) {
+    result$species_names_vector <- accepted_species$canonicalName_lower
+  }
+  if (!is.null(genus_list)) {
+    result$genus_names_vector <- genus_list$canonicalName_lower
+  }
+  if (!is.null(family_list)) {
+    result$family_names_vector <- family_list$canonicalName_lower
+  }
+
+  # Create hash tables for O(1) lookups if dataset is large enough
+  threshold <- 10000  # Same threshold as in 01_extract_species.R
+  if (nrow(species_df) > threshold) {
+    if (!is.null(result$species_names_vector)) {
+      result$species_hash <- setNames(rep(TRUE, length(result$species_names_vector)),
+                                      result$species_names_vector)
+    }
+    if (!is.null(result$genus_names_vector)) {
+      result$genus_hash <- setNames(rep(TRUE, length(result$genus_names_vector)),
+                                    result$genus_names_vector)
+    }
+  }
+
+  return(result)
 }
 
 # Optimized capitalization correction
@@ -90,45 +121,48 @@ correct_capitalization <- function(name) {
   paste(words, collapse = " ")
 }
 
-# Optimized extract_candidate_names with better regex patterns
-extract_candidate_names <- function(text) {
+# Optimized extract_candidate_names with text preprocessing caching
+extract_candidate_names <- function(text, preprocessed_text = NULL) {
   # Skip empty text
-  if (is.na(text) || text == "") return(character(0))
-  
+  if (is.na(text) || text == "") return(list(candidates = character(0), preprocessed_text = ""))
+
+  # Text preprocessing: normalize (lowercase, punctuation removal) once for reuse
+  # Optimization: Cache preprocessed text to avoid redundant processing in process_taxonomic_matches
+  if (is.null(preprocessed_text)) {
+    preprocessed_text <- tolower(gsub("[[:punct:][:digit:]]", " ", text))
+  }
+
   # Enhanced pattern for "Genus species" that handles punctuation
   genus_species <- str_extract_all(text, "\\b[A-Z][a-z]+\\s+[a-z]+\\b[,\\.;:\\)\\(]?")[[1]]
   genus_species <- str_replace_all(genus_species, "[,\\.;:\\)\\(]$", "")
-  
+
   # Better pattern for abbreviated genus names
   abbreviated <- str_extract_all(text, "\\b[A-Z]\\.\\s+[a-z]+\\b[,\\.;:\\)\\(]?")[[1]]
   abbreviated <- str_replace_all(abbreviated, "[,\\.;:\\)\\(]$", "")
-  
-  # Extract bigrams from lowercase text for additional candidates
-  text_lower <- tolower(text)
-  
-  # Extract n-grams to preserve multi-word taxa
+
+  # Extract bigrams from preprocessed text for additional candidates
   bigram_pattern <- "\\b[a-z]+\\s+[a-z]+\\b"
-  bigrams <- str_extract_all(text_lower, bigram_pattern)[[1]]
-  
+  bigrams <- str_extract_all(preprocessed_text, bigram_pattern)[[1]]
+
   # Filter bigrams to only those that might be species names
   potential_bigrams <- bigrams[nchar(bigrams) > 5 & nchar(bigrams) < 40]
-  
+
   # Store abbreviated genus references for later expansion
   abbrev_refs <- str_extract_all(text, "\\b[A-Z]\\.\\s+[a-z]+\\b")[[1]]
-  
+
   # Combine all candidate names
   candidates <- unique(c(
-    tolower(genus_species), 
-    tolower(abbreviated), 
+    tolower(genus_species),
+    tolower(abbreviated),
     potential_bigrams,
     tolower(abbrev_refs)
   ))
-  
-  return(candidates)
+
+  return(list(candidates = candidates, preprocessed_text = preprocessed_text))
 }
 
-# Optimized batch_validate_names with better performance
-batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE) {
+# Optimized batch_validate_names with Bloom filter option
+batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE, use_bloom_filter = FALSE) {
   if (length(names) == 0) return(tibble())
   
   # Filter out invalid names
@@ -144,100 +178,126 @@ batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE) {
     }
   }
   
-  # Expand abbreviated genus names
+  # Expand abbreviated genus names using vectorized operations
+  # Optimization: Replace nested loops with purrr::map for better performance
   expanded_names <- character(0)
   abbrev_matches <- names[grepl("^[A-Za-z]\\.\\s+[a-z]+", names)]
-  
+
   if (length(abbrev_matches) > 0) {
-    for (name in abbrev_matches) {
-      # Extract first letter and species epithet
-      parts <- strsplit(name, "\\.")[[1]]
-      if (length(parts) < 2) next
-      
-      first_letter <- tolower(substr(parts[1], 1, 1))
-      species_epithet <- trimws(gsub("^\\s+", "", parts[2]))
-      
-      # Get all genera starting with that letter (limit to 50 for performance)
-      potential_genera <- lookup_tables$genus_list %>%
-        filter(str_starts(canonicalName_lower, first_letter)) %>%
-        head(50) %>%  # Limit to 50 most common genera for performance
-        pull(canonicalName)
-      
-      # Try each potential genus
-      for (gen in potential_genera) {
-        full_name_candidate <- paste(gen, species_epithet)
-        if (tolower(full_name_candidate) %in% lookup_tables$accepted_species$canonicalName_lower) {
-          expanded_names <- c(expanded_names, full_name_candidate)
-          break  # Stop after first match for performance
+    # Vectorized abbreviation expansion using purrr
+    expanded_names <- abbrev_matches %>%
+      map_chr(function(name) {
+        # Extract first letter and species epithet
+        parts <- strsplit(name, "\\.")[[1]]
+        if (length(parts) < 2) return(NA_character_)
+
+        first_letter <- tolower(substr(parts[1], 1, 1))
+        species_epithet <- trimws(gsub("^\\s+", "", parts[2]))
+
+        # Get all genera starting with that letter (limit to 50 for performance)
+        potential_genera <- lookup_tables$genus_list %>%
+          filter(str_starts(canonicalName_lower, first_letter)) %>%
+          head(50) %>%  # Limit to 50 most common genera for performance
+          pull(canonicalName)
+
+        # Find first matching full name using vectorized check
+        matches <- paste(potential_genera, species_epithet)
+        matches_lower <- tolower(matches)
+        matching_idx <- which(matches_lower %in% lookup_tables$accepted_species$canonicalName_lower)[1]
+
+        if (!is.na(matching_idx)) {
+          return(matches[matching_idx])
+        } else {
+          return(NA_character_)
         }
-      }
-    }
+      }) %>%
+      na.omit() %>%
+      as.character()
   }
   
   names <- unique(c(names, expanded_names))
   
-  # Direct species match - more efficient with semi_join first
-  names_df <- tibble(user_supplied_name = names) %>%
-    mutate(user_supplied_name_lower = tolower(user_supplied_name))
-  
-  # First check which names might match using a faster semi_join
-  potential_matches <- names_df %>%
-    semi_join(lookup_tables$species_df, 
-              by = c("user_supplied_name_lower" = "canonicalName_lower"))
-  
-  # Only do the expensive left_join on potential matches
+  # Bloom filter optimization: Pre-filter candidates to reduce join overhead
+  # Optimization: Use hash-based filtering for O(1) lookups when enabled
+  if (use_bloom_filter && !is.null(lookup_tables$species_hash)) {
+    # Filter names that might exist using fast hash lookup
+    names <- names[names %in% names(lookup_tables$species_hash)]
+    if (length(names) == 0) return(tibble())
+  }
+
+  # Direct species match using data.table for faster joins
+  # Optimization: Convert tibbles to data.table for significantly faster joins on large datasets
+  names_dt <- data.table(
+    user_supplied_name = names,
+    user_supplied_name_lower = tolower(names)
+  )
+
+  # Convert lookup tables to data.table for faster joins
+  species_df_dt <- as.data.table(lookup_tables$species_df)
+  accepted_species_dt <- as.data.table(lookup_tables$accepted_species)
+  synonym_resolution_dt <- as.data.table(lookup_tables$synonym_resolution)
+
+  # First check which names might match using data.table semi-join equivalent
+  potential_matches <- names_dt[species_df_dt, on = .(user_supplied_name_lower = canonicalName_lower), nomatch = NULL]
+
+  # Only do the expensive joins on potential matches
   if (nrow(potential_matches) > 0) {
     # Match against accepted species
-    accepted_matches <- potential_matches %>%
-      inner_join(
-        lookup_tables$accepted_species,
-        by = c("user_supplied_name_lower" = "canonicalName_lower")
-      ) %>%
-      mutate(
+    accepted_matches <- potential_matches[accepted_species_dt, on = .(user_supplied_name_lower = canonicalName_lower), nomatch = NULL][
+      , .(
+        user_supplied_name,
         resolved_name = canonicalName,
         status = "ACCEPTED",
-        acceptedScientificName = canonicalName
+        acceptedScientificName = canonicalName,
+        kingdom, phylum, family, genus
       )
-    
-    # Match against synonyms
-    synonym_matches <- potential_matches %>%
-      anti_join(accepted_matches, by = "user_supplied_name") %>%
-      inner_join(
-        lookup_tables$synonym_resolution,
-        by = c("user_supplied_name_lower" = "canonicalName_lower")
-      ) %>%
-      # Add taxonomic hierarchy for the accepted name
-      left_join(
-        lookup_tables$accepted_species %>% 
-          select(canonicalName, kingdom, phylum, family, genus),
-        by = c("acceptedName" = "canonicalName")
-      ) %>%
-      mutate(
-        resolved_name = acceptedName,
-        status = "SYNONYM",
-        acceptedScientificName = acceptedName
-      ) %>%
-      distinct()  # Remove any duplicate rows that might be created
-    
+    ]
+
+    # Match against synonyms (exclude already matched accepted species)
+    unmatched_names <- potential_matches[!accepted_matches, on = .(user_supplied_name)]
+
+    if (nrow(unmatched_names) > 0) {
+      synonym_matches <- unmatched_names[synonym_resolution_dt, on = .(user_supplied_name_lower = canonicalName_lower), nomatch = NULL][
+        accepted_species_dt, on = .(acceptedName = canonicalName), nomatch = NULL
+      ][
+        , .(
+          user_supplied_name,
+          resolved_name = acceptedName,
+          status = "SYNONYM",
+          acceptedScientificName = acceptedName,
+          kingdom, phylum, family, genus
+        )
+      ]
+    } else {
+      synonym_matches <- data.table()
+    }
+
     # Combine matches
-    resolved <- bind_rows(accepted_matches, synonym_matches)
+    resolved <- rbindlist(list(accepted_matches, synonym_matches), fill = TRUE)
   } else {
-    resolved <- tibble()
+    resolved <- data.table()
   }
   
   # Fuzzy matching is disabled by default for performance
   # Only enable if specifically requested and for small datasets
-  
-  return(resolved)
+
+  # Convert back to tibble for backward compatibility
+  return(as_tibble(resolved))
 }
 
-# Optimized process_taxonomic_matches with better performance
-process_taxonomic_matches <- function(valid_species, lookup_tables, text, 
-                                     abstract_id, predicted_label) {
+# Optimized process_taxonomic_matches with text preprocessing caching
+process_taxonomic_matches <- function(valid_species, lookup_tables, text,
+                                      abstract_id, predicted_label, preprocessed_text = NULL) {
   all_rows <- list()
-  
+
+  # Use cached preprocessed text if available, otherwise process text
+  # Optimization: Reuse preprocessed text from extract_candidate_names to avoid redundant normalization
+  if (is.null(preprocessed_text)) {
+    preprocessed_text <- tolower(gsub("[[:punct:][:digit:]]", " ", text))
+  }
+
   # Create tokens and n-grams for matching
-  tokens_vec <- unlist(strsplit(gsub("[[:punct:][:digit:]]", " ", tolower(text)), "\\s+"))
+  tokens_vec <- unlist(strsplit(preprocessed_text, "\\s+"))
   tokens_vec <- tokens_vec[tokens_vec != ""]
   
   # Create bigrams to preserve multi-word taxa names
@@ -331,37 +391,39 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
   return(all_rows)
 }
 
-# Optimized extract_plant_info function
+# Optimized extract_plant_info function with text preprocessing caching
 extract_plant_info <- function(text, abstract_id, predicted_label, lookup_tables, plant_parts_keywords) {
   if (is.na(text) || text == "") {
     return(create_empty_result(abstract_id, predicted_label))
   }
-  
-  # Extract candidate names with improved function
-  plant_candidates <- extract_candidate_names(text)
-  
-  # Detect plant parts with simple string matching
-  text_lower <- tolower(text)
+
+  # Extract candidate names with preprocessing caching
+  candidate_result <- extract_candidate_names(text)
+  plant_candidates <- candidate_result$candidates
+  preprocessed_text <- candidate_result$preprocessed_text
+
+  # Detect plant parts with simple string matching using cached preprocessed text
+  # Optimization: Reuse preprocessed text for plant parts detection
   plant_parts_found <- character(0)
   for (part in plant_parts_keywords) {
     # Use word boundary pattern to match whole words only
-    if (grepl(paste0("\\b", part, "\\b"), text_lower)) {
+    if (grepl(paste0("\\b", part, "\\b"), preprocessed_text)) {
       plant_parts_found <- c(plant_parts_found, part)
     }
   }
-  
+
   plant_parts_indicator <- setNames(
-    as.integer(plant_parts_keywords %in% plant_parts_found), 
+    as.integer(plant_parts_keywords %in% plant_parts_found),
     plant_parts_keywords
   )
-  
+
   # Validate candidate names with improved function
   valid_species <- batch_validate_names(plant_candidates, lookup_tables)
-  
-  # Process matches with improved function
+
+  # Process matches with improved function, passing cached preprocessed text
   all_rows <- process_taxonomic_matches(
-    valid_species, lookup_tables, text, 
-    abstract_id, predicted_label
+    valid_species, lookup_tables, text,
+    abstract_id, predicted_label, preprocessed_text
   )
   
   # Combine results
@@ -394,26 +456,32 @@ create_empty_result <- function(abstract_id, predicted_label) {
   )
 }
 
-# Process abstracts in parallel for better performance
-process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_keywords, 
-                                      batch_size = 100, workers = NULL) {
+# Enhanced parallel processing with streaming and optimized batching
+process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_keywords,
+                                       batch_size = NULL, workers = NULL, use_streaming = TRUE) {
   # Set up parallel processing
   setup_parallel(workers)
-  
+
   # Total number of abstracts
   total_abstracts <- nrow(abstracts)
   message("Processing ", total_abstracts, " abstracts in parallel")
-  
+
+  # Optimization: Dynamically adjust batch_size to 50 for large datasets
+  if (is.null(batch_size)) {
+    batch_size <- ifelse(total_abstracts > 1000, 50, 100)
+  }
+
   # Process in batches for better memory management
   batches <- split(1:total_abstracts, ceiling(seq_along(1:total_abstracts) / batch_size))
-  
+
   all_results <- list()
-  
+  temp_files <- character(0)
+
   for (i in seq_along(batches)) {
     batch_indices <- batches[[i]]
-    message("Processing batch ", i, " of ", length(batches), 
-            " (abstracts ", min(batch_indices), " to ", max(batch_indices), ")")
-    
+    message("Processing batch ", i, " of ", length(batches),
+             " (abstracts ", min(batch_indices), " to ", max(batch_indices), ")")
+
     # Process batch in parallel
     batch_results <- future_map(batch_indices, function(idx) {
       extract_plant_info(
@@ -424,17 +492,37 @@ process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_key
         plant_parts_keywords = plant_parts_keywords
       )
     }, .options = furrr_options(seed = TRUE))
-    
-    # Combine batch results
-    all_results <- c(all_results, batch_results)
-    
-    # Force garbage collection to free memory
+
+    # Memory optimization: Stream partial results to temp files
+    if (use_streaming && length(batch_results) > 0) {
+      batch_df <- bind_rows(batch_results)
+      temp_file <- tempfile(pattern = paste0("batch_", i, "_"), fileext = ".rds")
+      saveRDS(batch_df, temp_file)
+      temp_files <- c(temp_files, temp_file)
+
+      # Clear batch results from memory
+      batch_results <- NULL
+      batch_df <- NULL
+    } else {
+      # Combine batch results in memory if not streaming
+      all_results <- c(all_results, batch_results)
+    }
+
+    # Optimization: More frequent garbage collection for memory management
     gc()
   }
-  
-  # Combine all results
-  final_results <- bind_rows(all_results)
-  
+
+  # Aggregate results from temp files or in-memory results
+  if (use_streaming && length(temp_files) > 0) {
+    message("Aggregating results from ", length(temp_files), " temp files")
+    final_results <- map_dfr(temp_files, readRDS)
+
+    # Clean up temp files
+    file.remove(temp_files)
+  } else {
+    final_results <- bind_rows(all_results)
+  }
+
   message("Processing complete! Processed ", total_abstracts, " abstracts")
   return(final_results)
 }
@@ -526,9 +614,10 @@ test_synonym_handling <- function() {
     cat("Text:", text, "\n")
     
     # Extract candidate names
-    candidates <- extract_candidate_names(text)
+    candidate_result <- extract_candidate_names(text)
+    candidates <- candidate_result$candidates
     cat("Extracted candidates:", paste(candidates, collapse = ", "), "\n")
-    
+
     # Validate names
     valid_species <- batch_validate_names(candidates, lookup_tables)
     cat("Valid species found:", nrow(valid_species), "\n")
@@ -589,7 +678,8 @@ if (interactive() && run_examples) {
   print(names(lookup_tables))
 
   # Test extract_candidate_names
-  candidates <- extract_candidate_names("Quercus robur and Fagus sylvatica are common trees.")
+  candidate_result <- extract_candidate_names("Quercus robur and Fagus sylvatica are common trees.")
+  candidates <- candidate_result$candidates
   print(candidates)
 
   # Test batch_validate_names
