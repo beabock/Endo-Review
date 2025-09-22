@@ -37,13 +37,13 @@ plant_parts_keywords <- c("leaf", "leaves", "stem", "stems", "root", "roots")
 message("Testing on subset of 10 abstracts...")
 test_subset <- abstracts_df[1:10, ]
 
-# Process abstracts in parallel
+# Process abstracts sequentially
 results <- process_abstracts_parallel(
   abstracts = test_subset,
-  lookup_tables = lookup_tables,
+  species_path = species_path,
   plant_parts_keywords = plant_parts_keywords,
   batch_size = 5,  # Small batch for testing
-  workers = 2,     # Minimal workers for testing
+  workers = 1,     # Not used in sequential mode
   use_streaming = FALSE  # No streaming for small test
 )
 

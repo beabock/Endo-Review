@@ -16,18 +16,10 @@ run_examples <- FALSE
 
 # Enhanced parallel processing setup
 setup_parallel <- function(workers = NULL) {
-  if (is.null(workers)) {
-    # Optimization: Increase workers for large datasets while reserving one core for system
-    workers <- min(8, availableCores() - 1)
-  }
+  # For Windows compatibility, use sequential plan to avoid multisession serialization issues
+  plan(sequential)
 
-  # Set a higher memory limit for large datasets
-  options(future.globals.maxSize = 4000 * 1024^2)  # 4GB limit
-
-  # Use multisession for Windows compatibility
-  plan(multisession, workers = workers)
-
-  message("Parallel processing set up with ", workers, " workers")
+  message("Parallel processing set up with sequential plan for Windows compatibility")
 }
 
 # Create optimized lookup tables with better structure for performance
@@ -457,18 +449,18 @@ create_empty_result <- function(abstract_id, predicted_label) {
 }
 
 # Enhanced parallel processing with streaming and optimized batching
-process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_keywords,
-                                       batch_size = NULL, workers = NULL, use_streaming = TRUE) {
+process_abstracts_parallel <- function(abstracts, species_path, plant_parts_keywords,
+                                        batch_size = NULL, workers = NULL, use_streaming = TRUE) {
   # Set up parallel processing
   setup_parallel(workers)
 
   # Total number of abstracts
   total_abstracts <- nrow(abstracts)
-  message("Processing ", total_abstracts, " abstracts in parallel")
+  message("Processing ", total_abstracts, " abstracts sequentially")
 
-  # Optimization: Dynamically adjust batch_size to 50 for large datasets
+  # Optimization: Increase batch size for sequential processing to reduce overhead
   if (is.null(batch_size)) {
-    batch_size <- ifelse(total_abstracts > 1000, 50, 100)
+    batch_size <- ifelse(total_abstracts > 1000, 200, 500)
   }
 
   # Process in batches for better memory management
@@ -482,8 +474,12 @@ process_abstracts_parallel <- function(abstracts, lookup_tables, plant_parts_key
     message("Processing batch ", i, " of ", length(batches),
              " (abstracts ", min(batch_indices), " to ", max(batch_indices), ")")
 
-    # Process batch in parallel
+    # Process batch sequentially, loading lookup_tables inside worker to reduce serialization overhead
     batch_results <- future_map(batch_indices, function(idx) {
+      # Load species data and create lookup tables inside worker function
+      species <- readRDS(species_path)
+      lookup_tables <- create_lookup_tables(species)
+
       extract_plant_info(
         text = abstracts$abstract[idx],
         abstract_id = abstracts$id[idx],
@@ -701,6 +697,11 @@ if (interactive() && run_examples) {
     id = 1,
     predicted_label = "Presence"
   )
-  parallel_results <- process_abstracts_parallel(abstracts, lookup_tables, plant_parts_keywords, batch_size = 1, workers = 1)
+  # Save mock species to temp file for testing
+  temp_species_path <- tempfile(fileext = ".rds")
+  saveRDS(mock_species, temp_species_path)
+  parallel_results <- process_abstracts_parallel(abstracts, temp_species_path, plant_parts_keywords, batch_size = 1, workers = 1)
   print(parallel_results)
+  # Clean up temp file
+  file.remove(temp_species_path)
 }
