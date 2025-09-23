@@ -71,12 +71,13 @@ string_absence_data <- string_absence_raw %>%
   mutate(absence_source = "String")
 
 # Load manually labeled training absences (only those with DOIs)
-training_absence_raw <- read_csv("Training_labeled_abs_6.csv", show_col_types = FALSE)
+training_absence_raw <- read_csv("data/raw/Training_labeled_abs_6.csv", show_col_types = FALSE)
 
 training_absence_data <- training_absence_raw %>%
   # Filter for rows with DOIs (real examples only)
-  filter(!is.na(doi) & doi != "") %>%
-  mutate(absence_source = "Training_Manual")
+  filter(!is.na(doi) & doi != "" & label == "Absence") %>%
+  mutate(absence_source = "Training_Manual",
+  id = as.numeric(id))
 
 cat("ML Absence predictions:", nrow(absence_predictions), "\n")
 cat("ML Presence predictions:", nrow(presence_predictions), "\n")

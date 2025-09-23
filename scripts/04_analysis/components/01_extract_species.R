@@ -159,7 +159,7 @@ extract_species_data <- function(
     # Process batch
     batch_results <- process_abstracts_parallel(
       abstracts = batch_data,
-      lookup_tables = lookup_tables,
+      species_path = if (file.exists("species.rds")) "species.rds" else "models/species.rds",
       plant_parts_keywords = plant_parts_keywords,
       batch_size = 50
     )
