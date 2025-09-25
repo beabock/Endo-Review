@@ -38,7 +38,7 @@ Goal journal: Nature
 ## Model Development
 - **Pipeline Overview**: Two-stage classification system (Fig. 1)
 - **Stage 1 - Relevance Model**: Regularized logistic regression achieving 91% accuracy; trained on 3,500 manually labeled abstracts
-- **Stage 2 - Presence/Absence Model**: Ensemble of logistic regression + SVM (optimized weights: SVM 0.6 for presence, GLM 0.8 for absence); 87% accuracy, 96% presence recall, 87% absence recall
+- **Stage 2 - Presence/Absence Model**: Ensemble of logistic regression + SVM (optimized weights: SVM 0.6 for presence, GLM 0.8 for absence); 89.8% accuracy, 91.6% presence recall, 82.6% absence recall
 - **Validation**: 5-fold cross-validation; full specifications in Supplementary Methods
 
 ## Model Validation

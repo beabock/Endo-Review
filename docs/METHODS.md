@@ -7,13 +7,13 @@ This document provides comprehensive methodology for the machine learning-assist
 ## 1. Literature Search and Data Collection
 
 ### 1.1 Search Strategy
-- **Database**: Web of Science Core Collection
-- **Search Terms**: 
-  - Updated search (July 31, 2025): ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi") AND (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR algae OR green alga* OR macroalga* OR cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
+- **Database**: Web of Science Core Collection, PubMed, Scopus
+- **Search Terms**:
+  - Updated comprehensive search (July 31, 2025): ("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR "latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR "internal fungi" OR "resident fungi" OR "seed-borne fungi" OR "seed-transmitted fungi" OR "dark septate endophyte" OR "dark septate fungi" OR "DSE fungi") AND (plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR pteridophyte* OR tree* OR shrub* OR grass* OR "graminoid*" OR herb* OR crop* OR seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
   - Previous search: Endophyt* AND (fung* OR mycolog*)
 - **Date Range**: All years to present (search conducted July 31, 2025)
 - **Publication Types**: Journal articles, conference proceedings
-- **Language**: English publications
+- **Language**: English publications (with acknowledgment of potential bias)
 
 ### 1.2 Initial Screening
 - **Inclusion Criteria**:

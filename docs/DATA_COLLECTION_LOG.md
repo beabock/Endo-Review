@@ -8,14 +8,19 @@
 ### Final Comprehensive Search (July 31, 2025)
 **Status**: CURRENT DATASET - Used for all analyses
 
-**Database**: Web of Science Core Collection
-**Search String**: 
+**Database**: Web of Science Core Collection, PubMed, Scopus
+**Search String**:
 ```
-("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi")
-AND 
-(plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR 
- lycophyte* OR pteridophyte* OR algae OR green alga* OR macroalga* OR 
- cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
+("fungal endophyte" OR "fungal endophytes" OR "endophytic fungus" OR "endophytic fungi" OR
+"latent fungus" OR "latent fungi" OR "systemic fungus" OR "systemic fungi" OR
+"internal fungi" OR "resident fungi" OR "seed-borne fungi" OR "seed-transmitted fungi" OR
+"dark septate endophyte" OR "dark septate fungi" OR "DSE fungi")
+AND
+(plant* OR moss* OR bryophyte* OR liverwort* OR hornwort* OR fern* OR lycophyte* OR
+pteridophyte* OR tree* OR shrub* OR grass* OR "graminoid*" OR herb* OR crop* OR
+seedling* OR sapling* OR seed* OR root* OR leaf* OR foliage OR shoot* OR stem* OR
+twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR
+cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
 ```
 
 **Search Results**:
