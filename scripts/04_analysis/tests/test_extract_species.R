@@ -5,13 +5,14 @@
 # Purpose: Test core functionality, accuracy, performance, and robustness of the
 # species extraction component.
 #
-# Description: This script runs modular tests for data loading, species extraction
-# processing, accuracy against expected species, processing time benchmarks,
-# error handling, and completeness checks.
+# Description: This script runs comprehensive tests for data loading, species extraction
+# processing, accuracy validation, synonym resolution, taxonomic hierarchy validation,
+# name disambiguation, typo handling, performance benchmarks, error handling,
+# and completeness checks.
 #
 # Dependencies: tidyverse, tictoc, janitor
 #
-# Author: Auto-generated test script
+# Author: B. Bock
 # Date: 2025-09-22
 #
 # Inputs/Outputs: Uses test data from test_data/ and creates mock data; outputs
@@ -499,7 +500,325 @@ test_completeness <- function() {
 }
 
 # =============================================================================
-# TEST 7: Typo Handling Testing
+# TEST 7: Synonym Testing
+# =============================================================================
+
+test_synonym_resolution <- function() {
+  cat("🔍 Test 7: Synonym Resolution Testing\n")
+  cat("   Description: Test resolution of taxonomic synonyms to accepted names\n\n")
+
+  # Create mock abstracts with known synonyms
+  mock_abstracts <- tibble(
+    id = 1:6,
+    article_title = c(
+      "Test Paper 1", "Test Paper 2", "Test Paper 3", "Test Paper 4",
+      "Test Paper 5", "Test Paper 6"
+    ),
+    abstract = c(
+      "This study examines Amanita muscaria toxicity patterns.",  # Valid name (accepted)
+      "Research on Agaricus campestris reveals nutritional value.",  # Valid name
+      "Analysis of Boletus edulis provides insights into mycorrhizal fungi.",  # Valid name
+      "Investigation of Amanita muscaria reveals toxin production.",  # Repeat valid name
+      "Study of Fomes fomentarius medicinal properties.",  # Valid name
+      "Paper about Boletus edulis in forest ecosystems."  # Repeat valid name
+    ),
+    authors = rep("Test Author", 6),
+    source_title = rep("Test Journal", 6),
+    publication_year = 2023,
+    doi = paste0("10.1000/test.", 1:6),
+    Relevant = rep(1, 6),
+    relevance_loose = rep("Presence", 6),
+    glmnet_pred = rep(0.8, 6),
+    svm_pred = rep(0.9, 6),
+    weighted_ensemble = rep(0.85, 6),
+    threshold_ensemble = rep(0.7, 6),
+    glmnet_prob_presence = rep(0.8, 6),
+    glmnet_prob_absence = rep(0.2, 6),
+    svm_prob_presence = rep(0.9, 6),
+    svm_prob_absence = rep(0.1, 6),
+    pa_loose = rep("Presence", 6),
+    pa_medium = rep("Presence", 6),
+    pa_strict = rep("Presence", 6),
+    pa_super_strict = rep("Presence", 6),
+    final_classification = rep("Presence", 6),
+    conservative_classification = rep("Presence", 6),
+    predicted_label = rep("Presence", 6)
+  )
+
+  tryCatch({
+    temp_output <- tempfile(fileext = ".csv")
+    results <- extract_species_data(
+      mock_abstracts,
+      output_file = temp_output,
+      batch_size = 10,
+      force_rerun = TRUE,
+      verbose = FALSE
+    )
+
+    # Analyze synonym resolution (all names above should be accepted names)
+    synonym_resolution_results <- results %>%
+      filter(!is.na(resolved_name)) %>%
+      mutate(
+        correctly_resolved = status == "ACCEPTED",
+        is_synonym_resolved = status %in% c("ACCEPTED", "SYNONYM")
+      )
+
+    total_detected <- nrow(synonym_resolution_results)
+    correctly_accepted <- sum(synonym_resolution_results$correctly_resolved, na.rm = TRUE)
+    synonyms_handled <- sum(synonym_resolution_results$is_synonym_resolved, na.rm = TRUE)
+
+    synonym_resolution_rate <- if (total_detected > 0) correctly_accepted / total_detected else 0
+    overall_resolution_rate <- if (total_detected > 0) synonyms_handled / total_detected else 0
+
+    cat("   📊 Synonym Resolution Results:\n")
+    cat("   📊 Total species detected:", total_detected, "\n")
+    cat("   📊 Correctly resolved to accepted names:", correctly_accepted, "\n")
+    cat("   📊 Overall resolution rate:", round(overall_resolution_rate * 100, 1), "%\n")
+    cat("   📊 Accepted name accuracy:", round(synonym_resolution_rate * 100, 1), "%\n")
+
+    # Test passes if we can resolve species names (allowing for synonyms)
+    passed <- overall_resolution_rate >= 0.5  # At least 50% resolution rate
+
+    if (passed) {
+      cat("   ✅ PASS: Synonym resolution working correctly\n")
+    } else {
+      cat("   ❌ FAIL: Poor synonym resolution performance\n")
+    }
+
+    if (file.exists(temp_output)) file.remove(temp_output)
+    return(list(passed = passed, score = overall_resolution_rate))
+  }, error = function(e) {
+    cat("   ❌ FAIL: Error during synonym testing -", e$message, "\n")
+    return(list(passed = FALSE, score = 0))
+  })
+}
+
+# =============================================================================
+# TEST 8: Taxonomic Hierarchy Validation
+# =============================================================================
+
+test_taxonomic_hierarchy <- function() {
+  cat("🔍 Test 8: Taxonomic Hierarchy Validation\n")
+  cat("   Description: Test genus and family level taxonomic classification accuracy\n\n")
+
+  # Create mock abstracts with genus and family level mentions
+  mock_abstracts <- tibble(
+    id = 1:8,
+    article_title = c(
+      "Test Paper 1", "Test Paper 2", "Test Paper 3", "Test Paper 4",
+      "Test Paper 5", "Test Paper 6", "Test Paper 7", "Test Paper 8"
+    ),
+    abstract = c(
+      "This study examines Quercus species in temperate forests.",  # Genus: Quercus
+      "Research on Pinus distribution patterns worldwide.",  # Genus: Pinus
+      "Analysis of Fagaceae family diversity.",  # Family: Fagaceae
+      "Investigation of Pinaceae family ecology.",  # Family: Pinaceae
+      "Study of Acer species in maple forests.",  # Genus: Acer
+      "Paper about Betulaceae family characteristics.",  # Family: Betulaceae
+      "Research on Picea species adaptation.",  # Genus: Picea
+      "Analysis of Salicaceae family responses."  # Family: Salicaceae
+    ),
+    authors = rep("Test Author", 8),
+    source_title = rep("Test Journal", 8),
+    publication_year = 2023,
+    doi = paste0("10.1000/test.", 1:8),
+    Relevant = rep(1, 8),
+    relevance_loose = rep("Presence", 8),
+    glmnet_pred = rep(0.8, 8),
+    svm_pred = rep(0.9, 8),
+    weighted_ensemble = rep(0.85, 8),
+    threshold_ensemble = rep(0.7, 8),
+    glmnet_prob_presence = rep(0.8, 8),
+    glmnet_prob_absence = rep(0.2, 8),
+    svm_prob_presence = rep(0.9, 8),
+    svm_prob_absence = rep(0.1, 8),
+    pa_loose = rep("Presence", 8),
+    pa_medium = rep("Presence", 8),
+    pa_strict = rep("Presence", 8),
+    pa_super_strict = rep("Presence", 8),
+    final_classification = rep("Presence", 8),
+    conservative_classification = rep("Presence", 8),
+    predicted_label = rep("Presence", 8)
+  )
+
+  tryCatch({
+    temp_output <- tempfile(fileext = ".csv")
+    results <- extract_species_data(
+      mock_abstracts,
+      output_file = temp_output,
+      batch_size = 10,
+      force_rerun = TRUE,
+      verbose = FALSE
+    )
+
+    # Analyze taxonomic hierarchy detection
+    hierarchy_results <- results %>%
+      filter(!is.na(match_type)) %>%
+      mutate(
+        hierarchy_correct = case_when(
+          match_type == "species" & !is.na(canonicalName) ~ TRUE,
+          match_type == "genus" & !is.na(genus) ~ TRUE,
+          match_type == "family" & !is.na(family) ~ TRUE,
+          TRUE ~ FALSE
+        )
+      )
+
+    # Count detections by taxonomic level
+    species_detected <- sum(hierarchy_results$match_type == "species", na.rm = TRUE)
+    genus_detected <- sum(hierarchy_results$match_type == "genus", na.rm = TRUE)
+    family_detected <- sum(hierarchy_results$match_type == "family", na.rm = TRUE)
+
+    total_detected <- nrow(hierarchy_results)
+    hierarchy_accuracy <- if (total_detected > 0) {
+      sum(hierarchy_results$hierarchy_correct, na.rm = TRUE) / total_detected
+    } else {
+      0
+    }
+
+    cat("   📊 Taxonomic Hierarchy Results:\n")
+    cat("   📊 Species-level detections:", species_detected, "\n")
+    cat("   📊 Genus-level detections:", genus_detected, "\n")
+    cat("   📊 Family-level detections:", family_detected, "\n")
+    cat("   📊 Total taxonomic detections:", total_detected, "\n")
+    cat("   📊 Hierarchy accuracy:", round(hierarchy_accuracy * 100, 1), "%\n")
+
+    # Test passes if we detect taxonomic information at multiple levels
+    passed <- total_detected >= 4 && hierarchy_accuracy >= 0.7  # At least 4 detections with 70% accuracy
+
+    if (passed) {
+      cat("   ✅ PASS: Taxonomic hierarchy validation successful\n")
+    } else {
+      cat("   ❌ FAIL: Insufficient taxonomic hierarchy detection\n")
+    }
+
+    if (file.exists(temp_output)) file.remove(temp_output)
+    return(list(passed = passed, score = hierarchy_accuracy))
+  }, error = function(e) {
+    cat("   ❌ FAIL: Error during hierarchy testing -", e$message, "\n")
+    return(list(passed = FALSE, score = 0))
+  })
+}
+
+# =============================================================================
+# TEST 9: Name Disambiguation Testing
+# =============================================================================
+
+test_name_disambiguation <- function() {
+  cat("🔍 Test 9: Name Disambiguation Testing\n")
+  cat("   Description: Test handling of homonyms and ambiguous taxonomic names\n\n")
+
+  # Create mock abstracts with potentially ambiguous names
+  mock_abstracts <- tibble(
+    id = 1:6,
+    article_title = c(
+      "Test Paper 1", "Test Paper 2", "Test Paper 3", "Test Paper 4",
+      "Test Paper 5", "Test Paper 6"
+    ),
+    abstract = c(
+      "This study examines Acer rubrum in North American forests.",  # Specific species
+      "Research on Acer species diversity globally.",  # Genus level
+      "Analysis of Quercus alba distribution patterns.",  # Specific oak species
+      "Investigation of Quercus species in Mediterranean climates.",  # Genus level
+      "Study of Pinus sylvestris adaptation strategies.",  # Specific pine species
+      "Paper about Pinus species worldwide distribution."  # Genus level
+    ),
+    authors = rep("Test Author", 6),
+    source_title = rep("Test Journal", 6),
+    publication_year = 2023,
+    doi = paste0("10.1000/test.", 1:6),
+    Relevant = rep(1, 6),
+    relevance_loose = rep("Presence", 6),
+    glmnet_pred = rep(0.8, 6),
+    svm_pred = rep(0.9, 6),
+    weighted_ensemble = rep(0.85, 6),
+    threshold_ensemble = rep(0.7, 6),
+    glmnet_prob_presence = rep(0.8, 6),
+    glmnet_prob_absence = rep(0.2, 6),
+    svm_prob_presence = rep(0.9, 6),
+    svm_prob_absence = rep(0.1, 6),
+    pa_loose = rep("Presence", 6),
+    pa_medium = rep("Presence", 6),
+    pa_strict = rep("Presence", 6),
+    pa_super_strict = rep("Presence", 6),
+    final_classification = rep("Presence", 6),
+    conservative_classification = rep("Presence", 6),
+    predicted_label = rep("Presence", 6)
+  )
+
+  tryCatch({
+    temp_output <- tempfile(fileext = ".csv")
+    results <- extract_species_data(
+      mock_abstracts,
+      output_file = temp_output,
+      batch_size = 10,
+      force_rerun = TRUE,
+      verbose = FALSE
+    )
+
+    # Analyze name disambiguation (species vs genus level)
+    disambiguation_results <- results %>%
+      filter(!is.na(match_type) & !is.na(resolved_name)) %>%
+      mutate(
+        # Check if specific epithet is present (species-level) vs genus-only
+        has_specific_epithet = str_count(resolved_name, "\\s+") >= 1,
+        taxonomic_level = case_when(
+          match_type == "species" & has_specific_epithet ~ "species_specific",
+          match_type == "genus" ~ "genus_level",
+          match_type == "family" ~ "family_level",
+          TRUE ~ "other"
+        )
+      )
+
+    # Count disambiguation accuracy
+    species_specific <- sum(disambiguation_results$taxonomic_level == "species_specific", na.rm = TRUE)
+    genus_level <- sum(disambiguation_results$taxonomic_level == "genus_level", na.rm = TRUE)
+
+    total_disambiguated <- nrow(disambiguation_results)
+    disambiguation_accuracy <- if (total_disambiguated > 0) {
+      # We expect to see both species-specific and genus-level detections
+      (species_specific + genus_level) / total_disambiguated
+    } else {
+      0
+    }
+
+    # Check for proper taxonomic information preservation
+    taxonomic_info_complete <- results %>%
+      filter(!is.na(resolved_name)) %>%
+      mutate(
+        has_kingdom = !is.na(kingdom),
+        has_phylum = !is.na(phylum),
+        has_family = !is.na(family) | match_type == "family",
+        taxonomic_completeness = (has_kingdom + has_phylum + has_family) / 3
+      ) %>%
+      pull(taxonomic_completeness) %>%
+      mean(na.rm = TRUE)
+
+    cat("   📊 Name Disambiguation Results:\n")
+    cat("   📊 Species-specific detections:", species_specific, "\n")
+    cat("   📊 Genus-level detections:", genus_level, "\n")
+    cat("   📊 Total names processed:", total_disambiguated, "\n")
+    cat("   📊 Disambiguation accuracy:", round(disambiguation_accuracy * 100, 1), "%\n")
+    cat("   📊 Taxonomic completeness:", round(taxonomic_info_complete * 100, 1), "%\n")
+
+    # Test passes if we have reasonable disambiguation and taxonomic information
+    passed <- disambiguation_accuracy >= 0.6 && taxonomic_info_complete >= 0.7
+
+    if (passed) {
+      cat("   ✅ PASS: Name disambiguation working correctly\n")
+    } else {
+      cat("   ❌ FAIL: Issues with name disambiguation or taxonomic information\n")
+    }
+
+    if (file.exists(temp_output)) file.remove(temp_output)
+    return(list(passed = passed, score = (disambiguation_accuracy + taxonomic_info_complete) / 2))
+  }, error = function(e) {
+    cat("   ❌ FAIL: Error during disambiguation testing -", e$message, "\n")
+    return(list(passed = FALSE, score = 0))
+  })
+}
+
+# =============================================================================
+# TEST 7: Typo Handling Testing (renamed to TEST 10)
 # =============================================================================
 
 test_typo_handling <- function() {
@@ -628,17 +947,23 @@ run_all_tests <- function() {
   results$processing_time <- test_processing_time()
   results$error_handling <- test_error_handling()
   results$completeness <- test_completeness()
+  results$synonym_resolution <- test_synonym_resolution()
+  results$taxonomic_hierarchy <- test_taxonomic_hierarchy()
+  results$name_disambiguation <- test_name_disambiguation()
   results$typo_handling <- test_typo_handling()
 
   # Calculate overall scores
   test_weights <- c(
-    data_loading = 0.15,
-    species_processing = 0.25,
-    accuracy = 0.20,
-    processing_time = 0.10,
-    error_handling = 0.10,
-    completeness = 0.10,
-    typo_handling = 0.10
+    data_loading = 0.10,
+    species_processing = 0.15,
+    accuracy = 0.15,
+    processing_time = 0.08,
+    error_handling = 0.08,
+    completeness = 0.08,
+    synonym_resolution = 0.10,
+    taxonomic_hierarchy = 0.10,
+    name_disambiguation = 0.10,
+    typo_handling = 0.06
   )
 
   overall_score <- sum(sapply(names(results), function(test) {

@@ -1,0 +1,1454 @@
+[2025-09-24 11:13:49] Loading full dataset predictions...
+
+[2025-09-24 11:13:50] Loaded 21429 rows from full predictions.
+
+[2025-09-24 11:13:50] Loading training data...
+
+[2025-09-24 11:13:50] Loading training file: Training_labeled_abs_ 2 .csv
+
+[2025-09-24 11:13:50] Loading training file: Training_labeled_abs_2.csv
+
+[2025-09-24 11:13:50] Loading training file: Training_labeled_abs_3.csv
+
+[2025-09-24 11:13:50] Loading training file: Training_labeled_abs_4.csv
+
+[2025-09-24 11:13:50] Loading training file: Training_labeled_abs_old.csv
+
+[2025-09-24 11:13:51] Combined training data with 648 unique rows.
+
+[2025-09-24 11:13:51] Loading manual validations...
+
+[2025-09-24 11:13:51] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-24 11:13:51] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-24 11:13:51] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-24 11:13:51] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-24 11:13:51] Combined manual validations with 179 unique rows.
+
+[2025-09-24 11:13:51] Consolidating datasets...
+
+[2025-09-24 11:14:46] Loading training file: Training_labeled_abs_ 2 .csv
+
+[2025-09-24 11:14:46] Loading training file: Training_labeled_abs_2.csv
+
+[2025-09-24 11:14:46] Loading training file: Training_labeled_abs_3.csv
+
+[2025-09-24 11:14:46] Loading training file: Training_labeled_abs_4.csv
+
+[2025-09-24 11:14:46] Loading training file: Training_labeled_abs_old.csv
+
+[2025-09-24 11:14:46] Combined training data with 648 unique rows.
+
+[2025-09-24 11:14:54] No training data files found. Proceeding without training labels.
+
+[2025-09-24 11:15:11] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-24 11:15:11] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-24 11:15:11] Combined training data with 714 unique rows.
+
+[2025-09-24 11:16:09] Loaded 19447 rows from full predictions.
+
+[2025-09-24 11:16:11] Loading training data...
+
+[2025-09-24 17:20:44] Loading full dataset predictions...
+
+[2025-09-24 17:20:45] Loaded 19447 rows from full predictions.
+
+[2025-09-24 17:20:45] Loading training data...
+
+[2025-09-24 17:20:45] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-24 17:20:46] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-24 17:20:47] Combined training data with 714 unique rows.
+
+[2025-09-24 17:20:47] Loading manual validations...
+
+[2025-09-24 17:20:47] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-24 17:20:47] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-24 17:20:47] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-24 17:20:47] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-24 17:20:47] Combined manual validations with 179 unique rows.
+
+[2025-09-24 17:20:47] Consolidating datasets...
+
+[2025-09-25 08:52:27] Loading full dataset predictions...
+
+[2025-09-25 08:52:28] Loaded 19447 rows from full predictions.
+
+[2025-09-25 08:52:28] Loading training data...
+
+[2025-09-25 08:52:29] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 08:52:30] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 08:52:30] Combined training data with 714 unique rows.
+
+[2025-09-25 08:52:30] Loading manual validations...
+
+[2025-09-25 08:52:30] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 08:52:31] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 08:52:31] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 08:52:31] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 08:52:31] Combined manual validations with 179 unique rows.
+
+[2025-09-25 08:52:31] Consolidating datasets...
+
+[2025-09-25 08:52:31] full_predictions$id type: numeric
+
+[2025-09-25 08:52:31] training_data$id type: character
+
+[2025-09-25 08:52:31] manual_validations$id type: numeric
+
+[2025-09-25 08:52:53] Loading full dataset predictions...
+
+[2025-09-25 08:52:53] Loaded 19447 rows from full predictions.
+
+[2025-09-25 08:52:53] Loading training data...
+
+[2025-09-25 08:52:54] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 08:52:56] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 08:52:56] Combined training data with 714 unique rows.
+
+[2025-09-25 08:52:56] Loading manual validations...
+
+[2025-09-25 08:52:56] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 08:52:56] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 08:52:56] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 08:52:56] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 08:52:56] Combined manual validations with 179 unique rows.
+
+[2025-09-25 08:52:56] Consolidating datasets...
+
+[2025-09-25 08:52:56] full_predictions$id type: numeric
+
+[2025-09-25 08:52:56] training_data$id type: character
+
+[2025-09-25 08:52:56] manual_validations$id type: numeric
+
+[2025-09-25 08:54:17] Loading full dataset predictions...
+
+[2025-09-25 08:54:18] Loaded 19447 rows from full predictions.
+
+[2025-09-25 08:54:18] Loading training data...
+
+[2025-09-25 08:54:18] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 08:54:18] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 08:54:19] Combined training data with 714 unique rows.
+
+[2025-09-25 08:54:19] Loading manual validations...
+
+[2025-09-25 08:54:19] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 08:54:19] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 08:54:19] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 08:54:19] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 08:54:19] Combined manual validations with 179 unique rows.
+
+[2025-09-25 08:54:19] Consolidating datasets...
+
+[2025-09-25 08:54:19] full_predictions$id type: numeric
+
+[2025-09-25 08:54:19] training_data$id type: numeric
+
+[2025-09-25 08:54:19] manual_validations$id type: numeric
+
+[2025-09-25 09:03:48] Loading full dataset predictions...
+
+[2025-09-25 09:03:49] Loaded 19447 rows from full predictions.
+
+[2025-09-25 09:03:49] Loading training data...
+
+[2025-09-25 09:03:49] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:03:49] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:03:49] Combined training data with 714 unique rows.
+
+[2025-09-25 09:03:49] Loading manual validations...
+
+[2025-09-25 09:03:49] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:03:49] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:03:49] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:03:50] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:03:50] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:03:50] Consolidating datasets...
+
+[2025-09-25 09:03:50] full_predictions$id type: numeric
+
+[2025-09-25 09:03:50] training_data$id type: numeric
+
+[2025-09-25 09:03:50] manual_validations$id type: numeric
+
+[2025-09-25 09:03:50] Consolidated dataset has 19447 rows.
+
+[2025-09-25 09:03:50] Writing consolidated dataset to file...
+
+[2025-09-25 09:03:50] Consolidated dataset written successfully.
+
+[2025-09-25 09:03:50] Consolidation complete.
+
+[2025-09-25 09:03:50] Total rows: 19447
+
+[2025-09-25 09:03:50] Rows with manual labels: 103
+
+[2025-09-25 09:03:50] Rows with training labels: 714
+
+[2025-09-25 09:03:50] Script execution finished.
+
+[2025-09-25 09:05:08] Loading full dataset predictions...
+
+[2025-09-25 09:05:08] Loaded 19447 rows from full predictions.
+
+[2025-09-25 09:05:08] Loading training data...
+
+[2025-09-25 09:05:08] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:05:08] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:05:09] Combined training data with 714 unique rows.
+
+[2025-09-25 09:05:09] Loading manual validations...
+
+[2025-09-25 09:05:09] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:05:09] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:05:09] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:05:09] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:05:09] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:05:09] Consolidating datasets...
+
+[2025-09-25 09:05:09] full_predictions$id type: numeric
+
+[2025-09-25 09:05:09] training_data$id type: numeric
+
+[2025-09-25 09:05:09] manual_validations$id type: numeric
+
+[2025-09-25 09:05:09] Consolidated dataset has 19447 rows.
+
+[2025-09-25 09:05:09] Writing consolidated dataset to file...
+
+[2025-09-25 09:05:09] Consolidated dataset written successfully.
+
+[2025-09-25 09:05:09] Consolidation complete.
+
+[2025-09-25 09:05:09] Total rows: 19447
+
+[2025-09-25 09:05:09] Rows with manual labels: 103
+
+[2025-09-25 09:05:09] Rows with training labels: 714
+
+[2025-09-25 09:05:09] Script execution finished.
+
+[2025-09-25 09:06:59] Loading full dataset predictions...
+
+[2025-09-25 09:06:59] Loaded 19447 rows from full predictions.
+
+[2025-09-25 09:07:00] Loading training data...
+
+[2025-09-25 09:07:00] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:07:00] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:07:00] Combined training data with 714 unique rows.
+
+[2025-09-25 09:07:00] Loading manual validations...
+
+[2025-09-25 09:07:00] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:07:01] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:07:01] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:07:01] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:07:01] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:07:01] Consolidating datasets...
+
+[2025-09-25 09:07:01] full_predictions$id type: numeric
+
+[2025-09-25 09:07:01] training_data$id type: numeric
+
+[2025-09-25 09:07:01] manual_validations$id type: numeric
+
+[2025-09-25 09:07:01] Consolidated dataset has 19447 rows.
+
+[2025-09-25 09:07:01] Writing consolidated dataset to file...
+
+[2025-09-25 09:07:01] Consolidated dataset written successfully.
+
+[2025-09-25 09:07:01] Consolidation complete.
+
+[2025-09-25 09:07:01] Total rows: 19447
+
+[2025-09-25 09:07:01] Rows with manual labels: 103
+
+[2025-09-25 09:07:01] Rows with training labels: 714
+
+[2025-09-25 09:07:01] Script execution finished.
+
+[2025-09-25 09:20:14] Loading master dataset (all abstracts)...
+
+[2025-09-25 09:20:15] Loaded 21891 rows from master dataset.
+
+[2025-09-25 09:20:15] Loading full dataset predictions...
+
+[2025-09-25 09:20:16] Loaded 21429 rows from predictions.
+
+[2025-09-25 09:20:16] Loading training data...
+
+[2025-09-25 09:20:16] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:20:17] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:20:17] Combined training data with 714 unique rows.
+
+[2025-09-25 09:20:17] Loading manual validations...
+
+[2025-09-25 09:20:17] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:20:17] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:20:17] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:20:17] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:20:17] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:20:17] Consolidating datasets...
+
+[2025-09-25 09:20:17] master$id type: character
+
+[2025-09-25 09:20:17] predictions$id type: numeric
+
+[2025-09-25 09:20:17] training_data$id type: numeric
+
+[2025-09-25 09:20:17] manual_validations$id type: numeric
+
+[2025-09-25 09:20:53] Loading master dataset (all abstracts)...
+
+[2025-09-25 09:20:55] Loaded 21891 rows from master dataset.
+
+[2025-09-25 09:20:55] Loading full dataset predictions...
+
+[2025-09-25 09:20:56] Loaded 21429 rows from predictions.
+
+[2025-09-25 09:20:56] Loading training data...
+
+[2025-09-25 09:20:56] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:20:56] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:20:56] Combined training data with 714 unique rows.
+
+[2025-09-25 09:20:56] Loading manual validations...
+
+[2025-09-25 09:20:56] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:20:56] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:20:57] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:20:57] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:20:57] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:20:57] Consolidating datasets...
+
+[2025-09-25 09:20:57] master$id type: numeric
+
+[2025-09-25 09:20:57] predictions$id type: numeric
+
+[2025-09-25 09:20:57] training_data$id type: numeric
+
+[2025-09-25 09:20:57] manual_validations$id type: numeric
+
+[2025-09-25 09:20:57] Consolidated dataset has 284583 rows.
+
+[2025-09-25 09:20:57] Writing consolidated dataset to file...
+
+[2025-09-25 09:21:33] Consolidated dataset written successfully.
+
+[2025-09-25 09:21:33] Consolidation complete.
+
+[2025-09-25 09:21:33] Total rows: 284583
+
+[2025-09-25 09:21:33] Rows with manual labels: 0
+
+[2025-09-25 09:21:33] Rows with training labels: 0
+
+[2025-09-25 09:21:33] Rows with model predictions: 0
+
+[2025-09-25 09:21:33] Rows with consolidated labels: 284583
+
+[2025-09-25 09:21:33] Script execution finished.
+
+[2025-09-25 09:22:13] Loading master dataset (all abstracts)...
+
+[2025-09-25 09:22:14] Loaded 21891 rows from master dataset.
+
+[2025-09-25 09:22:14] Loading full dataset predictions...
+
+[2025-09-25 09:22:15] Loaded 21429 rows from predictions.
+
+[2025-09-25 09:22:15] Loading training data...
+
+[2025-09-25 09:22:16] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:22:16] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:22:16] Combined training data with 714 unique rows.
+
+[2025-09-25 09:22:16] Loading manual validations...
+
+[2025-09-25 09:22:16] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:22:16] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:22:16] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:22:17] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:22:17] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:22:17] Consolidating datasets...
+
+[2025-09-25 09:22:17] master$id type: numeric
+
+[2025-09-25 09:22:17] predictions$id type: numeric
+
+[2025-09-25 09:22:17] training_data$id type: numeric
+
+[2025-09-25 09:22:17] manual_validations$id type: numeric
+
+[2025-09-25 09:22:17] Consolidated dataset has 284583 rows.
+
+[2025-09-25 09:22:17] Writing consolidated dataset to file...
+
+[2025-09-25 09:23:01] Consolidated dataset written successfully.
+
+[2025-09-25 09:23:01] Consolidation complete.
+
+[2025-09-25 09:23:17] Loading master dataset (all abstracts)...
+
+[2025-09-25 09:23:18] Loaded 21891 rows from master dataset.
+
+[2025-09-25 09:23:18] Loading full dataset predictions...
+
+[2025-09-25 09:23:19] Loaded 21429 rows from predictions.
+
+[2025-09-25 09:23:19] Loading training data...
+
+[2025-09-25 09:23:19] Loading training file: Training_labeled_abs_5.csv
+
+[2025-09-25 09:23:20] Loading training file: Training_labeled_abs_6.csv
+
+[2025-09-25 09:23:20] Combined training data with 714 unique rows.
+
+[2025-09-25 09:23:20] Loading manual validations...
+
+[2025-09-25 09:23:20] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:23:20] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:23:20] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:23:20] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:23:20] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:23:20] Consolidating datasets...
+
+[2025-09-25 09:23:20] master$id type: numeric
+
+[2025-09-25 09:23:20] predictions$id type: numeric
+
+[2025-09-25 09:23:20] training_data$id type: numeric
+
+[2025-09-25 09:23:20] manual_validations$id type: numeric
+
+[2025-09-25 09:23:20] After joining predictions: 21891
+
+[2025-09-25 09:23:20] After joining training: 284583
+
+[2025-09-25 09:23:20] After joining manual: 284583
+
+[2025-09-25 09:23:21] Consolidated dataset has 284583 rows.
+
+[2025-09-25 09:23:21] Writing consolidated dataset to file...
+
+[2025-09-25 09:23:51] Consolidated dataset written successfully.
+
+[2025-09-25 09:23:53] Loaded 21891 rows from master dataset.
+
+[2025-09-25 09:31:37] Loading manual validations...
+
+[2025-09-25 09:31:38] Loading manual validation file: absence_validation_sample_for_manual_review_BB.csv
+
+[2025-09-25 09:31:38] Loading manual validation file: presence_validation_sample_for_manual_review.csv
+
+[2025-09-25 09:31:38] Loading manual validation file: validation_progress_tracker.csv
+
+[2025-09-25 09:31:39] Warning: Expected columns 'id' and 'manual_label' not found in validation_progress_tracker.csv . Skipping.
+
+[2025-09-25 09:31:39] Combined manual validations with 179 unique rows.
+
+[2025-09-25 09:35:21] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:35:22] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:35:22] Loading training data...
+
+[2025-09-25 09:35:23] Loaded 542 rows from training data.
+
+[2025-09-25 09:35:23] Loading manual validations...
+
+[2025-09-25 09:35:23] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:35:23] Consolidating datasets...
+
+[2025-09-25 09:35:23] master$id type: numeric
+
+[2025-09-25 09:35:23] training_data$id type: numeric
+
+[2025-09-25 09:35:23] manual_validations$id type: numeric
+
+[2025-09-25 09:35:23] After joining training: 21436
+
+[2025-09-25 09:35:23] After joining manual: 21436
+
+[2025-09-25 09:36:06] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:36:07] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:36:07] Loading training data...
+
+[2025-09-25 09:36:07] Loaded 542 rows from training data.
+
+[2025-09-25 09:36:07] Loading manual validations...
+
+[2025-09-25 09:36:08] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:36:08] Consolidating datasets...
+
+[2025-09-25 09:36:08] master$id type: numeric
+
+[2025-09-25 09:36:08] training_data$id type: numeric
+
+[2025-09-25 09:36:08] manual_validations$id type: numeric
+
+[2025-09-25 09:36:08] After joining training: 21436
+
+[2025-09-25 09:36:08] After joining manual: 21436
+
+[2025-09-25 09:36:46] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:36:48] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:36:48] Loading training data...
+
+[2025-09-25 09:36:48] Loaded 542 rows from training data.
+
+[2025-09-25 09:36:48] Loading manual validations...
+
+[2025-09-25 09:36:48] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:36:48] Consolidating datasets...
+
+[2025-09-25 09:36:48] master$id type: numeric
+
+[2025-09-25 09:36:48] training_data$id type: numeric
+
+[2025-09-25 09:36:48] manual_validations$id type: numeric
+
+[2025-09-25 09:36:48] After joining training: 21436
+
+[2025-09-25 09:36:48] After joining manual: 21436
+
+[2025-09-25 09:37:14] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:37:15] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:37:15] Loading training data...
+
+[2025-09-25 09:37:15] Loaded 542 rows from training data.
+
+[2025-09-25 09:37:15] Loading manual validations...
+
+[2025-09-25 09:37:15] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:37:15] Consolidating datasets...
+
+[2025-09-25 09:37:15] master$id type: numeric
+
+[2025-09-25 09:37:15] training_data$id type: numeric
+
+[2025-09-25 09:37:15] manual_validations$id type: numeric
+
+[2025-09-25 09:37:15] After joining training: 21436
+
+[2025-09-25 09:37:15] After joining manual: 21436
+
+[2025-09-25 09:37:40] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:37:41] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:37:41] Loading training data...
+
+[2025-09-25 09:37:42] Loaded 542 rows from training data.
+
+[2025-09-25 09:37:42] Loading manual validations...
+
+[2025-09-25 09:37:42] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:37:42] Consolidating datasets...
+
+[2025-09-25 09:37:42] master$id type: numeric
+
+[2025-09-25 09:37:42] training_data$id type: numeric
+
+[2025-09-25 09:37:42] manual_validations$id type: numeric
+
+[2025-09-25 09:37:42] After joining training: 21436
+
+[2025-09-25 09:37:42] After joining manual: 21436
+
+[2025-09-25 09:37:42] Added 138 training rows not in master.
+
+[2025-09-25 09:37:42] Consolidated dataset has 21574 rows.
+
+[2025-09-25 09:37:42] Writing consolidated dataset to file...
+
+[2025-09-25 09:37:42] Consolidated dataset written successfully.
+
+[2025-09-25 09:37:42] Consolidation complete.
+
+[2025-09-25 09:37:42] Total rows: 21574
+
+[2025-09-25 09:37:42] Rows with manual labels: 0
+
+[2025-09-25 09:37:42] Rows with training labels: 0
+
+[2025-09-25 09:37:42] Rows with model predictions: 21436
+
+[2025-09-25 09:37:42] Rows with consolidated labels: 21573
+
+[2025-09-25 09:37:42] Script execution finished.
+
+[2025-09-25 09:39:54] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:39:55] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:39:55] Loading training data...
+
+[2025-09-25 09:39:55] Loaded 398 rows from training data.
+
+[2025-09-25 09:39:55] Loading manual validations...
+
+[2025-09-25 09:39:56] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:39:56] Consolidating datasets...
+
+[2025-09-25 09:39:56] master$id type: numeric
+
+[2025-09-25 09:39:56] training_data$id type: numeric
+
+[2025-09-25 09:39:56] manual_validations$id type: numeric
+
+[2025-09-25 09:39:56] After joining training: 21429
+
+[2025-09-25 09:39:56] After joining manual: 21429
+
+[2025-09-25 09:39:56] Added 1 training rows not in master.
+
+[2025-09-25 09:39:56] Consolidated dataset has 21430 rows.
+
+[2025-09-25 09:39:56] Writing consolidated dataset to file...
+
+[2025-09-25 09:39:56] Consolidated dataset written successfully.
+
+[2025-09-25 09:39:56] Consolidation complete.
+
+[2025-09-25 09:39:56] Total rows: 21430
+
+[2025-09-25 09:39:56] Rows with manual labels: 0
+
+[2025-09-25 09:39:56] Rows with training labels: 0
+
+[2025-09-25 09:39:56] Rows with model predictions: 21429
+
+[2025-09-25 09:39:56] Rows with consolidated labels: 21430
+
+[2025-09-25 09:39:56] Script execution finished.
+
+[2025-09-25 09:41:45] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:41:46] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:41:46] Loading training data...
+
+[2025-09-25 09:41:46] Loaded 410 rows from training data.
+
+[2025-09-25 09:41:46] Loading manual validations...
+
+[2025-09-25 09:41:47] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:41:47] Consolidating datasets...
+
+[2025-09-25 09:41:47] master$id type: character
+
+[2025-09-25 09:41:47] training_data$id type: character
+
+[2025-09-25 09:41:47] manual_validations$id type: character
+
+[2025-09-25 09:41:47] After joining training: 21429
+
+[2025-09-25 09:41:47] After joining manual: 21429
+
+[2025-09-25 09:41:47] Added 13 training rows not in master.
+
+[2025-09-25 09:41:47] Consolidated dataset has 21442 rows.
+
+[2025-09-25 09:41:47] Writing consolidated dataset to file...
+
+[2025-09-25 09:41:47] Consolidated dataset written successfully.
+
+[2025-09-25 09:41:47] Consolidation complete.
+
+[2025-09-25 09:41:47] Total rows: 21442
+
+[2025-09-25 09:41:47] Rows with manual labels: 0
+
+[2025-09-25 09:41:47] Rows with training labels: 0
+
+[2025-09-25 09:41:47] Rows with model predictions: 21429
+
+[2025-09-25 09:41:47] Rows with consolidated labels: 21442
+
+[2025-09-25 09:41:47] Script execution finished.
+
+[2025-09-25 09:42:31] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:42:33] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:42:33] Loading training data...
+
+[2025-09-25 09:42:33] Loaded 410 rows from training data.
+
+[2025-09-25 09:42:33] Loading manual validations...
+
+[2025-09-25 09:42:33] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:42:33] Consolidating datasets...
+
+[2025-09-25 09:42:33] master$id type: character
+
+[2025-09-25 09:42:33] training_data$id type: character
+
+[2025-09-25 09:42:33] manual_validations$id type: character
+
+[2025-09-25 09:42:33] After joining training: 21429
+
+[2025-09-25 09:42:33] After joining manual: 21429
+
+[2025-09-25 09:42:33] Added 13 training rows not in master.
+
+[2025-09-25 09:42:33] Consolidated dataset has 21442 rows.
+
+[2025-09-25 09:42:33] Writing consolidated dataset to file...
+
+[2025-09-25 09:42:33] Consolidated dataset written successfully.
+
+[2025-09-25 09:42:33] Consolidation complete.
+
+[2025-09-25 09:42:33] Total rows: 21442
+
+[2025-09-25 09:42:33] Rows with manual labels: 0
+
+[2025-09-25 09:42:33] Rows with training labels: 0
+
+[2025-09-25 09:42:33] Rows with model predictions: 21429
+
+[2025-09-25 09:42:33] Rows with consolidated labels: 21442
+
+[2025-09-25 09:42:33] Script execution finished.
+
+[2025-09-25 09:44:41] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:44:43] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:44:43] Loading training data...
+
+[2025-09-25 09:44:43] Loaded 410 rows from training data.
+
+[2025-09-25 09:44:43] Loading manual validations...
+
+[2025-09-25 09:44:43] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:44:43] Consolidating datasets...
+
+[2025-09-25 09:44:43] master$id type: character
+
+[2025-09-25 09:44:43] training_data$id type: character
+
+[2025-09-25 09:44:43] manual_validations$id type: character
+
+[2025-09-25 09:44:43] After joining training: 21429
+
+[2025-09-25 09:44:43] After joining manual: 21429
+
+[2025-09-25 09:44:43] Added 13 training rows not in master.
+
+[2025-09-25 09:44:43] Consolidated dataset has 21442 rows.
+
+[2025-09-25 09:44:43] Writing consolidated dataset to file...
+
+[2025-09-25 09:44:44] Consolidated dataset written successfully.
+
+[2025-09-25 09:44:44] Consolidation complete.
+
+[2025-09-25 09:44:44] Total rows: 21442
+
+[2025-09-25 09:44:44] Rows with manual labels: 0
+
+[2025-09-25 09:44:44] Rows with training labels: 0
+
+[2025-09-25 09:44:44] Rows with model predictions: 21429
+
+[2025-09-25 09:44:44] Rows with consolidated labels: 21442
+
+[2025-09-25 09:44:44] Script execution finished.
+
+[2025-09-25 09:45:28] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:46:14] Loading training data...
+
+[2025-09-25 09:46:15] Loaded 410 rows from training data.
+
+[2025-09-25 09:47:33] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:51:34] Consolidating datasets...
+
+[2025-09-25 09:51:34] master$id type: character
+
+[2025-09-25 09:51:35] training_data$id type: character
+
+[2025-09-25 09:51:37] manual_validations$id type: character
+
+[2025-09-25 09:52:17] After joining training: 21429
+
+[2025-09-25 09:54:34] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:54:36] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:54:36] Loading training data...
+
+[2025-09-25 09:54:36] Loaded 410 rows from training data.
+
+[2025-09-25 09:54:36] Loading manual validations...
+
+[2025-09-25 09:54:36] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:54:36] Consolidating datasets...
+
+[2025-09-25 09:54:36] master$id type: character
+
+[2025-09-25 09:54:36] training_data$id type: character
+
+[2025-09-25 09:54:36] manual_validations$id type: character
+
+[2025-09-25 09:54:36] After joining manual: 21429
+
+[2025-09-25 09:54:36] Added 410 training rows.
+
+[2025-09-25 09:54:36] Consolidated dataset has 21839 rows.
+
+[2025-09-25 09:54:36] Writing consolidated dataset to file...
+
+[2025-09-25 09:54:37] Consolidated dataset written successfully.
+
+[2025-09-25 09:54:37] Consolidation complete.
+
+[2025-09-25 09:54:37] Total rows: 21839
+
+[2025-09-25 09:54:37] Rows with manual labels: 0
+
+[2025-09-25 09:54:37] Rows with training labels: 0
+
+[2025-09-25 09:54:37] Rows with model predictions: 21429
+
+[2025-09-25 09:54:37] Rows with consolidated labels: 21839
+
+[2025-09-25 09:54:37] Script execution finished.
+
+[2025-09-25 09:57:29] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:57:30] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:57:30] Loading training data...
+
+[2025-09-25 09:57:31] Loaded 410 rows from training data.
+
+[2025-09-25 09:57:31] Loading manual validations...
+
+[2025-09-25 09:57:31] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:57:31] Consolidating datasets...
+
+[2025-09-25 09:57:31] master$id type: character
+
+[2025-09-25 09:57:31] training_data$id type: character
+
+[2025-09-25 09:57:31] manual_validations$id type: character
+
+[2025-09-25 09:57:31] After joining manual: 21429
+
+[2025-09-25 09:57:31] Added 410 training rows.
+
+[2025-09-25 09:57:31] Number of duplicate IDs: 397
+
+[2025-09-25 09:57:31] Warning: Duplicate IDs found. Removing duplicates, keeping first occurrence.
+
+[2025-09-25 09:57:31] Consolidated dataset has 21442 rows.
+
+[2025-09-25 09:57:31] Writing consolidated dataset to file...
+
+[2025-09-25 09:57:32] Consolidated dataset written successfully.
+
+[2025-09-25 09:57:32] Consolidation complete.
+
+[2025-09-25 09:57:32] Total rows: 21442
+
+[2025-09-25 09:57:32] Rows with manual labels: 0
+
+[2025-09-25 09:57:32] Rows with training labels: 0
+
+[2025-09-25 09:57:32] Rows with model predictions: 21429
+
+[2025-09-25 09:57:32] Rows with consolidated labels: 21442
+
+[2025-09-25 09:57:32] Script execution finished.
+
+[2025-09-25 09:57:46] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 09:57:47] Loaded 21429 rows from master dataset.
+
+[2025-09-25 09:57:47] Loading training data...
+
+[2025-09-25 09:57:48] Loaded 410 rows from training data.
+
+[2025-09-25 09:57:48] Loading manual validations...
+
+[2025-09-25 09:57:48] Loaded 102 rows from manual validations.
+
+[2025-09-25 09:57:48] Consolidating datasets...
+
+[2025-09-25 09:57:48] master$id type: character
+
+[2025-09-25 09:57:48] training_data$id type: character
+
+[2025-09-25 09:57:48] manual_validations$id type: character
+
+[2025-09-25 09:57:48] After joining manual: 21429
+
+[2025-09-25 09:57:48] Added 410 training rows.
+
+[2025-09-25 09:57:48] Number of duplicate IDs: 397
+
+[2025-09-25 09:57:48] Warning: Duplicate IDs found. Removing duplicates, keeping first occurrence.
+
+[2025-09-25 09:57:48] Consolidated dataset has 21442 rows.
+
+[2025-09-25 09:57:48] Writing consolidated dataset to file...
+
+[2025-09-25 09:57:49] Consolidated dataset written successfully.
+
+[2025-09-25 09:57:49] Consolidation complete.
+
+[2025-09-25 09:57:49] Total rows: 21442
+
+[2025-09-25 09:57:49] Rows with manual labels: 0
+
+[2025-09-25 09:57:49] Rows with training labels: 0
+
+[2025-09-25 09:57:49] Rows with model predictions: 21429
+
+[2025-09-25 09:57:49] Rows with consolidated labels: 21442
+
+[2025-09-25 09:57:49] Script execution finished.
+
+[2025-09-25 10:02:22] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:02:24] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:02:24] Loading training data...
+
+[2025-09-25 10:02:24] Loaded 410 rows from training data.
+
+[2025-09-25 10:02:24] Loading manual validations...
+
+[2025-09-25 10:02:24] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:02:25] Consolidating datasets...
+
+[2025-09-25 10:02:25] master$id type: character
+
+[2025-09-25 10:02:25] training_data$id type: character
+
+[2025-09-25 10:02:25] manual_validations$id type: character
+
+[2025-09-25 10:02:25] After joining manual: 21429
+
+[2025-09-25 10:02:25] Added 410 training rows.
+
+[2025-09-25 10:02:25] Number of duplicate IDs: 397
+
+[2025-09-25 10:02:25] Warning: Duplicate IDs found. Removing duplicates, keeping first occurrence.
+
+[2025-09-25 10:02:25] Consolidated dataset has 21442 rows.
+
+[2025-09-25 10:02:25] Writing consolidated dataset to file...
+
+[2025-09-25 10:02:26] Consolidated dataset written successfully.
+
+[2025-09-25 10:02:26] Consolidation complete.
+
+[2025-09-25 10:02:26] Total rows: 21442
+
+[2025-09-25 10:02:26] Rows with manual labels: 0
+
+[2025-09-25 10:02:26] Rows with training labels: 0
+
+[2025-09-25 10:02:26] Rows with model predictions: 21429
+
+[2025-09-25 10:02:26] Rows with consolidated labels: 21442
+
+[2025-09-25 10:02:26] Script execution finished.
+
+[2025-09-25 10:03:10] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:03:12] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:03:12] Loading training data...
+
+[2025-09-25 10:03:12] Loaded 410 rows from training data.
+
+[2025-09-25 10:03:12] Loading manual validations...
+
+[2025-09-25 10:03:12] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:03:12] Consolidating datasets...
+
+[2025-09-25 10:03:12] master$id type: character
+
+[2025-09-25 10:03:12] training_data$id type: character
+
+[2025-09-25 10:03:12] manual_validations$id type: character
+
+[2025-09-25 10:03:12] After joining manual: 21429
+
+[2025-09-25 10:03:12] Added 410 training rows.
+
+[2025-09-25 10:04:43] Loading training data...
+
+[2025-09-25 10:04:44] Loaded 410 rows from training data.
+
+[2025-09-25 10:04:44] Loading manual validations...
+
+[2025-09-25 10:06:30] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:06:32] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:06:32] Loading training data...
+
+[2025-09-25 10:06:32] Loaded 542 rows from training data.
+
+[2025-09-25 10:06:32] Loading manual validations...
+
+[2025-09-25 10:06:32] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:06:32] Consolidating datasets...
+
+[2025-09-25 10:06:32] master$id type: character
+
+[2025-09-25 10:06:32] training_data$id type: character
+
+[2025-09-25 10:06:32] manual_validations$id type: character
+
+[2025-09-25 10:06:32] After joining manual: 21429
+
+[2025-09-25 10:06:32] After joining training on doi: 34469
+
+[2025-09-25 10:06:33] Added 542 training rows not matched by doi.
+
+[2025-09-25 10:12:08] Loading training data...
+
+[2025-09-25 10:12:10] Loaded 531 rows from training data.
+
+[2025-09-25 10:13:29] Loaded 542 rows from training data.
+
+[2025-09-25 10:13:29] Loading manual validations...
+
+[2025-09-25 10:13:31] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:15:13] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:15:13] Loading training data...
+
+[2025-09-25 10:15:15] Loaded 542 rows from training data.
+
+[2025-09-25 10:15:16] Loading manual validations...
+
+[2025-09-25 10:15:18] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:15:41] Loading manual validations...
+
+[2025-09-25 10:15:42] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:15:42] Consolidating datasets...
+
+[2025-09-25 10:15:43] master$id type: character
+
+[2025-09-25 10:15:45] training_data$id type: character
+
+[2025-09-25 10:15:46] manual_validations$id type: character
+
+[2025-09-25 10:16:13] After joining manual: 21429
+
+[2025-09-25 10:18:03] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:18:05] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:18:05] Loading training data...
+
+[2025-09-25 10:18:05] Loaded 542 rows from training data.
+
+[2025-09-25 10:18:05] Loading manual validations...
+
+[2025-09-25 10:18:05] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:18:05] Consolidating datasets...
+
+[2025-09-25 10:18:05] master$id type: character
+
+[2025-09-25 10:18:05] training_data$id type: character
+
+[2025-09-25 10:18:05] manual_validations$id type: character
+
+[2025-09-25 10:18:05] After joining manual: 21429
+
+[2025-09-25 10:18:05] After joining training 21971
+
+[2025-09-25 10:22:13] After joining manual: 21429
+
+[2025-09-25 10:22:20] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:22:21] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:22:21] Loading training data...
+
+[2025-09-25 10:22:21] Loaded 542 rows from training data.
+
+[2025-09-25 10:22:21] Loading manual validations...
+
+[2025-09-25 10:22:21] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:22:21] Consolidating datasets...
+
+[2025-09-25 10:22:21] master$id type: character
+
+[2025-09-25 10:22:21] training_data$id type: character
+
+[2025-09-25 10:22:21] manual_validations$id type: character
+
+[2025-09-25 10:22:21] After joining manual: 21429
+
+[2025-09-25 10:23:58] After joining training 21971
+
+[2025-09-25 10:24:07] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:24:08] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:24:08] Loading training data...
+
+[2025-09-25 10:24:08] Loaded 542 rows from training data.
+
+[2025-09-25 10:24:08] Loading manual validations...
+
+[2025-09-25 10:24:08] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:24:08] Consolidating datasets...
+
+[2025-09-25 10:24:08] master$id type: character
+
+[2025-09-25 10:24:08] training_data$id type: character
+
+[2025-09-25 10:24:08] manual_validations$id type: character
+
+[2025-09-25 10:24:09] After joining manual: 21429
+
+[2025-09-25 10:24:09] After joining training 21971
+
+[2025-09-25 10:24:41] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:24:43] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:24:43] Loading training data...
+
+[2025-09-25 10:24:43] Loaded 542 rows from training data.
+
+[2025-09-25 10:24:43] Loading manual validations...
+
+[2025-09-25 10:24:43] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:24:43] Consolidating datasets...
+
+[2025-09-25 10:24:43] master$id type: character
+
+[2025-09-25 10:24:43] training_data$id type: character
+
+[2025-09-25 10:24:43] manual_validations$id type: character
+
+[2025-09-25 10:24:43] After joining manual: 21429
+
+[2025-09-25 10:24:43] After joining training 21971
+
+[2025-09-25 10:24:43] Number of duplicate IDs: 0
+
+[2025-09-25 10:24:43] Consolidated dataset has 21971 rows.
+
+[2025-09-25 10:24:43] Writing consolidated dataset to file...
+
+[2025-09-25 10:24:43] Consolidated dataset written successfully.
+
+[2025-09-25 10:24:43] Consolidation complete.
+
+[2025-09-25 10:24:43] Total rows: 21971
+
+[2025-09-25 10:24:43] Rows with manual labels: 102
+
+[2025-09-25 10:24:43] Rows with training labels: 541
+
+[2025-09-25 10:24:43] Rows with model predictions: 21429
+
+[2025-09-25 10:24:43] Rows with consolidated labels: 21970
+
+[2025-09-25 10:24:43] Script execution finished.
+
+[2025-09-25 10:30:08] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:31:14] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:31:48] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:31:49] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:31:49] Loading training data...
+
+[2025-09-25 10:31:49] Loaded 542 rows from training data.
+
+[2025-09-25 10:31:49] Loading manual validations...
+
+[2025-09-25 10:31:50] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:33:36] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:33:37] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:33:37] Loading training data...
+
+[2025-09-25 10:33:37] Loaded 542 rows from training data.
+
+[2025-09-25 10:33:37] Loading manual validations...
+
+[2025-09-25 10:33:37] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:33:37] Consolidating datasets...
+
+[2025-09-25 10:33:37] master$id type: character
+
+[2025-09-25 10:33:37] training_data$id type: character
+
+[2025-09-25 10:33:37] manual_validations$id type: character
+
+[2025-09-25 10:35:41] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:35:42] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:35:42] Loading training data...
+
+[2025-09-25 10:35:42] Loaded 542 rows from training data.
+
+[2025-09-25 10:35:42] Loading manual validations...
+
+[2025-09-25 10:35:42] Loaded 102 rows from manual validations.
+
+[2025-09-25 10:35:42] Consolidating datasets...
+
+[2025-09-25 10:35:42] master$id type: character
+
+[2025-09-25 10:35:42] training_data$id type: character
+
+[2025-09-25 10:35:42] manual_validations$id type: character
+
+[2025-09-25 10:35:42] After joining manual: 21429
+
+[2025-09-25 10:35:43] After joining training 21970
+
+[2025-09-25 10:35:43] Number of duplicate IDs: 0
+
+[2025-09-25 10:35:43] Consolidated dataset has 21970 rows.
+
+[2025-09-25 10:35:43] Writing consolidated dataset to file...
+
+[2025-09-25 10:35:43] Consolidated dataset written successfully.
+
+[2025-09-25 10:35:43] Consolidation complete.
+
+[2025-09-25 10:35:43] Total rows: 21970
+
+[2025-09-25 10:35:43] Rows with manual labels: 102
+
+[2025-09-25 10:35:43] Rows with training labels: 541
+
+[2025-09-25 10:35:43] Rows with model predictions: 21429
+
+[2025-09-25 10:35:43] Rows with consolidated labels: 21970
+
+[2025-09-25 10:35:43] Script execution finished.
+
+[2025-09-25 10:38:05] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:38:06] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:38:06] Loading training data...
+
+[2025-09-25 10:38:06] Loaded 542 rows from training data.
+
+[2025-09-25 10:38:06] Loading manual validations...
+
+[2025-09-25 10:38:24] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:38:25] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:38:25] Loading training data...
+
+[2025-09-25 10:38:26] Loaded 542 rows from training data.
+
+[2025-09-25 10:38:26] Loading manual validations...
+
+[2025-09-25 10:38:26] Loaded 89 rows from manual validations.
+
+[2025-09-25 10:38:26] Consolidating datasets...
+
+[2025-09-25 10:38:26] master$id type: character
+
+[2025-09-25 10:38:26] training_data$id type: character
+
+[2025-09-25 10:38:26] manual_validations$id type: character
+
+[2025-09-25 10:38:26] After joining manual: 21429
+
+[2025-09-25 10:38:26] After joining training 21970
+
+[2025-09-25 10:38:26] Number of duplicate IDs: 0
+
+[2025-09-25 10:38:26] Consolidated dataset has 21970 rows.
+
+[2025-09-25 10:38:26] Writing consolidated dataset to file...
+
+[2025-09-25 10:38:26] Consolidated dataset written successfully.
+
+[2025-09-25 10:38:26] Consolidation complete.
+
+[2025-09-25 10:38:26] Total rows: 21970
+
+[2025-09-25 10:38:26] Rows with manual labels: 89
+
+[2025-09-25 10:38:26] Rows with training labels: 541
+
+[2025-09-25 10:38:26] Rows with model predictions: 21429
+
+[2025-09-25 10:38:26] Rows with consolidated labels: 21970
+
+[2025-09-25 10:38:26] Script execution finished.
+
+[2025-09-25 10:40:28] Loading master dataset (full dataset predictions)...
+
+[2025-09-25 10:40:29] Loaded 21429 rows from master dataset.
+
+[2025-09-25 10:40:29] Loading training data...
+
+[2025-09-25 10:40:29] Loaded 542 rows from training data.
+
+[2025-09-25 10:40:29] Loading manual validations...
+
+[2025-09-25 10:40:29] Loaded 89 rows from manual validations.
+
+[2025-09-25 10:40:29] Consolidating datasets...
+
+[2025-09-25 10:40:29] master$id type: character
+
+[2025-09-25 10:40:29] training_data$id type: character
+
+[2025-09-25 10:40:29] manual_validations$id type: character
+
+[2025-09-25 10:40:29] After joining manual: 21429
+
+[2025-09-25 10:40:29] After joining training 21970
+
+[2025-09-25 10:40:29] Number of duplicate IDs: 0
+
+[2025-09-25 10:40:29] Consolidated dataset has 21970 rows.
+
+[2025-09-25 10:40:29] Writing consolidated dataset to file...
+
+[2025-09-25 10:40:30] Consolidated dataset written successfully.
+
+[2025-09-25 10:40:30] Consolidation complete.
+
+[2025-09-25 10:40:30] Total rows: 19814
+
+[2025-09-25 10:40:30] Rows with manual labels: 50
+
+[2025-09-25 10:40:30] Rows with training labels: 406
+
+[2025-09-25 10:40:30] Rows with model predictions: 19408
+
+[2025-09-25 10:40:30] Rows with consolidated labels: 19814
+
+[2025-09-25 10:40:30] Script execution finished.
+

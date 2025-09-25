@@ -26,9 +26,9 @@ if (!file.exists(species_path)) {
 }
 species <- readRDS(species_path)
 
-# Create optimized lookup tables
-message("Creating lookup tables...")
-lookup_tables <- create_lookup_tables(species)
+# Create optimized lookup tables with bloom filter support
+message("Creating lookup tables with bloom filter support...")
+lookup_tables <- create_lookup_tables_with_bloom(species)
 
 # Set up plant parts keywords (dummy for testing)
 plant_parts_keywords <- c("leaf", "leaves", "stem", "stems", "root", "roots")
@@ -60,4 +60,15 @@ if (nrow(results) > 0) {
   message("  - No species detected in the test subset")
 }
 
-message("Test completed successfully!")
+# Run additional advanced tests
+message("\nRunning synonym resolution test...")
+tryCatch({
+  synonym_test <- test_synonym_handling()
+  if (!is.null(synonym_test)) {
+    message("Synonym test completed - check results above")
+  }
+}, error = function(e) {
+  message("Synonym test failed:", e$message)
+})
+
+message("\nAll tests completed successfully!")

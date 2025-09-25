@@ -12,7 +12,7 @@
 # Author: B. Bock
 # Date: 2024-09-22
 #
-# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs species detection results to results/species_detection_results.csv
+# Inputs/Outputs: Reads consolidated abstracts from results/consolidated_dataset.csv; outputs species detection results to results/species_detection_results.csv
 #
 # =============================================================================
 
@@ -132,8 +132,7 @@ extract_species_data <- function(
     warning("Parallel setup failed: ", e$message, ". Falling back to sequential processing.")
     n_cores <- 1
   })
-  lookup_tables <- create_lookup_tables_optimized(species, hash_threshold)
-  plant_parts_keywords <- get_plant_parts_keywords()
+  lookup_tables <- create_lookup_tables_with_bloom(species)
 
   # Process in batches
   tic("Species detection")
@@ -160,7 +159,6 @@ extract_species_data <- function(
     batch_results <- process_abstracts_parallel(
       abstracts = batch_data,
       species_path = if (file.exists("species.rds")) "species.rds" else "models/species.rds",
-      plant_parts_keywords = plant_parts_keywords,
       batch_size = 50
     )
 
@@ -225,9 +223,9 @@ extract_species_data <- function(
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "01_extract_species.R")) {
 
   # Load abstracts data (should be prepared by pipeline)
-  abstracts_file <- "results/prepared_abstracts_for_extraction.csv"
+  abstracts_file <- "results/consolidated_dataset.csv"
   if (!file.exists(abstracts_file)) {
-    stop("❌ Prepared abstracts not found. Run the pipeline script first or prepare data manually.")
+    stop("❌ Consolidated dataset not found. Run the consolidation script first.")
   }
 
   abstracts_data <- read_csv(abstracts_file, show_col_types = FALSE)
