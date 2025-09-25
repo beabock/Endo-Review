@@ -74,11 +74,20 @@ PIPELINE_STAGES <- list(
   
   species_extraction = list(
     name = "Species and Information Extraction",
-    script = "scripts/04_analysis/archive/extract_species_simple.R",
+    script = "scripts/04_analysis/components/01_extract_species.R",
     description = "Extract species, methods, geography, and plant parts",
     required_files = c("results/relevant_abstracts_with_pa_predictions.csv", INPUT_FILES$species_data),
-    outputs = c("results/comprehensive_extraction_results.csv", "results/species_detection_weighted_ensemble.csv"),
+    outputs = c("results/species_detection_results.csv", "results/comprehensive_extraction_results.csv"),
     estimated_time = "30-60 minutes"
+  ),
+
+  mycorrhizal_check = list(
+    name = "Mycorrhizal Taxa Identification",
+    script = "scripts/04_analysis/components/01b_mycorrhizal_check.R",
+    description = "Identify papers mentioning only mycorrhizal fungi using FUNGuild",
+    required_files = c("results/species_detection_results.csv"),
+    outputs = c("results/species_detection_results_mycorrhizal.csv"),
+    estimated_time = "10-20 minutes"
   ),
   
   geographic_analysis = list(
@@ -318,7 +327,7 @@ run_endophyte_pipeline <- function(stages = names(PIPELINE_STAGES),
 
 #' Run only the core analysis pipeline (skip model training)
 run_analysis_only <- function(force_run = FALSE) {
-  analysis_stages <- c("full_prediction", "species_extraction", "geographic_analysis", 
+  analysis_stages <- c("full_prediction", "species_extraction", "mycorrhizal_check", "geographic_analysis",
                       "temporal_analysis", "absence_detection", "validation_sample")
   return(run_endophyte_pipeline(analysis_stages, force_run = force_run))
 }
@@ -331,7 +340,7 @@ run_ml_pipeline <- function(force_run = FALSE) {
 
 #' Run only the analysis stages (assumes extraction is complete)
 run_downstream_analysis <- function(force_run = FALSE) {
-  downstream_stages <- c("geographic_analysis", "temporal_analysis", 
+  downstream_stages <- c("mycorrhizal_check", "geographic_analysis", "temporal_analysis",
                          "absence_detection", "validation_sample")
   return(run_endophyte_pipeline(downstream_stages, force_run = force_run))
 }
@@ -344,14 +353,15 @@ if (interactive()) {
   cat("\n=== INTERACTIVE PIPELINE RUNNER ===\n")
   cat("Available functions:\n")
   cat("• run_endophyte_pipeline() - Run complete pipeline\n")
-  cat("• run_analysis_only() - Skip model training, run analysis\n") 
+  cat("• run_analysis_only() - Skip model training, run analysis\n")
   cat("• run_ml_pipeline() - Run only ML training and prediction\n")
   cat("• run_downstream_analysis() - Run only final analysis stages\n")
   cat("\nExample usage:\n")
   cat("  result <- run_endophyte_pipeline()\n")
   cat("  result <- run_analysis_only(force_run = TRUE)\n")
+  cat("  result <- run_downstream_analysis()\n")
   cat("\nTo run specific stages:\n")
-  cat("  result <- run_endophyte_pipeline(stages = c('species_extraction', 'geographic_analysis'))\n")
+  cat("  result <- run_endophyte_pipeline(stages = c('species_extraction', 'mycorrhizal_check', 'geographic_analysis'))\n")
 }
 
 # =============================================================================

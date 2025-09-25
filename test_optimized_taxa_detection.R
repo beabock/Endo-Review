@@ -30,8 +30,7 @@ species <- readRDS(species_path)
 message("Creating lookup tables with bloom filter support...")
 lookup_tables <- create_lookup_tables_with_bloom(species)
 
-# Set up plant parts keywords (dummy for testing)
-plant_parts_keywords <- c("leaf", "leaves", "stem", "stems", "root", "roots")
+# Plant parts detection is now handled by dedicated component (03_extract_plant_parts.R)
 
 # Test on small subset (first 10 abstracts for quick correctness check)
 message("Testing on subset of 10 abstracts...")
@@ -41,7 +40,6 @@ test_subset <- abstracts_df[1:10, ]
 results <- process_abstracts_parallel(
   abstracts = test_subset,
   species_path = species_path,
-  plant_parts_keywords = plant_parts_keywords,
   batch_size = 5,  # Small batch for testing
   workers = 1,     # Not used in sequential mode
   use_streaming = FALSE  # No streaming for small test

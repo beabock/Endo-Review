@@ -45,7 +45,7 @@ The claim of universal endophyte presence is frequently stated in the literature
   stem* OR twig* OR rhizome* OR thallus OR frond* OR algae OR "green alga*" OR macroalga* OR 
   cyanobacteria OR cyanobiont* OR photobiont* OR lichen*)
   ```
-- **Database**: Web of Science Core Collection and Scopus
+- **Database**: Web of Science Core Collection, PubMed, Scopus
 - **Search Date**: July 31, 2025
 - **Status**: **CURRENT DATASET FOR ALL ANALYSES**
 

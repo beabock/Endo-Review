@@ -205,13 +205,17 @@ bloom_filter_candidates <- function(candidates, domain, bloom_connections) {
 #' 2. Full validation against reference database for bloom filter survivors
 #'
 #' This approach reduces validation time by 80-90% for large candidate lists.
+#' Supports multi-domain validation for comprehensive taxonomic coverage.
 #'
 #' @param candidates Character vector of candidate taxonomic names
 #' @param lookup_tables Pre-built lookup tables from create_lookup_tables()
 #' @param bloom_connections List of pre-loaded bloom filter connections
 #' @param domain Character string identifying the domain ("plants" or "fungi")
+#' @param domain_label Optional label for performance reporting (defaults to domain)
+#' @param is_multi_domain Logical, whether this is part of a multi-domain search
 #' @return Tibble with validated names and taxonomic information
-hybrid_validate_names <- function(candidates, lookup_tables, bloom_connections, domain) {
+hybrid_validate_names <- function(candidates, lookup_tables, bloom_connections, domain,
+                                 domain_label = domain, is_multi_domain = FALSE) {
   if (length(candidates) == 0) return(tibble())
 
   # Stage 1: Bloom filter pre-filtering (sub-millisecond)
@@ -219,10 +223,12 @@ hybrid_validate_names <- function(candidates, lookup_tables, bloom_connections, 
   bloom_filtered <- bloom_filter_candidates(candidates, domain, bloom_connections)
   bloom_time <- difftime(Sys.time(), tic, units = "secs")
 
-  message(sprintf("Bloom filter stage: %.3f seconds", as.numeric(bloom_time)))
+  message(sprintf("Bloom filter stage (%s): %.3f seconds", domain_label, as.numeric(bloom_time)))
 
   if (length(bloom_filtered) == 0) {
-    message("Bloom filter eliminated all candidates")
+    if (!is_multi_domain) {
+      message("Bloom filter eliminated all candidates")
+    }
     return(tibble())
   }
 
@@ -232,20 +238,34 @@ hybrid_validate_names <- function(candidates, lookup_tables, bloom_connections, 
                                    use_fuzzy = FALSE, use_bloom_filter = FALSE)
   validation_time <- difftime(Sys.time(), tic, units = "secs")
 
-  message(sprintf("Full validation stage: %.3f seconds", as.numeric(validation_time)))
-  message(sprintf("Total time: %.3f seconds", as.numeric(bloom_time + validation_time)))
+  message(sprintf("Full validation stage (%s): %.3f seconds", domain_label, as.numeric(validation_time)))
+  message(sprintf("Total time (%s): %.3f seconds", domain_label, as.numeric(bloom_time + validation_time)))
 
   # Calculate performance metrics
   total_candidates <- length(candidates)
   bloom_survivors <- length(bloom_filtered)
   final_valid <- nrow(validated)
 
-  message(sprintf("Performance: %d/%d candidates survived bloom filter (%.1f%%)",
-                  bloom_survivors, total_candidates, 100 * bloom_survivors / total_candidates))
-  message(sprintf("Performance: %d/%d survived full validation (%.1f%% of survivors)",
-                  final_valid, bloom_survivors, 100 * final_valid / bloom_survivors))
-  message(sprintf("Performance: %d/%d final valid names (%.1f%% of original)",
-                  final_valid, total_candidates, 100 * final_valid / total_candidates))
+  # Adjust reporting based on whether this is multi-domain or standalone
+  if (is_multi_domain) {
+    # In multi-domain mode, show domain-specific stats without confusing percentages
+    message(sprintf("Performance (%s): %d/%d candidates survived bloom filter",
+                    domain_label, bloom_survivors, total_candidates))
+    message(sprintf("Performance (%s): %d survived full validation",
+                    domain_label, final_valid))
+    if (final_valid > 0) {
+      message(sprintf("Performance (%s): %.1f%% success rate",
+                      domain_label, 100 * final_valid / bloom_survivors))
+    }
+  } else {
+    # Standalone mode - show traditional detailed metrics
+    message(sprintf("Performance: %d/%d candidates survived bloom filter (%.1f%%)",
+                    bloom_survivors, total_candidates, 100 * bloom_survivors / total_candidates))
+    message(sprintf("Performance: %d/%d survived full validation (%.1f%% of survivors)",
+                    final_valid, bloom_survivors, 100 * final_valid / bloom_survivors))
+    message(sprintf("Performance: %d/%d final valid names (%.1f%% of original)",
+                    final_valid, total_candidates, 100 * final_valid / total_candidates))
+  }
 
   return(validated)
 }
@@ -292,4 +312,19 @@ build_bloom_filter_databases <- function(plants_df, fungi_df,
 
   message("Bloom filter databases ready")
   return(invisible(NULL))
+}
+
+#' Standalone single-domain hybrid validation with detailed performance reporting
+#'
+#' Convenience function for single-domain validation with traditional performance metrics.
+#' Provides detailed performance reporting for standalone domain validation.
+#'
+#' @param candidates Character vector of candidate taxonomic names
+#' @param lookup_tables Pre-built lookup tables from create_lookup_tables()
+#' @param bloom_connections List of pre-loaded bloom filter connections
+#' @param domain Character string identifying the domain ("plants" or "fungi")
+#' @return Tibble with validated names and taxonomic information
+hybrid_validate_single_domain <- function(candidates, lookup_tables, bloom_connections, domain) {
+  return(hybrid_validate_names(candidates, lookup_tables, bloom_connections, domain,
+                              domain_label = domain, is_multi_domain = FALSE))
 }

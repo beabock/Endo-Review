@@ -307,11 +307,24 @@ batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE, use_bl
   # Hybrid validation: Use bloom filter pre-filtering when available
   if (use_bloom_filter && length(names) > 0) {
     # Use hybrid validation combining bloom filters and traditional validation
-    validated <- hybrid_validate_names(names, lookup_tables, lookup_tables$bloom_connections, "plants")
+    # Try plants domain first
+    validated <- hybrid_validate_names(names, lookup_tables, lookup_tables$bloom_connections, "plants",
+                                      domain_label = "plants", is_multi_domain = TRUE)
+
+    # If no plants found, try fungi domain
     if (nrow(validated) == 0) {
-      # Try fungi domain if no plants found
-      validated <- hybrid_validate_names(names, lookup_tables, lookup_tables$bloom_connections, "fungi")
+      validated <- hybrid_validate_names(names, lookup_tables, lookup_tables$bloom_connections, "fungi",
+                                        domain_label = "fungi", is_multi_domain = TRUE)
     }
+
+    # Final performance summary for multi-domain search
+    if (nrow(validated) > 0) {
+      total_candidates <- length(names)
+      final_valid <- nrow(validated)
+      message(sprintf("Multi-domain performance: %d/%d final valid names (%.1f%% of original)",
+                      final_valid, total_candidates, 100 * final_valid / total_candidates))
+    }
+
     return(validated)
   }
   
@@ -780,8 +793,7 @@ test_synonym_handling <- function() {
       text = text,
       abstract_id = which(names(test_cases) == name),
       predicted_label = "Presence",
-      lookup_tables = lookup_tables,
-      plant_parts_keywords = plant_parts_keywords
+      lookup_tables = lookup_tables
     )
     
     cat("\nFinal detected taxa:\n")
@@ -840,9 +852,8 @@ if (interactive() && run_examples) {
   matches <- process_taxonomic_matches(validated, lookup_tables, "Quercus robur and Fagus sylvatica", 1, "Presence")
   print(matches)
 
-  # Test extract_plant_info
-  plant_parts_keywords <- c("leaf", "root")
-  plant_info <- extract_plant_info("Quercus robur leaf and Fagus sylvatica root", 1, "Presence", lookup_tables, plant_parts_keywords)
+  # Test extract_plant_info (plant parts detection removed - handled by dedicated component)
+  plant_info <- extract_plant_info("Quercus robur and Fagus sylvatica are common trees", 1, "Presence", lookup_tables)
   print(plant_info)
 
   # Test process_abstracts_parallel (with only one abstract for speed)
@@ -854,7 +865,7 @@ if (interactive() && run_examples) {
   # Save mock species to temp file for testing
   temp_species_path <- tempfile(fileext = ".rds")
   saveRDS(mock_species, temp_species_path)
-  parallel_results <- process_abstracts_parallel(abstracts, temp_species_path, plant_parts_keywords, batch_size = 1, workers = 1)
+  parallel_results <- process_abstracts_parallel(abstracts, temp_species_path, batch_size = 1, workers = 1)
   print(parallel_results)
   # Clean up temp file
   file.remove(temp_species_path)
