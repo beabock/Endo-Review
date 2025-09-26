@@ -19,8 +19,8 @@ This midstep between species extraction (`01_extract_species.R`) and methods ext
 
 ## Methodology
 
-### FUNGuild Classification
-- Uses the established FUNGuild database for mycorrhizal identification
+### funtothefun Dataset Classification
+- Uses the local funtothefun dataset (51,555+ fungal trait records) for mycorrhizal identification
 - **Only TRUE mycorrhizal guilds are considered mycorrhizal**:
   - Ectomycorrhizal fungi (form symbiotic relationships with tree roots)
   - Arbuscular mycorrhizal fungi (form symbiotic relationships with most plants)
@@ -28,9 +28,10 @@ This midstep between species extraction (`01_extract_species.R`) and methods ext
   - Ericoid mycorrhizal fungi (specialized for Ericaceae plants)
 - **Endophytic fungi are NOT considered mycorrhizal** - they live inside plants but don't form mycorrhizal symbiosis
 - **Other fungal guilds** (pathogens, saprotrophs, etc.) are not mycorrhizal
+- **Matching strategy**: Exact species match → Genus-level match → Taxonomic fallback
 
 ### Taxonomic Fallback
-- When FUNGuild is unavailable, uses taxonomic heuristics for known mycorrhizal groups:
+- When funtothefun dataset is unavailable or taxa not found, uses taxonomic heuristics for known mycorrhizal groups:
   - **Phylum level**: Glomeromycota, Mucoromycota
   - **Family level**: Glomeraceae, Acaulosporaceae, Gigasporaceae, etc.
   - **Genus level**: Glomus, Rhizophagus, Pisolithus, etc.
@@ -69,8 +70,8 @@ result <- run_endophyte_pipeline(stages = "mycorrhizal_check")
 
 ## Dependencies
 
-- `funguildr` package (FUNGuild database interface)
 - `tidyverse` for data manipulation
+- `funtothefun.csv` dataset (located at `C:/Users/beabo/OneDrive/Documents/NAU/Sap_Sym/datasets/funtothefun.csv`)
 - Input from `01_extract_species.R`
 
 ## Examples
@@ -102,6 +103,8 @@ This component is automatically included in:
 
 ## Performance Notes
 
-- FUNGuild classification may take time for large datasets
+- funtothefun dataset classification is fast and comprehensive (51,555+ records)
+- Local dataset eliminates network dependencies and external package requirements
 - Taxonomic fallback is faster but less comprehensive
 - Results are cached to avoid re-processing
+- Dataset location: `C:/Users/beabo/OneDrive/Documents/NAU/Sap_Sym/datasets/funtothefun.csv`

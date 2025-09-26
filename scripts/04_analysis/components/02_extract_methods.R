@@ -14,8 +14,8 @@
 # Author: B. Bock
 # Date: 2024-09-22
 #
-# Inputs/Outputs: Reads mycorrhizal-checked species data from results/species_detection_results_mycorrhizal.csv;
-# outputs comprehensive methods detection results to results/methods_detection_results.csv
+# Inputs/Outputs: Reads mycorrhizal-checked species data from results/species_detection_results_mycorrhizal_enhanced.csv;
+# outputs comprehensive methods detection results with all original columns to results/methods_detection_results.csv
 #
 # =============================================================================
 
@@ -144,21 +144,24 @@ extract_methods_data <- function(
     )
   })
 
+  # Join methods results with original data
+  full_results <- left_join(abstracts_data, methods_results, by = "id")
+
   # Save results
-  write_csv(methods_results, output_file)
+  write_csv(full_results, output_file)
 
   # Comprehensive summary statistics
-  total_abstracts <- nrow(methods_results)
-  molecular_total <- sum(methods_results$molecular_methods, na.rm = TRUE)
-  culture_total <- sum(methods_results$culture_based_methods, na.rm = TRUE)
-  microscopy_total <- sum(methods_results$microscopy_methods, na.rm = TRUE)
-  inoculation_total <- sum(methods_results$inoculation_methods, na.rm = TRUE)
-  interaction_total <- sum(methods_results$plant_microbe_interaction_methods, na.rm = TRUE)
-  bioactivity_total <- sum(methods_results$bioactivity_assays_methods, na.rm = TRUE)
-  physiological_total <- sum(methods_results$physiological_assays_methods, na.rm = TRUE)
-  ecological_total <- sum(methods_results$ecological_studies_methods, na.rm = TRUE)
-  sterilization_total <- sum(methods_results$surface_sterilization_methods, na.rm = TRUE)
-  any_methods <- sum(!is.na(methods_results$methods_summary))
+  total_abstracts <- nrow(full_results)
+  molecular_total <- sum(full_results$molecular_methods, na.rm = TRUE)
+  culture_total <- sum(full_results$culture_based_methods, na.rm = TRUE)
+  microscopy_total <- sum(full_results$microscopy_methods, na.rm = TRUE)
+  inoculation_total <- sum(full_results$inoculation_methods, na.rm = TRUE)
+  interaction_total <- sum(full_results$plant_microbe_interaction_methods, na.rm = TRUE)
+  bioactivity_total <- sum(full_results$bioactivity_assays_methods, na.rm = TRUE)
+  physiological_total <- sum(full_results$physiological_assays_methods, na.rm = TRUE)
+  ecological_total <- sum(full_results$ecological_studies_methods, na.rm = TRUE)
+  sterilization_total <- sum(full_results$surface_sterilization_methods, na.rm = TRUE)
+  any_methods <- sum(!is.na(full_results$methods_summary))
 
   if (verbose) {
     cat("\n🎉 Comprehensive methods detection completed!\n")
@@ -187,14 +190,14 @@ extract_methods_data <- function(
     cat("💾 Results saved to:", output_file, "\n")
   }
 
-  return(methods_results)
+  return(full_results)
 }
 
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "02_extract_methods.R")) {
 
   # Load mycorrhizal-checked species data (this contains the abstracts)
-  input_file <- "results/species_detection_results_mycorrhizal.csv"
+  input_file <- "results/species_detection_results_mycorrhizal_enhanced.csv"
   if (!file.exists(input_file)) {
     stop("❌ Mycorrhizal-checked species data not found. Run 01_extract_species.R and 01b_mycorrhizal_check.R first.")
   }

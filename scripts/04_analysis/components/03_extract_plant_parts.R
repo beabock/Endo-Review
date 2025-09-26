@@ -1,18 +1,25 @@
 # =============================================================================
-# 03_extract_plant_parts.R - Plant parts detection component
+# 03_extract_plant_parts.R - Enhanced plant parts detection component
 # =============================================================================
 #
-# Purpose: Detect plant parts studied from abstracts using keyword matching
+# Purpose: Detect plant parts studied from abstracts with comprehensive singular/plural grouping
+# and context-aware detection using research method information
 #
-# Description: Script that detects plant parts (roots, leaves, stems, etc.) using regex patterns
-# and keyword matching with batch processing for efficient text analysis.
+# Description: Enhanced script that detects plant parts (roots, leaves, stems, etc.) using:
+# - Comprehensive singular/plural normalization for consistent grouping
+# - Context-aware detection based on research methods (microscopy, molecular, inoculation, etc.)
+# - Compound term recognition (e.g., "root tips", "leaf blades", "vascular bundles")
+# - Integration with methods detection output for improved accuracy
+# - Batch processing for efficient text analysis
 #
 # Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
 #
 # Author: B. Bock
 # Date: 2024-09-22
+# Enhanced: 2024-09-26 - Added normalization, context-awareness, and methods integration
 #
-# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs plant parts detection results to results/plant_parts_detection_results.csv
+# Inputs/Outputs: Reads methods detection results from results/methods_detection_results.csv;
+# outputs enhanced plant parts detection results to results/plant_parts_detection_results.csv
 #
 # =============================================================================
 
@@ -26,6 +33,74 @@ source("scripts/04_analysis/utilities/reference_data_utils.R")
 cat("=== PLANT PARTS DETECTION COMPONENT ===\n")
 cat("Extracting plant parts information\n\n")
 
+# Function to detect compound plant part terms
+detect_compound_plant_parts <- function(text_vector) {
+  compound_patterns <- c(
+    # Root-related compounds
+    "root tip", "root tips", "root hair", "root hairs", "root cap", "root caps",
+    "root apical meristem", "root nodule", "root nodules", "tap root", "tap roots",
+    "fibrous root", "fibrous roots", "lateral root", "lateral roots", "adventitious root",
+    "adventitious roots", "aerial root", "aerial roots", "prop root", "prop roots",
+    "pneumatophore", "pneumatophores",
+
+    # Leaf-related compounds
+    "leaf blade", "leaf blades", "leaf margin", "leaf margins", "leaf tip", "leaf tips",
+    "leaf base", "leaf bases", "leaf sheath", "leaf sheaths", "leaf surface", "leaf surfaces",
+    "leaf vein", "leaf veins", "leaf trichome", "leaf trichomes", "guard cell", "guard cells",
+    "stomatal", "stomata", "mesophyll", "palisade mesophyll", "spongy mesophyll",
+
+    # Stem-related compounds
+    "stem internode", "stem internodes", "stem node", "stem nodes", "stem bark", "stem barks",
+    "vascular bundle", "vascular bundles", "bundle sheath", "bundle sheaths",
+    "cambial zone", "cambial zones", "axillary bud", "axillary buds", "terminal bud",
+    "terminal buds", "lateral bud", "lateral buds",
+
+    # Flower-related compounds
+    "flower bud", "flower buds", "floral organ", "floral organs", "petal", "petals",
+    "sepal", "sepals", "stamen", "stamens", "pistil", "pistils", "anther", "anthers",
+    "ovary", "ovaries", "ovule", "ovules", "style", "styles", "stigma", "stigmas",
+
+    # Seed and fruit compounds
+    "seed coat", "seed coats", "seed embryo", "seed embryos", "fruit pericarp",
+    "fruit pericarps", "fruit tissue", "fruit tissues", "pericarp", "pericarps",
+    "endosperm", "endosperms", "cotyledon", "cotyledons",
+
+    # Tissue and cellular compounds
+    "vascular tissue", "vascular tissues", "meristematic tissue", "meristematic tissues",
+    "ground tissue", "ground tissues", "epidermal tissue", "epidermal tissues",
+    "xylem vessel", "xylem vessels", "phloem sieve", "phloem sieves", "sieve tube",
+    "sieve tubes", "companion cell", "companion cells", "cell wall", "cell walls",
+    "middle lamella", "plasmodesma", "plasmodesmata", "intercellular space",
+    "intercellular spaces",
+
+    # Specialized structures
+    "glandular trichome", "glandular trichomes", "secretory trichome", "secretory trichomes",
+    "mycorrhizal root", "mycorrhizal roots", "mycorrhizal structure", "mycorrhizal structures",
+    "haustorium", "haustoria", "haustorial", "transfer cell", "transfer cells"
+  )
+
+  compound_parts <- list()
+
+  for (i in seq_along(text_vector)) {
+    text <- text_vector[i]
+    found_compounds <- c()
+
+    for (pattern in compound_patterns) {
+      if (str_detect(text, regex(pattern, ignore_case = TRUE))) {
+        # Normalize the compound term
+        normalized <- normalize_plant_part(pattern)
+        if (!is.na(normalized)) {
+          found_compounds <- c(found_compounds, normalized)
+        }
+      }
+    }
+
+    compound_parts[[i]] <- unique(found_compounds)
+  }
+
+  return(compound_parts)
+}
+
 # Enhanced vectorized function to detect plant parts with normalization and context awareness
 detect_plant_parts_batch <- function(text_vector, method_context = NULL) {
   plant_parts_keywords <- get_plant_parts_keywords()
@@ -37,8 +112,14 @@ detect_plant_parts_batch <- function(text_vector, method_context = NULL) {
   # Apply normalization to group singular/plural forms
   parts_normalized <- map(parts_found, ~normalize_plant_part(.))
 
+  # Detect compound terms
+  compound_parts <- detect_compound_plant_parts(text_lower)
+
+  # Combine simple and compound parts
+  combined_parts <- map2(parts_normalized, compound_parts, ~c(.x, .y))
+
   # Remove duplicates after normalization and filter out NA values
-  parts_clean <- map(parts_normalized, ~unique(.))
+  parts_clean <- map(combined_parts, ~unique(.))
   parts_clean <- map(parts_clean, ~.[!is.na(.)])
 
   # If method context is provided, boost confidence for contextually relevant plant parts
@@ -54,23 +135,34 @@ detect_plant_parts_batch <- function(text_vector, method_context = NULL) {
         if (str_detect(method, "microscopy|microscopic")) {
           # Microscopy methods often focus on cellular/tissue structures
           tissue_indicators <- c("cortex", "epidermis", "xylem", "phloem", "cambium", "pith",
-                               "mesophyll", "trichome", "stoma", "vascular bundle")
+                               "mesophyll", "trichome", "stoma", "vascular bundle", "cell wall")
           enhanced_parts <- c(enhanced_parts, intersect(tissue_indicators, plant_parts_keywords))
         }
         if (str_detect(method, "molecular|DNA|PCR|sequencing")) {
           # Molecular methods often reference cellular components
-          cellular_indicators <- c("cell wall", "plasmodesma", "nucleus", "cytoplasm")
+          cellular_indicators <- c("cell wall", "plasmodesma", "nucleus", "cytoplasm", "cell membrane")
           enhanced_parts <- c(enhanced_parts, intersect(cellular_indicators, plant_parts_keywords))
         }
         if (str_detect(method, "inoculation|colonization")) {
           # Inoculation studies typically focus on roots and sometimes leaves
-          colonization_indicators <- c("root", "root tip", "root hair", "leaf", "mycorrhiza")
+          colonization_indicators <- c("root", "root tip", "root hair", "leaf", "mycorrhiza",
+                                     "rhizome", "mycelium", "hypha")
           enhanced_parts <- c(enhanced_parts, intersect(colonization_indicators, plant_parts_keywords))
         }
         if (str_detect(method, "culture|isolation")) {
           # Culture-based methods often work with surface-sterilized tissues
-          culture_indicators <- c("stem", "root", "leaf", "petiole", "internode")
+          culture_indicators <- c("stem", "root", "leaf", "petiole", "internode", "shoot")
           enhanced_parts <- c(enhanced_parts, intersect(culture_indicators, plant_parts_keywords))
+        }
+        if (str_detect(method, "physiological|enzyme|metabolite")) {
+          # Physiological studies often examine tissue responses
+          physiological_indicators <- c("leaf", "root", "stem", "xylem", "phloem", "chloroplast")
+          enhanced_parts <- c(enhanced_parts, intersect(physiological_indicators, plant_parts_keywords))
+        }
+        if (str_detect(method, "ecological|field|survey")) {
+          # Ecological studies often look at whole plant or ecosystem level
+          ecological_indicators <- c("root system", "canopy", "leaf", "flower", "seed")
+          enhanced_parts <- c(enhanced_parts, intersect(ecological_indicators, plant_parts_keywords))
         }
       }
 
@@ -192,6 +284,8 @@ extract_plant_parts_data <- function(
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "03_extract_plant_parts.R")) {
 
+  verbose <- TRUE
+
   # Load methods data (which contains abstracts and method information)
   methods_file <- "results/methods_detection_results.csv"
   if (!file.exists(methods_file)) {
@@ -199,7 +293,15 @@ if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "03_extr
   }
 
   cat("📖 Loading methods detection data from:", methods_file, "\n")
+  if (verbose) {
+    cat("   Loading large dataset, this may take a moment...\n")
+    start_time <- Sys.time()
+  }
   abstracts_data <- read_csv(methods_file, show_col_types = FALSE)
+  if (verbose) {
+    load_time <- round(difftime(Sys.time(), start_time, units = "secs"), 1)
+    cat("   ✅ Loaded", nrow(abstracts_data), "records with", ncol(abstracts_data), "columns in", load_time, "seconds\n")
+  }
 
   # Check if we have the required columns
   required_cols <- c("id", "abstract", "methods_summary")

@@ -15,7 +15,7 @@ The pipeline combines machine learning classification models with advanced speci
 
 ### 🌿 **Species and Taxa Analysis**
 - **Comprehensive Extraction**: Species, genus, and family identification from scientific abstracts
-- **Mycorrhizal Filtering**: Advanced detection using FUNGuild database
+- **Mycorrhizal Filtering**: Advanced detection using funtothefun dataset (51,555+ fungal trait records)
 - **Taxonomic Validation**: Cross-referencing with GBIF backbone taxonomy
 - **Multi-level Analysis**: Plant parts, research methods, and geographic patterns
 

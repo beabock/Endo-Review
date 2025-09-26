@@ -2,34 +2,38 @@
 
 ## Overview
 
-The Plant Parts Detection Component (`03_extract_plant_parts.R`) detects plant parts studied in scientific abstracts as part of the modular extraction pipeline. This component uses regex patterns and keyword matching to identify specific plant anatomical parts mentioned in research contexts.
+The Enhanced Plant Parts Detection Component (`03_extract_plant_parts.R`) provides comprehensive plant part detection with advanced singular/plural grouping and context-aware analysis. This component integrates with the methods detection output to provide more accurate and contextually relevant plant part identification.
 
 ## Purpose and Functionality
 
-This script analyzes scientific abstracts to identify which plant parts are being studied in endophyte research. It recognizes various plant anatomical structures including roots, leaves, stems, and other specialized tissues, providing valuable insights into research focus areas within the field.
+This enhanced script analyzes scientific abstracts to identify which plant parts are being studied in endophyte research, with significant improvements over the basic implementation:
 
 ### Key Features
 
-- **Comprehensive Plant Part Recognition**: Identifies diverse plant anatomical structures
-- **Regex-Based Detection**: Uses optimized regular expressions for accurate pattern matching
-- **Plural/Singular Normalization**: Handles both singular and plural forms of plant parts
-- **Context-Aware Matching**: Distinguishes research contexts from general botanical references
-- **Batch Processing**: Memory-efficient processing for large datasets
+- **Comprehensive Singular/Plural Normalization**: Groups singular and plural forms into canonical terms (e.g., "root" and "roots" both map to "root")
+- **Context-Aware Detection**: Uses research method information to improve detection accuracy and relevance
+- **Compound Term Recognition**: Identifies complex plant part terms like "root tips", "leaf blades", "vascular bundles"
+- **Methods Integration**: Uses output from 02_extract_methods.R for enhanced context awareness
+- **Advanced Regex Patterns**: Optimized regular expressions for accurate pattern matching
+- **Batch Processing**: Memory-efficient processing for large datasets with method context
 - **Progress Tracking**: Real-time progress monitoring with detailed statistics
+- **Enhanced Validation**: Improved accuracy metrics and comprehensive error handling
 
 ## Input/Output Specifications
 
 ### Input Requirements
-- **Data Format**: CSV file containing prepared abstracts with `id` and `abstract` columns
-- **Input File**: `results/prepared_abstracts_for_extraction.csv`
-- **Text Quality**: Standardized abstract text for optimal detection accuracy
+- **Data Format**: CSV file containing methods detection results with `id`, `abstract`, and `methods_summary` columns
+- **Input File**: `results/methods_detection_results.csv` (output from 02_extract_methods.R)
+- **Text Quality**: Standardized abstract text with method context for enhanced detection accuracy
+- **Method Context**: Research method information used to improve plant part detection relevance
 
 ### Output Specifications
 - **Output File**: `results/plant_parts_detection_results.csv`
 - **Data Structure**:
   - `id`: Abstract identifier
-  - `plant_parts_detected`: Semicolon-separated list of detected plant parts
+  - `plant_parts_detected`: Semicolon-separated list of detected plant parts (normalized)
   - `parts_count`: Number of unique plant parts mentioned
+  - `parts_normalized`: Raw detected parts before final normalization
 
 ## Dependencies and Requirements
 
@@ -91,29 +95,37 @@ if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "03_extr
 
 ## Plant Part Categories
 
-### Primary Plant Parts
-- **Roots** (including root tips, root hairs, rhizomes)
-- **Leaves** (including leaf blades, petioles, stipules)
-- **Stems** (including stem tissues, bark, wood)
-- **Flowers** (including floral organs, reproductive structures)
-- **Seeds** (including seed coats, embryos)
-- **Fruits** (including fruit tissues, pericarp)
+### Primary Plant Parts (with Singular/Plural Grouping)
+- **Roots** (including root tips, root hairs, rhizomes) - "root/roots" → "root"
+- **Leaves** (including leaf blades, petioles, stipules) - "leaf/leaves" → "leaf"
+- **Stems** (including stem tissues, bark, wood) - "stem/stems" → "stem"
+- **Flowers** (including floral organs, reproductive structures) - "flower/flowers" → "flower"
+- **Seeds** (including seed coats, embryos) - "seed/seeds" → "seed"
+- **Fruits** (including fruit tissues, pericarp) - "fruit/fruits" → "fruit"
 
-### Specialized Tissues
-- **Xylem** (vascular tissue)
-- **Phloem** (vascular tissue)
-- **Cambium** (meristematic tissue)
-- **Cortex** (stem/root tissue)
-- **Epidermis** (outer tissue layer)
-- **Mesophyll** (leaf tissue)
-- **Trichomes** (leaf hairs)
+### Specialized Tissues and Cellular Structures
+- **Xylem/Phloem** (vascular tissues) - "xylem/phloem" → normalized forms
+- **Cambium** (meristematic tissue) - "cambium/cambia" → "cambium"
+- **Cortex** (stem/root tissue) - "cortex/cortices" → "cortex"
+- **Epidermis** (outer tissue layer) - "epidermis/epidermises" → "epidermis"
+- **Mesophyll** (leaf tissue) - "mesophyll" → "mesophyll"
+- **Trichomes** (leaf hairs) - "trichome/trichomes" → "trichome"
+- **Cell walls** (structural components) - "cell wall/cell walls" → "cell wall"
+- **Stomata** (leaf pores) - "stoma/stomata" → "stoma"
 
-### Plant Organs and Structures
-- **Shoots** (above-ground parts)
-- **Tubers** (storage organs)
-- **Bulbs** (storage organs)
-- **Corms** (storage organs)
-- **Rhizomes** (underground stems)
+### Compound Terms and Complex Structures
+- **Root tips** (apical meristems) - detected as compound terms
+- **Leaf blades** (lamina portions) - detected as compound terms
+- **Vascular bundles** (conducting tissues) - detected as compound terms
+- **Root hairs** (absorption structures) - detected as compound terms
+- **Mycorrhizal structures** (symbiotic tissues) - detected as compound terms
+
+### Plant Organs and Storage Structures
+- **Shoots** (above-ground parts) - "shoot/shoots" → "shoot"
+- **Tubers** (storage organs) - "tuber/tubers" → "tuber"
+- **Bulbs** (storage organs) - "bulb/bulbs" → "bulb"
+- **Corms** (storage organs) - "corm/corms" → "corm"
+- **Rhizomes** (underground stems) - "rhizome/rhizomes" → "rhizome"
 
 ## Error Handling
 
