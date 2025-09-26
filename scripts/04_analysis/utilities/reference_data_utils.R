@@ -369,7 +369,7 @@ get_geographic_keywords <- function() {
   return(regions)
 }
 
-# Function to get research method keywords
+# Function to get research method keywords - comprehensive for fungal endophyte studies
 get_method_keywords <- function() {
   list(
     molecular = c(
@@ -379,33 +379,37 @@ get_method_keywords <- function() {
       "phylogenetic", "phylogeny", "phylogenetics", "BLAST", "GenBank", "NCBI", "ENA",
       "primer", "primers", "amplification", "amplified", "gel electrophoresis", "agarose gel",
       "restriction", "RFLP", "fingerprint", "fingerprinting", "genetic fingerprinting",
-      
+
       # Next-generation and advanced sequencing
       "next-generation sequencing", "NGS", "high-throughput sequencing",
       "Illumina", "454", "PacBio", "Oxford Nanopore", "Ion Torrent",
       "whole genome sequencing", "WGS", "RNA-seq", "transcriptome", "transcriptomic",
       "metagenomics", "metagenomic", "metabarcoding", "metabarcodes", "eDNA", "environmental DNA",
       "amplicon sequencing", "paired-end sequencing", "single-cell sequencing",
-      
+
       # Molecular markers and barcoding
       "RAPD", "AFLP", "SSR", "microsatellite", "SNP", "single nucleotide polymorphism",
       "barcode", "barcoding", "DNA barcoding", "COI", "rbcL", "matK", "trnH-psbA",
       "internal transcribed spacer", "large subunit", "LSU", "small subunit", "SSU",
-      
+
       # Molecular techniques and analysis
       "cloning", "cloned", "clone library", "plasmid", "vector", "transformation",
       "in situ hybridization", "FISH", "Southern blot", "Northern blot", "Western blot",
       "proteomics", "proteomic", "mass spectrometry", "LC-MS", "GC-MS",
-      "bioinformatics", "bioinformatic", "computational biology", "genome assembly"
+      "bioinformatics", "bioinformatic", "computational biology", "genome assembly",
+
+      # Endophyte-specific molecular methods
+      "endophyte identification", "fungal identification", "molecular identification",
+      "taxonomic identification", "species identification", "strain typing"
     ),
-    
-    culture = c(
+
+    culture_based = c(
       # Basic culturing
       "culture", "cultured", "culturing", "cultivation", "cultivated", "cultivating",
       "isolation", "isolated", "isolate", "isolates", "isolating",
       "medium", "media", "agar", "broth", "plate", "plates", "plating", "plated",
       "petri dish", "petri dishes", "culture dish", "culture dishes",
-      
+
       # Culture conditions and techniques
       "colony", "colonies", "streak", "streaking", "serial dilution", "dilution plating",
       "selective medium", "selective media", "differential medium", "enrichment medium",
@@ -413,42 +417,160 @@ get_method_keywords <- function() {
       "antibiotic", "antibiotics", "antimicrobial", "fungicide", "bactericide",
       "incubation", "incubated", "incubating", "sterile", "sterilized", "sterilization",
       "autoclave", "autoclaved", "aseptic", "aseptic technique", "laminar flow",
-      
+
       # Culture types and outcomes
       "pure culture", "mixed culture", "co-culture", "axenic", "gnotobiotic",
       "contamination", "contaminated", "sterility", "viable", "viability",
       "growth rate", "colony forming unit", "CFU", "morphology", "morphological",
-      "sporulation", "spore formation", "conidiation", "conidiophore"
+      "sporulation", "spore formation", "conidiation", "conidiophore",
+
+      # Endophyte-specific isolation and culturing
+      "endophyte isolation", "fungal isolation", "tissue isolation", "plant tissue culture",
+      "surface sterilization", "disinfection", "bleach", "sodium hypochlorite", "ethanol",
+      "mercury chloride", "plant material sterilization", "tissue fragmentation"
     ),
-    
+
     microscopy = c(
       # Light microscopy
       "microscopy", "microscope", "microscopic", "microscopical", "observation",
       "light microscopy", "LM", "bright field", "dark field", "phase contrast",
       "differential interference contrast", "DIC", "Nomarski", "polarized light",
-      
+
       # Electron microscopy
       "electron microscopy", "EM", "SEM", "TEM", "scanning electron", "transmission electron",
       "scanning electron microscopy", "transmission electron microscopy",
       "cryo-electron microscopy", "cryo-EM", "freeze fracture", "critical point drying",
-      
+
       # Advanced microscopy
       "confocal", "confocal microscopy", "CLSM", "fluorescence microscopy", "epifluorescence",
       "two-photon microscopy", "multiphoton", "super-resolution", "STED", "PALM", "STORM",
       "atomic force microscopy", "AFM", "scanning probe microscopy",
-      
+
       # Sample preparation and staining
       "staining", "stained", "histology", "histological", "histochemistry", "cytochemistry",
       "sectioning", "microtome", "ultramicrotome", "embedding", "embedded",
       "fixation", "fixed", "fixative", "glutaraldehyde", "formaldehyde", "osmium",
       "paraffin", "resin", "epoxy", "spurr", "LR white", "acrylic",
       "dehydration", "clearing", "mounting", "coverslip",
-      
+
       # Specific stains and dyes
       "toluidine blue", "methylene blue", "safranin", "crystal violet", "malachite green",
       "congo red", "aniline blue", "calcofluor", "calcofluor white", "fluorescein",
       "DAPI", "propidium iodide", "GFP", "YFP", "RFP", "immunofluorescence",
-      "antibody", "antibodies", "immunohistochemistry", "immunocytochemistry"
+      "antibody", "antibodies", "immunohistochemistry", "immunocytochemistry",
+
+      # Endophyte-specific microscopy
+      "colonization", "colonization pattern", "hyphal penetration", "tissue colonization",
+      "intercellular", "intracellular", "vascular colonization", "root colonization"
+    ),
+
+    inoculation = c(
+      # Plant inoculation methods
+      "inoculation", "inoculated", "inoculating", "inoculum", "inocula",
+      "seed inoculation", "seed treatment", "root inoculation", "soil inoculation",
+      "foliar spray", "foliar application", "stem injection", "hypocotyl injection",
+      "colonization", "colonized", "colonizing", "re-isolation", "re-isolated",
+
+      # Inoculation techniques
+      "spore suspension", "mycelial suspension", "conidial suspension", "culture filtrate",
+      "bacterial suspension", "fungal suspension", "endophyte suspension",
+      "plant growth promoting", "PGP", "plant growth promotion",
+
+      # Colonization assessment
+      "colonization rate", "colonization percentage", "infection rate", "recovery rate",
+      "endophytic colonization", "systemic colonization", "localized colonization",
+      "tissue specificity", "host specificity", "plant-microbe interaction"
+    ),
+
+    plant_microbe_interaction = c(
+      # Co-cultivation and dual culture systems
+      "dual culture", "co-cultivation", "co-culture", "interaction", "interactions",
+      "antagonism", "antagonistic", "synergism", "synergistic", "competition",
+      "plant-fungal interaction", "plant-microbe interaction", "host-pathogen interaction",
+
+      # Interaction assays
+      "pathogenicity test", "virulence assay", "disease assay", "symptom development",
+      "lesion development", "biotrophy", "necrotrophy", "hemibiotrophy",
+      "compatible interaction", "incompatible interaction", "hypersensitive response",
+
+      # Endophyte-host interaction studies
+      "endophyte-plant interaction", "mutualism", "mutualistic", "symbiosis", "symbiotic",
+      "commensalism", "commensal", "parasitism", "parasitic", "endosymbiosis",
+      "beneficial interaction", "stress tolerance", "abiotic stress", "biotic stress"
+    ),
+
+    bioactivity_assays = c(
+      # Antimicrobial activity
+      "antimicrobial", "antibacterial", "antifungal", "antiviral", "antibiosis",
+      "zone of inhibition", "disk diffusion", "well diffusion", "broth dilution",
+      "MIC", "minimum inhibitory concentration", "antagonistic activity",
+
+      # Plant growth promotion
+      "plant growth promotion", "PGP", "growth promotion", "biomass increase",
+      "seed germination", "root development", "shoot development", "plant vigor",
+      "nitrogen fixation", "phosphate solubilization", "siderophore production",
+
+      # Biocontrol activity
+      "biocontrol", "biological control", "disease suppression", "pathogen suppression",
+      "induced resistance", "systemic resistance", "ISR", "SAR", "systemic acquired resistance",
+      "plant protection", "crop protection", "disease resistance", "pest resistance"
+    ),
+
+    physiological_assays = c(
+      # Enzyme assays
+      "enzyme", "enzymes", "enzyme activity", "cellulase", "cellulolytic", "pectinase",
+      "pectinolytic", "amylase", "amylolytic", "protease", "proteolytic", "lipase",
+      "lipolytic", "chitinase", "chitinolytic", "glucanase", "glucanolytc",
+      "xylanase", "xylanolytc", "laccase", "peroxidase", "catalase", "superoxide dismutase",
+
+      # Metabolite analysis
+      "metabolite", "metabolites", "secondary metabolite", "bioactive compound",
+      "phytochemical", "alkaloid", "alkaloids", "flavonoid", "flavonoids", "terpenoid",
+      "terpenoids", "phenolic", "phenolics", "antioxidant", "antioxidants",
+      "metabolomics", "metabolomic", "GC-MS", "LC-MS", "NMR", "HPLC",
+
+      # Physiological studies
+      "stress tolerance", "salt tolerance", "drought tolerance", "heat tolerance",
+      "cold tolerance", "heavy metal tolerance", "pH tolerance", "osmotic stress",
+      "oxidative stress", "antioxidant activity", "ROS", "reactive oxygen species"
+    ),
+
+    ecological_studies = c(
+      # Diversity analysis
+      "diversity", "species diversity", "fungal diversity", "endophyte diversity",
+      "Shannon index", "Simpson index", "species richness", "evenness", "abundance",
+      "community structure", "community composition", "species composition",
+      "relative abundance", "frequency", "occurrence", "prevalence", "incidence",
+
+      # Ecological methods
+      "field survey", "field collection", "sampling", "sample collection",
+      "ecological survey", "biodiversity assessment", "species inventory",
+      "succession", "successional", "seasonal variation", "temporal variation",
+      "spatial distribution", "geographic distribution", "host preference",
+
+      # Statistical analysis
+      "ordination", "PCA", "principal component analysis", "cluster analysis",
+      "multivariate analysis", "statistical analysis", "ANOVA", "correlation",
+      "regression", "canonical correspondence analysis", "CCA", "RDA", "redundancy analysis"
+    ),
+
+    surface_sterilization = c(
+      # Surface sterilization techniques
+      "surface sterilization", "surface disinfection", "sterilization", "disinfection",
+      "bleach treatment", "sodium hypochlorite", "NaOCl", "ethanol", "EtOH",
+      "mercuric chloride", "HgCl2", "hydrogen peroxide", "H2O2", "flaming",
+      "autoclaving", "dry heat", "moist heat", "UV sterilization", "gamma irradiation",
+
+      # Endophyte isolation specific
+      "endophyte isolation", "tissue isolation", "plant tissue isolation",
+      "fragmentation", "tissue fragmentation", "homogenization", "maceration",
+      "serial washing", "rinsing", "sterile water", "sterile distilled water",
+      "Tween 20", "surfactant", "detergent", "wetting agent",
+
+      # Verification of sterilization
+      "sterility test", "sterility check", "contamination check", "imprint method",
+      "roll method", "wash water test", "control plate", "negative control",
+      "epiphyte removal", "surface contaminant", "surface microbe"
     )
   )
 }
@@ -721,9 +843,8 @@ normalize_country_vector <- function(country_vec, ensure_in_classification = FAL
 }
 
 
-# Normalize plant part terms so singular and plural forms map to the same canonical
-# token. This is intentionally conservative: prefer a mapping table for irregulars
-# and a small set of rules for regular plurals.
+# Enhanced normalize_plant_part function with comprehensive singular/plural mapping
+# This function groups singular and plural forms into canonical terms for consistent analysis
 normalize_plant_part <- function(part_text) {
   # Handle vector input by processing each element
   if (length(part_text) > 1) {
@@ -735,41 +856,110 @@ normalize_plant_part <- function(part_text) {
 
   txt <- tolower(trimws(as.character(part_text)))
 
-  # Known irregular plural -> singular mappings
+  # Comprehensive irregular plural -> singular mappings (expanded)
   irregulars <- c(
-    "leaves" = "leaf",
-    "lenticels" = "lenticel",
-    "roots" = "root",
-    "stems" = "stem",
-    "blades" = "blade",
-    "berries" = "berry",
-    "drupes" = "drupe",
-    "axes" = "axis",
-    "galls" = "gall",
-    "hairs" = "hair",
-    "nodes" = "node",
-    "internodes" = "internode",
-    "buds" = "bud",
-    "flowers" = "flower",
-    "seeds" = "seed",
-    "fruits" = "fruit",
-    "sheaths" = "sheath",
-    "stomata" = "stoma",
-    "trichomes" = "trichome",
-    "runners" = "runner",
-    "tubers" = "tuber",
-    "bulbs" = "bulb",
-    "roots" = "root",
-    "cotyledons" = "cotyledon",
-    "embryos" = "embryo",
-    "pistils" = "pistil",
-    "stamens" = "stamen"
+    # Basic plant parts
+    "leaves" = "leaf", "roots" = "root", "stems" = "stem", "flowers" = "flower",
+    "seeds" = "seed", "fruits" = "fruit", "buds" = "bud", "branches" = "branch",
+    "twigs" = "twig", "shoots" = "shoot", "trunks" = "trunk", "crowns" = "crown",
+    "canopies" = "canopy",
+
+    # Tissues and structures
+    "cortices" = "cortex", "epidermises" = "epidermis", "endodermises" = "endodermis",
+    "hypodermises" = "hypodermis", "pericarps" = "pericarp", "mesocarps" = "mesocarp",
+    "endocarps" = "endocarp", "exocarps" = "exocarp", "hulls" = "hull", "husks" = "husk",
+    "pods" = "pod", "capsules" = "capsule", "berries" = "berry", "drupes" = "drupe",
+    "achenes" = "achene", "caryopses" = "caryopsis", "samaras" = "samara", "siliques" = "silique",
+
+    # Parenchyma and related tissues
+    "parenchymas" = "parenchyma", "sclerenchymas" = "sclerenchyma", "collenchymas" = "collenchyma",
+    "aerenchymas" = "aerenchyma", "chlorenchymas" = "chlorenchyma", "sheaths" = "sheath",
+    "piths" = "pith", "medullas" = "medulla", "cambia" = "cambium", "periderms" = "periderm",
+    "cuticles" = "cuticle", "endosperms" = "endosperm", "embryos" = "embryo",
+    "cotyledons" = "cotyledon", "hypocotyls" = "hypocotyl", "epicotyls" = "epicotyl",
+    "radicles" = "radicle", "plumules" = "plumule", "coleoptiles" = "coleoptile",
+    "coleorhizas" = "coleorhiza",
+
+    # Meristematic tissues
+    "meristems" = "meristem", "pericycles" = "pericycle", "steles" = "stele",
+    "cambial zones" = "cambial zone", "root apical meristems" = "root apical meristem",
+    "shoot apical meristems" = "shoot apical meristem", "rams" = "ram", "sams" = "sam",
+
+    # Leaf parts
+    "blades" = "blade", "petioles" = "petiole", "laminas" = "lamina", "laminae" = "lamina",
+    "leaflets" = "leaflet", "nodes" = "node", "internodes" = "internode", "stipules" = "stipule",
+    "sheaths" = "sheath", "midribs" = "midrib", "veins" = "vein", "leaf margins" = "leaf margin",
+    "leaf tips" = "leaf tip", "leaf bases" = "leaf base",
+
+    # Root parts
+    "taproots" = "taproot", "fibrous roots" = "fibrous root", "root hairs" = "root hair",
+    "root caps" = "root cap", "root tips" = "root tip", "lateral roots" = "lateral root",
+    "adventitious roots" = "adventitious root", "prop roots" = "prop root",
+    "aerial roots" = "aerial root", "pneumatophores" = "pneumatophore",
+    "root nodules" = "root nodule", "mycorrhizas" = "mycorrhiza", "mycorrhizae" = "mycorrhiza",
+    "mycorrhizals" = "mycorrhizal",
+
+    # Stem parts
+    "axils" = "axil", "terminal buds" = "terminal bud", "axillary buds" = "axillary bud",
+    "lenticels" = "lenticel", "stolons" = "stolon", "rhizomes" = "rhizome",
+    "corms" = "corm", "tubers" = "tuber", "bulbs" = "bulb", "pseudobulbs" = "pseudobulb",
+    "runners" = "runner", "offsets" = "offset",
+
+    # Flower parts
+    "petals" = "petal", "sepals" = "sepal", "stamens" = "stamen", "pistils" = "pistil",
+    "anthers" = "anther", "filaments" = "filament", "ovaries" = "ovary", "ovules" = "ovule",
+    "styles" = "style", "stigmas" = "stigma", "receptacles" = "receptacle", "calyces" = "calyx",
+    "corollas" = "corolla", "perianths" = "perianth", "tepals" = "tepal", "nectaries" = "nectary",
+    "inflorescences" = "inflorescence", "spikes" = "spike", "racemes" = "raceme",
+    "panicles" = "panicle", "umbels" = "umbel", "cymes" = "cyme",
+
+    # Fruit parts
+    "pericarps" = "pericarp", "placentas" = "placenta", "funiculi" = "funiculus",
+    "arils" = "aril",
+
+    # Secretory structures
+    "resin ducts" = "resin duct", "resin canals" = "resin canal", "oil ducts" = "oil duct",
+    "latex vessels" = "latex vessel", "laticifers" = "laticifer", "mucilage canals" = "mucilage canal",
+    "secretory cells" = "secretory cell", "glandular hairs" = "glandular hair",
+    "glandular trichomes" = "glandular trichome", "salt glands" = "salt gland",
+    "nectar spurs" = "nectar spur",
+
+    # Surface structures
+    "trichomes" = "trichome", "hairs" = "hair", "scales" = "scale", "papillae" = "papilla",
+    "emergences" = "emergence", "prickles" = "prickle", "spines" = "spine", "thorns" = "thorn",
+    "stipular spines" = "stipular spine", "tendrils" = "tendril", "bracts" = "bract",
+    "bracteoles" = "bracteole",
+
+    # Anatomical features
+    "guard cells" = "guard cell", "subsidiary cells" = "subsidiary cell", "stomata" = "stoma",
+    "stomatals" = "stomatal", "substomatal chambers" = "substomatal chamber",
+    "intercellular spaces" = "intercellular space", "air spaces" = "air space",
+    "cell walls" = "cell wall", "middle lamellae" = "middle lamella", "plasmodesmata" = "plasmodesma",
+
+    # Wood anatomy
+    "heartwoods" = "heartwood", "sapwoods" = "sapwood", "earlywoods" = "earlywood",
+    "latewoods" = "latewood", "annual rings" = "annual ring", "growth rings" = "growth ring",
+    "rays" = "ray", "vessels" = "vessel", "tracheids" = "tracheid", "fibers" = "fiber",
+    "tyloses" = "tylosis",
+
+    # Reproductive structures
+    "cones" = "cone", "strobili" = "strobilus", "microsporangia" = "microsporangium",
+    "megasporangia" = "megasporangium", "sporangia" = "sporangium", "pollen sacs" = "pollen sac",
+    "pollen grains" = "pollen grain",
+
+    # Galls and abnormal structures
+    "galls" = "gall", "tumors" = "tumor", "neoplasms" = "neoplasm", "witch brooms" = "witch broom",
+    "witches brooms" = "witches broom", "fasciations" = "fasciation", "cankers" = "canker",
+    "lesions" = "lesion", "hyperplasias" = "hyperplasia", "hypertrophies" = "hypertrophy",
+    "calli" = "callus", "proliferations" = "proliferation",
+
+    # Axes and similar terms
+    "axes" = "axis"
   )
 
   if (txt %in% names(irregulars)) return(irregulars[txt])
 
-  # Simple rules for regular plurals: words ending in 'ies' -> 'y', ending in 'ves' -> 'f',
-  # otherwise strip trailing 's' if present and result exists in plant parts keywords
+  # Enhanced rules for regular plurals and compound terms
   if (grepl("ies$", txt)) {
     candidate <- sub("ies$", "y", txt)
   } else if (grepl("ves$", txt)) {
@@ -780,9 +970,30 @@ normalize_plant_part <- function(part_text) {
     candidate <- txt
   }
 
+  # Handle compound terms with common prefixes
+  compound_prefixes <- c("vascular", "leaf", "root", "stem", "flower", "seed", "fruit",
+                        "plant", "shoot", "branch", "bud", "node", "internode")
+
+  for (prefix in compound_prefixes) {
+    if (grepl(paste0("^", prefix, "_"), candidate) || grepl(paste0("^", prefix, " "), candidate)) {
+      # Extract the core term
+      core_term <- sub(paste0("^", prefix, "_"), "", candidate)
+      core_term <- sub(paste0("^", prefix, " "), "", core_term)
+      if (core_term %in% names(irregulars)) {
+        return(paste(prefix, irregulars[core_term]))
+      }
+      break
+    }
+  }
+
   # Validate candidate against known plant parts; if present, return it, else return original
   known <- tolower(get_plant_parts_keywords())
   if (candidate %in% known) return(candidate)
+
+  # Special handling for some edge cases
+  if (txt %in% c("mycorrhizal", "mycorrhizals", "mycorrhizas", "mycorrhizae")) return("mycorrhiza")
+  if (txt %in% c("vascular bundles", "vascular bundle")) return("vascular bundle")
+  if (txt %in% c("bundle sheaths", "bundle sheath")) return("bundle sheath")
 
   return(txt)
 }

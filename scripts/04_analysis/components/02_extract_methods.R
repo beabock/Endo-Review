@@ -2,9 +2,11 @@
 # 02_extract_methods.R - Research methods detection component
 # =============================================================================
 #
-# Purpose: Detect research methods from abstracts using keyword matching
+# Purpose: Detect comprehensive research methods from abstracts using keyword matching
 #
-# Description: Script that detects research methods (molecular, culture-based, microscopy) using optimized
+# Description: Script that detects research methods specific to fungal endophyte studies including:
+# molecular, culture-based, microscopy, inoculation, plant-microbe interactions, bioactivity assays,
+# physiological assays, ecological studies, and surface sterilization methods. Uses optimized
 # vectorized functions for efficient keyword matching and batch processing.
 #
 # Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
@@ -12,7 +14,8 @@
 # Author: B. Bock
 # Date: 2024-09-22
 #
-# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs methods detection results to results/methods_detection_results.csv
+# Inputs/Outputs: Reads mycorrhizal-checked species data from results/species_detection_results_mycorrhizal.csv;
+# outputs comprehensive methods detection results to results/methods_detection_results.csv
 #
 # =============================================================================
 
@@ -26,7 +29,7 @@ source("scripts/04_analysis/utilities/reference_data_utils.R")
 cat("=== METHODS DETECTION COMPONENT ===\n")
 cat("Extracting research methods information\n\n")
 
-# Optimized vectorized function to detect research methods
+# Optimized vectorized function to detect comprehensive research methods
 detect_research_methods_batch <- function(text_vector) {
   method_categories <- get_method_keywords()
 
@@ -40,14 +43,24 @@ detect_research_methods_batch <- function(text_vector) {
     setNames(list(matches), category)
   })
 
-  # Create methods summary
+  # Create methods summary with all detected methods
   methods_detected <- purrr::pmap_chr(results, function(...) {
     found <- names(list(...))[unlist(list(...))]
     if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
   })
 
   return(results %>%
-    rename(molecular = molecular, culture_based = culture, microscopy = microscopy) %>%
+    rename(
+      molecular_methods = molecular,
+      culture_based_methods = culture_based,
+      microscopy_methods = microscopy,
+      inoculation_methods = inoculation,
+      plant_microbe_interaction_methods = plant_microbe_interaction,
+      bioactivity_assays_methods = bioactivity_assays,
+      physiological_assays_methods = physiological_assays,
+      ecological_studies_methods = ecological_studies,
+      surface_sterilization_methods = surface_sterilization
+    ) %>%
     mutate(methods_summary = methods_detected))
 }
 
@@ -107,39 +120,49 @@ extract_methods_data <- function(
     # Detect methods
     methods <- detect_research_methods_batch(batch_text)
 
-    # Quick summary
-    molecular_found <- sum(methods$molecular, na.rm = TRUE)
-    culture_found <- sum(methods$culture_based, na.rm = TRUE)
-    microscopy_found <- sum(methods$microscopy, na.rm = TRUE)
+    # Quick summary for all method categories
+    molecular_found <- sum(methods$molecular_methods, na.rm = TRUE)
+    culture_found <- sum(methods$culture_based_methods, na.rm = TRUE)
+    microscopy_found <- sum(methods$microscopy_methods, na.rm = TRUE)
+    inoculation_found <- sum(methods$inoculation_methods, na.rm = TRUE)
+    interaction_found <- sum(methods$plant_microbe_interaction_methods, na.rm = TRUE)
+    bioactivity_found <- sum(methods$bioactivity_assays_methods, na.rm = TRUE)
+    physiological_found <- sum(methods$physiological_assays_methods, na.rm = TRUE)
+    ecological_found <- sum(methods$ecological_studies_methods, na.rm = TRUE)
+    sterilization_found <- sum(methods$surface_sterilization_methods, na.rm = TRUE)
 
     if (verbose && batch_num %% 10 == 0) {
-      cat("      Found: Molecular(", molecular_found, "), Culture(", culture_found, "), Microscopy(", microscopy_found, ")\n")
+      cat("      Methods found - Mol:", molecular_found, "Cult:", culture_found, "Micro:", microscopy_found,
+          "Inoc:", inoculation_found, "Int:", interaction_found, "Bio:", bioactivity_found,
+          "Phys:", physiological_found, "Eco:", ecological_found, "Ster:", sterilization_found, "\n")
     }
 
     # Combine with IDs
     bind_cols(
       tibble(id = batch_ids),
-      methods %>% rename(
-        molecular_methods = molecular,
-        culture_based_methods = culture_based,
-        microscopy_methods = microscopy
-      )
+      methods
     )
   })
 
   # Save results
   write_csv(methods_results, output_file)
 
-  # Summary
+  # Comprehensive summary statistics
   total_abstracts <- nrow(methods_results)
   molecular_total <- sum(methods_results$molecular_methods, na.rm = TRUE)
   culture_total <- sum(methods_results$culture_based_methods, na.rm = TRUE)
   microscopy_total <- sum(methods_results$microscopy_methods, na.rm = TRUE)
+  inoculation_total <- sum(methods_results$inoculation_methods, na.rm = TRUE)
+  interaction_total <- sum(methods_results$plant_microbe_interaction_methods, na.rm = TRUE)
+  bioactivity_total <- sum(methods_results$bioactivity_assays_methods, na.rm = TRUE)
+  physiological_total <- sum(methods_results$physiological_assays_methods, na.rm = TRUE)
+  ecological_total <- sum(methods_results$ecological_studies_methods, na.rm = TRUE)
+  sterilization_total <- sum(methods_results$surface_sterilization_methods, na.rm = TRUE)
   any_methods <- sum(!is.na(methods_results$methods_summary))
 
   if (verbose) {
-    cat("\n🎉 Methods detection completed!\n")
-    cat("📈 Results:\n")
+    cat("\n🎉 Comprehensive methods detection completed!\n")
+    cat("📈 Results Summary:\n")
     cat("   - Total abstracts processed:", total_abstracts, "\n")
     cat("   - Molecular methods:", molecular_total,
         "(", round(100 * molecular_total / total_abstracts, 1), "%)\n")
@@ -147,6 +170,18 @@ extract_methods_data <- function(
         "(", round(100 * culture_total / total_abstracts, 1), "%)\n")
     cat("   - Microscopy methods:", microscopy_total,
         "(", round(100 * microscopy_total / total_abstracts, 1), "%)\n")
+    cat("   - Inoculation methods:", inoculation_total,
+        "(", round(100 * inoculation_total / total_abstracts, 1), "%)\n")
+    cat("   - Plant-microbe interactions:", interaction_total,
+        "(", round(100 * interaction_total / total_abstracts, 1), "%)\n")
+    cat("   - Bioactivity assays:", bioactivity_total,
+        "(", round(100 * bioactivity_total / total_abstracts, 1), "%)\n")
+    cat("   - Physiological assays:", physiological_total,
+        "(", round(100 * physiological_total / total_abstracts, 1), "%)\n")
+    cat("   - Ecological studies:", ecological_total,
+        "(", round(100 * ecological_total / total_abstracts, 1), "%)\n")
+    cat("   - Surface sterilization:", sterilization_total,
+        "(", round(100 * sterilization_total / total_abstracts, 1), "%)\n")
     cat("   - Any method information:", any_methods,
         "(", round(100 * any_methods / total_abstracts, 1), "%)\n")
     cat("💾 Results saved to:", output_file, "\n")
@@ -158,16 +193,24 @@ extract_methods_data <- function(
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "02_extract_methods.R")) {
 
-  # Load abstracts data
-  abstracts_file <- "results/prepared_abstracts_for_extraction.csv"
-  if (!file.exists(abstracts_file)) {
-    stop("❌ Prepared abstracts not found. Run the pipeline script first or prepare data manually.")
+  # Load mycorrhizal-checked species data (this contains the abstracts)
+  input_file <- "results/species_detection_results_mycorrhizal.csv"
+  if (!file.exists(input_file)) {
+    stop("❌ Mycorrhizal-checked species data not found. Run 01_extract_species.R and 01b_mycorrhizal_check.R first.")
   }
 
-  abstracts_data <- read_csv(abstracts_file, show_col_types = FALSE)
+  cat("📖 Loading mycorrhizal-checked species data from:", input_file, "\n")
+  abstracts_data <- read_csv(input_file, show_col_types = FALSE)
+
+  # Check if we have the required columns
+  required_cols <- c("id", "abstract")
+  missing_cols <- setdiff(required_cols, colnames(abstracts_data))
+  if (length(missing_cols) > 0) {
+    stop("❌ Missing required columns in input data:", paste(missing_cols, collapse = ", "))
+  }
 
   # Extract methods
   methods_results <- extract_methods_data(abstracts_data)
 
-  cat("\n✅ Methods extraction component completed!\n")
+  cat("\n✅ Comprehensive methods extraction component completed!\n")
 }

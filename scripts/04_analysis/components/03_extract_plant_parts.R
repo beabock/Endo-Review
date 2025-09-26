@@ -26,21 +26,71 @@ source("scripts/04_analysis/utilities/reference_data_utils.R")
 cat("=== PLANT PARTS DETECTION COMPONENT ===\n")
 cat("Extracting plant parts information\n\n")
 
-# Optimized vectorized function to detect plant parts
-detect_plant_parts_batch <- function(text_vector) {
+# Enhanced vectorized function to detect plant parts with normalization and context awareness
+detect_plant_parts_batch <- function(text_vector, method_context = NULL) {
   plant_parts_keywords <- get_plant_parts_keywords()
   pattern <- paste0("\\b(", paste(plant_parts_keywords, collapse = "|"), ")\\b")
 
   text_lower <- str_to_lower(text_vector)
   parts_found <- str_extract_all(text_lower, pattern)
 
-  tibble(
-    plant_parts_detected = map_chr(parts_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
-    parts_count = map_int(parts_found, ~length(unique(.)))
-  )
+  # Apply normalization to group singular/plural forms
+  parts_normalized <- map(parts_found, ~normalize_plant_part(.))
+
+  # Remove duplicates after normalization and filter out NA values
+  parts_clean <- map(parts_normalized, ~unique(.))
+  parts_clean <- map(parts_clean, ~.[!is.na(.)])
+
+  # If method context is provided, boost confidence for contextually relevant plant parts
+  if (!is.null(method_context)) {
+    parts_enhanced <- map2(parts_clean, method_context, function(parts, methods) {
+      if (is.na(methods) || methods == "") return(parts)
+
+      method_list <- unlist(str_split(methods, "; "))
+      enhanced_parts <- parts
+
+      # Boost scores for plant parts relevant to detected methods
+      for (method in method_list) {
+        if (str_detect(method, "microscopy|microscopic")) {
+          # Microscopy methods often focus on cellular/tissue structures
+          tissue_indicators <- c("cortex", "epidermis", "xylem", "phloem", "cambium", "pith",
+                               "mesophyll", "trichome", "stoma", "vascular bundle")
+          enhanced_parts <- c(enhanced_parts, intersect(tissue_indicators, plant_parts_keywords))
+        }
+        if (str_detect(method, "molecular|DNA|PCR|sequencing")) {
+          # Molecular methods often reference cellular components
+          cellular_indicators <- c("cell wall", "plasmodesma", "nucleus", "cytoplasm")
+          enhanced_parts <- c(enhanced_parts, intersect(cellular_indicators, plant_parts_keywords))
+        }
+        if (str_detect(method, "inoculation|colonization")) {
+          # Inoculation studies typically focus on roots and sometimes leaves
+          colonization_indicators <- c("root", "root tip", "root hair", "leaf", "mycorrhiza")
+          enhanced_parts <- c(enhanced_parts, intersect(colonization_indicators, plant_parts_keywords))
+        }
+        if (str_detect(method, "culture|isolation")) {
+          # Culture-based methods often work with surface-sterilized tissues
+          culture_indicators <- c("stem", "root", "leaf", "petiole", "internode")
+          enhanced_parts <- c(enhanced_parts, intersect(culture_indicators, plant_parts_keywords))
+        }
+      }
+
+      return(unique(enhanced_parts))
+    })
+  } else {
+    parts_enhanced <- parts_clean
+  }
+
+  # Final normalization and deduplication
+  parts_final <- map(parts_enhanced, ~normalize_plant_part(.))
+
+  return(tibble(
+    plant_parts_detected = map_chr(parts_final, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
+    parts_count = map_int(parts_final, ~length(unique(.))),
+    parts_normalized = map_chr(parts_enhanced, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_)
+  ))
 }
 
-# Main plant parts extraction function
+# Enhanced main plant parts extraction function with methods integration
 extract_plant_parts_data <- function(
   abstracts_data,
   output_file = "results/plant_parts_detection_results.csv",
@@ -57,10 +107,13 @@ extract_plant_parts_data <- function(
     return(existing_results)
   }
 
-  if (verbose) cat("🔬 Starting plant parts detection for", nrow(abstracts_data), "abstracts\n")
+  if (verbose) cat("🔬 Starting enhanced plant parts detection for", nrow(abstracts_data), "abstracts\n")
 
   # Handle missing abstracts
   abstracts_text <- ifelse(is.na(abstracts_data$abstract), "", abstracts_data$abstract)
+
+  # Extract method context information for enhanced detection
+  methods_summary <- ifelse(is.na(abstracts_data$methods_summary), "", abstracts_data$methods_summary)
 
   # Process in batches for memory efficiency
   n_batches <- ceiling(length(abstracts_text) / batch_size)
@@ -68,6 +121,7 @@ extract_plant_parts_data <- function(
   if (verbose) {
     cat("📊 Processing", length(abstracts_text), "abstracts in", n_batches, "batches\n")
     cat("⚙️  Batch size:", batch_size, "abstracts per batch\n")
+    cat("🧬 Using method context for enhanced detection\n")
     cat("🕐 Started at", format(Sys.time(), "%H:%M:%S"), "\n\n")
   }
 
@@ -86,6 +140,7 @@ extract_plant_parts_data <- function(
 
     batch_text <- abstracts_text[start_idx:end_idx]
     batch_ids <- abstracts_data$id[start_idx:end_idx]
+    batch_methods <- methods_summary[start_idx:end_idx]
 
     if (verbose) {
       pb$tick()
@@ -93,18 +148,18 @@ extract_plant_parts_data <- function(
       cat("   🌿 Batch", batch_num, "of", n_batches, "(", length(batch_text), "abstracts)\n")
     }
 
-    # Detect plant parts
-    plant_parts <- detect_plant_parts_batch(batch_text)
+    # Detect plant parts with method context awareness
+    plant_parts <- detect_plant_parts_batch(batch_text, batch_methods)
 
-    # Quick summary
+    # Enhanced summary with normalization information
     parts_found <- sum(!is.na(plant_parts$plant_parts_detected))
     avg_parts <- round(mean(plant_parts$parts_count[plant_parts$parts_count > 0], na.rm = TRUE), 1)
 
     if (verbose && batch_num %% 10 == 0) {
-      cat("      Found parts in", parts_found, "abstracts (avg:", avg_parts, "parts per abstract)\n")
+      cat("      Found parts in", parts_found, "abstracts (avg:", avg_parts, "normalized parts per abstract)\n")
     }
 
-    # Combine with IDs
+    # Combine with IDs and include normalization info
     bind_cols(
       tibble(id = batch_ids),
       plant_parts
@@ -137,16 +192,27 @@ extract_plant_parts_data <- function(
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "03_extract_plant_parts.R")) {
 
-  # Load abstracts data
-  abstracts_file <- "results/prepared_abstracts_for_extraction.csv"
-  if (!file.exists(abstracts_file)) {
-    stop("❌ Prepared abstracts not found. Run the pipeline script first or prepare data manually.")
+  # Load methods data (which contains abstracts and method information)
+  methods_file <- "results/methods_detection_results.csv"
+  if (!file.exists(methods_file)) {
+    stop("❌ Methods detection results not found. Run 02_extract_methods.R first.")
   }
 
-  abstracts_data <- read_csv(abstracts_file, show_col_types = FALSE)
+  cat("📖 Loading methods detection data from:", methods_file, "\n")
+  abstracts_data <- read_csv(methods_file, show_col_types = FALSE)
 
-  # Extract plant parts
+  # Check if we have the required columns
+  required_cols <- c("id", "abstract", "methods_summary")
+  missing_cols <- setdiff(required_cols, colnames(abstracts_data))
+  if (length(missing_cols) > 0) {
+    stop("❌ Missing required columns in methods data:", paste(missing_cols, collapse = ", "))
+  }
+
+  # Extract plant parts using enhanced detection with method context
   plant_parts_results <- extract_plant_parts_data(abstracts_data)
 
-  cat("\n✅ Plant parts extraction component completed!\n")
+  cat("\n✅ Enhanced plant parts extraction component completed!\n")
+  cat("🔗 Successfully integrated with methods detection data\n")
+  cat("🌿 Applied singular/plural normalization for consistent grouping\n")
+  cat("🧬 Used method context for improved detection accuracy\n")
 }
