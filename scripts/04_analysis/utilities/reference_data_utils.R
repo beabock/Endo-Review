@@ -143,8 +143,6 @@ get_country_classifications <- function() {
     "Eswatini", "Global South",
     "Malawi", "Global South",
     "Turkey", "Global South",
-    "Russia", "Global South",
-    "Russian Federation", "Global South",
     "Ukraine", "Global South",
     "Belarus", "Global South",
     "Moldova", "Global South",
@@ -191,7 +189,6 @@ get_country_classifications <- function() {
     "Solomon Islands", "Global South",
     "Samoa", "Global South",
     "Tonga", "Global South",
-    "Iran", "Global South",
     "Iraq", "Global South",
     "Saudi Arabia", "Global South",
     "Kuwait", "Global South",
@@ -338,34 +335,85 @@ get_geographic_keywords <- function() {
     # Continents (both formal and colloquial)
     "Africa", "Asia", "Europe", "North America", "South America", "Oceania", "Antarctica", "Australia",
     "African", "Asian", "European", "American", "North American", "South American", "Oceanic", "Antarctic", "Australian",
-    
-    # Major regions
-    "Middle East", "Central Asia", "Southeast Asia", "East Asia", "South Asia", "West Asia",
-    "Eastern Europe", "Western Europe", "Northern Europe", "Southern Europe", "Central Europe",
-    "Central America", "Caribbean", "Mesoamerica", "Amazonia", "Amazon Basin", "Amazon",
+
+    # Major geographic regions
+    "Middle East", "Central Asia", "Southeast Asia", "East Asia", "South Asia", "West Asia", "Southwest Asia",
+    "Eastern Europe", "Western Europe", "Northern Europe", "Southern Europe", "Central Europe", "Southeastern Europe",
+    "Central America", "Caribbean", "Mesoamerica", "Amazonia", "Amazon Basin", "Amazon", "Amazonian",
     "Patagonia", "Andes", "Andean", "Mediterranean", "Scandinavia", "Scandinavian",
-    "Siberia", "Siberian", "Far East", "Near East", "Levant", "Balkans", "Caucasus",
-    "Sub-Saharan Africa", "Maghreb", "Horn of Africa", "East Africa", "West Africa", "Southern Africa",
+    "Siberia", "Siberian", "Far East", "Near East", "Levant", "Balkans", "Caucasus", "Caucasian",
+    "Sub-Saharan Africa", "Maghreb", "Horn of Africa", "East Africa", "West Africa", "Southern Africa", "Central Africa",
     "Indian Subcontinent", "Indo-Pacific", "Polynesia", "Melanesia", "Micronesia",
-    
+    "Sahel", "Sahara", "Kalahari", "Namib", "Gobi", "Taklamakan", "Thar", "Arabian Desert",
+    "Great Lakes", "Rift Valley", "African Great Lakes", "Lake Victoria", "Lake Tanganyika", "Lake Malawi",
+    "Himalayas", "Himalayan", "Tibetan Plateau", "Pamir Mountains", "Altai Mountains", "Ural Mountains",
+    "Rocky Mountains", "Appalachian Mountains", "Sierra Madre", "Cordillera", "Andes Mountains",
+
+    # Subregions and specific areas
+    "Bengal", "Deccan", "Malabar Coast", "Coromandel Coast", "Western Ghats", "Eastern Ghats",
+    "Indochina", "Indochinese Peninsula", "Malay Peninsula", "Korean Peninsula", "Arabian Peninsula",
+    "Iberian Peninsula", "Balkan Peninsula", "Scandinavian Peninsula", "Italian Peninsula",
+    "Anatolia", "Anatolian", "Mesopotamia", "Fertile Crescent", "Levant", "Transcaucasia",
+    "Pacific Northwest", "Great Plains", "Midwest", "Southwest", "Northeast", "Southeast",
+    "Pampas", "Gran Chaco", "Pantanal", "Cerrado", "Mata Atlântica", "Atlantic Forest",
+    "Taiga", "Steppe", "Prairie", "Puszta", "Veld", "Bushveld", "Karoo", "Fynbos",
+    "Outback", "Great Barrier Reef", "Coral Triangle", "Ring of Fire",
+
+    # Biodiversity hotspots and conservation areas
+    "Biodiversity hotspot", "endemic area", "center of diversity", "refugia", "refugium",
+    "Cape Floristic Region", "Madagascar", "Madagascan", "Western Ghats", "Sri Lanka", "Himalayas",
+    "Indo-Burma", "Sundaland", "Wallacea", "Philippines", "Japan", "Southwest Australia",
+    "Chilean Winter Rainfall", "Brazilian Cerrado", "Brazilian Atlantic Forest",
+    "Caribbean Islands", "Mesoamerica", "Tumbes-Choco-Magdalena", "Tropical Andes",
+    "Mediterranean Basin", "Caucasus", "Mountains of Central Asia", "Eastern Afromontane",
+    "Coastal Forests of Eastern Africa", "Horn of Africa", "Maputaland-Pondoland-Albany",
+    "Succulent Karoo", "Guinean Forests of West Africa", "Eastern Arc Mountains",
+
     # Ecosystems and biomes (comprehensive)
-    "tropical", "temperate", "boreal", "arctic", "subarctic", "subtropical", "subantarctic",
-    "rainforest", "rain forest", "cloud forest", "dry forest", "deciduous forest", "coniferous forest", 
-    "mixed forest", "old growth", "primary forest", "secondary forest", "gallery forest",
-    "woodland", "savanna", "grassland", "prairie", "steppe", "pampas", "veld",
-    "desert", "semi-desert", "arid", "semi-arid", "xeric", "mesic", "hydric",
-    "tundra", "taiga", "chaparral", "maquis", "scrubland", "shrubland",
-    "wetland", "marsh", "swamp", "bog", "fen", "peatland", "mire", "mangrove",
-    "coastal", "littoral", "marine", "estuarine", "intertidal", "riparian",
-    "freshwater", "aquatic", "lacustrine", "fluvial", "stream", "river", "lake",
-    "alpine", "subalpine", "montane", "submontane", "lowland", "upland", "highland",
-    "karst", "limestone", "volcanic", "geothermal", "serpentine",
-    
-    # Climate zones
-    "equatorial", "tropical monsoon", "humid continental", "oceanic", "mediterranean climate",
-    "humid subtropical", "semi-arid", "desert climate", "polar", "ice cap"
+    "tropical", "temperate", "boreal", "arctic", "subarctic", "subtropical", "subantarctic", "palaearctic",
+    "rainforest", "rain forest", "cloud forest", "dry forest", "deciduous forest", "coniferous forest",
+    "mixed forest", "old growth", "primary forest", "secondary forest", "gallery forest", "riparian forest",
+    "woodland", "savanna", "savannah", "grassland", "prairie", "steppe", "pampas", "veld", "meadow", "pasture",
+    "desert", "semi-desert", "arid", "semi-arid", "xeric", "mesic", "hydric", "hyper-arid",
+    "tundra", "taiga", "chaparral", "maquis", "garigue", "scrubland", "shrubland", "heathland", "moorland",
+    "wetland", "marsh", "swamp", "bog", "fen", "peatland", "mire", "mangrove", "mangrove forest",
+    "coastal", "littoral", "marine", "estuarine", "intertidal", "supratidal", "sublittoral",
+    "freshwater", "aquatic", "lacustrine", "fluvial", "stream", "river", "lake", "pond", "reservoir",
+    "alpine", "subalpine", "montane", "submontane", "lowland", "upland", "highland", "foothill",
+    "karst", "limestone", "volcanic", "geothermal", "serpentine", "ultramafic", "calcareous", "acidic",
+
+    # Vegetation formations and habitats
+    "evergreen forest", "deciduous forest", "broadleaf forest", "needleleaf forest", "mixed broadleaf-needleleaf",
+    "thorn forest", "thorn scrub", "spiny forest", "succulent forest", "palm forest", "bamboo forest",
+    "monsoon forest", "dipterocarp forest", "teak forest", "pine forest", "oak forest", "beech forest",
+    "eucalyptus forest", "acacia woodland", "miombo woodland", "caatinga", "campo rupestre",
+    "paramo", "puna", "alpine meadow", "arctic tundra", "alpine tundra", "forest tundra",
+    "salt marsh", "freshwater marsh", "reed bed", "papyrus swamp", "cypress swamp", "bottomland forest",
+    "floodplain forest", "alluvial forest", "varzea forest", "igapo forest", "swamp forest", "peat swamp",
+    "cloud forest", "elfin forest", "dwarf forest", "krummholz", "tree line", "timberline",
+    "dune system", "sand dune", "beach", "strand", "cliff", "escarpment", "gorge", "canyon", "valley",
+    "plateau", "plain", "basin", "delta", "estuary", "lagoon", "bay", "gulf", "strait", "channel",
+
+    # Climate zones and environmental conditions
+    "equatorial", "tropical wet", "tropical moist", "tropical dry", "tropical monsoon", "tropical savanna",
+    "humid subtropical", "subtropical wet", "subtropical moist", "subtropical dry", "mediterranean climate",
+    "humid continental", "subarctic climate", "oceanic climate", "semi-arid climate", "arid climate",
+    "desert climate", "polar climate", "ice cap climate", "highland climate", "monsoon climate",
+    "trade wind climate", "maritime climate", "continental climate", "seasonal climate",
+    "temperate oceanic", "temperate continental", "cold desert", "hot desert", "coastal desert",
+
+    # Ecological and environmental classifications
+    "ecotone", "ecological transition", "habitat mosaic", "landscape mosaic", "heterogeneous landscape",
+    "disturbed habitat", "undisturbed habitat", "pristine habitat", "degraded habitat", "fragmented habitat",
+    "island habitat", "mainland habitat", "continental island", "oceanic island", "land bridge island",
+    "endemic habitat", "introduced habitat", "anthropogenic habitat", "urban habitat", "agricultural landscape",
+    "agroecosystem", "agricultural ecosystem", "pastoral system", "cropland", "orchard", "plantation",
+    "secondary forest", "regrowth forest", "degraded forest", "logged forest", "selectively logged",
+    "protected area", "national park", "nature reserve", "wildlife sanctuary", "biosphere reserve",
+    "world heritage site", "ramsar site", "important bird area", "key biodiversity area",
+    "corridor", "wildlife corridor", "riparian corridor", "stepping stone", "buffer zone"
   )
-  
+
   return(regions)
 }
 

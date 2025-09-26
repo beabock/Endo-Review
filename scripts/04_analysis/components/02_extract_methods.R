@@ -7,15 +7,16 @@
 # Description: Script that detects research methods specific to fungal endophyte studies including:
 # molecular, culture-based, microscopy, inoculation, plant-microbe interactions, bioactivity assays,
 # physiological assays, ecological studies, and surface sterilization methods. Uses optimized
-# vectorized functions for efficient keyword matching and batch processing.
+# vectorized functions for efficient keyword matching and batch processing. Part of the memory-efficient
+# extraction pipeline that minimizes data duplication by only outputting id + methods columns.
 #
 # Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
 #
 # Author: B. Bock
-# Date: 2024-09-22
+# Date: 2024-09-26
 #
-# Inputs/Outputs: Reads mycorrhizal-checked species data from results/species_detection_results_mycorrhizal_enhanced.csv;
-# outputs comprehensive methods detection results with all original columns to results/methods_detection_results.csv
+# Inputs/Outputs: Reads consolidated dataset from results/consolidated_dataset.csv;
+# outputs methods detection results to results/methods_detection_results.csv
 #
 # =============================================================================
 
@@ -86,6 +87,10 @@ extract_methods_data <- function(
   # Handle missing abstracts
   abstracts_text <- ifelse(is.na(abstracts_data$abstract), "", abstracts_data$abstract)
 
+  # Keep only id and abstract columns for memory efficiency
+  abstracts_data <- abstracts_data %>%
+    select(id, abstract)
+
   # Process in batches for memory efficiency
   n_batches <- ceiling(length(abstracts_text) / batch_size)
 
@@ -144,10 +149,13 @@ extract_methods_data <- function(
     )
   })
 
-  # Join methods results with original data
-  full_results <- left_join(abstracts_data, methods_results, by = "id")
+  # Join methods results with id and abstract only
+  full_results <- bind_cols(
+    select(abstracts_data, id, abstract),
+    methods_results %>% select(-id)
+  )
 
-  # Save results
+  # Save results with only id + methods columns for memory efficiency
   write_csv(full_results, output_file)
 
   # Comprehensive summary statistics
@@ -196,13 +204,13 @@ extract_methods_data <- function(
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "02_extract_methods.R")) {
 
-  # Load mycorrhizal-checked species data (this contains the abstracts)
-  input_file <- "results/species_detection_results_mycorrhizal_enhanced.csv"
+  # Load consolidated dataset (contains abstracts and metadata)
+  input_file <- "results/consolidated_dataset.csv"
   if (!file.exists(input_file)) {
-    stop("❌ Mycorrhizal-checked species data not found. Run 01_extract_species.R and 01b_mycorrhizal_check.R first.")
+    stop("❌ Consolidated dataset not found. Run the consolidation script first.")
   }
 
-  cat("📖 Loading mycorrhizal-checked species data from:", input_file, "\n")
+  cat("📖 Loading consolidated dataset from:", input_file, "\n")
   abstracts_data <- read_csv(input_file, show_col_types = FALSE)
 
   # Check if we have the required columns
@@ -215,5 +223,5 @@ if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "02_extr
   # Extract methods
   methods_results <- extract_methods_data(abstracts_data)
 
-  cat("\n✅ Comprehensive methods extraction component completed!\n")
+  cat("\n✅ Methods extraction component completed!\n")
 }

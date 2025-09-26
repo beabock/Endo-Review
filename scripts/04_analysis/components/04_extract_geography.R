@@ -6,14 +6,15 @@
 #
 # Description: Script that detects countries, continents, regions, and coordinates from abstracts
 # using advanced keyword matching, synonym handling, and context-aware homonym disambiguation
-# for accurate geographic information extraction.
+# for accurate geographic information extraction. Part of the memory-efficient extraction pipeline
+# that minimizes data duplication by only outputting id + geography columns.
 #
 # Dependencies: tidyverse, stringr, progress; scripts/04_analysis/utilities/reference_data_utils.R
 #
 # Author: B. Bock
-# Date: 2024-09-22
+# Date: 2024-09-26
 #
-# Inputs/Outputs: Reads prepared abstracts from results/prepared_abstracts_for_extraction.csv; outputs geography detection results to results/geography_detection_results.csv
+# Inputs/Outputs: Reads consolidated dataset from results/consolidated_dataset.csv; outputs geography detection results to results/geography_detection_results.csv
 #
 # =============================================================================
 
@@ -62,34 +63,34 @@ detect_geographic_locations_batch <- function(text_vector) {
     for(country in all_countries) {
       country_lower <- str_to_lower(country)
 
-      # Enhanced homonym handling with context awareness
+      # Enhanced homonym handling with context awareness and additional cases
       if (country_lower == "niger") {
         # Context-aware detection for Niger (country vs fungus)
-      if (grepl("\\bRepublic of Niger\\b|\\bNiger\\b.*\\b(africa|country|nation|west|sahel|niamey)\\b", text,
-                ignore.case = TRUE) ||
-          (str_detect(text, "\\bNiger\\b") &&
-           !grepl("\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium)\\s+niger\\b", text,
-                 ignore.case = TRUE))) {
+        if (grepl("\\bRepublic of Niger\\b|\\bNiger\\b.*\\b(africa|country|nation|west|sahel|niamey)\\b", text,
+                  ignore.case = TRUE) ||
+            (str_detect(text, "\\bNiger\\b") &&
+             !grepl("\\b(Aspergillus|Rhizopus|Penicillium|Fusarium|Alternaria|Cladosporium|Curvularia)\\s+niger\\b", text,
+                   ignore.case = TRUE))) {
           found <- c(found, country)
         }
       } else if (country_lower == "turkey") {
-        # Enhanced Turkey detection (country vs bird/fungus)
+        # Enhanced Turkey detection (country vs bird/fungus/food)
         if (str_detect(text, "\\bTurkey\\b") &&
-            !grepl("\\b(turkey\\s+tail|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry)\\b", text,
+            !grepl("\\b(turkey\\s+(tail|red|wild|domestic)|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry|roast|meat)\\b", text,
                    ignore.case = TRUE) &&
-            !grepl("\\bturkey\\s+(mushroom|fungus|fungi|mycology)\\b", text, ignore.case = TRUE)) {
+            !grepl("\\bturkey\\s+(mushroom|fungus|fungi|mycology|culinary|cooking)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "chile") {
         # Chile (country vs pepper)
         if (str_detect(text, "\\bChile\\b") &&
-            !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder)\\b", text, ignore.case = TRUE)) {
+            !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder|flakes|paste)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "georgia") {
         # Georgia (country vs US state)
         if (str_detect(text, "\\bGeorgia\\b") &&
-            !grepl("\\bgeorgia\\s+(pine|oak|southern|peach|usa|united\\s+states|america)\\b", text,
+            !grepl("\\bgeorgia\\s+(pine|oak|southern|peach|usa|united\\s+states|america|tech|bulldog)\\b", text,
                    ignore.case = TRUE)) {
           found <- c(found, country)
         }
@@ -105,10 +106,46 @@ detect_geographic_locations_batch <- function(text_vector) {
             !grepl("\\b\\w+\\s+mali\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
+      } else if (country_lower == "china") {
+        # China (country vs ceramics)
+        if (str_detect(text, "\\bChina\\b") &&
+            !grepl("\\bchina\\s+(plate|cup|ware|porcelain|ceramic|clay|pottery)\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+      } else if (country_lower == "japan") {
+        # Japan (country vs lacquer/enamel)
+        if (str_detect(text, "\\bJapan\\b") &&
+            !grepl("\\b(japan\\s+)?(black|red|gold|green)\\s+(lacquer|enamel|finish|coating)\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+      } else if (country_lower == "poland") {
+        # Poland (country vs polish/finish)
+        if (str_detect(text, "\\bPoland\\b") &&
+            !grepl("\\bpoland\\s+(spring|notation|ball|chicken)\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+      } else if (country_lower == "armenia") {
+        # Armenia (country vs apricot variety)
+        if (str_detect(text, "\\bArmenia\\b") &&
+            !grepl("\\barmenian\\s+apricot\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+      } else if (country_lower == "albania") {
+        # Albania (country vs plant genus)
+        if (str_detect(text, "\\bAlbania\\b") &&
+            !grepl("\\balbania\\s+(officinalis|verticillata)\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+      } else if (country_lower == "serbia") {
+        # Serbia (country vs spruce)
+        if (str_detect(text, "\\bSerbia\\b") &&
+            !grepl("\\bserbia\\s+spruce\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
       } else if (country == "South Korea" || country == "North Korea") {
         # Context-aware Korea disambiguation
         if (grepl("\\bkorea\\b", text, ignore.case = TRUE)) {
-          if (grepl("\\b(north|dprk|pyongyang|kim)\\b", text, ignore.case = TRUE)) {
+          if (grepl("\\b(north|dprk|pyongyang|kim|juche|songun)\\b", text, ignore.case = TRUE)) {
             if (country == "North Korea") found <- c(found, country)
           } else {
             # Default to South Korea for general "Korea" mentions
@@ -161,19 +198,108 @@ detect_geographic_locations_batch <- function(text_vector) {
     regions_found <- purrr::map(text_vector, ~character(0))
   }
 
-  # Enhanced coordinate detection
+  # Coordinate validation function to filter false positives
+  validate_coordinates <- function(coord_strings) {
+    if (length(coord_strings) == 0) return(logical(0))
+
+    valid <- logical(length(coord_strings))
+
+    for (i in seq_along(coord_strings)) {
+      coord_str <- coord_strings[i]
+
+      # Extract numeric values from coordinate string
+      numbers <- as.numeric(unlist(regmatches(coord_str, gregexpr("-?\\d+\\.?\\d*", coord_str))))
+
+      if (length(numbers) >= 2) {
+        # Check if numbers are in valid ranges
+        lat_candidates <- numbers[abs(numbers) <= 90]
+        lon_candidates <- numbers[abs(numbers) <= 180]
+
+        # Must have at least one latitude and one longitude candidate
+        if (length(lat_candidates) > 0 && length(lon_candidates) > 0) {
+          # Check for reasonable coordinate pairs
+          for (lat in lat_candidates) {
+            for (lon in lon_candidates) {
+              # Allow for some tolerance in coordinate ranges
+              if (abs(lat) <= 90 && abs(lon) <= 180) {
+                valid[i] <- TRUE
+                break
+              }
+            }
+            if (valid[i]) break
+          }
+        }
+      } else if (length(numbers) == 1) {
+        # Single number might be valid (e.g., in UTM or grid references)
+        num <- numbers[1]
+        if (abs(num) <= 90 || abs(num) <= 180 || num >= 100000) {
+          valid[i] <- TRUE
+        }
+      }
+    }
+
+    return(valid)
+  }
+
+  # Enhanced coordinate detection with comprehensive patterns
   coord_patterns <- c(
     # Standard formats: 45.5°N, 122.3°W or 45°30'N, 122°45'W
     "\\b\\d{1,2}(?:\\.\\d+)?[°]?\\s*[NS]\\b.*?\\b\\d{1,3}(?:\\.\\d+)?[°]?\\s*[EW]\\b",
-    # Decimal degrees: 45.5, -122.3
+    # Decimal degrees: 45.5, -122.3 (latitude, longitude)
     "\\b-?\\d{1,2}(?:\\.\\d+)?\\s*,\\s*-?\\d{1,3}(?:\\.\\d+)?\\b",
     # DMS format: 45°30'45"N, 122°45'30"W
-    "\\b\\d{1,2}[°]\\s*\\d{1,2}['′]?\\s*\\d{0,2}[″\"]?\\s*[NS]\\b.*?\\b\\d{1,3}[°]\\s*\\d{1,2}['′]?\\s*\\d{0,2}[″\"]?\\s*[EW]\\b"
+    "\\b\\d{1,2}[°]\\s*\\d{1,2}['′]?\\s*\\d{0,2}[″\"]?\\s*[NS]\\b.*?\\b\\d{1,3}[°]\\s*\\d{1,2}['′]?\\s*\\d{0,2}[″\"]?\\s*[EW]\\b",
+
+    # Additional coordinate formats
+    # Decimal degrees with direction: 45.5N, 122.3W
+    "\\b\\d{1,2}\\.\\d+[NS]\\s*,?\\s*\\d{1,3}\\.\\d+[EW]\\b",
+    # Degrees only: 45N, 122W
+    "\\b\\d{1,2}[NS]\\s*,?\\s*\\d{1,3}[EW]\\b",
+    # DMS with spaces: 45 30 N, 122 45 W
+    "\\b\\d{1,2}\\s+\\d{1,2}[′']?\\s*[NS]\\s*,?\\s*\\d{1,3}\\s+\\d{1,2}[′']?\\s*[EW]\\b",
+    # Coordinates in parentheses: (45.5, -122.3)
+    "\\(\\s*-?\\d{1,2}(?:\\.\\d+)?\\s*,\\s*-?\\d{1,3}(?:\\.\\d+)?\\s*\\)",
+    # Coordinates with degree symbol variations: 45°30′, 122°45′
+    "\\b\\d{1,2}°\\d{1,2}['′]\\s*[NS]\\s*,?\\s*\\d{1,3}°\\d{1,2}['′]\\s*[EW]\\b",
+    # UTM coordinates: 45N 123456 7890123
+    "\\b\\d{1,2}[NS]\\s+\\d{6}\\s+\\d{7}\\b",
+    # Military grid: 45N1234567890123
+    "\\b\\d{1,2}[NS]\\d{6,7}\\b",
+
+    # Geographic coordinates in various formats
+    # Latitude/longitude ranges: 40-50°N, 120-130°W
+    "\\b\\d{1,2}-\\d{1,2}[°]?[NS]\\s*,?\\s*\\d{2,3}-\\d{2,3}[°]?[EW]\\b",
+    # Coordinates with cardinal directions: N45.5, W122.3
+    "\\b[NS]\\d{1,2}\\.\\d+\\s*,?\\s*[EW]\\d{2,3}\\.\\d+\\b",
+    # Coordinates in square brackets: [45.5, -122.3]
+    "\\[\\s*-?\\d{1,2}(?:\\.\\d+)?\\s*,\\s*-?\\d{1,3}(?:\\.\\d+)?\\s*\\]",
+
+    # Elevation coordinates: 45.5°N 122.3°W 1500m
+    "\\b\\d{1,2}(?:\\.\\d+)?[°]?\\s*[NS]\\b.*?\\b\\d{1,3}(?:\\.\\d+)?[°]?\\s*[EW]\\b.*?\\b\\d+[mft]\\b",
+    # Grid references and map coordinates
+    "\\b[a-zA-Z]{2}\\s*\\d{4}\\s*\\d{4}\\b",  # e.g., SU123456
+    "\\b[a-zA-Z]{2}-\\d{4}-\\d{4}\\b",      # e.g., SU-1234-5678
+    "\\b\\d{4}[NS]\\d{6}[EW]\\b",           # numeric grid references
+    "\\b\\d{6}[NS]\\s*\\d{6}[EW]\\b",       # 6-digit coordinates
+    "\\b\\d{8}[NS][EW]\\b"                 # 8-digit combined format
   )
 
   has_coordinates <- map_lgl(text_vector, function(text) {
     if (is.na(text)) return(FALSE)
-    any(map_lgl(coord_patterns, ~str_detect(text, .)))
+
+    # Find all potential coordinate matches
+    matches <- map_lgl(coord_patterns, ~str_detect(text, .))
+
+    # If no matches found, return FALSE
+    if (!any(matches)) return(FALSE)
+
+    # Get the actual matched text for validation
+    matched_text <- str_extract_all(text, paste(coord_patterns[matches], collapse = "|"))[[1]]
+
+    # Validate coordinates to filter false positives
+    valid_coords <- validate_coordinates(matched_text)
+
+    return(any(valid_coords))
   })
 
   # Build results with enhanced categorization
@@ -221,6 +347,10 @@ extract_geography_data <- function(
 
   # Handle missing abstracts
   abstracts_text <- ifelse(is.na(abstracts_data$abstract), "", abstracts_data$abstract)
+
+  # Keep only id and abstract columns for memory efficiency
+  abstracts_data <- abstracts_data %>%
+    select(id, abstract)
 
   # Process in batches for memory efficiency
   n_batches <- ceiling(length(abstracts_text) / batch_size)
@@ -307,13 +437,20 @@ extract_geography_data <- function(
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "04_extract_geography.R")) {
 
-  # Load abstracts data
-  abstracts_file <- "results/prepared_abstracts_for_extraction.csv"
-  if (!file.exists(abstracts_file)) {
-    stop("❌ Prepared abstracts not found. Run the pipeline script first or prepare data manually.")
+  # Load consolidated dataset
+  consolidated_file <- "results/consolidated_dataset.csv"
+  if (!file.exists(consolidated_file)) {
+    stop("❌ Consolidated dataset not found. Run the consolidation script first.")
   }
 
-  abstracts_data <- read_csv(abstracts_file, show_col_types = FALSE)
+  abstracts_data <- read_csv(consolidated_file, show_col_types = FALSE)
+
+  # Check if we have the required columns
+  required_cols <- c("id", "abstract")
+  missing_cols <- setdiff(required_cols, colnames(abstracts_data))
+  if (length(missing_cols) > 0) {
+    stop("❌ Missing required columns in consolidated data:", paste(missing_cols, collapse = ", "))
+  }
 
   # Extract geography
   geography_results <- extract_geography_data(abstracts_data)

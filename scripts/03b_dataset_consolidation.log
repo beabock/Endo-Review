@@ -1452,3 +1452,765 @@
 
 [2025-09-25 10:40:30] Script execution finished.
 
+[2025-09-26 11:08:01] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 11:08:02] Loaded 21429 rows from master dataset.
+
+[2025-09-26 11:08:02] Loading training data...
+
+[2025-09-26 11:08:02] Loaded 542 rows from training data.
+
+[2025-09-26 11:08:02] Loading manual presence validations...
+
+[2025-09-26 11:08:03] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 11:08:03] Loading manual absence validations...
+
+[2025-09-26 11:08:03] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 11:08:03] Total manual validations: 166
+
+[2025-09-26 11:08:03] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 11:08:03] master$id type: character
+
+[2025-09-26 11:08:03] training_data$id type: character
+
+[2025-09-26 11:08:03] manual_validations$id type: character
+
+[2025-09-26 11:08:03] After joining all datasets: 21429
+
+[2025-09-26 11:08:03] Number of duplicate IDs: 0
+
+[2025-09-26 11:08:03] Consolidated dataset has 21429 rows.
+
+[2025-09-26 11:08:03] Label distribution analysis:
+
+[2025-09-26 11:08:03] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 11:08:03] Performing ML accuracy analysis...
+
+[2025-09-26 11:08:03] Calculating ML accuracy metrics...
+
+[2025-09-26 11:08:57] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 11:08:58] Loaded 21429 rows from master dataset.
+
+[2025-09-26 11:08:58] Loading training data...
+
+[2025-09-26 11:08:58] Loaded 542 rows from training data.
+
+[2025-09-26 11:08:58] Loading manual presence validations...
+
+[2025-09-26 11:08:58] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 11:08:58] Loading manual absence validations...
+
+[2025-09-26 11:08:58] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 11:08:58] Total manual validations: 166
+
+[2025-09-26 11:08:58] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 11:08:58] master$id type: character
+
+[2025-09-26 11:08:58] training_data$id type: character
+
+[2025-09-26 11:08:58] manual_validations$id type: character
+
+[2025-09-26 11:08:58] After joining all datasets: 21429
+
+[2025-09-26 11:08:58] Number of duplicate IDs: 0
+
+[2025-09-26 11:08:58] Consolidated dataset has 21429 rows.
+
+[2025-09-26 11:08:58] Label distribution analysis:
+
+[2025-09-26 11:08:58] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 11:08:58] Performing ML accuracy analysis...
+
+[2025-09-26 11:08:58] Calculating ML accuracy metrics...
+
+[2025-09-26 11:09:32] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 11:09:33] Loaded 21429 rows from master dataset.
+
+[2025-09-26 11:09:33] Loading training data...
+
+[2025-09-26 11:09:33] Loaded 542 rows from training data.
+
+[2025-09-26 11:09:33] Loading manual presence validations...
+
+[2025-09-26 11:09:33] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 11:09:33] Loading manual absence validations...
+
+[2025-09-26 11:09:34] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 11:09:34] Total manual validations: 166
+
+[2025-09-26 11:09:34] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 11:09:34] master$id type: character
+
+[2025-09-26 11:09:34] training_data$id type: character
+
+[2025-09-26 11:09:34] manual_validations$id type: character
+
+[2025-09-26 11:09:34] After joining all datasets: 21429
+
+[2025-09-26 11:09:34] Number of duplicate IDs: 0
+
+[2025-09-26 11:09:34] Consolidated dataset has 21429 rows.
+
+[2025-09-26 11:09:34] Label distribution analysis:
+
+[2025-09-26 11:09:34] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 11:09:34] Performing ML accuracy analysis...
+
+[2025-09-26 11:09:34] Calculating ML accuracy metrics...
+
+[2025-09-26 11:09:34] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 11:09:34] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 11:09:34] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 11:09:34] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 11:09:34] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 11:09:34] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 11:09:34] Writing consolidated dataset to file...
+
+[2025-09-26 11:09:34] Consolidated dataset written successfully.
+
+[2025-09-26 11:09:34] Consolidation complete.
+
+[2025-09-26 11:09:34] Total rows: 19380
+
+[2025-09-26 11:09:34] Rows with training labels: 0
+
+[2025-09-26 11:09:34] Rows with manual presence labels: 49
+
+[2025-09-26 11:09:34] Rows with manual absence labels: 50
+
+[2025-09-26 11:09:34] Rows with ML predictions: 19380
+
+[2025-09-26 11:09:34] Rows with consolidated labels: 19380
+
+[2025-09-26 11:09:34] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 11:09:34] Script execution finished.
+
+[2025-09-26 11:10:44] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 11:10:45] Loaded 21429 rows from master dataset.
+
+[2025-09-26 11:10:45] Loading training data...
+
+[2025-09-26 11:10:45] Loaded 542 rows from training data.
+
+[2025-09-26 11:10:45] Loading manual presence validations...
+
+[2025-09-26 11:10:45] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 11:10:45] Loading manual absence validations...
+
+[2025-09-26 11:10:46] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 11:10:46] Total manual validations: 166
+
+[2025-09-26 11:10:46] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 11:10:46] master$id type: character
+
+[2025-09-26 11:10:46] training_data$id type: character
+
+[2025-09-26 11:10:46] manual_validations$id type: character
+
+[2025-09-26 11:10:46] After joining all datasets: 21429
+
+[2025-09-26 11:10:46] Number of duplicate IDs: 0
+
+[2025-09-26 11:10:46] Consolidated dataset has 21429 rows.
+
+[2025-09-26 11:10:46] Label distribution analysis:
+
+[2025-09-26 11:10:46] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 11:10:46] Performing ML accuracy analysis...
+
+[2025-09-26 11:10:46] Calculating ML accuracy metrics...
+
+[2025-09-26 11:10:46] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 11:10:46] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 11:10:46] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 11:10:46] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 11:10:46] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 11:10:46] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 11:10:46] Writing consolidated dataset to file...
+
+[2025-09-26 11:10:46] Consolidated dataset written successfully.
+
+[2025-09-26 11:10:46] Consolidation complete.
+
+[2025-09-26 11:10:46] Total rows: 19380
+
+[2025-09-26 11:10:46] Rows with training labels: 0
+
+[2025-09-26 11:10:46] Rows with manual presence labels: 49
+
+[2025-09-26 11:10:46] Rows with manual absence labels: 50
+
+[2025-09-26 11:10:46] Rows with ML predictions: 19380
+
+[2025-09-26 11:10:46] Rows with consolidated labels: 19380
+
+[2025-09-26 11:10:46] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 11:10:46] Script execution finished.
+
+[2025-09-26 11:11:00] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 11:11:01] Loaded 21429 rows from master dataset.
+
+[2025-09-26 11:11:01] Loading training data...
+
+[2025-09-26 11:11:01] Loaded 542 rows from training data.
+
+[2025-09-26 11:11:01] Loading manual presence validations...
+
+[2025-09-26 11:11:02] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 11:11:02] Loading manual absence validations...
+
+[2025-09-26 11:11:02] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 11:11:02] Total manual validations: 166
+
+[2025-09-26 11:11:02] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 11:11:02] master$id type: character
+
+[2025-09-26 11:11:02] training_data$id type: character
+
+[2025-09-26 11:11:02] manual_validations$id type: character
+
+[2025-09-26 11:11:02] After joining all datasets: 21429
+
+[2025-09-26 11:11:02] Number of duplicate IDs: 0
+
+[2025-09-26 11:11:02] Consolidated dataset has 21429 rows.
+
+[2025-09-26 11:11:02] Label distribution analysis:
+
+[2025-09-26 11:11:02] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 11:11:02] Performing ML accuracy analysis...
+
+[2025-09-26 11:11:02] Calculating ML accuracy metrics...
+
+[2025-09-26 11:11:02] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 11:11:02] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 11:11:02] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 11:11:02] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 11:11:02] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 11:11:02] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 11:11:02] Writing consolidated dataset to file...
+
+[2025-09-26 11:11:02] Consolidated dataset written successfully.
+
+[2025-09-26 11:11:02] Consolidation complete.
+
+[2025-09-26 11:11:02] Total rows: 19380
+
+[2025-09-26 11:11:02] Rows with training labels: 0
+
+[2025-09-26 11:11:02] Rows with manual presence labels: 49
+
+[2025-09-26 11:11:02] Rows with manual absence labels: 50
+
+[2025-09-26 11:11:02] Rows with ML predictions: 19380
+
+[2025-09-26 11:11:02] Rows with consolidated labels: 19380
+
+[2025-09-26 11:11:02] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 11:11:02] Script execution finished.
+
+[2025-09-26 11:12:24] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 11:12:25] Loaded 21429 rows from master dataset.
+
+[2025-09-26 11:12:25] Loading training data...
+
+[2025-09-26 11:12:25] Loaded 542 rows from training data.
+
+[2025-09-26 11:12:25] Loading manual presence validations...
+
+[2025-09-26 11:12:26] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 11:12:26] Loading manual absence validations...
+
+[2025-09-26 11:12:26] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 11:12:26] Total manual validations: 166
+
+[2025-09-26 11:12:26] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 11:12:26] master$id type: character
+
+[2025-09-26 11:12:26] training_data$id type: character
+
+[2025-09-26 11:12:26] manual_validations$id type: character
+
+[2025-09-26 11:12:26] After joining all datasets: 21429
+
+[2025-09-26 11:12:26] Number of duplicate IDs: 0
+
+[2025-09-26 11:12:26] Consolidated dataset has 21429 rows.
+
+[2025-09-26 11:12:26] Label distribution analysis:
+
+[2025-09-26 11:12:26] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 11:12:26] Performing ML accuracy analysis...
+
+[2025-09-26 11:12:26] Calculating ML accuracy metrics...
+
+[2025-09-26 11:12:26] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 11:12:26] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 11:12:26] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 11:12:26] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 11:12:26] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 11:12:26] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 11:12:26] Writing consolidated dataset to file...
+
+[2025-09-26 11:12:26] Consolidated dataset written successfully.
+
+[2025-09-26 11:12:26] Consolidation complete.
+
+[2025-09-26 11:12:26] Total rows: 19380
+
+[2025-09-26 11:12:26] Rows with training labels: 0
+
+[2025-09-26 11:12:26] Rows with manual presence labels: 49
+
+[2025-09-26 11:12:26] Rows with manual absence labels: 50
+
+[2025-09-26 11:12:26] Rows with ML predictions: 19380
+
+[2025-09-26 11:12:26] Rows with consolidated labels: 19380
+
+[2025-09-26 11:12:26] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 11:12:26] Script execution finished.
+
+[2025-09-26 13:21:46] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 13:21:47] Loaded 21429 rows from master dataset.
+
+[2025-09-26 13:21:47] Loading training data...
+
+[2025-09-26 13:21:48] Loaded 542 rows from training data.
+
+[2025-09-26 13:21:48] Loading manual presence validations...
+
+[2025-09-26 13:21:48] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 13:21:48] Loading manual absence validations...
+
+[2025-09-26 13:21:48] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 13:21:48] Total manual validations: 166
+
+[2025-09-26 13:21:48] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 13:21:48] master$id type: character
+
+[2025-09-26 13:21:48] training_data$id type: character
+
+[2025-09-26 13:21:48] manual_validations$id type: character
+
+[2025-09-26 13:21:48] After joining all datasets: 21429
+
+[2025-09-26 13:21:48] Number of duplicate IDs: 0
+
+[2025-09-26 13:21:48] Consolidated dataset has 21429 rows.
+
+[2025-09-26 13:21:48] Label distribution analysis:
+
+[2025-09-26 13:21:48] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 13:21:48] Performing ML accuracy analysis...
+
+[2025-09-26 13:21:49] Calculating ML accuracy metrics...
+
+[2025-09-26 13:21:49] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 13:21:49] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 13:21:49] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 13:21:49] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 13:21:49] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 13:21:49] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 13:21:49] Writing consolidated dataset to file...
+
+[2025-09-26 13:21:49] Consolidated dataset written successfully.
+
+[2025-09-26 13:21:49] Consolidation complete.
+
+[2025-09-26 13:21:49] Total rows: 19380
+
+[2025-09-26 13:21:49] Rows with training labels: 0
+
+[2025-09-26 13:21:49] Rows with manual presence labels: 49
+
+[2025-09-26 13:21:49] Rows with manual absence labels: 50
+
+[2025-09-26 13:21:49] Rows with ML predictions: 19380
+
+[2025-09-26 13:21:49] Rows with consolidated labels: 19380
+
+[2025-09-26 13:21:49] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 13:21:49] Script execution finished.
+
+[2025-09-26 13:23:33] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 13:23:34] Loaded 21429 rows from master dataset.
+
+[2025-09-26 13:23:34] Loading training data...
+
+[2025-09-26 13:23:34] Loaded 542 rows from training data.
+
+[2025-09-26 13:23:34] Loading manual presence validations...
+
+[2025-09-26 13:23:35] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 13:23:35] Loading manual absence validations...
+
+[2025-09-26 13:23:35] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 13:23:35] Total manual validations: 166
+
+[2025-09-26 13:23:35] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 13:23:35] master$id type: character
+
+[2025-09-26 13:23:35] training_data$id type: character
+
+[2025-09-26 13:23:35] manual_validations$id type: character
+
+[2025-09-26 13:23:35] After joining all datasets: 21429
+
+[2025-09-26 13:23:35] Number of duplicate IDs: 0
+
+[2025-09-26 13:23:35] Consolidated dataset has 21429 rows.
+
+[2025-09-26 13:23:35] Label distribution analysis:
+
+[2025-09-26 13:23:35] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 13:23:35] Performing ML accuracy analysis...
+
+[2025-09-26 13:23:35] Calculating ML accuracy metrics...
+
+[2025-09-26 13:23:35] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 13:23:35] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 13:23:35] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 13:23:35] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 13:23:35] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 13:23:35] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 13:23:35] Writing consolidated dataset to file...
+
+[2025-09-26 13:23:36] Consolidated dataset written successfully.
+
+[2025-09-26 13:23:36] Consolidation complete.
+
+[2025-09-26 13:23:36] Total rows: 19380
+
+[2025-09-26 13:23:36] Rows with training labels: 0
+
+[2025-09-26 13:23:36] Rows with manual presence labels: 49
+
+[2025-09-26 13:23:36] Rows with manual absence labels: 50
+
+[2025-09-26 13:23:36] Rows with ML predictions: 19380
+
+[2025-09-26 13:23:36] Rows with consolidated labels: 19380
+
+[2025-09-26 13:23:36] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 13:23:36] Script execution finished.
+
+[2025-09-26 13:25:20] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 13:25:22] Loaded 21429 rows from master dataset.
+
+[2025-09-26 13:25:22] Loading training data...
+
+[2025-09-26 13:25:22] Loaded 542 rows from training data.
+
+[2025-09-26 13:25:22] Loading manual presence validations...
+
+[2025-09-26 13:25:22] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 13:25:22] Loading manual absence validations...
+
+[2025-09-26 13:25:23] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 13:25:23] Total manual validations: 166
+
+[2025-09-26 13:25:23] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 13:25:23] master$id type: character
+
+[2025-09-26 13:25:23] training_data$id type: character
+
+[2025-09-26 13:25:23] manual_validations$id type: character
+
+[2025-09-26 13:25:23] After joining all datasets: 541
+
+[2025-09-26 13:25:23] Number of duplicate IDs: 0
+
+[2025-09-26 13:25:23] Consolidated dataset has 541 rows.
+
+[2025-09-26 13:25:23] Label distribution analysis:
+
+[2025-09-26 13:25:23] After filtering irrelevant: 406 rows.
+
+[2025-09-26 13:25:23] Performing ML accuracy analysis...
+
+[2025-09-26 13:25:23] Writing consolidated dataset to file...
+
+[2025-09-26 13:25:23] Consolidated dataset written successfully.
+
+[2025-09-26 13:25:23] Consolidation complete.
+
+[2025-09-26 13:25:23] Total rows: 406
+
+[2025-09-26 13:25:23] Rows with training labels: 406
+
+[2025-09-26 13:25:23] Rows with manual presence labels: 0
+
+[2025-09-26 13:25:23] Rows with manual absence labels: 0
+
+[2025-09-26 13:25:23] Rows with ML predictions: 0
+
+[2025-09-26 13:25:23] Rows with consolidated labels: 406
+
+[2025-09-26 13:25:23] Unique sources used: training
+
+[2025-09-26 13:25:23] Script execution finished.
+
+[2025-09-26 13:26:54] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 13:26:55] Loaded 21429 rows from master dataset.
+
+[2025-09-26 13:26:55] Loading training data...
+
+[2025-09-26 13:26:55] Loaded 542 rows from training data.
+
+[2025-09-26 13:26:55] Loading manual presence validations...
+
+[2025-09-26 13:26:56] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 13:26:56] Loading manual absence validations...
+
+[2025-09-26 13:26:56] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 13:26:56] Total manual validations: 166
+
+[2025-09-26 13:26:56] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 13:26:56] master$id type: character
+
+[2025-09-26 13:26:56] training_data$id type: character
+
+[2025-09-26 13:26:56] manual_validations$id type: character
+
+[2025-09-26 13:27:37] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 13:27:38] Loaded 21429 rows from master dataset.
+
+[2025-09-26 13:27:38] Loading training data...
+
+[2025-09-26 13:27:39] Loaded 542 rows from training data.
+
+[2025-09-26 13:27:39] Loading manual presence validations...
+
+[2025-09-26 13:27:39] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 13:27:39] Loading manual absence validations...
+
+[2025-09-26 13:27:39] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 13:27:39] Total manual validations: 166
+
+[2025-09-26 13:27:39] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 13:27:39] master$id type: character
+
+[2025-09-26 13:27:39] training_data$id type: character
+
+[2025-09-26 13:27:39] manual_validations$id type: character
+
+[2025-09-26 13:27:39] After joining all datasets: 21429
+
+[2025-09-26 13:27:39] Number of duplicate IDs: 0
+
+[2025-09-26 13:27:39] Consolidated dataset has 21429 rows.
+
+[2025-09-26 13:27:39] Label distribution analysis:
+
+[2025-09-26 13:27:39] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 13:27:39] Performing ML accuracy analysis...
+
+[2025-09-26 13:27:39] Calculating ML accuracy metrics...
+
+[2025-09-26 13:27:39] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 13:27:39] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 13:27:39] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 13:27:39] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 13:27:39] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 13:27:39] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 13:27:39] Writing consolidated dataset to file...
+
+[2025-09-26 13:27:40] Consolidated dataset written successfully.
+
+[2025-09-26 13:27:40] Consolidation complete.
+
+[2025-09-26 13:27:40] Total rows: 19380
+
+[2025-09-26 13:27:40] Rows with training labels: 0
+
+[2025-09-26 13:27:40] Rows with manual presence labels: 49
+
+[2025-09-26 13:27:40] Rows with manual absence labels: 50
+
+[2025-09-26 13:27:40] Rows with ML predictions: 19380
+
+[2025-09-26 13:27:40] Rows with consolidated labels: 19380
+
+[2025-09-26 13:27:40] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 13:27:40] Script execution finished.
+
+[2025-09-26 13:32:40] Loading master dataset (full dataset predictions)...
+
+[2025-09-26 13:32:42] Loaded 21429 rows from master dataset.
+
+[2025-09-26 13:32:42] Loading training data...
+
+[2025-09-26 13:32:42] Loaded 542 rows from training data.
+
+[2025-09-26 13:32:42] Loading manual presence validations...
+
+[2025-09-26 13:32:42] Loaded 77 rows from manual presence validations.
+
+[2025-09-26 13:32:42] Loading manual absence validations...
+
+[2025-09-26 13:32:42] Loaded 89 rows from manual absence validations.
+
+[2025-09-26 13:32:42] Total manual validations: 166
+
+[2025-09-26 13:32:42] Consolidating datasets with priority: training > manual presence > manual absence > ML predictions...
+
+[2025-09-26 13:32:42] master$id type: character
+
+[2025-09-26 13:32:42] training_data$id type: character
+
+[2025-09-26 13:32:42] manual_validations$id type: character
+
+[2025-09-26 13:32:42] After joining all datasets: 21429
+
+[2025-09-26 13:32:42] Number of duplicate IDs: 0
+
+[2025-09-26 13:32:42] Consolidated dataset has 21429 rows.
+
+[2025-09-26 13:32:42] Label distribution analysis:
+
+[2025-09-26 13:32:42] After filtering irrelevant: 19380 rows.
+
+[2025-09-26 13:32:42] Removed 60 junk columns from consolidated dataset
+
+[2025-09-26 13:32:42] Reordered columns with id, abstract, consolidated_label at the front
+
+[2025-09-26 13:32:42] Performing ML accuracy analysis...
+
+[2025-09-26 13:32:42] Calculating ML accuracy metrics...
+
+[2025-09-26 13:32:43] Warning: Unable to extract per-class metrics, using basic counts
+
+[2025-09-26 13:32:43] ML accuracy metrics saved to results/ml_accuracy_metrics.csv
+
+[2025-09-26 13:32:43] Confusion matrix saved to results/ml_confusion_matrix.csv
+
+[2025-09-26 13:32:43] Confidence distribution analysis saved to results/confidence_distribution_analysis.csv
+
+[2025-09-26 13:32:43] Validation comparison report saved to results/validation_comparison_report.txt
+
+[2025-09-26 13:32:43] Training vs manual comparison saved to results/training_vs_manual_comparison.csv
+
+[2025-09-26 13:32:43] Writing consolidated dataset to file...
+
+[2025-09-26 13:32:43] Consolidated dataset written successfully.
+
+[2025-09-26 13:32:43] Consolidation complete.
+
+[2025-09-26 13:32:43] Total rows: 19380
+
+[2025-09-26 13:32:43] Rows with training labels: 0
+
+[2025-09-26 13:32:43] Rows with manual presence labels: 49
+
+[2025-09-26 13:32:43] Rows with manual absence labels: 50
+
+[2025-09-26 13:32:43] Rows with ML predictions: 19380
+
+[2025-09-26 13:32:43] Rows with consolidated labels: 19380
+
+[2025-09-26 13:32:43] Unique sources used: ml_predictions, manual_presence, manual_absence
+
+[2025-09-26 13:32:43] Script execution finished.
+

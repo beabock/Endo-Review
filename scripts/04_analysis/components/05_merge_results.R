@@ -4,16 +4,16 @@
 #
 # Purpose: Merge all extraction results into comprehensive dataset
 #
-# Description: Script that combines species, methods, plant parts, and geography detection results
+# Description: Script that combines species+mycorrhizal, methods, plant parts, and geography detection results
 # from individual extraction components into a single comprehensive dataset for downstream analysis
-# and reporting.
+# and reporting. Uses memory-efficient approach starting from consolidated_dataset as base.
 #
 # Dependencies: tidyverse
 #
 # Author: B. Bock
-# Date: 2024-09-22
+# Date: 2024-09-26
 #
-# Inputs/Outputs: Reads individual component result CSV files (species, methods, plant_parts, geography);
+# Inputs/Outputs: Reads consolidated_dataset and individual component result CSV files;
 # outputs comprehensive_extraction_results.csv with merged data
 #
 # =============================================================================
@@ -38,30 +38,30 @@ merge_extraction_results <- function(
     return(existing_results)
   }
 
-  # Check for base abstracts data
-  abstracts_file <- "results/prepared_abstracts_for_extraction.csv"
-  if (!file.exists(abstracts_file)) {
-    stop("❌ Base abstracts data not found: ", abstracts_file)
+  # Check for consolidated dataset
+  consolidated_file <- "results/consolidated_dataset.csv"
+  if (!file.exists(consolidated_file)) {
+    stop("❌ Consolidated dataset not found: ", consolidated_file)
   }
 
   if (verbose) cat("🔬 Starting results merge process\n")
 
-  # Load base abstracts data
-  base_data <- read_csv(abstracts_file, show_col_types = FALSE)
-  if (verbose) cat("   Loaded base abstracts:", nrow(base_data), "records\n")
+  # Load consolidated dataset as base
+  base_data <- read_csv(consolidated_file, show_col_types = FALSE)
+  if (verbose) cat("   Loaded consolidated dataset:", nrow(base_data), "records with", ncol(base_data), "columns\n")
 
-  # Initialize merged data with base information
+  # Initialize merged data with consolidated dataset
   merged_data <- base_data
 
-  # List of component result files to merge
+  # List of component result files to merge (memory-efficient outputs)
   component_files <- c(
-    "results/species_detection_results.csv",
+    "results/species_detection_results_mycorrhizal_enhanced.csv",
     "results/methods_detection_results.csv",
     "results/plant_parts_detection_results.csv",
     "results/geography_detection_results.csv"
   )
 
-  component_names <- c("species", "methods", "plant_parts", "geography")
+  component_names <- c("species_mycorrhizal", "methods", "plant_parts", "geography")
   loaded_components <- 0
 
   # Merge each component
@@ -73,6 +73,19 @@ merge_extraction_results <- function(
       if (verbose) cat("   📥 Loading", component_name, "results...\n")
 
       component_data <- read_csv(file_path, show_col_types = FALSE)
+
+      # Get columns that exist in both datasets (excluding 'id')
+      common_cols <- intersect(names(merged_data), names(component_data))
+      common_cols <- setdiff(common_cols, "id")
+
+      if (length(common_cols) > 0) {
+        if (verbose) cat("      ℹ️  Handling", length(common_cols), "overlapping columns\n")
+
+        # For overlapping columns, we want to keep the component data (enhanced)
+        # Remove overlapping columns from base data before joining
+        merged_data <- merged_data %>%
+          select(-all_of(common_cols))
+      }
 
       # Merge with base data
       merged_data <- merged_data %>%
@@ -96,9 +109,71 @@ merge_extraction_results <- function(
 
   # Remove duplicate columns that might have been created during merging
   # Keep the first occurrence of each column name
+
+  # Step 1: Remove .y suffix columns (duplicates from right join)
   merged_data <- merged_data %>%
-    select(-matches("\\.y$")) %>%  # Remove .y suffix columns (duplicates)
-    rename_with(~str_remove(., "\\.x$"), matches("\\.x$"))  # Remove .x suffix
+    select(-matches("\\.y$"))
+
+  # Step 2: Handle any remaining .x suffixes by removing them
+  x_cols <- names(merged_data)[str_ends(names(merged_data), "\\.x")]
+  if (length(x_cols) > 0) {
+    # Create a mapping from old names to new names
+    new_names <- str_remove(x_cols, "\\.x$")
+    names_map <- setNames(new_names, x_cols)
+
+    # Only proceed if the mapping doesn't create duplicates
+    if (length(unique(new_names)) == length(new_names) &&
+        !any(new_names %in% setdiff(names(merged_data), x_cols))) {
+      merged_data <- merged_data %>%
+        rename(!!!names_map)
+    }
+  }
+
+  # Step 3: Check for any remaining duplicate column names and handle them
+  dup_cols <- names(merged_data)[duplicated(names(merged_data))]
+  if (length(dup_cols) > 0) {
+    if (verbose) cat("   ⚠️  Found duplicate columns:", paste(dup_cols, collapse = ", "), "- keeping first occurrence\n")
+
+    # For each duplicate column name, keep only the first occurrence
+    for (col_name in dup_cols) {
+      col_positions <- which(names(merged_data) == col_name)
+      if (length(col_positions) > 1) {
+        # Keep the first occurrence, remove the rest
+        cols_to_remove <- col_positions[2:length(col_positions)]
+        merged_data <- merged_data %>%
+          select(-all_of(col_positions[2:length(col_positions)]))
+      }
+    }
+  }
+
+  # Final check: ensure all column names are unique
+  if (length(names(merged_data)) != length(unique(names(merged_data)))) {
+    stop("❌ Still have duplicate column names after cleanup!")
+  }
+
+  # Clean up junky columns that start with X and are all NA
+  na_cols <- names(merged_data)[str_starts(names(merged_data), "^X$|^X\\.")]
+  if (length(na_cols) > 0) {
+    cols_to_check <- merged_data %>%
+      select(all_of(na_cols)) %>%
+      summarise(across(everything(), ~all(is.na(.)))) %>%
+      select(where(~.)) %>%
+      names()
+
+    if (length(cols_to_check) > 0) {
+      if (verbose) cat("   🧹 Removing", length(cols_to_check), "NA-only columns starting with X\n")
+      merged_data <- merged_data %>%
+        select(-all_of(cols_to_check))
+    }
+  }
+
+  # Remove training columns (they end with "_training")
+  training_cols <- names(merged_data)[str_ends(names(merged_data), "_training")]
+  if (length(training_cols) > 0) {
+    if (verbose) cat("   🧹 Removing", length(training_cols), "training columns\n")
+    merged_data <- merged_data %>%
+      select(-all_of(training_cols))
+  }
 
   # Save comprehensive results
   write_csv(merged_data, output_file)
@@ -109,7 +184,7 @@ merge_extraction_results <- function(
     cat("==========================================\n")
     cat("Total abstracts processed:", nrow(merged_data), "\n")
 
-    # Species summary
+    # Species and mycorrhizal summary
     if ("resolved_name" %in% names(merged_data) || "canonicalName" %in% names(merged_data)) {
       species_cols <- intersect(c("resolved_name", "canonicalName"), names(merged_data))
       species_found <- merged_data %>%
@@ -120,6 +195,13 @@ merge_extraction_results <- function(
 
       cat("✓ Species detection:", species_found,
           "(", round(100 * species_found / nrow(merged_data), 1), "%)\n")
+    }
+
+    # Mycorrhizal summary
+    if ("is_mycorrhizal" %in% names(merged_data)) {
+      mycorrhizal_papers <- sum(merged_data$is_mycorrhizal_only, na.rm = TRUE)
+      cat("✓ Mycorrhizal-only papers:", mycorrhizal_papers,
+          "(", round(100 * mycorrhizal_papers / nrow(merged_data), 1), "%)\n")
     }
 
     # Methods summary
@@ -153,6 +235,8 @@ merge_extraction_results <- function(
 
   return(merged_data)
 }
+
+
 
 # Run if called directly
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "05_merge_results.R")) {

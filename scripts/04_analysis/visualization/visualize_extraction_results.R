@@ -107,20 +107,48 @@ results_clean <- results %>%
       TRUE ~ as.character(predicted_label)
     ),
     
-    # Create method categories
+    # Create method categories for original 3 methods
     has_molecular = coalesce(molecular_methods, FALSE),
     has_culture = coalesce(culture_based_methods, FALSE),
     has_microscopy = coalesce(microscopy_methods, FALSE),
-    
-    # Create combined method category
+
+    # Create expanded method categories for all 9 method types
+    has_inoculation = coalesce(inoculation_methods, FALSE),
+    has_plant_microbe_interaction = coalesce(plant_microbe_interaction_methods, FALSE),
+    has_bioactivity_assays = coalesce(bioactivity_assays_methods, FALSE),
+    has_physiological_assays = coalesce(physiological_assays_methods, FALSE),
+    has_ecological_studies = coalesce(ecological_studies_methods, FALSE),
+    has_surface_sterilization = coalesce(surface_sterilization_methods, FALSE),
+
+    # Create combined method category for original 3 methods
     methods_combined = case_when(
       has_molecular & has_culture & has_microscopy ~ "All three methods",
       has_molecular & has_culture ~ "Molecular + Culture",
-      has_molecular & has_microscopy ~ "Molecular + Microscopy", 
+      has_molecular & has_microscopy ~ "Molecular + Microscopy",
       has_culture & has_microscopy ~ "Culture + Microscopy",
       has_molecular ~ "Molecular only",
       has_culture ~ "Culture only",
       has_microscopy ~ "Microscopy only",
+      TRUE ~ "No methods detected"
+    ),
+
+    # Create expanded combined method category for all 9 methods
+    methods_expanded = case_when(
+      has_molecular & has_culture & has_microscopy & has_inoculation & has_plant_microbe_interaction ~
+        "Multiple methods (5+ types)",
+      has_molecular & has_culture & has_microscopy ~ "Molecular + Culture + Microscopy",
+      has_molecular & has_culture ~ "Molecular + Culture",
+      has_molecular & has_microscopy ~ "Molecular + Microscopy",
+      has_culture & has_microscopy ~ "Culture + Microscopy",
+      has_molecular ~ "Molecular only",
+      has_culture ~ "Culture only",
+      has_microscopy ~ "Microscopy only",
+      has_inoculation ~ "Inoculation only",
+      has_plant_microbe_interaction ~ "Plant-microbe interaction only",
+      has_bioactivity_assays ~ "Bioactivity assays only",
+      has_physiological_assays ~ "Physiological assays only",
+      has_ecological_studies ~ "Ecological studies only",
+      has_surface_sterilization ~ "Surface sterilization only",
       TRUE ~ "No methods detected"
     ),
     
@@ -179,6 +207,7 @@ abstract_summary <- results_clean %>%
     has_plant_parts = any(has_plant_parts),
     has_geography = any(has_geography),
     has_methods = any(methods_combined != "No methods detected"),
+    has_mycorrhizal_only = any(is_mycorrhizal_only),
     predicted_label = first(predicted_label),
     .groups = "drop"
   )
@@ -224,18 +253,18 @@ p1_species_detection <- data.frame(
   theme(legend.position = "bottom")
 
 # Save species detection plot
-save_plot(p1_species_detection, "figures/species_detection_rate.png", height = 6)
+save_plot(p1_species_detection, "plots/extraction/species_detection_rate.png", height = 6)
 
 # 2. RESEARCH METHODS ANALYSIS -------------------------------------------
 
 cat("Creating research methods analysis plots...\n")
 
-# Methods distribution  
+# Original 3 methods distribution
 methods_abstract_summary <- results_clean %>%
   group_by(id) %>%
   summarise(
     has_molecular = any(has_molecular),
-    has_culture = any(has_culture), 
+    has_culture = any(has_culture),
     has_microscopy = any(has_microscopy),
     .groups = "drop"
   )
@@ -259,8 +288,8 @@ p3_methods_individual <- methods_summary %>%
             vjust = -0.3, size = 4, fontface = "bold") +
   scale_fill_manual(values = get_endo_colors(3)) +
   labs(
-    title = "Research Methods Detection",
-    subtitle = "Individual method frequencies across all abstracts",
+    title = "Core Research Methods Detection",
+    subtitle = "Traditional method frequencies (Molecular, Culture, Microscopy)",
     x = "Research Method",
     y = "Number of Abstracts",
     caption = paste("Total abstracts analyzed:", nrow(methods_abstract_summary))
@@ -268,7 +297,58 @@ p3_methods_individual <- methods_summary %>%
   custom_theme +
   theme(legend.position = "none")
 
-# Combined methods analysis
+# All 9 methods distribution
+methods_expanded_summary <- results_clean %>%
+  group_by(id) %>%
+  summarise(
+    has_molecular = any(has_molecular),
+    has_culture = any(has_culture),
+    has_microscopy = any(has_microscopy),
+    has_inoculation = any(has_inoculation),
+    has_plant_microbe_interaction = any(has_plant_microbe_interaction),
+    has_bioactivity_assays = any(has_bioactivity_assays),
+    has_physiological_assays = any(has_physiological_assays),
+    has_ecological_studies = any(has_ecological_studies),
+    has_surface_sterilization = any(has_surface_sterilization),
+    .groups = "drop"
+  )
+
+methods_expanded_counts <- methods_expanded_summary %>%
+  summarise(
+    `Molecular` = sum(has_molecular),
+    `Culture-based` = sum(has_culture),
+    `Microscopy` = sum(has_microscopy),
+    `Inoculation` = sum(has_inoculation),
+    `Plant-microbe interaction` = sum(has_plant_microbe_interaction),
+    `Bioactivity assays` = sum(has_bioactivity_assays),
+    `Physiological assays` = sum(has_physiological_assays),
+    `Ecological studies` = sum(has_ecological_studies),
+    `Surface sterilization` = sum(has_surface_sterilization)
+  ) %>%
+  pivot_longer(everything(), names_to = "Method", values_to = "Count") %>%
+  mutate(
+    Percentage = Count / nrow(methods_expanded_summary) * 100,
+    Method = fct_reorder(Method, Count)
+  ) %>%
+  filter(Count > 0)  # Only show methods that were detected
+
+p3b_methods_expanded <- methods_expanded_counts %>%
+  ggplot(aes(x = Method, y = Count, fill = Method)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = paste0(Count, "\n(", round(Percentage, 1), "%)")),
+            hjust = -0.1, size = 3) +
+  scale_fill_viridis_d() +
+  labs(
+    title = "Expanded Research Methods Detection",
+    subtitle = "All 9 method types detected across abstracts",
+    x = "Research Method",
+    y = "Number of Abstracts"
+  ) +
+  coord_flip() +
+  custom_theme +
+  theme(legend.position = "none")
+
+# Combined methods analysis (original 3)
 methods_combined_summary <- results_clean %>%
   group_by(id) %>%
   summarise(methods_combined = first(methods_combined), .groups = "drop") %>%
@@ -286,8 +366,36 @@ p4_methods_combined <- methods_combined_summary %>%
             hjust = -0.1, size = 3.5) +
   scale_fill_viridis_d(option = "plasma") +
   labs(
-    title = "Combined Research Methods",
-    subtitle = "Method combinations used in endophyte studies",
+    title = "Combined Core Research Methods",
+    subtitle = "Traditional method combinations used in endophyte studies",
+    x = "Method Combination",
+    y = "Number of Abstracts"
+  ) +
+  coord_flip() +
+  custom_theme +
+  theme(legend.position = "none")
+
+# Expanded combined methods analysis
+methods_expanded_combined_summary <- results_clean %>%
+  group_by(id) %>%
+  summarise(methods_expanded = first(methods_expanded), .groups = "drop") %>%
+  count(methods_expanded, name = "count") %>%
+  mutate(
+    percentage = count / sum(count) * 100,
+    methods_expanded = fct_reorder(methods_expanded, count)
+  ) %>%
+  filter(count > 0) %>%
+  slice_max(count, n = 15)  # Show top 15 combinations
+
+p4b_methods_expanded_combined <- methods_expanded_combined_summary %>%
+  ggplot(aes(x = methods_expanded, y = count, fill = methods_expanded)) +
+  geom_col(width = 0.8) +
+  geom_text(aes(label = paste0(count, "\n(", round(percentage, 1), "%)")),
+            hjust = -0.1, size = 2.5) +
+  scale_fill_viridis_d(option = "cividis") +
+  labs(
+    title = "Expanded Combined Research Methods",
+    subtitle = "Top 15 method combinations (all 9 method types)",
     x = "Method Combination",
     y = "Number of Abstracts"
   ) +
@@ -296,45 +404,69 @@ p4_methods_combined <- methods_combined_summary %>%
   theme(legend.position = "none")
 
 # Save methods plots individually
-save_plot(p3_methods_individual, "figures/methods_individual.png", height = 6)
-save_plot(p4_methods_combined, "figures/methods_combined.png", height = 6)
+save_plot(p3_methods_individual, "plots/extraction/methods_individual_core.png", height = 6)
+save_plot(p3b_methods_expanded, "plots/extraction/methods_individual_expanded.png", height = 8)
+save_plot(p4_methods_combined, "plots/extraction/methods_combined_core.png", height = 6)
+save_plot(p4b_methods_expanded_combined, "plots/extraction/methods_combined_expanded.png", height = 8)
 
 # 3. PLANT PARTS ANALYSIS ------------------------------------------------
 
 cat("Creating plant parts analysis plots...\n")
 
 if (sum(results_clean$has_plant_parts) > 0) {
-  
-  # Extract and count plant parts - preserve all unique information per abstract
+
+  # Enhanced plant parts analysis using new parts_count and parts_normalized columns
   plant_parts_data <- results_clean %>%
-    filter(has_plant_parts) %>%
-    select(id, plant_parts_detected) %>%
-    # First get all unique plant parts per abstract (avoiding double counting within abstracts)
-    separate_rows(plant_parts_detected, sep = "; ") %>%
-    filter(!is.na(plant_parts_detected), plant_parts_detected != "") %>%
-    # Normalize plant part terms (singular/plural grouping)
-    mutate(plant_part_norm = if (exists("normalize_plant_part")) normalize_plant_part(plant_parts_detected) else tolower(plant_parts_detected)) %>%
-    # Get unique combinations per abstract to avoid losing information
-    distinct(id, plant_part_norm) %>%
-    # Count how many unique abstracts mention each plant part
-    count(plant_part_norm, name = "unique_abstracts") %>%
-    arrange(desc(unique_abstracts)) %>%
-    slice_max(unique_abstracts, n = 20) %>%  # Top 20 most frequent
-    mutate(plant_part_norm = fct_reorder(plant_part_norm, unique_abstracts),
-           plant_parts_detected = stringr::str_to_title(plant_part_norm))
-  
+    filter(has_plant_parts, !is.na(parts_normalized)) %>%
+    select(id, plant_parts_detected, parts_normalized, parts_count) %>%
+    # Use the normalized parts data for consistent grouping
+    separate_rows(parts_normalized, sep = "; ") %>%
+    filter(!is.na(parts_normalized), parts_normalized != "") %>%
+    # Count occurrences per normalized plant part
+    count(parts_normalized, name = "total_mentions") %>%
+    arrange(desc(total_mentions)) %>%
+    slice_max(total_mentions, n = 20) %>%  # Top 20 most frequent
+    mutate(
+      parts_normalized = fct_reorder(parts_normalized, total_mentions),
+      display_name = stringr::str_to_title(parts_normalized)
+    )
+
   p6_plant_parts_freq <- plant_parts_data %>%
-    ggplot(aes(x = plant_parts_detected, y = unique_abstracts)) +
+    ggplot(aes(x = display_name, y = total_mentions)) +
     geom_col(fill = endo_palette[1], width = 0.8) +
-    geom_text(aes(label = unique_abstracts), hjust = -0.1, size = 3) +
+    geom_text(aes(label = total_mentions), hjust = -0.1, size = 3) +
     labs(
       title = "Most Frequently Studied Plant Parts",
-      subtitle = paste("Top 20 plant parts from", sum(abstract_summary$has_plant_parts), "unique abstracts"),
+      subtitle = paste("Top 20 normalized plant parts from", sum(abstract_summary$has_plant_parts), "unique abstracts"),
       x = "Plant Part",
-      y = "Number of Unique Abstracts"
+      y = "Total Mentions Across Abstracts"
     ) +
     coord_flip() +
     custom_theme
+
+  # Plant parts count distribution analysis
+  parts_count_summary <- results_clean %>%
+    filter(has_plant_parts) %>%
+    count(parts_count, name = "abstracts_per_count") %>%
+    mutate(
+      percentage = abstracts_per_count / sum(abstracts_per_count) * 100,
+      parts_count = fct_reorder(as.factor(parts_count), parts_count)
+    )
+
+  p6b_plant_parts_distribution <- parts_count_summary %>%
+    ggplot(aes(x = parts_count, y = abstracts_per_count, fill = parts_count)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = paste0(abstracts_per_count, "\n(", round(percentage, 1), "%)")),
+              vjust = -0.3, size = 3) +
+    scale_fill_viridis_d() +
+    labs(
+      title = "Plant Parts Count Distribution",
+      subtitle = "Number of abstracts mentioning specific numbers of plant parts",
+      x = "Number of Plant Parts per Abstract",
+      y = "Number of Abstracts"
+    ) +
+    custom_theme +
+    theme(legend.position = "none")
   
   # Plant parts by prediction type
   plant_parts_by_pred <- results_clean %>%
@@ -360,8 +492,9 @@ if (sum(results_clean$has_plant_parts) > 0) {
     custom_theme
   
   # Save plant parts plots individually
-  save_plot(p6_plant_parts_freq, "figures/plant_parts_frequency.png", height = 8)
-  save_plot(plant_parts_by_pred, "figures/plant_parts_by_prediction.png", height = 6)
+  save_plot(p6_plant_parts_freq, "plots/extraction/plant_parts_frequency.png", height = 8)
+  save_plot(p6b_plant_parts_distribution, "plots/extraction/plant_parts_distribution.png", height = 6)
+  save_plot(plant_parts_by_pred, "plots/extraction/plant_parts_by_prediction.png", height = 6)
   
 } else {
   cat("No plant parts data available for visualization.\n")
@@ -372,8 +505,9 @@ if (sum(results_clean$has_plant_parts) > 0) {
 cat("Creating geographic distribution plots...\n")
 
 if (sum(results_clean$has_geography) > 0) {
-  
-  # Geographic regions distribution
+
+  # Enhanced geographic analysis using new specific columns
+  # Global North vs South distribution
   p7_geo_regions <- results_clean %>%
     count(geographic_region, name = "count") %>%
     mutate(
@@ -394,53 +528,175 @@ if (sum(results_clean$has_geography) > 0) {
     coord_flip() +
     custom_theme +
     theme(legend.position = "none")
-  
-  # Extract country data if available
+
+  # Countries distribution using new countries_detected column
   countries_data <- results_clean %>%
     filter(!is.na(countries_detected)) %>%
     select(countries_detected) %>%
     separate_rows(countries_detected, sep = "; ") %>%
     filter(!is.na(countries_detected), countries_detected != "") %>%
-    # Debug: Print what countries are being detected
-    { cat("DEBUG: Raw countries detected:", paste(unique(.$countries_detected), collapse = ", "), "\n"); . } %>%
-    # Standardize country names and group synonyms
+    # Standardize country names
     mutate(country_std = if (exists("normalize_country_vector")) {
-      normalized <- normalize_country_vector(countries_detected)
-      cat("DEBUG: After normalization:", paste(unique(normalized), collapse = ", "), "\n")
-      normalized
+      normalize_country_vector(countries_detected)
     } else {
-      cat("DEBUG: normalize_country_vector not found, using title case\n")
       stringr::str_to_title(countries_detected)
     }) %>%
     count(country_std, name = "frequency") %>%
     arrange(desc(frequency)) %>%
     slice_max(frequency, n = 15) %>%
-    mutate(countries_detected = fct_reorder(stringr::str_to_title(country_std), frequency))
-  
-  if (nrow(countries_data) > 0) {
-    p8_countries <- countries_data %>%
-      ggplot(aes(x = countries_detected, y = frequency)) +
-      geom_col(fill = endo_palette[4], width = 0.8) +
-      geom_text(aes(label = frequency), hjust = -0.1, size = 3) +
-      labs(
-        title = "Most Studied Countries",
-        subtitle = paste("Top 15 countries from", sum(!is.na(results_clean$countries_detected)), "abstracts"),
-        x = "Country",
-        y = "Number of Studies"
-      ) +
-      coord_flip() +
-      custom_theme
-    
-    # Save geography plots individually
-    save_plot(p7_geo_regions, "figures/geographic_regions.png", height = 6)
-    save_plot(p8_countries, "figures/top_countries.png", height = 8)
-  } else {
-    # Save only regions plot if no country data
-    save_plot(p7_geo_regions, "figures/geographic_regions.png", height = 6)
-  }
+    mutate(country_display = fct_reorder(stringr::str_to_title(country_std), frequency))
+
+  p8_countries <- countries_data %>%
+    ggplot(aes(x = country_display, y = frequency)) +
+    geom_col(fill = endo_palette[4], width = 0.8) +
+    geom_text(aes(label = frequency), hjust = -0.1, size = 3) +
+    labs(
+      title = "Most Studied Countries",
+      subtitle = paste("Top 15 countries from", sum(!is.na(results_clean$countries_detected)), "abstracts with country information"),
+      x = "Country",
+      y = "Number of Studies"
+    ) +
+    coord_flip() +
+    custom_theme
+
+  # Continents distribution using new continents_detected column
+  continents_data <- results_clean %>%
+    filter(!is.na(continents_detected)) %>%
+    select(continents_detected) %>%
+    separate_rows(continents_detected, sep = "; ") %>%
+    filter(!is.na(continents_detected), continents_detected != "") %>%
+    count(continents_detected, name = "frequency") %>%
+    arrange(desc(frequency)) %>%
+    mutate(continent_display = fct_reorder(continents_detected, frequency))
+
+  p8b_continents <- continents_data %>%
+    ggplot(aes(x = continent_display, y = frequency)) +
+    geom_col(fill = endo_palette[3], width = 0.7) +
+    geom_text(aes(label = frequency), hjust = -0.1, size = 3) +
+    labs(
+      title = "Studies by Continent",
+      subtitle = "Distribution of research across continents",
+      x = "Continent",
+      y = "Number of Studies"
+    ) +
+    coord_flip() +
+    custom_theme
+
+  # Geographic information completeness
+  geo_completeness <- results_clean %>%
+    filter(has_geography) %>%
+    summarise(
+      has_countries = sum(!is.na(countries_detected)),
+      has_continents = sum(!is.na(continents_detected)),
+      has_regions = sum(!is.na(regions_detected)),
+      has_coordinates = sum(has_coordinates)
+    ) %>%
+    pivot_longer(everything(), names_to = "geo_type", values_to = "count") %>%
+    mutate(
+      percentage = count / sum(count) * 100,
+      geo_type = case_when(
+        geo_type == "has_countries" ~ "Countries",
+        geo_type == "has_continents" ~ "Continents",
+        geo_type == "has_regions" ~ "Regions",
+        geo_type == "has_coordinates" ~ "Coordinates"
+      ),
+      geo_type = fct_reorder(geo_type, count)
+    )
+
+  p8c_geo_completeness <- geo_completeness %>%
+    ggplot(aes(x = geo_type, y = count, fill = geo_type)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = paste0(count, "\n(", round(percentage, 1), "%)")),
+              vjust = -0.3, size = 3) +
+    scale_fill_viridis_d() +
+    labs(
+      title = "Geographic Information Completeness",
+      subtitle = "Types of geographic information detected",
+      x = "Geographic Information Type",
+      y = "Number of Abstracts"
+    ) +
+    custom_theme +
+    theme(legend.position = "none")
+
+  # Save geography plots individually
+  save_plot(p7_geo_regions, "plots/extraction/geographic_regions.png", height = 6)
+  save_plot(p8_countries, "plots/extraction/top_countries.png", height = 8)
+  save_plot(p8b_continents, "plots/extraction/continents_distribution.png", height = 6)
+  save_plot(p8c_geo_completeness, "plots/extraction/geographic_completeness.png", height = 6)
   
 } else {
   cat("No geographic data available for visualization.\n")
+}
+
+# 4. MYCORRHIZAL CLASSIFICATION ANALYSIS ---------------------------------
+
+cat("Creating mycorrhizal classification analysis plots...\n")
+
+if (sum(!is.na(results_clean$is_mycorrhizal)) > 0) {
+
+  # Mycorrhizal-only papers distribution
+  mycorrhizal_summary <- results_clean %>%
+    group_by(id) %>%
+    summarise(
+      has_mycorrhizal_only = any(is_mycorrhizal_only),
+      predicted_label = first(predicted_label),
+      .groups = "drop"
+    ) %>%
+    count(has_mycorrhizal_only, predicted_label, name = "count") %>%
+    mutate(
+      percentage = count / sum(count) * 100,
+      mycorrhizal_status = if_else(has_mycorrhizal_only, "Mycorrhizal-only", "Mixed/Non-mycorrhizal")
+    )
+
+  p5_mycorrhizal_distribution <- mycorrhizal_summary %>%
+    ggplot(aes(x = mycorrhizal_status, y = count, fill = predicted_label)) +
+    geom_col(width = 0.7, position = "dodge") +
+    geom_text(aes(label = paste0(count, "\n(", round(percentage, 1), "%)")),
+              position = position_dodge(width = 0.7), vjust = -0.3, size = 3) +
+    scale_fill_manual(values = endo_colors$presence_absence) +
+    labs(
+      title = "Mycorrhizal-only Papers Distribution",
+      subtitle = "Papers mentioning only mycorrhizal fungi vs mixed papers",
+      x = "Mycorrhizal Status",
+      y = "Number of Abstracts",
+      fill = "Prediction Type"
+    ) +
+    custom_theme
+
+  # Fungal guild analysis (if funguild_guild column exists)
+  if ("funguild_guild" %in% names(results_clean)) {
+    guild_data <- results_clean %>%
+      filter(!is.na(funguild_guild), funguild_guild != "Non-fungal") %>%
+      count(funguild_guild, name = "count") %>%
+      mutate(
+        percentage = count / sum(count) * 100,
+        funguild_guild = fct_reorder(funguild_guild, count)
+      ) %>%
+      slice_max(count, n = 10)  # Top 10 guilds
+
+    p5b_fungal_guilds <- guild_data %>%
+      ggplot(aes(x = funguild_guild, y = count)) +
+      geom_col(fill = endo_palette[5], width = 0.8) +
+      geom_text(aes(label = paste0(count, "\n(", round(percentage, 1), "%)")),
+                hjust = -0.1, size = 2.5) +
+      labs(
+        title = "Fungal Guild Distribution",
+        subtitle = "Top 10 fungal guilds identified in abstracts",
+        x = "Fungal Guild",
+        y = "Number of Mentions"
+      ) +
+      coord_flip() +
+      custom_theme
+  }
+
+  # Save mycorrhizal plots individually
+  save_plot(p5_mycorrhizal_distribution, "plots/extraction/mycorrhizal_distribution.png", height = 6)
+  if (exists("p5b_fungal_guilds")) {
+    save_plot(p5b_fungal_guilds, "plots/extraction/fungal_guilds.png", height = 8)
+  }
+
+} else {
+  cat("No mycorrhizal classification data available for visualization.\n")
 }
 
 # 5. PREDICTION QUALITY ANALYSIS -----------------------------------------
@@ -570,9 +826,9 @@ p11_quality_heatmap <- quality_matrix %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Save quality plots individually
-save_plot(p9_confidence, "figures/confidence_distribution.png", height = 6)
-save_plot(p10_completeness, "figures/completeness_by_confidence.png", height = 6)
-save_plot(p11_quality_heatmap, "figures/quality_heatmap.png", height = 6)
+save_plot(p9_confidence, "plots/extraction/confidence_distribution.png", height = 6)
+save_plot(p10_completeness, "plots/extraction/completeness_by_confidence.png", height = 6)
+save_plot(p11_quality_heatmap, "plots/extraction/quality_heatmap.png", height = 6)
 
 # 6. COMPREHENSIVE SUMMARY DASHBOARD ------------------------------------
 
@@ -643,8 +899,8 @@ p_info_summary <- info_summary %>%
   theme(legend.position = "none")
 
 # Save summary dashboard plots individually
-save_plot(p_summary_text, "figures/summary_text.png", width = 8, height = 8)
-save_plot(p_info_summary, "figures/info_summary.png", width = 8, height = 8)
+save_plot(p_summary_text, "plots/extraction/summary_text.png", width = 8, height = 8)
+save_plot(p_info_summary, "plots/extraction/info_summary.png", width = 8, height = 8)
 
 # 7. SAVE VISUALIZATION SUMMARY ------------------------------------------
 
@@ -656,22 +912,33 @@ capture.output({
   cat("Source: comprehensive_extraction_results.csv\n\n")
   
   cat("FILES GENERATED:\n")
-  cat("1. species_detection_rate.png - Overall species detection rate\n")
-  cat("2. methods_individual.png - Individual method frequencies\n")
-  cat("3. methods_combined.png - Combined method frequencies\n")
+  cat("1. plots/extraction/species_detection_rate.png - Overall species detection rate\n")
+  cat("2. plots/extraction/methods_individual_core.png - Core research methods (3 traditional types)\n")
+  cat("3. plots/extraction/methods_individual_expanded.png - Expanded research methods (all 9 types)\n")
+  cat("4. plots/extraction/methods_combined_core.png - Combined core method frequencies\n")
+  cat("5. plots/extraction/methods_combined_expanded.png - Combined expanded method frequencies\n")
   if (sum(results_clean$has_plant_parts) > 0) {
-    cat("4. plant_parts_frequency.png - Most studied plant parts\n")
-    cat("5. plant_parts_by_prediction.png - Plant parts detection by prediction type\n")
+    cat("6. plots/extraction/plant_parts_frequency.png - Most studied plant parts (enhanced)\n")
+    cat("7. plots/extraction/plant_parts_distribution.png - Plant parts count distribution\n")
+    cat("8. plots/extraction/plant_parts_by_prediction.png - Plant parts detection by prediction type\n")
   }
   if (sum(results_clean$has_geography) > 0) {
-    cat("6. geographic_regions.png - Geographic distribution by region\n")
-    cat("7. top_countries.png - Most studied countries (if available)\n")
+    cat("9. plots/extraction/geographic_regions.png - Geographic distribution by region\n")
+    cat("10. plots/extraction/top_countries.png - Most studied countries\n")
+    cat("11. plots/extraction/continents_distribution.png - Studies by continent\n")
+    cat("12. plots/extraction/geographic_completeness.png - Geographic information completeness\n")
   }
-  cat("8. confidence_distribution.png - Confidence distributions by prediction\n")
-  cat("9. completeness_by_confidence.png - Information completeness by confidence\n")
-  cat("10. quality_heatmap.png - Information detection rates heatmap\n")
-  cat("11. summary_text.png - Overall summary statistics\n")
-  cat("12. info_summary.png - Information detection overview\n\n")
+  if (sum(!is.na(results_clean$is_mycorrhizal)) > 0) {
+    cat("13. plots/extraction/mycorrhizal_distribution.png - Mycorrhizal-only papers distribution\n")
+    if ("funguild_guild" %in% names(results_clean)) {
+      cat("14. plots/extraction/fungal_guilds.png - Fungal guild distribution\n")
+    }
+  }
+  cat("15. plots/extraction/confidence_distribution.png - Confidence distributions by prediction\n")
+  cat("16. plots/extraction/completeness_by_confidence.png - Information completeness by confidence\n")
+  cat("17. plots/extraction/quality_heatmap.png - Information detection rates heatmap\n")
+  cat("18. plots/extraction/summary_text.png - Overall summary statistics\n")
+  cat("19. plots/extraction/info_summary.png - Information detection overview\n\n")
   
   cat("KEY FINDINGS:\n")
   cat("- Species detection rate:", round(species_rate, 1), "%\n")
@@ -721,12 +988,13 @@ cat("Visualization summary saved to: results/visualization_summary_report.txt\n"
 
 # Clean up
 cat("\n=== VISUALIZATION COMPLETE ===\n")
-cat("Generated", length(list.files("figures", pattern = "*.png")), "visualization files in figures/\n")
+cat("Generated", length(list.files("plots/extraction", pattern = "*.png")), "visualization files in plots/extraction/\n")
 cat("\nKey outputs:\n")
 cat("📊 Species detection patterns and kingdom distribution (individual plots)\n")
-cat("🔬 Research methods usage and combinations (individual plots)\n")
-if (sum(results_clean$has_plant_parts) > 0) cat("🌱 Plant parts frequency and preferences (individual plots)\n")
-if (sum(results_clean$has_geography) > 0) cat("🌍 Geographic distribution of studies (individual plots)\n")
+cat("🔬 Research methods usage and combinations - both core (3 types) and expanded (9 types)\n")
+if (sum(results_clean$has_plant_parts) > 0) cat("🌱 Enhanced plant parts frequency with normalization and count distribution\n")
+if (sum(results_clean$has_geography) > 0) cat("🌍 Comprehensive geographic distribution with countries, continents, and regions\n")
+if (sum(!is.na(results_clean$is_mycorrhizal)) > 0) cat("🍄 Mycorrhizal classification analysis including fungal guilds\n")
 cat("📈 Prediction quality and information completeness (individual plots)\n")
 cat("📋 Summary statistics and information overview (individual plots)\n\n")
 
@@ -736,4 +1004,4 @@ cat("2. Use findings to guide systematic review priorities\n")
 cat("3. Consider combining plots manually in external software if needed\n")
 cat("4. Integrate visualizations into research presentations and publications\n\n")
 
-cat("All individual visualization files saved to figures/ directory! 📊✨\n")
+cat("All individual visualization files saved to plots/extraction/ directory! 📊✨\n")

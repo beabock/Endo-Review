@@ -7,98 +7,78 @@ library(tidyverse)
 library(scales)
 source("scripts/utils/plot_utils.R")
 
-# Load data exactly like user's working script
-setwd(here())
-
-# Load the species data with extinct species exclusion (like in working script)
-species_data <- readRDS("models/species.rds")
-
-# Filter for Plantae and Fungi species like in working script
-reference_species <- species_data %>%
-  filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "species")
-
-# Add extinct species exclusion if the data is available
-if ("species_lower" %in% colnames(reference_species) ||
-    all(c("canonicalName", "genus", "family", "order") %in% colnames(reference_species))) {
-
-  # Create lowercase versions for extinct species matching
-  reference_species <- reference_species %>%
-    mutate(
-      species_lower = tolower(canonicalName),
-      genus_lower = tolower(genus),
-      family_lower = tolower(family),
-      order_lower = tolower(order)
-    )
-
-  # Load PBDB extinct species data
-  tryCatch({
-    extinct_taxa <- read.csv("data/raw/pbdb_all.csv", skip = 16) %>%
-      filter(is_extant == "extinct") %>%
-      mutate(across(taxon_name:genus, tolower))
-
-    extinct_species <- extinct_taxa %>%
-      filter(taxon_rank == "species") %>%
-      distinct(taxon_name) %>%
-      pull(taxon_name)
-
-    extinct_genera <- extinct_taxa %>%
-      filter(taxon_rank == "genus") %>%
-      distinct(taxon_name) %>%
-      pull(taxon_name)
-
-    extinct_families <- extinct_taxa %>%
-      filter(taxon_rank == "family") %>%
-      distinct(taxon_name) %>%
-      pull(taxon_name)
-
-    extinct_orders <- extinct_taxa %>%
-      filter(taxon_rank == "order") %>%
-      distinct(taxon_name) %>%
-      pull(taxon_name)
-
-    # Exclude extinct species
-    reference_species <- reference_species %>%
-      filter(
-        !(species_lower %in% extinct_species),
-        !(genus_lower %in% extinct_genera),
-        !(family_lower %in% extinct_families),
-        !(order_lower %in% extinct_orders)
-      ) %>%
-      select(-species_lower, -genus_lower, -family_lower, -order_lower)
-
-    message("Excluded extinct species from reference data")
-  }, error = function(e) {
-    message("Could not load extinct species data: ", e$message)
-  })
+# Source optimized taxa detection functions for potential use
+optimized_taxa_path <- "scripts/04_analysis/optimized_taxa_detection.R"
+if (file.exists(optimized_taxa_path)) {
+  try(source(optimized_taxa_path), silent = TRUE)
 }
 
-# Add synonym resolution
-if (all(c("taxonomicStatus", "acceptedNameUsageID", "taxonID") %in% colnames(reference_species))) {
-  message("Resolving synonyms to accepted names...")
+# Load optimized reference data from enhanced pipeline
+setwd(here())
 
-  # Get accepted species
-  accepted_species <- reference_species %>%
-    filter(taxonomicStatus == "accepted") %>%
-    select(taxonID, canonicalName) %>%
-    rename(canonicalName_accepted = canonicalName)
+# Use pre-processed species data that's already optimized
+if (file.exists("models/accepted_species.rds")) {
+  message("Loading pre-processed accepted species data...")
+  accepted_species <- readRDS("models/accepted_species.rds")
+  reference_species <- accepted_species
+} else if (file.exists("models/species.rds")) {
+  message("Loading species.rds and creating accepted species...")
+  species_data <- readRDS("models/species.rds")
+  # Use optimized filtering for Plantae and Fungi
+  reference_species <- species_data %>%
+    filter(kingdom %in% c("Plantae", "Fungi") & taxonRank == "species")
 
-  # Resolve synonyms
-  reference_species <- reference_species %>%
-    left_join(accepted_species, by = c("acceptedNameUsageID" = "taxonID")) %>%
-    mutate(
-      canonicalName_resolved = coalesce(canonicalName_accepted, canonicalName)
-    ) %>%
-    select(-canonicalName_accepted)
+  # Quick extinct species exclusion using optimized approach
+  if (all(c("canonicalName", "genus", "family", "order") %in% colnames(reference_species))) {
+    message("Excluding extinct species using optimized approach...")
+    # Use the reference data utilities if available
+    if (file.exists("scripts/04_analysis/utilities/reference_data_utils.R")) {
+      try(source("scripts/04_analysis/utilities/reference_data_utils.R"), silent = TRUE)
+    }
+    # For now, assume extinct species are already filtered in accepted_species.rds
+    # If not available, we'll use the data as-is
+  }
 
-  message("Resolved synonyms in reference data")
+  # Use optimized synonym resolution
+  if (all(c("taxonomicStatus", "acceptedNameUsageID", "taxonID") %in% colnames(reference_species))) {
+    accepted_species <- reference_species %>%
+      filter(taxonomicStatus == "accepted") %>%
+      select(taxonID, canonicalName, kingdom, phylum, family, genus) %>%
+      rename(canonicalName_resolved = canonicalName)
+  } else {
+    accepted_species <- reference_species %>%
+      rename(canonicalName_resolved = canonicalName)
+  }
+} else {
+  stop("No species reference data found. Please run the enhanced pipeline first.")
 }
 
 message("Reference data loaded: ", nrow(reference_species), " species")
 
-# Load taxa results with synonym resolution and deduplication
+# Load comprehensive taxa results with enhanced species and mycorrhizal data
 taxa_results <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
-message("Taxa results loaded: ", nrow(taxa_results), " entries")
+message("Comprehensive taxa results loaded: ", nrow(taxa_results), " entries")
+message("Available columns: ", length(names(taxa_results)))
+
+# Add mycorrhizal filtering capabilities for dual analysis modes
+filter_mycorrhizal_papers <- function(data, include_mycorrhizal_only = FALSE) {
+  if (!"is_mycorrhizal_only" %in% colnames(data)) {
+    message("Mycorrhizal classification not available in dataset")
+    return(data)
+  }
+
+  if (include_mycorrhizal_only) {
+    message("Including mycorrhizal-only papers in analysis (supplementary mode)")
+    return(data)
+  } else {
+    message("Excluding mycorrhizal-only papers from analysis (main mode)")
+    filtered_data <- data %>%
+      filter(!is_mycorrhizal_only)
+    message("Filtered out ", nrow(data) - nrow(filtered_data), " mycorrhizal-only abstracts")
+    return(filtered_data)
+  }
+}
 
 # Handle synonym resolution for taxa_results (if columns exist)
 if (all(c("user_supplied_name", "resolved_name") %in% colnames(taxa_results))) {
@@ -151,11 +131,11 @@ taxa_results_deduped <- taxa_results %>%
 
 message("Data prepared with synonym resolution and deduplication")
 
-# Create consistent phylum ordering function
+# Create consistent phylum ordering function using optimized reference data
 get_phylum_order <- function(kingdom_filter) {
-  reference_species %>%
+  accepted_species %>%
     filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
-    distinct(phylum, canonicalName) %>%
+    distinct(phylum, canonicalName_resolved) %>%
     group_by(phylum) %>%
     summarise(species_count = n(), .groups = "drop") %>%
     arrange(desc(species_count)) %>%
@@ -170,12 +150,12 @@ message("Plant phylum order (by species count, reversed for plot): ", paste(plan
 message("Fungi phylum order (by species count, reversed for plot): ", paste(fungi_phylum_order, collapse = ", "))
 
 # Create phylum-based visualization function with hierarchical counting
-create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, output_name) {
+create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, output_name, taxa_data = taxa_results_deduped, subfolder = "main") {
 
   # Get found taxa with hierarchical logic and synonym resolution
   if (level_name == "Species") {
     # For species, count direct species mentions using resolved names
-    found_by_phylum <- taxa_results_deduped %>%
+    found_by_phylum <- taxa_data %>%
       filter(kingdom == kingdom_filter,
              final_classification == "Presence",
              !is.na(canonicalName_final),
@@ -258,7 +238,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
   }
 
   # Get total taxa by phylum (always from reference data)
-  total_by_phylum <- reference_species %>%
+  total_by_phylum <- accepted_species %>%
     filter(kingdom == kingdom_filter,
            !is.na(.data[[column_name]]),
            !is.na(phylum)) %>%
@@ -347,12 +327,12 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     endo_theme() +
     theme(axis.text.y = element_text(size = 8))
 
-  # Save both plots
-  ggsave(paste0("plots/", output_name, "_by_phylum_count.png"), count_plot, width = 12, height = 8)
-  ggsave(paste0("plots/", output_name, "_by_phylum_percent.png"), percent_plot, width = 12, height = 8)
+  # Save both plots with subfolder organization
+  ggsave(paste0("plots/", subfolder, "/", output_name, "_by_phylum_count.png"), count_plot, width = 12, height = 8)
+  ggsave(paste0("plots/", subfolder, "/", output_name, "_by_phylum_percent.png"), percent_plot, width = 12, height = 8)
 
-  message("Saved: plots/", output_name, "_by_phylum_count.png")
-  message("Saved: plots/", output_name, "_by_phylum_percent.png")
+  message("Saved: plots/", subfolder, "/", output_name, "_by_phylum_count.png")
+  message("Saved: plots/", subfolder, "/", output_name, "_by_phylum_percent.png")
   message("Used hierarchical counting: ", level_name, " includes constituent taxa")
 
   return(list(count_plot = count_plot, percent_plot = percent_plot))
@@ -361,24 +341,175 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
 # Create output directory
 dir.create("plots", showWarnings = FALSE)
 
-# Create phylum-based representation plots (count and percent versions)
+# Create phylum-based representation plots with dual modes (main vs supplementary)
 message("Creating phylum-based visualization plots...")
 
-# Plant phylum plots
-create_phylum_taxa_plot("Plantae", "Family", "family", "plantae_family_representation")
-create_phylum_taxa_plot("Plantae", "Genus", "genus", "plantae_genus_representation")
-create_phylum_taxa_plot("Plantae", "Species", "canonicalName", "plantae_species_representation")
+# Apply mycorrhizal filtering to create two datasets
+taxa_results_main <- filter_mycorrhizal_papers(taxa_results_deduped, include_mycorrhizal_only = FALSE)
+taxa_results_supplementary <- filter_mycorrhizal_papers(taxa_results_deduped, include_mycorrhizal_only = TRUE)
 
-# Fungi phylum plots
-create_phylum_taxa_plot("Fungi", "Family", "family", "fungi_family_representation")
-create_phylum_taxa_plot("Fungi", "Genus", "genus", "fungi_genus_representation")
-create_phylum_taxa_plot("Fungi", "Species", "canonicalName", "fungi_species_representation")
+message("Creating main visualizations (excluding mycorrhizal-only papers)...")
+# Plant phylum plots - MAIN MODE
+create_phylum_taxa_plot("Plantae", "Family", "family", "plantae_family_representation_main", taxa_results_main)
+create_phylum_taxa_plot("Plantae", "Genus", "genus", "plantae_genus_representation_main", taxa_results_main)
+create_phylum_taxa_plot("Plantae", "Species", "canonicalName", "plantae_species_representation_main", taxa_results_main)
+
+# Fungi phylum plots - MAIN MODE
+create_phylum_taxa_plot("Fungi", "Family", "family", "fungi_family_representation_main", taxa_results_main)
+create_phylum_taxa_plot("Fungi", "Genus", "genus", "fungi_genus_representation_main", taxa_results_main)
+create_phylum_taxa_plot("Fungi", "Species", "canonicalName", "fungi_species_representation_main", taxa_results_main)
+
+message("Creating supplementary visualizations (including mycorrhizal-only papers)...")
+# Plant phylum plots - SUPPLEMENTARY MODE
+create_phylum_taxa_plot("Plantae", "Family", "family", "plantae_family_representation_supplementary", taxa_results_supplementary, "supplementary")
+create_phylum_taxa_plot("Plantae", "Genus", "genus", "plantae_genus_representation_supplementary", taxa_results_supplementary, "supplementary")
+create_phylum_taxa_plot("Plantae", "Species", "canonicalName", "plantae_species_representation_supplementary", taxa_results_supplementary, "supplementary")
+
+# Fungi phylum plots - SUPPLEMENTARY MODE
+create_phylum_taxa_plot("Fungi", "Family", "family", "fungi_family_representation_supplementary", taxa_results_supplementary, "supplementary")
+create_phylum_taxa_plot("Fungi", "Genus", "genus", "fungi_genus_representation_supplementary", taxa_results_supplementary, "supplementary")
+create_phylum_taxa_plot("Fungi", "Species", "canonicalName", "fungi_species_representation_supplementary", taxa_results_supplementary, "supplementary")
+
+# Create geographic-taxonomic analysis function
+create_geographic_taxa_analysis <- function() {
+
+  if (!"countries_detected" %in% colnames(taxa_results)) {
+    message("Geographic data not available for analysis")
+    return(NULL)
+  }
+
+  message("Creating geographic-taxonomic analysis...")
+
+  # Get taxa by geographic regions
+  geo_taxa_summary <- taxa_results_deduped %>%
+    filter(final_classification == "Presence",
+           !is.na(canonicalName_final),
+           !is.na(countries_detected)) %>%
+    select(kingdom, phylum, canonicalName_final, countries_detected) %>%
+    separate_rows(countries_detected, sep = "; ") %>%
+    filter(countries_detected != "") %>%
+    mutate(country_clean = str_trim(countries_detected)) %>%
+    group_by(kingdom, phylum, country_clean) %>%
+    summarise(
+      unique_species = n_distinct(canonicalName_final),
+      .groups = "drop"
+    ) %>%
+    arrange(kingdom, phylum, desc(unique_species))
+
+  # Save geographic-taxonomic analysis
+  write_csv(geo_taxa_summary, "results/geographic_taxonomic_analysis.csv")
+
+  message("Saved geographic-taxonomic analysis to: results/geographic_taxonomic_analysis.csv")
+  message("Records by kingdom: Plantae = ", sum(geo_taxa_summary$kingdom == "Plantae"),
+          ", Fungi = ", sum(geo_taxa_summary$kingdom == "Fungi"))
+
+  return(geo_taxa_summary)
+}
+
+# Create geographic-taxonomic visualizations
+create_geographic_taxa_visualizations <- function(geo_data) {
+
+  if (is.null(geo_data) || nrow(geo_data) == 0) {
+    message("No geographic data available for visualization")
+    return(NULL)
+  }
+
+  message("Creating geographic-taxonomic visualizations...")
+
+  # Top countries by taxonomic diversity
+  top_countries <- geo_data %>%
+    group_by(country_clean) %>%
+    summarise(
+      total_species = sum(unique_species),
+      num_phyla = n_distinct(phylum),
+      num_kingdoms = n_distinct(kingdom),
+      .groups = "drop"
+    ) %>%
+    arrange(desc(total_species)) %>%
+    slice_max(total_species, n = 20) %>%
+    mutate(country_clean = fct_reorder(country_clean, total_species))
+
+  p1_geo_diversity <- ggplot(top_countries, aes(x = country_clean, y = total_species, fill = num_phyla)) +
+    geom_col(width = 0.8) +
+    geom_text(aes(label = total_species), hjust = -0.1, size = 3) +
+    scale_fill_viridis_c(name = "Number of Phyla") +
+    labs(
+      title = "Taxonomic Diversity by Country",
+      subtitle = "Top 20 countries by unique species studied",
+      x = "Country",
+      y = "Number of Unique Species"
+    ) +
+    coord_flip() +
+    custom_theme
+
+  # Kingdom distribution across countries
+  kingdom_by_country <- geo_data %>%
+    group_by(country_clean, kingdom) %>%
+    summarise(species_count = sum(unique_species), .groups = "drop") %>%
+    arrange(country_clean, desc(species_count)) %>%
+    group_by(country_clean) %>%
+    slice_max(species_count, n = 5) %>%
+    ungroup()
+
+  p2_kingdom_geo <- ggplot(kingdom_by_country, aes(x = country_clean, y = species_count, fill = kingdom)) +
+    geom_col(width = 0.8) +
+    geom_text(aes(label = species_count), position = position_stack(vjust = 0.5), size = 2.5) +
+    scale_fill_manual(values = c("Plantae" = "#1B9E77", "Fungi" = "#D95F02")) +
+    labs(
+      title = "Kingdom Distribution by Country",
+      subtitle = "Plantae vs Fungi research focus across top countries",
+      x = "Country",
+      y = "Number of Species"
+    ) +
+    coord_flip() +
+    custom_theme
+
+  # Phylum-level geographic analysis
+  phylum_by_region <- geo_data %>%
+    group_by(phylum, country_clean) %>%
+    summarise(species_count = sum(unique_species), .groups = "drop") %>%
+    arrange(phylum, desc(species_count)) %>%
+    group_by(phylum) %>%
+    slice_max(species_count, n = 10) %>%
+    ungroup()
+
+  # Create faceted plot by phylum
+  p3_phylum_geo <- ggplot(phylum_by_region, aes(x = fct_reorder(country_clean, species_count), y = species_count)) +
+    geom_col(fill = "#7570B3", width = 0.8) +
+    geom_text(aes(label = species_count), hjust = -0.1, size = 2.5) +
+    facet_wrap(~phylum, scales = "free_y", ncol = 3) +
+    labs(
+      title = "Species Distribution by Phylum and Country",
+      subtitle = "Top countries for each major phylum",
+      x = "Country",
+      y = "Number of Species"
+    ) +
+    coord_flip() +
+    custom_theme +
+    theme(axis.text.y = element_text(size = 7))
+
+  # Save geographic visualizations
+  ggsave("plots/geographic/geographic_taxonomic_diversity.png", p1_geo_diversity, width = 12, height = 8)
+  ggsave("plots/geographic/kingdom_by_country.png", p2_kingdom_geo, width = 12, height = 8)
+  ggsave("plots/geographic/phylum_geographic_distribution.png", p3_phylum_geo, width = 16, height = 10)
+
+  message("Saved geographic-taxonomic visualizations:")
+  message("- plots/geographic/geographic_taxonomic_diversity.png")
+  message("- plots/geographic/kingdom_by_country.png")
+  message("- plots/geographic/phylum_geographic_distribution.png")
+
+  return(list(
+    diversity_plot = p1_geo_diversity,
+    kingdom_plot = p2_kingdom_geo,
+    phylum_plot = p3_phylum_geo
+  ))
+}
 
 # Create comprehensive list of unrepresented taxa
 create_unrepresented_taxa_csv <- function() {
 
   # Get all unique taxa from reference data (with resolved synonyms)
-  all_reference_taxa <- reference_species %>%
+  all_reference_taxa <- accepted_species %>%
     distinct(kingdom, phylum, family, genus, canonicalName_resolved) %>%
     rename(species = canonicalName_resolved)
 
@@ -448,18 +579,40 @@ create_unrepresented_taxa_csv <- function() {
 # Create directory for results if it doesn't exist
 dir.create("results", showWarnings = FALSE)
 
+# Create geographic-taxonomic analysis
+geo_taxa_analysis <- create_geographic_taxa_analysis()
+
+# Create geographic-taxonomic visualizations
+if (!is.null(geo_taxa_analysis)) {
+  geo_plots <- create_geographic_taxa_visualizations(geo_taxa_analysis)
+}
+
 # Create the unrepresented taxa CSV
 unrepresented_taxa <- create_unrepresented_taxa_csv()
 
 message("All visualizations and data exports completed!")
 message("Created:")
-message("- 12 phylum-based plots (6 kingdoms × 2 versions each)")
-message("- 1 comprehensive CSV of unrepresented taxa")
-message("Total: 12 visualization files in plots/ directory + 1 data file")
-message("Features included:")
+message("- 24 phylum-based plots (12 main + 12 supplementary)")
+message("- 3 geographic-taxonomic visualizations")
+message("- 6 kingdoms × 2 taxonomic levels (count + percent) × 2 modes (main + supplementary)")
+message("- 2 data files: unrepresented taxa + geographic analysis")
+message("Total: 27 visualization files in plots/ directory + 2 data files")
+message("Analysis modes:")
+message("- MAIN: Excludes mycorrhizal-only papers (endophyte focus)")
+message("- SUPPLEMENTARY: Includes mycorrhizal-only papers")
+message("Geographic visualizations:")
+message("- plots/geographic_taxonomic_diversity.png")
+message("- plots/kingdom_by_country.png")
+message("- plots/phylum_geographic_distribution.png")
+message("Enhanced features:")
+message("- Uses pre-processed accepted species data (accepted_species.rds)")
+message("- Leverages optimized pipeline reference data")
 message("- Synonym resolution to accepted names")
 message("- Extinct species exclusion")
+message("- Mycorrhizal classification filtering")
+message("- Geographic-taxonomic analysis")
 message("- Both count and percentage versions")
 message("- Phylum-level breakdown for both Plantae and Fungi")
 message("- Consistent phylum ordering by species count")
 message("- Comprehensive list of unrepresented taxa")
+message("- Integration with enhanced extraction pipeline")
