@@ -399,11 +399,13 @@ extract_species_mycorrhizal_data_hpc <- function(
 
   # Load required libraries on workers (only if cluster exists)
   if (!is.null(cl)) {
+    cat("      📚 Loading required libraries on cluster workers...\n")
     clusterEvalQ(cl, {
       library(tidyverse)
       library(janitor)
       NULL
     })
+    cat("      ✅ Libraries loaded on cluster workers\n")
   }
 
   # Memory-efficient lookup table creation
@@ -429,13 +431,26 @@ extract_species_mycorrhizal_data_hpc <- function(
     log_message(paste0("⚙️ Batch size: ", batch_size, " abstracts per batch"), log_file, verbose)
     log_message(paste0("💾 Checkpoint interval: ", hpc_config$checkpoint_interval, " batches"), log_file, verbose)
     log_message(paste0("🕐 Started at ", format(Sys.time(), "%H:%M:%S")), log_file, verbose)
+    cat("🔄 About to start batch processing loop...\n")
   }
 
+  # Overall processing timeout (4 hours for 20k abstracts)
+  overall_start_time <- Sys.time()
+  overall_timeout <- 4 * 60 * 60  # 4 hours in seconds
+
   for (i in 1:n_batches) {
+    if (verbose && i == 1) {
+      cat("🚀 Starting batch processing loop...\n")
+    }
+
     start_idx <- (i - 1) * batch_size + 1
     end_idx <- min(i * batch_size, nrow(abstracts_data))
 
     batch_data <- abstracts_data[start_idx:end_idx, ]
+
+    if (verbose && i == 1) {
+      cat("✅ First batch extracted successfully\n")
+    }
 
     if (verbose && (i %% max(1, floor(n_batches / 10)) == 0)) {
       log_message(paste0("   🚀 Batch ", i, " of ", n_batches, " (", nrow(batch_data), " abstracts)"), log_file, verbose)
@@ -457,6 +472,10 @@ extract_species_mycorrhizal_data_hpc <- function(
     batch_timeout <- 30 * 60  # 30 minutes in seconds
 
     # Process batch (parallel if available, otherwise sequential)
+    if (verbose && i == 1) {
+      cat("🔄 Starting batch processing (parallel mode)...\n")
+    }
+
     batch_results <- tryCatch({
       if (!is.null(cl)) {
         # Use HPC parallel processing - bypass the original function's setup
@@ -654,6 +673,15 @@ extract_species_mycorrhizal_data_hpc <- function(
     }
 
     all_results[[i]] <- batch_results
+
+    # Check for overall timeout
+    overall_elapsed <- as.numeric(difftime(Sys.time(), overall_start_time, units = "secs"))
+    if (overall_elapsed > overall_timeout) {
+      timeout_msg <- paste0("⏰ Overall processing timed out after ", round(overall_elapsed/3600, 1), " hours")
+      log_message(timeout_msg, log_file, verbose = TRUE)
+      log_message("      🛑 Stopping processing due to overall timeout", log_file, verbose = TRUE)
+      break
+    }
 
     # Progress reporting
     if (verbose && (i %% max(1, floor(n_batches / 20)) == 0)) {
