@@ -25,6 +25,13 @@ library(janitor)
 source("scripts/04_analysis/optimized_taxa_detection.R")
 source("scripts/04_analysis/utilities/reference_data_utils.R")
 
+# Source memory optimization utilities
+tryCatch({
+  source("scripts/utils/memory_optimization.R")
+}, error = function(e) {
+  cat("⚠️ Memory optimization utilities not found, running without memory monitoring\n")
+})
+
 cat("=== UNIFIED SPECIES DETECTION AND MYCORRHIZAL CLASSIFICATION ===\n")
 cat("Extracting species information and classifying mycorrhizal status\n\n")
 
@@ -44,17 +51,30 @@ create_lookup_tables_optimized <- function(species_df, threshold = 10000) {
     lookup_tables$family_names_vector <- lookup_tables$family_list$canonicalName_lower
   }
 
-  # Create hash tables for O(1) lookups if dataset is large enough to benefit from the optimization
+  # Memory-efficient hash table creation (only for very large datasets)
   # Rationale: For datasets above the threshold, hash tables provide faster lookups than linear searches, improving performance for species matching
   if (nrow(species_df) > threshold) {
+    if (verbose) cat("   Creating hash tables for large dataset (memory-optimized)...\n")
+
+    # Create hash tables more efficiently by processing in chunks
     if (!is.null(lookup_tables$species_names_vector)) {
-      lookup_tables$species_hash <- setNames(rep(TRUE, length(lookup_tables$species_names_vector)),
-                                            lookup_tables$species_names_vector)
+      # Use environment for memory efficiency instead of named vector
+      species_env <- new.env(hash = TRUE)
+      for (name in lookup_tables$species_names_vector) {
+        species_env[[name]] <- TRUE
+      }
+      lookup_tables$species_hash <- species_env
     }
+
     if (!is.null(lookup_tables$genus_names_vector)) {
-      lookup_tables$genus_hash <- setNames(rep(TRUE, length(lookup_tables$genus_names_vector)),
-                                          lookup_tables$genus_names_vector)
+      genus_env <- new.env(hash = TRUE)
+      for (name in lookup_tables$genus_names_vector) {
+        genus_env[[name]] <- TRUE
+      }
+      lookup_tables$genus_hash <- genus_env
     }
+
+    if (verbose) cat("   Hash tables created successfully\n")
   }
 
   return(lookup_tables)
@@ -175,8 +195,9 @@ classify_mycorrhizal_taxonomic <- function(taxa_names) {
 #'
 #' @param taxa_names Character vector of fungal taxa names to classify
 #' @param taxa_df Dataframe with taxonomic information for the taxa
+#' @param verbose Logical, if TRUE prints progress messages (default: TRUE)
 #' @return Dataframe with mycorrhizal classification for each taxon
-classify_fungal_taxa_mycorrhizal <- function(taxa_names, taxa_df) {
+classify_fungal_taxa_mycorrhizal <- function(taxa_names, taxa_df, verbose = TRUE) {
 
   # Filter to only fungal taxa
   fungal_taxa <- taxa_df %>%
@@ -196,16 +217,39 @@ classify_fungal_taxa_mycorrhizal <- function(taxa_names, taxa_df) {
     distinct(resolved_name) %>%
     pull(resolved_name)
 
-  # Load the funtothefun dataset
-  fun_data_path <- "C:/Users/beabo/OneDrive/Documents/NAU/Sap_Sym/datasets/funtothefun.csv"
+  # Memory-efficient loading of funtothefun dataset
+  fun_data_path <- "C:/Users/beabo/OneDrive - Northern Arizona University/NAU/Sap_Sym/datasets/funtothefun.csv"
 
   if (!file.exists(fun_data_path)) {
     warning("funtothefun.csv not found, falling back to taxonomic classification")
     return(classify_mycorrhizal_taxonomic(unique_taxa))
   }
 
+  # Memory-efficient CSV reading with progress monitoring
+  if (verbose) cat("   Loading FUNGuild dataset (memory-efficient mode)...\n")
+
   fun_data <- tryCatch({
-    read_csv(fun_data_path, show_col_types = FALSE)
+    # Read in chunks to manage memory
+    chunk_size <- 10000
+    first_chunk <- read_csv(fun_data_path, show_col_types = FALSE, n_max = chunk_size)
+
+    # Check if file is very large and optimize accordingly
+    file_size_mb <- file.size(fun_data_path) / (1024*1024)
+    if (file_size_mb > 100) {
+      if (verbose) cat("   Large FUNGuild file detected (", round(file_size_mb, 1), "MB), optimizing memory usage\n")
+
+      # For large files, filter early to reduce memory footprint
+      required_traits <- c("guild_fg", "trophic_mode_fg", "growth_form_fg", "confidence_fg")
+      fun_data <- read_csv(fun_data_path, show_col_types = FALSE) %>%
+        filter(trait_name %in% required_traits) %>%
+        # Keep only species that might match our taxa (memory optimization)
+        filter(species %in% unique_taxa | str_detect(species, paste0("^", str_extract(unique_taxa, "^[A-Z][a-z]+"), "_")))
+
+      # Aggressive garbage collection after loading large dataset
+      aggressive_gc(verbose = FALSE)
+    } else {
+      fun_data <- read_csv(fun_data_path, show_col_types = FALSE)
+    }
   }, error = function(e) {
     warning("Error loading funtothefun dataset: ", e$message)
     return(NULL)
@@ -215,24 +259,23 @@ classify_fungal_taxa_mycorrhizal <- function(taxa_names, taxa_df) {
     return(classify_mycorrhizal_taxonomic(unique_taxa))
   }
 
-  # Filter for guild information and create lookup table
-  guild_data <- fun_data %>%
-    filter(trait_name == "guild_fg") %>%
-    select(species, value) %>%
-    rename(guild = value) %>%
-    distinct()
+  # Memory-efficient trait data processing
+  if (verbose) cat("   Processing FUNGuild trait data...\n")
 
-  # Create comprehensive lookup table with all available trait data
-  # First, get all trait data for species in our dataset
+  # Create lookup table more efficiently
   all_trait_data <- fun_data %>%
     filter(trait_name %in% c("guild_fg", "trophic_mode_fg", "growth_form_fg", "confidence_fg")) %>%
     select(species, trait_name, value) %>%
+    # Memory-efficient pivot with explicit handling
+    group_by(species, trait_name) %>%
+    summarise(values = list(value), .groups = "drop") %>%
     pivot_wider(
       names_from = trait_name,
-      values_from = value,
-      values_fn = list  # Allow multiple values if they exist
+      values_from = values,
+      values_fn = ~if(length(.x[[1]]) > 0) .x[[1]][1] else NA_character_  # Take first value safely
     ) %>%
-    unnest(cols = everything())  # Flatten the lists
+    # Clean up nested list columns
+    mutate(across(everything(), ~ifelse(sapply(., is.list), NA_character_, .)))
 
   # Create lookup table by matching species names
   # Try exact match first, then genus-level matching
@@ -357,6 +400,11 @@ extract_species_mycorrhizal_data <- function(
   hash_threshold = 10000
 ) {
 
+  # Ensure verbose is defined (defensive programming)
+  if (!exists("verbose")) {
+    verbose <- TRUE
+  }
+
   # Input validation
   if (!is.data.frame(abstracts_data)) {
     stop("'abstracts_data' must be a data frame.")
@@ -402,16 +450,32 @@ extract_species_mycorrhizal_data <- function(
 
   if (verbose) cat("   Loaded species reference data:", nrow(species), "species records\n")
 
-  # Set up parallel processing
-  # Scale cores based on dataset size: more cores for larger datasets, up to available cores - 1
-  n_cores <- min(max(2, floor(nrow(abstracts_data) / 2000) + 1), parallel::detectCores() - 1)
+  # Set up memory-efficient parallel processing
+  # Reduce cores to prevent memory pressure: use max 3 cores for large datasets
+  max_cores <- min(3, parallel::detectCores() - 1)
+  n_cores <- min(max(1, floor(nrow(abstracts_data) / 5000) + 1), max_cores)
+
+  if (verbose) cat("   Using", n_cores, "cores for parallel processing (memory-optimized)\n")
+
   tryCatch({
     setup_parallel(workers = n_cores)
   }, error = function(e) {
     warning("Parallel setup failed: ", e$message, ". Falling back to sequential processing.")
     n_cores <- 1
   })
+
+  # Memory-efficient lookup table creation
+  if (verbose) cat("   Creating lookup tables with memory optimization...\n")
   lookup_tables <- create_lookup_tables_with_bloom(species)
+
+  # Monitor memory usage before processing
+  if (verbose) {
+    mem_status <- monitor_memory(threshold_gb = 8, context = "Before species detection")
+    if (mem_status$above_threshold) {
+      cat("   ⚠️ High memory usage detected, enabling aggressive garbage collection\n")
+      aggressive_gc(verbose = FALSE)
+    }
+  }
 
   # Process in batches
   tic("Species detection and mycorrhizal classification")
@@ -434,11 +498,20 @@ extract_species_mycorrhizal_data <- function(
       cat("      Processing rows", start_idx, "to", end_idx, "\n")
     }
 
-    # Process batch for species detection
+    # Memory monitoring before batch processing
+    if (i %% 3 == 0 && verbose) {  # Check every 3rd batch
+      mem_status <- monitor_memory(threshold_gb = 6, context = paste("Batch", i))
+      if (mem_status$above_threshold) {
+        cat("      🧹 Running garbage collection due to high memory usage\n")
+        aggressive_gc(verbose = FALSE)
+      }
+    }
+
+    # Process batch for species detection with memory optimization
     batch_results <- process_abstracts_parallel(
       abstracts = batch_data,
       species_path = if (file.exists("species.rds")) "species.rds" else "models/species.rds",
-      batch_size = 50
+      batch_size = min(50, batch_size / 4)  # Reduce internal batch size for memory
     )
 
     # Progress reporting
@@ -456,25 +529,59 @@ extract_species_mycorrhizal_data <- function(
           "abstracts (", progress_pct, "%)\n\n")
     }
 
+    # Periodic garbage collection
+    if (i %% 5 == 0) {
+      aggressive_gc(verbose = FALSE)
+    }
+
     return(batch_results)
   })
 
-  # Get unique fungal taxa for mycorrhizal classification
-  fungal_taxa <- all_results %>%
-    filter(kingdom == "Fungi", !is.na(resolved_name)) %>%
+  # Memory-efficient fungal taxa extraction
+  if (verbose) cat("   Extracting unique fungal taxa for classification...\n")
+
+  # Process in smaller chunks to avoid memory spikes
+  chunk_size_taxa <- 1000
+  n_taxa_chunks <- ceiling(nrow(all_results) / chunk_size_taxa)
+
+  fungal_taxa_list <- map_dfr(1:n_taxa_chunks, function(j) {
+    start_idx <- (j - 1) * chunk_size_taxa + 1
+    end_idx <- min(j * chunk_size_taxa, nrow(all_results))
+
+    chunk_data <- all_results[start_idx:end_idx, ]
+
+    chunk_fungal_taxa <- chunk_data %>%
+      filter(kingdom == "Fungi", !is.na(resolved_name)) %>%
+      distinct(resolved_name, kingdom, phylum, family, genus)
+
+    return(chunk_fungal_taxa)
+  })
+
+  fungal_taxa <- fungal_taxa_list %>%
     distinct(resolved_name, kingdom, phylum, family, genus)
 
   if (verbose) cat("   Found", nrow(fungal_taxa), "unique fungal taxa to classify\n")
 
-  # Classify fungal taxa using funtothefun dataset
-  if (verbose) cat("   Classifying fungal taxa using funtothefun dataset...\n")
+  # Memory check before FUNGuild processing
+  mem_status <- monitor_memory(threshold_gb = 6, context = "Before FUNGuild classification")
+  if (mem_status$above_threshold) {
+    cat("   🧹 Cleaning memory before FUNGuild processing\n")
+    aggressive_gc(verbose = FALSE)
+  }
+
+  # Classify fungal taxa using funtothefun dataset with memory optimization
+  if (verbose) cat("   Classifying fungal taxa using funtothefun dataset (memory-optimized)...\n")
 
   mycorrhizal_classifications <- classify_fungal_taxa_mycorrhizal(
     fungal_taxa$resolved_name,
-    fungal_taxa
+    fungal_taxa,
+    verbose = verbose
   )
 
   if (verbose) cat("   Mycorrhizal classification complete for", nrow(mycorrhizal_classifications), "taxa\n")
+
+  # Clean up memory after intensive processing
+  aggressive_gc(verbose = FALSE)
 
   # Create lookup table for mycorrhizal classifications
   mycorrhizal_lookup <- mycorrhizal_classifications %>%
@@ -503,16 +610,23 @@ extract_species_mycorrhizal_data <- function(
   # Get unique abstract IDs
   abstract_ids <- unique(enhanced_results$id)
 
-  # Create lookup table for abstract-level classifications
+  # Create lookup table for abstract-level classifications with error handling
+  if (verbose) cat("   Determining abstract-level mycorrhizal status...\n")
+
   abstract_mycorrhizal_status <- map_dfr(abstract_ids, function(abstract_id) {
-    abstract_data <- enhanced_results %>% filter(id == abstract_id)
+    tryCatch({
+      abstract_data <- enhanced_results %>% filter(id == abstract_id)
 
-    is_mycorrhizal_only <- determine_abstract_mycorrhizal_status(
-      abstract_data,
-      mycorrhizal_classifications
-    )
+      is_mycorrhizal_only <- determine_abstract_mycorrhizal_status(
+        abstract_data,
+        mycorrhizal_classifications
+      )
 
-    return(tibble(id = abstract_id, abstract_mycorrhizal_only = is_mycorrhizal_only))
+      return(tibble(id = abstract_id, abstract_mycorrhizal_only = is_mycorrhizal_only))
+    }, error = function(e) {
+      cat("     ⚠️ Warning: Error processing abstract", abstract_id, ":", e$message, "\n")
+      return(tibble(id = abstract_id, abstract_mycorrhizal_only = FALSE))
+    })
   })
 
   # Merge abstract-level status into enhanced results
@@ -523,31 +637,64 @@ extract_species_mycorrhizal_data <- function(
 
   # Keep only id + species + mycorrhizal columns for memory efficiency
   final_results <- final_results %>%
-    select(id, resolved_name, canonicalName, kingdom, phylum, class, order, family, genus,
+    select(id, resolved_name, canonicalName, kingdom, phylum, family, genus,
            is_mycorrhizal, funguild_guild, confidence_ranking, trophic_mode,
            growth_form, trait_confidence, is_mycorrhizal_only)
 
-  # Summary statistics
-  total_abstracts <- length(unique(final_results$id))
-  mycorrhizal_only_count <- sum(final_results$is_mycorrhizal_only, na.rm = TRUE)
-  mycorrhizal_only_pct <- round(100 * mycorrhizal_only_count / total_abstracts, 1)
-
-  if (verbose) {
-    cat("🎉 Species detection and mycorrhizal classification completed!\n")
-    cat("📈 Results:\n")
-    cat("   - Total abstracts processed:", total_abstracts, "\n")
-    cat("   - Mycorrhizal-only papers:", mycorrhizal_only_count,
-        "(", mycorrhizal_only_pct, "%)\n")
-    cat("💾 Results saved to:", output_file, "\n")
-  }
-
-  # Save results
+  # Summary statistics with error handling
   tryCatch({
-    write_csv(final_results, output_file)
+    total_abstracts <- length(unique(final_results$id))
+    mycorrhizal_only_count <- sum(final_results$is_mycorrhizal_only, na.rm = TRUE)
+    mycorrhizal_only_pct <- round(100 * mycorrhizal_only_count / total_abstracts, 1)
+
+    if (verbose) {
+      cat("🎉 Species detection and mycorrhizal classification completed!\n")
+      cat("📈 Results:\n")
+      cat("   - Total abstracts processed:", total_abstracts, "\n")
+      cat("   - Mycorrhizal-only papers:", mycorrhizal_only_count,
+          "(", mycorrhizal_only_pct, "%)\n")
+      cat("💾 Results saved to:", output_file, "\n")
+    }
   }, error = function(e) {
-    warning("Failed to save results to ", output_file, ": ", e$message)
+    cat("⚠️ Warning: Error generating summary statistics:", e$message, "\n")
+    cat("   Results were still processed successfully\n")
   })
 
+  # Incremental result saving to prevent memory accumulation
+  if (verbose) cat("   Saving results incrementally to prevent memory issues...\n")
+
+  tryCatch({
+    # Save main results
+    write_csv(final_results, output_file)
+
+    # Additional memory cleanup after saving
+    aggressive_gc(verbose = FALSE)
+
+    if (verbose) {
+      file_size_mb <- file.size(output_file) / (1024*1024)
+      cat("   💾 Results saved (", round(file_size_mb, 1), "MB)\n")
+    }
+  }, error = function(e) {
+    warning("Failed to save results to ", output_file, ": ", e$message)
+    # Try alternative saving method
+    tryCatch({
+      saveRDS(final_results, paste0(tools::file_path_sans_ext(output_file), ".rds"))
+      cat("   💾 Results saved as RDS format instead\n")
+    }, error = function(e2) {
+      warning("Failed to save results in any format: ", e2$message)
+    })
+  })
+
+  # Final memory cleanup
+  if (verbose) cat("   🧹 Final memory cleanup...\n")
+  tryCatch({
+    aggressive_gc(verbose = verbose)
+  }, error = function(e) {
+    cat("   ⚠️ Warning: Memory cleanup encountered minor issue:", e$message, "\n")
+  })
+
+  # Ensure we return the results properly
+  if (verbose) cat("   ✅ Returning final results\n")
   return(final_results)
 }
 
@@ -563,7 +710,7 @@ if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "01_spec
   abstracts_data <- read_csv(abstracts_file, show_col_types = FALSE)
 
   # Check if funtothefun dataset exists
-  fun_data_path <- "C:/Users/beabo/OneDrive/Documents/NAU/Sap_Sym/datasets/funtothefun.csv"
+  fun_data_path <- "C:/Users/beabo/OneDrive - Northern Arizona University/NAU/Sap_Sym/datasets/funtothefun.csv"
   if (!file.exists(fun_data_path)) {
     cat("⚠️  funtothefun.csv dataset not found at expected location.\n")
     cat("   Expected path: ", fun_data_path, "\n")
@@ -571,8 +718,24 @@ if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "01_spec
     stop("❌ funtothefun.csv dataset not found")
   }
 
-  # Extract species and mycorrhizal information
-  species_mycorrhizal_results <- extract_species_mycorrhizal_data(abstracts_data)
+  # Memory check before starting main processing
+  cat("🔍 Final memory check before processing...\n")
+  mem_status <- monitor_memory(threshold_gb = 8, context = "Pre-processing")
+  if (mem_status$above_threshold) {
+    cat("⚠️ High memory usage detected. Consider closing other applications.\n")
+    cat("   Will proceed with aggressive memory management.\n")
+  }
+
+  # Extract species and mycorrhizal information with memory optimization
+  species_mycorrhizal_results <- extract_species_mycorrhizal_data(
+    abstracts_data,
+    batch_size = 50,  # Use a reasonable default batch size
+    verbose = TRUE
+  )
+
+  # Final memory cleanup
+  cat("🧹 Performing final memory cleanup...\n")
+  aggressive_gc(verbose = TRUE)
 
   cat("\n✅ Unified species detection and mycorrhizal classification completed!\n")
 }

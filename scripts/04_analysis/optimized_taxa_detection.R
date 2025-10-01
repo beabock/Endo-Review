@@ -695,7 +695,7 @@ process_abstracts_parallel <- function(abstracts, species_path,
 # Test function to demonstrate synonym handling
 test_synonym_handling <- function() {
   # Load species data
-  species_path <- "C:/Users/beabo/OneDrive/Documents/NAU/Endo-Review/models/species.rds"
+  species_path <- "C:/Users/beabo/OneDrive - Northern Arizona University/NAU/Endo-Review/models/species.rds"
   if (!file.exists(species_path)) {
     stop("species.rds file not found at: ", species_path)
   }

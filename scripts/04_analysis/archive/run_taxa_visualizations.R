@@ -2,7 +2,7 @@
 # This script calls the main function with proper parameters
 
 # Set working directory
-setwd("c:/Users/beabo/OneDrive/Documents/NAU/Endo-Review")
+setwd("C:/Users/beabo/OneDrive - Northern Arizona University/NAU/Endo-Review")
 
 # Source the visualization script
 source("scripts/04_analysis/visualize_taxa_results.R")

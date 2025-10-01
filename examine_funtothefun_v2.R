@@ -6,7 +6,7 @@ library(tidyr)
 cat("=== Examining funtothefun.csv for Guilds ===\n\n")
 
 # Read the file
-file_path <- "C:/Users/beabo/OneDrive/Documents/NAU/Sap_Sym/datasets/funtothefun.csv"
+file_path <- "C:/Users/beabo/OneDrive - Northern Arizona University/NAU/Sap_Sym/datasets/funtothefun.csv"
 
 if (file.exists(file_path)) {
   cat("1. Loading dataset...\n")
