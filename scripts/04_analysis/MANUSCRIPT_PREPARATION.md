@@ -10,14 +10,14 @@ Goal journal: Nature
 ## Introduction
 - **Problem Statement**: The assumption that "all plants have fungi inside them" is a cornerstone of plant-microbe ecology but has never been systematically tested
 - **Approach**: First comprehensive assessment using machine learning to analyze >21,000 scientific abstracts
-- **Key Findings**: 91% accuracy in relevance filtering, 87% in presence/absence detection; 99.5% of studies report presence, but only 1 confirmed natural absence
-- **Implications**: Challenges universality paradigm, reveals methodological and geographical biases, establishes automated literature mining as a new tool for microbial ecology
+- **Key Findings**: 91% accuracy in relevance filtering, 87% in presence/absence detection; 99.5% of studies report presence, and no taxon-level absences of fungal endophytes reported.
+- **Implications**: Supports universality paradigm, reveals methodological and geographical biases, establishes automated literature mining as a new tool for microbial ecology
 
 # Results
 - **Primary Finding**: Fungal endophytes extraordinarily widespread - 99.5% of 19,447 relevant abstracts report presence in plant tissues (Fig. 2)
-- **Absence Analysis**: Only 89 abstracts (0.5%) report absence; validation confirms 1 genuine natural case vs. experimental artifacts
-- **Geographic Bias**: Strong over-representation from Europe/North America vs. under-representation from Global South (Fig. 3)
-- **Taxonomic Bias**: Comprehensive coverage of model organisms but gaps in diverse lineages
+- **Absence Analysis**: Only 89 abstracts (0.5%) report absence; validation confirms 1 genuine natural case vs. experimental artifacts. However, other abstracts report finding fungal endophytes in that plant taxon (Phragmites australis), so it does not count as a taxon-level absence.
+- **Geographic Bias**: Strong over-representation from USA vs. under-representation from Global South (Fig. 3)
+- **Taxonomic Bias**: Comprehensive coverage of model organisms but gaps in diverse lineages.
 - **Implication**: Current universality claims may be premature due to methodological and sampling biases
 
 # Discussion

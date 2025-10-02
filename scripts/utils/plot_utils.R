@@ -33,7 +33,11 @@ endo_palette <- c(
 endo_colors <- list(
   presence_absence = c(Presence = "#46ACC8", Absence = "#B40F20"),
   relevant_irrelevant = c(Relevant = "#46ACC8", Irrelevant = "#B40F20"),
-  found_not_found = c(Found = "#46ACC8", `Not Found` = "#B40F20")
+  found_not_found = c(Found = "#46ACC8", `Not Found` = "#B40F20"),
+  # Gradient colors with high contrast for continuous scales
+  gradient_low = "#C9B2C7",      # Muted lavender/pink for low values
+  gradient_high = "#2C5F7C",     # Deep blue-gray for high values
+  gradient_mid = "#7FB3D0"       # Medium blue for three-point gradients
 )
 
 # endo_theme function
@@ -82,5 +86,19 @@ get_endo_colors <- function(n = 5, type = "discrete") {
       colors_needed <- endo_palette[1:n]
     }
     return(colors_needed)
+  }
+}
+
+# get_endo_gradient function
+# Purpose: Provides high-contrast gradient colors for continuous scales
+# Parameters:
+#   type: character, "two_point" for low-high gradient, "three_point" for low-mid-high
+# Return: A vector of color hex codes for gradient scales
+# Usage: Use with scale_fill_gradient() or scale_color_gradient()
+get_endo_gradient <- function(type = "two_point") {
+  if (type == "three_point") {
+    return(c(endo_colors$gradient_low, endo_colors$gradient_mid, endo_colors$gradient_high))
+  } else {
+    return(c(endo_colors$gradient_low, endo_colors$gradient_high))
   }
 }

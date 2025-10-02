@@ -55,7 +55,7 @@ merge_extraction_results <- function(
 
   # List of component result files to merge (memory-efficient outputs)
   component_files <- c(
-    "results/species_detection_results_mycorrhizal_enhanced.csv",
+    "results/mycorrhizal_only_detailed_results.csv", #species detection + mycorrhizal
     "results/methods_detection_results.csv",
     "results/plant_parts_detection_results.csv",
     "results/geography_detection_results.csv"

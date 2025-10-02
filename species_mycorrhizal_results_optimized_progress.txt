@@ -1,8 +1,0 @@
-12:41:51 -       📊 Progress: 50% (0 species found)
-12:42:07 -       📊 Progress: 100% (0 species found)
-12:45:54 -       📊 Progress: 50% (0 species found)
-12:46:10 -       📊 Progress: 100% (0 species found)
-13:05:12 -       📊 Progress: 50% (0 species found)
-13:05:27 -       📊 Progress: 100% (0 species found)
-13:21:10 -       📊 Progress: 50% (137 species found)
-13:21:26 -       📊 Progress: 100% (253 species found)

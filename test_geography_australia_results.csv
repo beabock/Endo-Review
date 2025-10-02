@@ -1,0 +1,9 @@
+countries_detected,global_north_countries,global_south_countries,continents_detected,regions_detected,has_coordinates,geographic_summary
+United States,United States,NA,NA,NA,FALSE,United States
+Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+United States,United States,NA,NA,outback,FALSE,United States; outback
+United States,United States,NA,NA,NA,FALSE,United States
+Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+United States,United States,NA,NA,NA,FALSE,United States
+United States,United States,NA,NA,NA,FALSE,United States
+Australia,Australia,NA,australia,NA,FALSE,Australia; australia

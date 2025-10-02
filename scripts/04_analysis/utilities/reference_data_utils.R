@@ -202,7 +202,8 @@ get_country_classifications <- function() {
     "Lebanon", "Global South",
     "Syria", "Global South",
     "Mongolia", "Global South",
-    "North Korea", "Global South"
+    "North Korea", "Global South",
+    "Antarctica", "Global South"  # Research station territories
   )
   
   return(country_classifications)
@@ -752,6 +753,12 @@ standardize_country_name <- function(country_text) {
 
   # Apply mappings using regex patterns for better matching
   out <- vapply(country_title, function(ct) {
+    # Check if this is already a valid country name - if so, don't apply mappings
+    all_countries <- get_all_countries()
+    if (ct %in% all_countries) {
+      return(ct)
+    }
+
     # First try exact matches
     if (ct %in% names(country_mappings)) {
       return(unname(country_mappings[ct]))
@@ -759,7 +766,7 @@ standardize_country_name <- function(country_text) {
 
     # Try regex patterns for cases with special characters or variations
     for (pattern in names(country_mappings)) {
-      if (grepl(pattern, ct, ignore.case = TRUE)) {
+      if (grepl(paste0("\\b", pattern, "\\b"), ct, ignore.case = TRUE)) {
         return(unname(country_mappings[pattern]))
       }
     }

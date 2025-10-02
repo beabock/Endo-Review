@@ -5,7 +5,23 @@ library(here)
 
 library(tidyverse)
 library(scales)
-source("scripts/utils/plot_utils.R")
+
+# Source plot utilities with error handling
+tryCatch({
+  source("scripts/utils/plot_utils.R")
+}, error = function(e) {
+  warning("Could not load plot_utils.R: ", e$message)
+  # Define a basic fallback theme if plot_utils fails to load
+  endo_theme <- function(base_size = 11) {
+    theme_minimal(base_size = base_size) +
+      theme(
+        plot.title = element_text(size = base_size * 1.2, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = base_size, hjust = 0.5),
+        axis.title = element_text(size = base_size),
+        legend.title = element_text(size = base_size)
+      )
+  }
+})
 
 # Source optimized taxa detection functions for potential use
 optimized_taxa_path <- "scripts/04_analysis/optimized_taxa_detection.R"
@@ -21,6 +37,12 @@ if (file.exists("models/accepted_species.rds")) {
   message("Loading pre-processed accepted species data...")
   accepted_species <- readRDS("models/accepted_species.rds")
   reference_species <- accepted_species
+  
+  # Ensure canonicalName_resolved column exists for consistency
+  if (!"canonicalName_resolved" %in% colnames(accepted_species)) {
+    accepted_species <- accepted_species %>%
+      mutate(canonicalName_resolved = canonicalName)
+  }
 } else if (file.exists("models/species.rds")) {
   message("Loading species.rds and creating accepted species...")
   species_data <- readRDS("models/species.rds")
@@ -81,15 +103,41 @@ filter_mycorrhizal_papers <- function(data, include_mycorrhizal_only = FALSE) {
 }
 
 # Handle synonym resolution for taxa_results (if columns exist)
-if (all(c("user_supplied_name", "resolved_name") %in% colnames(taxa_results))) {
+# First, ensure basic columns exist and add defaults for missing ones
+required_cols <- c("canonicalName", "genus", "family", "kingdom", "phylum")
+missing_cols <- setdiff(required_cols, colnames(taxa_results))
+if (length(missing_cols) > 0) {
+  stop("Missing required columns in taxa_results: ", paste(missing_cols, collapse = ", "))
+}
+
+# Add default values for commonly expected columns if they don't exist
+if (!"final_classification" %in% colnames(taxa_results)) {
+  taxa_results <- taxa_results %>%
+    mutate(final_classification = "Presence")  # Default assumption
+}
+
+if (!"match_type" %in% colnames(taxa_results)) {
+  taxa_results <- taxa_results %>%
+    mutate(match_type = case_when(
+      !is.na(canonicalName) ~ "species",
+      !is.na(genus) ~ "genus", 
+      !is.na(family) ~ "family",
+      TRUE ~ "unknown"
+    ))
+}
+
+if (all(c("resolved_name") %in% colnames(taxa_results))) {
   message("Resolving synonyms in taxa_results...")
 
   # Replace user_supplied_name with resolved_name where available
   taxa_results <- taxa_results %>%
     mutate(
       canonicalName_resolved = coalesce(resolved_name, canonicalName),
-      genus_resolved = if_else(match_type == "species" & !is.na(resolved_name),
-                               word(resolved_name, 1), genus),
+      genus_resolved = case_when(
+        "match_type" %in% colnames(taxa_results) & match_type == "species" & !is.na(resolved_name) ~ word(resolved_name, 1),
+        "match_type" %in% colnames(taxa_results) & match_type == "genus" & !is.na(resolved_name) ~ resolved_name,
+        TRUE ~ genus
+      ),
       family_resolved = family  # Keep family as-is for now
     )
 
@@ -105,23 +153,15 @@ if (all(c("user_supplied_name", "resolved_name") %in% colnames(taxa_results))) {
 }
 
 # Remove duplicate taxa within the same abstract to avoid double counting
+# Build the distinct columns list based on available columns
+distinct_cols <- c("id", "kingdom", "phylum", "canonicalName_resolved", "genus_resolved", "family_resolved")
+optional_cols <- c("match_type", "final_classification")
+available_optional_cols <- intersect(optional_cols, colnames(taxa_results))
+distinct_cols <- c(distinct_cols, available_optional_cols)
+
 taxa_results_deduped <- taxa_results %>%
-  # First, apply synonym resolution consistently
-  mutate(
-    # For species, use resolved name if available, otherwise original
-    canonicalName_resolved = coalesce(resolved_name, canonicalName),
-    # For genus, extract from resolved species name or use resolved genus
-    genus_resolved = case_when(
-      match_type == "species" & !is.na(resolved_name) ~ word(resolved_name, 1),
-      match_type == "genus" & !is.na(resolved_name) ~ resolved_name,
-      TRUE ~ genus
-    ),
-    # For family, keep as is (resolved family not typically provided)
-    family_resolved = family
-  ) %>%
   # Remove duplicates within the same abstract for the same taxon
-  distinct(id, kingdom, phylum, canonicalName_resolved, genus_resolved, family_resolved,
-           match_type, final_classification, .keep_all = TRUE) %>%
+  distinct(across(all_of(distinct_cols)), .keep_all = TRUE) %>%
   # Create final resolved names for counting
   mutate(
     canonicalName_final = canonicalName_resolved,
@@ -130,12 +170,18 @@ taxa_results_deduped <- taxa_results %>%
   )
 
 message("Data prepared with synonym resolution and deduplication")
+message("Final columns in taxa_results_deduped: ", paste(names(taxa_results_deduped), collapse = ", "))
+message("Final columns in accepted_species: ", paste(names(accepted_species), collapse = ", "))
+message("Number of deduped taxa records: ", nrow(taxa_results_deduped))
 
 # Create consistent phylum ordering function using optimized reference data
 get_phylum_order <- function(kingdom_filter) {
+  # Use canonicalName_resolved if available, otherwise canonicalName
+  name_col <- if("canonicalName_resolved" %in% colnames(accepted_species)) "canonicalName_resolved" else "canonicalName"
+  
   accepted_species %>%
     filter(kingdom == kingdom_filter, !is.na(phylum)) %>%
-    distinct(phylum, canonicalName_resolved) %>%
+    distinct(phylum, !!sym(name_col)) %>%
     group_by(phylum) %>%
     summarise(species_count = n(), .groups = "drop") %>%
     arrange(desc(species_count)) %>%
@@ -432,7 +478,7 @@ create_geographic_taxa_visualizations <- function(geo_data) {
   p1_geo_diversity <- ggplot(top_countries, aes(x = country_clean, y = total_species, fill = num_phyla)) +
     geom_col(width = 0.8) +
     geom_text(aes(label = total_species), hjust = -0.1, size = 3) +
-    scale_fill_viridis_c(name = "Number of Phyla") +
+    scale_fill_gradient(low = get_endo_gradient()[1], high = get_endo_gradient()[2], name = "Number of Phyla") +
     labs(
       title = "Taxonomic Diversity by Country",
       subtitle = "Top 20 countries by unique species studied",
@@ -440,32 +486,38 @@ create_geographic_taxa_visualizations <- function(geo_data) {
       y = "Number of Unique Species"
     ) +
     coord_flip() +
-    custom_theme
+    endo_theme()
 
-  # Kingdom distribution across countries
-  kingdom_by_country <- geo_data %>%
-    group_by(country_clean, kingdom) %>%
-    summarise(species_count = sum(unique_species), .groups = "drop") %>%
-    arrange(country_clean, desc(species_count)) %>%
+  # Plant species distribution by country - Top countries only
+  message("Creating plant species by country distribution (top 25 countries)...")
+  plant_by_country <- geo_data %>%
+    filter(kingdom == "Plantae") %>%  # Focus only on plant species
     group_by(country_clean) %>%
-    slice_max(species_count, n = 5) %>%
-    ungroup()
+    summarise(plant_species_count = sum(unique_species), .groups = "drop") %>%
+    arrange(desc(plant_species_count)) %>%
+    slice_head(n = 25) %>%  # Show top 25 countries to avoid cramping
+    mutate(country_clean = fct_reorder(country_clean, plant_species_count))
 
-  p2_kingdom_geo <- ggplot(kingdom_by_country, aes(x = country_clean, y = species_count, fill = kingdom)) +
-    geom_col(width = 0.8) +
-    geom_text(aes(label = species_count), position = position_stack(vjust = 0.5), size = 2.5) +
-    scale_fill_manual(values = c("Plantae" = "#1B9E77", "Fungi" = "#D95F02")) +
+  p2_plants_geo <- ggplot(plant_by_country, aes(x = country_clean, y = plant_species_count)) +
+    geom_col(fill = get_endo_colors(1)[1], width = 0.7) +
+    geom_text(aes(label = plant_species_count), hjust = -0.1, size = 2.8) +
     labs(
-      title = "Kingdom Distribution by Country",
-      subtitle = "Plantae vs Fungi research focus across top countries",
+      title = "Plant Species Studied by Country",
+      subtitle = "Top 25 countries ranked by number of plant species studied",
       x = "Country",
-      y = "Number of Species"
+      y = "Number of Plant Species"
     ) +
     coord_flip() +
-    custom_theme
+    endo_theme() +
+    theme(
+      axis.text.y = element_text(size = 9),  # Slightly larger text for readability
+      plot.margin = margin(10, 50, 10, 10)   # Extra right margin for country labels
+    )
 
-  # Phylum-level geographic analysis
+  # Phylum-level geographic analysis - Plants only
+  message("Creating plant phylum geographic distribution (excluding fungal phyla)...")
   phylum_by_region <- geo_data %>%
+    filter(kingdom == "Plantae") %>%  # Focus only on plant phyla
     group_by(phylum, country_clean) %>%
     summarise(species_count = sum(unique_species), .groups = "drop") %>%
     arrange(phylum, desc(species_count)) %>%
@@ -475,32 +527,32 @@ create_geographic_taxa_visualizations <- function(geo_data) {
 
   # Create faceted plot by phylum
   p3_phylum_geo <- ggplot(phylum_by_region, aes(x = fct_reorder(country_clean, species_count), y = species_count)) +
-    geom_col(fill = "#7570B3", width = 0.8) +
+    geom_col(fill = get_endo_colors(3)[3], width = 0.8) +
     geom_text(aes(label = species_count), hjust = -0.1, size = 2.5) +
     facet_wrap(~phylum, scales = "free_y", ncol = 3) +
     labs(
-      title = "Species Distribution by Phylum and Country",
-      subtitle = "Top countries for each major phylum",
+      title = "Plant Species Distribution by Phylum and Country",
+      subtitle = "Top countries for each major plant phylum",
       x = "Country",
-      y = "Number of Species"
+      y = "Number of Plant Species"
     ) +
     coord_flip() +
-    custom_theme +
+    endo_theme() +
     theme(axis.text.y = element_text(size = 7))
 
   # Save geographic visualizations
   ggsave("plots/geographic/geographic_taxonomic_diversity.png", p1_geo_diversity, width = 12, height = 8)
-  ggsave("plots/geographic/kingdom_by_country.png", p2_kingdom_geo, width = 12, height = 8)
-  ggsave("plots/geographic/phylum_geographic_distribution.png", p3_phylum_geo, width = 16, height = 10)
+  ggsave("plots/geographic/plant_species_by_country.png", p2_plants_geo, width = 12, height = 10)
+  ggsave("plots/geographic/plant_phylum_geographic_distribution.png", p3_phylum_geo, width = 16, height = 10)
 
   message("Saved geographic-taxonomic visualizations:")
   message("- plots/geographic/geographic_taxonomic_diversity.png")
-  message("- plots/geographic/kingdom_by_country.png")
-  message("- plots/geographic/phylum_geographic_distribution.png")
+  message("- plots/geographic/plant_species_by_country.png")
+  message("- plots/geographic/plant_phylum_geographic_distribution.png")
 
   return(list(
     diversity_plot = p1_geo_diversity,
-    kingdom_plot = p2_kingdom_geo,
+    plants_by_country_plot = p2_plants_geo,
     phylum_plot = p3_phylum_geo
   ))
 }
@@ -509,9 +561,12 @@ create_geographic_taxa_visualizations <- function(geo_data) {
 create_unrepresented_taxa_csv <- function() {
 
   # Get all unique taxa from reference data (with resolved synonyms)
+  # Use canonicalName_resolved if available, otherwise canonicalName
+  name_col <- if("canonicalName_resolved" %in% colnames(accepted_species)) "canonicalName_resolved" else "canonicalName"
+  
   all_reference_taxa <- accepted_species %>%
-    distinct(kingdom, phylum, family, genus, canonicalName_resolved) %>%
-    rename(species = canonicalName_resolved)
+    distinct(kingdom, phylum, family, genus, !!sym(name_col)) %>%
+    rename(species = !!name_col)
 
   # Get found taxa from deduplicated results
   found_species <- taxa_results_deduped %>%
@@ -602,8 +657,8 @@ message("- MAIN: Excludes mycorrhizal-only papers (endophyte focus)")
 message("- SUPPLEMENTARY: Includes mycorrhizal-only papers")
 message("Geographic visualizations:")
 message("- plots/geographic_taxonomic_diversity.png")
-message("- plots/kingdom_by_country.png")
-message("- plots/phylum_geographic_distribution.png")
+message("- plots/plant_species_by_country.png")
+message("- plots/plant_phylum_geographic_distribution.png")
 message("Enhanced features:")
 message("- Uses pre-processed accepted species data (accepted_species.rds)")
 message("- Leverages optimized pipeline reference data")

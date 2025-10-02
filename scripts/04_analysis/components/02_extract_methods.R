@@ -45,8 +45,9 @@ detect_research_methods_batch <- function(text_vector) {
   })
 
   # Create methods summary with all detected methods
+  # Note: unique() ensures each method category is listed only once per abstract
   methods_detected <- purrr::pmap_chr(results, function(...) {
-    found <- names(list(...))[unlist(list(...))]
+    found <- unique(names(list(...))[unlist(list(...))])
     if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
   })
 

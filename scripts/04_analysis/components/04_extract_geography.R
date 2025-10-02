@@ -179,6 +179,7 @@ detect_geographic_locations_batch <- function(text_vector) {
       }
     }
 
+    # Ensure each country is only counted once per abstract, even if mentioned multiple times
     return(unique(found))
   })
 
@@ -302,24 +303,25 @@ detect_geographic_locations_batch <- function(text_vector) {
     return(any(valid_coords))
   })
 
-  # Build results with enhanced categorization
+  # Build results with enhanced categorization and ensure unique countries per abstract
+  # Note: unique() calls ensure each geographical entity is counted only once per abstract
   results <- tibble(
-    countries_detected = purrr::map_chr(country_matches, ~if(length(.) > 0) paste(., collapse = "; ") else NA_character_),
+    countries_detected = purrr::map_chr(country_matches, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     global_north_countries = purrr::map_chr(country_matches, ~{
-      found <- intersect(., global_north)
-      if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
+      found <- intersect(unique(.), global_north)
+      if(length(found) > 0) paste(unique(found), collapse = "; ") else NA_character_
     }),
     global_south_countries = purrr::map_chr(country_matches, ~{
-      found <- intersect(., global_south)
-      if(length(found) > 0) paste(found, collapse = "; ") else NA_character_
+      found <- intersect(unique(.), global_south)
+      if(length(found) > 0) paste(unique(found), collapse = "; ") else NA_character_
     }),
     continents_detected = map_chr(continents_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     regions_detected = map_chr(regions_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     has_coordinates = has_coordinates,
     geographic_summary = pmap_chr(list(country_matches, continents_found, regions_found),
                                   function(countries, continents, regions) {
-                                    all_geo <- c(countries, continents, regions)
-                                    if(length(all_geo) > 0) paste(all_geo, collapse = "; ") else NA_character_
+                                    all_geo <- c(unique(countries), unique(continents), unique(regions))
+                                    if(length(all_geo) > 0) paste(unique(all_geo), collapse = "; ") else NA_character_
                                   })
   )
 

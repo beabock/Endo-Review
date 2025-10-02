@@ -137,10 +137,12 @@ detect_plant_parts_batch <- function(text_vector) {
   for (i in seq_along(parts_normalized)) {
     simple <- if (length(parts_normalized[[i]]) == 0) character(0) else parts_normalized[[i]]
     compound <- if (length(compound_parts[[i]]) == 0) character(0) else compound_parts[[i]]
-    combined_parts[[i]] <- c(simple, compound)
+    # Ensure each plant part is counted only once per abstract by removing duplicates immediately
+    combined_parts[[i]] <- unique(c(simple, compound))
   }
 
   # Remove duplicates after normalization and filter out NA values
+  # Note: Additional unique() call ensures no duplicates from compound/simple overlap
   parts_clean <- map(combined_parts, ~{
     if (length(.) == 0) return(character(0))
     unique_parts <- unique(.x)
@@ -148,9 +150,11 @@ detect_plant_parts_batch <- function(text_vector) {
   })
 
   # Final normalization and deduplication
+  # Note: Apply unique() after normalization to handle cases where different terms normalize to the same part
   parts_final <- map(parts_clean, ~{
     if (length(.) == 0) return(character(0))
-    normalize_plant_part(.)
+    normalized <- normalize_plant_part(.)
+    unique(normalized[!is.na(normalized)])
   })
 
   # Create result vectors with consistent structure
@@ -163,6 +167,7 @@ detect_plant_parts_batch <- function(text_vector) {
     clean_parts <- parts_clean[[i]]
 
     if (length(final_parts) > 0 && any(!is.na(final_parts))) {
+      # Ensure each plant part is counted only once per abstract
       valid_parts <- unique(final_parts[!is.na(final_parts)])
       plant_parts_detected[i] <- paste(valid_parts, collapse = "; ")
       parts_count[i] <- length(valid_parts)
@@ -172,6 +177,7 @@ detect_plant_parts_batch <- function(text_vector) {
     }
 
     if (length(clean_parts) > 0 && any(!is.na(clean_parts))) {
+      # Ensure unique normalized parts (handles cases where multiple terms normalize to same part)
       valid_clean <- unique(clean_parts[!is.na(clean_parts)])
       parts_normalized[i] <- paste(valid_clean, collapse = "; ")
     } else {
