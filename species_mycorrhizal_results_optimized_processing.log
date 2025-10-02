@@ -1,0 +1,32 @@
+
+================================================================================
+OPTIMIZED HPC SPECIES DETECTION - PROCESSING LOG
+Started at: 2025-10-01 13:20:47
+================================================================================
+
+[13:20:47] 🚀 Starting optimized HPC species detection for 50 abstracts
+[13:20:52]    Loaded species reference data: 1423021 species records
+[13:20:52]    Setting up HPC parallel processing with 8 cores
+[13:20:52] 📊 Processing 50 abstracts in 2 batches
+[13:20:52] ⚙️ Batch size: 25 abstracts per batch
+[13:20:52] 💾 Checkpoint interval: 3 batches
+[13:20:52] 🕐 Started at 13:20:52
+[13:20:52]    🚀 Batch 1 of 2 ( 25 abstracts)
+[13:20:52]       Processing rows 1 to 25
+[13:20:52]       🔄 Processing with optimized sequential mode
+[13:21:10]       Batch 1: 25 abstracts, 200 species, 0 errors
+[13:21:10]       📊 Progress: 50% (137 species found)
+[13:21:10]    🚀 Batch 2 of 2 ( 25 abstracts)
+[13:21:10]       Processing rows 26 to 50
+[13:21:10]       🔄 Processing with optimized sequential mode
+[13:21:26]       Batch 2: 25 abstracts, 200 species, 0 errors
+[13:21:26]       📊 Progress: 100% (253 species found)
+[13:21:26] 💾 Saving checkpoint at batch 2 of 2
+[13:21:26]    Combining all batch results...
+[13:21:32] Complete optimized species detection pipeline completed in 0.9 minutes
+[13:21:32] 🧹 Performing final memory cleanup...
+[13:21:38] Memory cleanup completed in 5.4 seconds
+[13:21:38] 🎉 Optimized HPC processing completed successfully!
+[13:21:38] 📊 Total runtime: 1.1 minutes
+[13:21:38] 📈 Results: 258 species detection records
+[13:21:38] 💾 Final output saved to: species_mycorrhizal_results_optimized.csv

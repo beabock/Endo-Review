@@ -38,3 +38,4 @@ PCA_correct.png
 *.png
 /data
 /models/bloom_filters
+/models

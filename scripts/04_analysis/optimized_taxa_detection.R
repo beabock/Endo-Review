@@ -46,7 +46,7 @@ library(purrr)  # For vectorized operations
 
 # Load bloom filter functions for hybrid validation
 tryCatch({
-  source("scripts/04_analysis/bloom_filter_duckdb.R")
+  source("bloom_filter_duckdb.R")
   message("Bloom filter functions loaded successfully")
 }, error = function(e) {
   warning("Failed to load bloom filter functions: ", e$message, ". Bloom filter pre-filtering will be disabled.")
@@ -286,153 +286,56 @@ extract_candidate_names <- function(text, preprocessed_text = NULL) {
 batch_validate_names <- function(names, lookup_tables, use_fuzzy = FALSE, use_bloom_filter = NULL) {
   if (length(names) == 0) return(tibble())
 
-  # Determine whether to use bloom filters
-  if (is.null(use_bloom_filter)) {
-    use_bloom_filter <- !is.null(lookup_tables$bloom_connections) && lookup_tables$enable_bloom_filters
-  }
-
-  # Filter out invalid names
   names <- unique(names[!is.na(names) & names != ""])
 
-  # Skip processing if too many names (likely noise)
-  if (length(names) > 200) {
-    # Keep only names that look like species names (contain a space)
-    names <- names[grepl(" ", names)]
-    # Further limit if still too many
-    if (length(names) > 100) {
-      names <- names[1:100]
-    }
-  }
+  if (length(names) == 0) return(tibble())
 
-  # Hybrid validation: Use bloom filter pre-filtering when available
-  if (use_bloom_filter && length(names) > 0) {
-    # Use hybrid validation combining bloom filters and traditional validation
-    # Try plants domain first
-    validated <- hybrid_validate_names(names, lookup_tables, lookup_tables$bloom_connections, "plants",
-                                      domain_label = "plants", is_multi_domain = TRUE)
+  # Simple dplyr version for reliability
+  names_df <- tibble(user_supplied_name = names, user_supplied_name_lower = tolower(user_supplied_name))
 
-    # If no plants found, try fungi domain
-    if (nrow(validated) == 0) {
-      validated <- hybrid_validate_names(names, lookup_tables, lookup_tables$bloom_connections, "fungi",
-                                        domain_label = "fungi", is_multi_domain = TRUE)
-    }
+  # Match against accepted species
+  accepted_matches <- names_df %>%
+    left_join(lookup_tables$accepted_species, by = c("user_supplied_name_lower" = "canonicalName_lower"))
 
-    # Final performance summary for multi-domain search
-    if (nrow(validated) > 0) {
-      total_candidates <- length(names)
-      final_valid <- nrow(validated)
-      message(sprintf("Multi-domain performance: %d/%d final valid names (%.1f%% of original)",
-                      final_valid, total_candidates, 100 * final_valid / total_candidates))
-    }
-
-    return(validated)
-  }
-  
-  # Expand abbreviated genus names using vectorized operations
-  # Optimization: Replace nested loops with purrr::map for better performance
-  expanded_names <- character(0)
-  abbrev_matches <- names[grepl("^[A-Za-z]\\.\\s+[a-z]+", names)]
-
-  if (length(abbrev_matches) > 0) {
-    # Vectorized abbreviation expansion using purrr
-    expanded_names <- abbrev_matches %>%
-      map_chr(function(name) {
-        # Extract first letter and species epithet
-        parts <- strsplit(name, "\\.")[[1]]
-        if (length(parts) < 2) return(NA_character_)
-
-        first_letter <- tolower(substr(parts[1], 1, 1))
-        species_epithet <- trimws(gsub("^\\s+", "", parts[2]))
-
-        # Get all genera starting with that letter (limit to 50 for performance)
-        potential_genera <- lookup_tables$genus_list %>%
-          filter(str_starts(canonicalName_lower, first_letter)) %>%
-          head(50) %>%  # Limit to 50 most common genera for performance
-          pull(canonicalName)
-
-        # Find first matching full name using vectorized check
-        matches <- paste(potential_genera, species_epithet)
-        matches_lower <- tolower(matches)
-        matching_idx <- which(matches_lower %in% lookup_tables$accepted_species$canonicalName_lower)[1]
-
-        if (!is.na(matching_idx)) {
-          return(matches[matching_idx])
-        } else {
-          return(NA_character_)
-        }
-      }) %>%
-      na.omit() %>%
-      as.character()
-  }
-  
-  names <- unique(c(names, expanded_names))
-  
-  # Bloom filter optimization: Pre-filter candidates to reduce join overhead
-  # Optimization: Use hash-based filtering for O(1) lookups when enabled
-  if (use_bloom_filter && !is.null(lookup_tables$species_hash)) {
-    # Filter names that might exist using fast hash lookup
-    names <- names[names %in% names(lookup_tables$species_hash)]
-    if (length(names) == 0) return(tibble())
-  }
-
-  # Direct species match using data.table for faster joins
-  # Optimization: Convert tibbles to data.table for significantly faster joins on large datasets
-  names_dt <- data.table(
-    user_supplied_name = names,
-    user_supplied_name_lower = tolower(names)
-  )
-
-  # Convert lookup tables to data.table for faster joins
-  species_df_dt <- as.data.table(lookup_tables$species_df)
-  accepted_species_dt <- as.data.table(lookup_tables$accepted_species)
-  synonym_resolution_dt <- as.data.table(lookup_tables$synonym_resolution)
-
-  # First check which names might match using data.table semi-join equivalent
-  potential_matches <- names_dt[species_df_dt, on = .(user_supplied_name_lower = canonicalName_lower), nomatch = NULL]
-
-  # Only do the expensive joins on potential matches
-  if (nrow(potential_matches) > 0) {
-    # Match against accepted species
-    accepted_matches <- potential_matches[accepted_species_dt, on = .(user_supplied_name_lower = canonicalName_lower), nomatch = NULL][
-      , .(
-        user_supplied_name,
-        resolved_name = canonicalName,
+  # Check if join was successful and handle column names properly
+  if (nrow(accepted_matches) > 0 && "canonicalName" %in% colnames(accepted_matches)) {
+    accepted_matches <- accepted_matches %>%
+      mutate(
         status = "ACCEPTED",
-        acceptedScientificName = canonicalName,
-        kingdom, phylum, family, genus
-      )
-    ]
-
-    # Match against synonyms (exclude already matched accepted species)
-    unmatched_names <- potential_matches[!accepted_matches, on = .(user_supplied_name)]
-
-    if (nrow(unmatched_names) > 0) {
-      synonym_matches <- unmatched_names[synonym_resolution_dt, on = .(user_supplied_name_lower = canonicalName_lower), nomatch = NULL][
-        accepted_species_dt, on = .(acceptedName = canonicalName), nomatch = NULL
-      ][
-        , .(
-          user_supplied_name,
-          resolved_name = acceptedName,
-          status = "SYNONYM",
-          acceptedScientificName = acceptedName,
-          kingdom, phylum, family, genus
-        )
-      ]
-    } else {
-      synonym_matches <- data.table()
-    }
-
-    # Combine matches
-    resolved <- rbindlist(list(accepted_matches, synonym_matches), fill = TRUE)
+        resolved_name = canonicalName,
+        acceptedScientificName = canonicalName
+      ) %>%
+      filter(!is.na(canonicalName)) %>%
+      select(user_supplied_name, resolved_name, status, acceptedScientificName, kingdom, phylum, family, genus)
   } else {
-    resolved <- data.table()
+    accepted_matches <- tibble()
   }
-  
-  # Fuzzy matching is disabled by default for performance
-  # Only enable if specifically requested and for small datasets
 
-  # Convert back to tibble for backward compatibility
-  return(as_tibble(resolved))
+  # Match against synonyms
+  synonym_matches <- names_df %>%
+    anti_join(accepted_matches, by = "user_supplied_name") %>%
+    left_join(lookup_tables$synonym_resolution, by = c("user_supplied_name_lower" = "canonicalName_lower")) %>%
+    filter(!is.na(acceptedName)) %>%
+    left_join(lookup_tables$accepted_species, by = c("acceptedName" = "canonicalName"))
+
+  # Check if join was successful and handle column names properly
+  if (nrow(synonym_matches) > 0 && "canonicalName" %in% colnames(synonym_matches)) {
+    synonym_matches <- synonym_matches %>%
+      mutate(
+        status = "SYNONYM",
+        resolved_name = canonicalName,
+        acceptedScientificName = canonicalName
+      ) %>%
+      filter(!is.na(canonicalName)) %>%
+      select(user_supplied_name, resolved_name, status, acceptedScientificName, kingdom, phylum, family, genus)
+  } else {
+    synonym_matches <- tibble()
+  }
+
+  # Combine
+  resolved <- bind_rows(accepted_matches, synonym_matches)
+
+  return(resolved)
 }
 
 # Optimized process_taxonomic_matches with text preprocessing caching
@@ -490,8 +393,8 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
     genus_df <- lookup_tables$genus_list %>%
       filter(tolower(canonicalName) %in% genus_mentions) %>%
       left_join(
-        lookup_tables$accepted_species %>% 
-          select(genus, kingdom, phylum, family) %>% 
+        lookup_tables$accepted_species %>%
+          select(genus, kingdom, phylum, family) %>%
           distinct(),
         by = c("canonicalName" = "genus")
       ) %>%
@@ -504,7 +407,7 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
         resolved_name = canonicalName,
         acceptedScientificName = canonicalName
       )
-    
+
     if (nrow(genus_df) > 0) {
       all_rows <- append(all_rows, list(genus_df))
     }
@@ -518,8 +421,8 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
     family_df <- lookup_tables$family_list %>%
       filter(tolower(canonicalName) %in% family_mentions) %>%
       left_join(
-        lookup_tables$accepted_species %>% 
-          select(family, kingdom, phylum) %>% 
+        lookup_tables$accepted_species %>%
+          select(family, kingdom, phylum) %>%
           distinct(),
         by = c("canonicalName" = "family")
       ) %>%
@@ -532,7 +435,7 @@ process_taxonomic_matches <- function(valid_species, lookup_tables, text,
         resolved_name = canonicalName,
         acceptedScientificName = canonicalName
       )
-    
+
     if (nrow(family_df) > 0) {
       all_rows <- append(all_rows, list(family_df))
     }

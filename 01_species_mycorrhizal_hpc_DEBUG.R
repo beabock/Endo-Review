@@ -24,7 +24,7 @@ if (!requireNamespace("R.utils", quietly = TRUE)) {
 }
 
 # Source required functions (with error handling)
-source_files <- c("optimized_taxa_detection.R", "reference_data_utils.R", "memory_optimization.R")
+source_files <- c("scripts/04_analysis/optimized_taxa_detection.R", "scripts/04_analysis/utilities/reference_data_utils.R", "scripts/utils/memory_optimization.R")
 
 for (src_file in source_files) {
   tryCatch({
@@ -82,12 +82,12 @@ run_hpc_debug_test <- function(
   debug_log("DATA_LOAD", "Loading consolidated dataset...")
   memory_check("BEFORE_DATA_LOAD")
 
-  if (!file.exists("consolidated_dataset.csv")) {
+  if (!file.exists("results/consolidated_dataset.csv")) {
     debug_log("ERROR", "consolidated_dataset.csv not found!")
     return(FALSE)
   }
 
-  abstracts_data <- read_csv("consolidated_dataset.csv", show_col_types = FALSE)
+  abstracts_data <- read_csv("results/consolidated_dataset.csv", show_col_types = FALSE)
   debug_log("DATA_LOAD", paste0("Loaded ", nrow(abstracts_data), " total abstracts"))
 
   # Take only a small subset for testing
@@ -105,12 +105,12 @@ run_hpc_debug_test <- function(
   debug_log("SPECIES_LOAD", "Loading species reference data...")
   memory_check("BEFORE_SPECIES_LOAD")
 
-  if (!file.exists("species.rds")) {
+  if (!file.exists("models/species.rds")) {
     debug_log("ERROR", "species.rds not found!")
     return(FALSE)
   }
 
-  species <- readRDS("species.rds")
+  species <- readRDS("models/species.rds")
   debug_log("SPECIES_LOAD", paste0("Loaded ", nrow(species), " species records"))
   memory_check("AFTER_SPECIES_LOAD")
 
@@ -163,7 +163,7 @@ run_hpc_debug_test <- function(
   memory_check("BEFORE_LOOKUP")
 
   # Use a much smaller threshold for testing
-  lookup_tables <- create_lookup_tables_hpc(species, threshold = 1000)
+  lookup_tables <- create_lookup_tables_with_bloom(species, enable_bloom_filters = TRUE)
   debug_log("LOOKUP", "Lookup tables created")
   memory_check("AFTER_LOOKUP")
 
