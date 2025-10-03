@@ -163,6 +163,9 @@ library(digest)
 
 library(here)
 setwd(here())
+# Redirect output to txt file
+sink("results/abstracts_pull_summary.txt")
+
 
 wos_folder <- "data/raw/All_abstracts_8-14-25/WoS"
 
@@ -206,6 +209,9 @@ write.csv(scopus, "data/processed/scopus_combined.csv", row.names = FALSE)
 
 
 pubmed <- read_csv("data/raw/All_abstracts_8-14-25/pubmed_pull_8-14-25.csv", show_col_types = FALSE)
+cat("Number of PubMed files read:", length(pubmed), "\n")
+cat("Total rows after binding:", nrow(pubmed), "\n")
+
 
 # --- Data Overview ---
 cat("WoS columns:", length(colnames(wos)), "\n")
@@ -304,6 +310,8 @@ wos <- wos %>%
 # View the updated column names
 cat("WoS standardized columns:", length(colnames(wos)), "\n")
 
+cat("Wos earliest year:", min(as.numeric(wos$Year), na.rm = TRUE), "\n")
+
 # --- Standardize Scopus column names ---
 # Rename Scopus columns to match WoS standardized names
 scopus <- scopus %>%
@@ -328,6 +336,8 @@ scopus <- scopus %>%
     Language.of.Original.Document = `Language of Original Document`
   )
 
+cat("Scopus earliest year:", min(scopus$Year, na.rm = TRUE), "\n")
+
 # --- Standardize PubMed column names ---
 # Rename PubMed columns to match WoS standardized names  
 pubmed <- pubmed %>%
@@ -339,6 +349,8 @@ pubmed <- pubmed %>%
     Year = `year`,
     Source.title = `journal`
   )
+
+cat("PubMed earliest year:", min(pubmed$Year, na.rm = TRUE), "\n")
 
 # --- Add source column to track origin ---
 wos$Source <- "WoS"
@@ -432,5 +444,9 @@ cat("Missing Authors:", sum(is.na(final_data$Authors)), "\n")
 cat("Missing Titles:", sum(is.na(final_data$Title)), "\n")
 cat("Missing Abstracts:", sum(is.na(final_data$Abstract)), "\n")
 
+
 write.csv(final_data, "data/processed/All_abstracts_deduped.csv", row.names = FALSE)
 cat("Data written to: data/processed/All_abstracts_deduped.csv\n")
+
+# Close the output redirection
+sink()

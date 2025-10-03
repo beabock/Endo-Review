@@ -946,6 +946,126 @@ for (version_name in names(versions)) {
 
 }
 
+   # 8. TEMPORAL METHOD TRENDS -----------------------------------------------
+   # Create the bar plot of abstracts per year filled by detection method
+
+   cat("Creating temporal method trends visualization (", version_prefix, ")...\n")
+
+   # Prepare temporal method data
+   temporal_method_data <- data %>%
+     filter(!is.na(publication_year), publication_year >= 1926, publication_year <= 2025) %>%
+     select(id, publication_year, has_molecular, has_culture, has_microscopy) %>%
+     group_by(id, publication_year) %>%
+     summarise(
+       has_molecular = any(has_molecular),
+       has_culture = any(has_culture),
+       has_microscopy = any(has_microscopy),
+       .groups = "drop"
+     ) %>%
+     # Create method category for each abstract
+     mutate(
+       method_category = case_when(
+         has_molecular & has_culture & has_microscopy ~ "All three methods",
+         has_molecular & has_culture ~ "Molecular + Culture",
+         has_molecular & has_microscopy ~ "Molecular + Microscopy",
+         has_culture & has_microscopy ~ "Culture + Microscopy",
+         has_molecular ~ "Molecular only",
+         has_culture ~ "Culture only",
+         has_microscopy ~ "Microscopy only",
+         TRUE ~ "No methods detected"
+       )
+     ) %>%
+     # Aggregate by year and method
+     count(publication_year, method_category, name = "abstract_count") %>%
+     # Create a complete sequence of years to ensure gaps are filled
+     complete(publication_year = full_seq(c(1926:2025), 1), method_category, fill = list(abstract_count = 0))
+
+   # Create the bar plot
+   method_colors <- c(
+     "All three methods" = "#5B8FA8",
+     "Molecular + Culture" = "#7FB77E",
+     "Molecular + Microscopy" = "#D18C63",
+     "Culture + Microscopy" = "#9C6843",
+     "Molecular only" = "#B78FA8",
+     "Culture only" = "#6E6E6E",
+     "Microscopy only" = "#C9B28E",
+     "No methods detected" = "lightgrey"
+   )
+
+   p_temporal_methods <- temporal_method_data %>%
+     ggplot(aes(x = publication_year, y = abstract_count, fill = method_category)) +
+     geom_bar(stat = "identity", position = "stack", width = 0.8) +
+     scale_fill_manual(
+       values = method_colors,
+       name = "Detection Method"
+     ) +
+     scale_x_continuous(
+       breaks = seq(1930, 2025, by = 10),
+       expand = c(0, 0)
+     ) +
+     scale_y_continuous(
+       expand = c(0, 0),
+       labels = scales::comma_format()
+     ) +
+     labs(
+       title = "Temporal Trends in Endophyte Detection Methods",
+       subtitle = paste("Number of abstracts per year by detection method (", version_prefix, " dataset)"),
+       x = "Publication Year",
+       y = "Number of Abstracts",
+       caption = paste("Total abstracts:", sum(temporal_method_data$abstract_count))
+     ) +
+     custom_theme +
+     theme(
+       legend.position = "bottom",
+       legend.title = element_text(size = 10),
+       legend.text = element_text(size = 9),
+       axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
+     )
+
+   # Save the temporal methods plot
+   save_plot(p_temporal_methods, "temporal_method_trends.png", version_prefix, width = 14, height = 8)
+
+   # Create a line version for better trend visibility
+   p_temporal_methods_line <- temporal_method_data %>%
+     group_by(publication_year) %>%
+     mutate(total_abstracts = sum(abstract_count)) %>%
+     ungroup() %>%
+     mutate(method_proportion = abstract_count / total_abstracts) %>%
+     ggplot(aes(x = publication_year, y = method_proportion, color = method_category)) +
+     geom_line(linewidth = 1.2, alpha = 0.8) +
+     geom_point(size = 2, alpha = 0.8) +
+     scale_color_manual(
+       values = method_colors,
+       name = "Detection Method"
+     ) +
+     scale_x_continuous(
+       breaks = seq(1930, 2025, by = 10),
+       expand = c(0, 0)
+     ) +
+     scale_y_continuous(
+       labels = scales::percent_format(),
+       expand = c(0, 0)
+     ) +
+     labs(
+       title = "Proportion of Detection Methods Over Time",
+       subtitle = paste("Relative frequency of each method as percentage of annual abstracts (", version_prefix, " dataset)"),
+       x = "Publication Year",
+       y = "Proportion of Abstracts (%)",
+       caption = paste("Based on", length(unique(temporal_method_data$publication_year)), "years of data")
+     ) +
+     custom_theme +
+     theme(
+       legend.position = "bottom",
+       legend.title = element_text(size = 10),
+       legend.text = element_text(size = 9),
+       axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
+     )
+
+   # Save the line version
+   save_plot(p_temporal_methods_line, "temporal_method_proportions.png", version_prefix, width = 14, height = 8)
+
+ 
+
 # Close the loop
 
 # Clean up
@@ -955,6 +1075,7 @@ cat("Generated separate summary reports: results/visualization_summary_report_ma
 cat("\nKey outputs:\n")
 cat("📊 Species detection patterns and kingdom distribution (main and supp versions)\n")
 cat("🔬 Research methods usage and combinations - both core (3 types) and expanded (9 types)\n")
+cat("📈 Temporal method trends - stacked bar plot and proportion line plot (NEW)\n")
 if (sum(main_data$has_plant_parts) > 0) cat("🌱 Enhanced plant parts frequency with normalization and count distribution\n")
 if (sum(main_data$has_geography) > 0) cat("🌍 Comprehensive geographic distribution with countries, continents, regions, and world choropleth map (linear and log scale)\n")
 cat("📋 Summary statistics and information overview (individual plots)\n\n")

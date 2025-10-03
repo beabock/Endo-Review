@@ -11,7 +11,7 @@ tryCatch({
   source("scripts/utils/plot_utils.R")
 }, error = function(e) {
   warning("Could not load plot_utils.R: ", e$message)
-  # Define a basic fallback theme if plot_utils fails to load
+  # Define basic fallback theme and colors if plot_utils fails to load
   endo_theme <- function(base_size = 11) {
     theme_minimal(base_size = base_size) +
       theme(
@@ -21,6 +21,11 @@ tryCatch({
         legend.title = element_text(size = base_size)
       )
   }
+
+  # Define fallback colors
+  endo_colors <- list(
+    found_not_found = c(Found = "#46ACC8", `Not Found` = "#B40F20")
+  )
 })
 
 # Source optimized taxa detection functions for potential use
@@ -317,6 +322,14 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
                  values_to = "Count") %>%
     mutate(Status = recode(Status, found = "Found", not_found = "Not Found"))
 
+  # Create proper plural forms for taxonomic levels
+  level_name_plural <- case_when(
+    level_name == "Species" ~ "Species",
+    level_name == "Genus" ~ "Genera",
+    level_name == "Family" ~ "Families",
+    TRUE ~ paste0(level_name, "s")
+  )
+
   # Apply consistent phylum ordering
   if (kingdom_filter == "Plantae") {
     count_data <- count_data %>%
@@ -328,15 +341,14 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
 
   count_plot <- ggplot(count_data, aes(x = phylum, y = Count, fill = Status)) +
     geom_col(width = 0.8) +
-    geom_text(aes(label = Count), position = position_stack(vjust = 0.5), size = 3) +
     coord_flip() +
     labs(
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Count)"),
       subtitle = paste("Number of", tolower(level_name), "found vs. not found in each phylum (hierarchical)"),
       x = "Phylum",
-      y = paste("Number of", level_name, "s")
+      y = paste("Number of", level_name_plural)
     ) +
-    scale_fill_manual(values = endo_colors$found_not_found) +
+    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20")) +
     endo_theme() +
     theme(axis.text.y = element_text(size = 8))
 
@@ -361,15 +373,20 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
 
   percent_plot <- ggplot(percent_data, aes(x = phylum, y = Percent, fill = Status)) +
     geom_col(width = 0.8) +
-    geom_text(aes(label = sprintf("%.1f%%", Percent)), position = position_stack(vjust = 0.5), size = 3) +
+    geom_text(
+      aes(label = ifelse(Percent > 0, sprintf("%.1f%%", Percent), "")),
+      position = position_stack(vjust = 0.5),
+      size = 2.5,
+      fontface = "bold"
+    ) +
     coord_flip() +
     labs(
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Percent)"),
       subtitle = paste("Percentage of", tolower(level_name), "found vs. not found in each phylum (hierarchical)"),
       x = "Phylum",
-      y = paste("Percentage of", level_name, "s")
+      y = paste("Percentage of", level_name_plural)
     ) +
-    scale_fill_manual(values = endo_colors$found_not_found) +
+    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20")) +
     endo_theme() +
     theme(axis.text.y = element_text(size = 8))
 
@@ -384,8 +401,11 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
   return(list(count_plot = count_plot, percent_plot = percent_plot))
 }
 
-# Create output directory
+# Create output directories
 dir.create("plots", showWarnings = FALSE)
+dir.create("plots/main", showWarnings = FALSE, recursive = TRUE)
+dir.create("plots/supplementary", showWarnings = FALSE, recursive = TRUE)
+dir.create("plots/geographic", showWarnings = FALSE, recursive = TRUE)
 
 # Create phylum-based representation plots with dual modes (main vs supplementary)
 message("Creating phylum-based visualization plots...")
@@ -644,6 +664,126 @@ if (!is.null(geo_taxa_analysis)) {
 
 # Create the unrepresented taxa CSV
 unrepresented_taxa <- create_unrepresented_taxa_csv()
+
+# Create manuscript summary report
+create_manuscript_summary <- function() {
+  message("Creating manuscript summary report...")
+
+  # Collect summaries for Plantae at all levels
+  plant_summaries <- list()
+
+  for (level in c("Family", "Genus", "Species")) {
+    taxa_column <- case_when(
+      level == "Family" ~ "family_final",
+      level == "Genus" ~ "genus_final",
+      level == "Species" ~ "canonicalName_final"
+    )
+
+    ref_column <- case_when(
+      level == "Family" ~ "family",
+      level == "Genus" ~ "genus",
+      level == "Species" ~ "canonicalName_resolved"
+    )
+
+    match_type_val <- tolower(level)
+
+    # Get found taxa
+    found_by_phylum <- taxa_results_main %>%
+      filter(kingdom == "Plantae",
+             final_classification == "Presence",
+             !is.na(.data[[taxa_column]]),
+             !is.na(phylum),
+             match_type == match_type_val) %>%
+      distinct(phylum, .data[[taxa_column]]) %>%
+      group_by(phylum) %>%
+      summarise(found = n_distinct(.data[[taxa_column]]), .groups = "drop")
+
+    # Get total taxa
+    total_by_phylum <- accepted_species %>%
+      filter(kingdom == "Plantae",
+             !is.na(.data[[ref_column]]),
+             !is.na(phylum)) %>%
+      distinct(phylum, .data[[ref_column]]) %>%
+      group_by(phylum) %>%
+      summarise(total = n_distinct(.data[[ref_column]]), .groups = "drop")
+
+    # Combine
+    summary_data <- total_by_phylum %>%
+      left_join(found_by_phylum, by = "phylum") %>%
+      mutate(
+        found = replace_na(found, 0),
+        percent_found = round((found / total) * 100, 1)
+      ) %>%
+      filter(total > 0) %>%
+      arrange(desc(percent_found))
+
+    plant_summaries[[level]] <- summary_data
+  }
+
+  # Write summary report
+  sink("results/visualization_summary_report_main.txt")
+
+  cat("PLANT PHYLUM REPRESENTATION SUMMARY (Main Analysis - Excluding Mycorrhizal-Only Papers)\n")
+  cat("==============================================================================\n\n")
+
+  # Overall statistics
+  total_species <- nrow(accepted_species %>% filter(kingdom == "Plantae", !is.na(canonicalName)))
+  found_species <- taxa_results_main %>%
+    filter(kingdom == "Plantae", final_classification == "Presence", !is.na(canonicalName_final), match_type == "species") %>%
+    distinct(canonicalName_final) %>% nrow()
+  percent_species <- round((found_species / total_species) * 100, 1)
+
+  cat("Overall Plant Kingdom:\n")
+  cat(sprintf("- Total species in reference database: %d\n", total_species))
+  cat(sprintf("- Species found in literature: %d (%.1f%%)\n", found_species, percent_species))
+  cat(sprintf("- Mycorrhizal-only abstracts excluded: %d\n\n", nrow(taxa_results_deduped) - nrow(taxa_results_main)))
+
+  # Phylum-by-phylum breakdown
+  phyla <- unique(c(plant_summaries$Family$phylum, plant_summaries$Genus$phylum, plant_summaries$Species$phylum))
+
+  for (phyl in phyla) {
+    cat(sprintf("Phylum: %s\n", phyl))
+
+    # Species summary
+    species_data <- plant_summaries$Species %>% filter(phylum == phyl)
+    if (nrow(species_data) > 0) {
+      cat(sprintf("- Species: %d/%d represented (%.1f%%)\n", species_data$found, species_data$total, species_data$percent_found))
+    }
+
+    # Genera summary
+    genus_data <- plant_summaries$Genus %>% filter(phylum == phyl)
+    if (nrow(genus_data) > 0) {
+      cat(sprintf("- Genera: %d/%d represented (%.1f%%)\n", genus_data$found, genus_data$total, genus_data$percent_found))
+    }
+
+    # Families summary
+    family_data <- plant_summaries$Family %>% filter(phylum == phyl)
+    if (nrow(family_data) > 0) {
+      cat(sprintf("- Families: %d/%d represented (%.1f%%)\n", family_data$found, family_data$total, family_data$percent_found))
+    }
+
+    cat("\n")
+  }
+
+  # Most and least studied phyla
+  if (nrow(plant_summaries$Species) > 0) {
+    most_studied <- plant_summaries$Species %>% slice_max(percent_found, n = 1)
+    least_studied <- plant_summaries$Species %>% slice_min(percent_found, n = 1)
+
+    cat("Most studied plant phylum by species representation:\n")
+    cat(sprintf("%s (%.1f%% of species represented)\n\n", most_studied$phylum, most_studied$percent_found))
+
+    cat("Least studied plant phylum by species representation:\n")
+    cat(sprintf("%s (%.1f%% of species represented)\n\n", least_studied$phylum, least_studied$percent_found))
+  }
+
+  sink()
+
+  message("Saved manuscript summary report to: results/visualization_summary_report_main.txt")
+}
+
+# Create the manuscript summary
+create_manuscript_summary()
 
 message("All visualizations and data exports completed!")
 message("Created:")
