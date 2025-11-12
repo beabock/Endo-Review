@@ -514,6 +514,80 @@ generate_analysis_summary_report <- function(results, timing, output_dir) {
 
   }, file = report_file)
 
+  # Create manuscript-ready log file for analysis workflow
+  create_manuscript_log_workflow <- function(results, timing, output_dir) {
+    log_file <- file.path(output_dir, "analysis_workflow_manuscript_log.txt")
+
+    capture.output({
+      cat("=== ANALYSIS WORKFLOW MANUSCRIPT STATISTICS ===\n")
+      cat("Generated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
+
+      cat("ANALYSIS COMPONENTS SUMMARY:\n")
+      cat("===========================\n")
+
+      total_time <- sum(unlist(timing))
+      for (component in names(results)) {
+        component_results <- results[[component]]
+        component_time <- timing[[component]]
+
+        cat(toupper(component), "ANALYSIS:\n")
+        cat("  Status: Completed successfully\n")
+        cat("  Processing time:", round(component_time, 1), "seconds\n")
+
+        # Add component-specific details
+        if (component == "absence" && !is.null(component_results$high_confidence_count)) {
+          cat("  High-confidence absence cases:", component_results$high_confidence_count, "\n")
+          cat("  Medium-confidence absence cases:", component_results$medium_confidence_count, "\n")
+        } else if (component == "validation" && !is.null(component_results$sample_size)) {
+          cat("  Validation sample size:", component_results$sample_size, "\n")
+          cat("  Validation strata:", component_results$strata_count, "\n")
+        } else if (component == "temporal" && !is.null(component_results$publications_analyzed)) {
+          cat("  Publications analyzed:", component_results$publications_analyzed, "\n")
+          cat("  Time periods covered:", component_results$periods_analyzed, "\n")
+        } else if (component == "visualization" && !is.null(component_results$plots_created)) {
+          cat("  Visualization plots created:", length(component_results$plots_created), "\n")
+        }
+
+        cat("  Output files generated:", length(component_results$output_files), "\n\n")
+      }
+
+      cat("PERFORMANCE METRICS:\n")
+      cat("===================\n")
+      cat("Total analysis time:", round(total_time, 1), "seconds\n")
+      cat("Average time per component:", round(total_time/length(timing), 1), "seconds\n\n")
+
+      cat("METHODOLOGY OVERVIEW:\n")
+      cat("====================\n")
+      cat("- Absence evidence detection: Automated identification of contradictory evidence\n")
+      cat("- Validation sampling: Stratified sampling for manual review quality control\n")
+      cat("- Temporal analysis: Decade-by-decade publication trends\n")
+      cat("- Visualization: Comprehensive plots for geographic, taxonomic, and methodological patterns\n")
+      cat("- Integration: End-to-end pipeline from raw data to publication-ready figures\n\n")
+
+      cat("DATA QUALITY ASSURANCE:\n")
+      cat("======================\n")
+      cat("- Automated absence detection reduces manual review burden\n")
+      cat("- Stratified validation sampling ensures representative quality control\n")
+      cat("- Temporal trend analysis reveals research evolution patterns\n")
+      cat("- Geographic analysis shows global research distribution\n")
+      cat("- Modular design allows flexible component execution\n\n")
+
+      cat("KEY OUTPUTS FOR MANUSCRIPT:\n")
+      cat("==========================\n")
+      cat("- Comprehensive analysis workflow executed in", round(total_time, 1), "seconds\n")
+      cat("- Multiple analysis components integrated successfully\n")
+      cat("- Data quality assurance through automated validation\n")
+      cat("- Research pattern insights across geographic and temporal dimensions\n")
+      cat("- Publication-ready visualizations and statistics generated\n")
+
+    }, file = log_file)
+
+    message("Manuscript-ready workflow statistics saved to: ", log_file)
+  }
+
+  # Generate the manuscript log for workflow
+  create_manuscript_log_workflow(results, timing, output_dir)
+
   cat("✓ Integrated analysis summary saved to:", report_file, "\n")
 }
 

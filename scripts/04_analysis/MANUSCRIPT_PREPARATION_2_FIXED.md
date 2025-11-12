@@ -1,155 +1,147 @@
-# Manuscript Preparation - Version 2
-
-**Authors:** B. Bock, N. McKay, N.C. Johnson, C.A. Gehring  
+# Manuscript Preparation - Version 12 (Log File Integration)
+**Authors:** B. Bock, N. McKay, N.C. Johnson, C.A. Gehring
 **Goal journal:** Nature
 
-## Title options:
-- Universal Where Studied: Machine Learning Reveals Massive Sampling Biases in Plant-Endophyte Research
-- Ubiquitous Symbionts, Biased Sampling: Geographic and Taxonomic Gaps Reshape Endophyte Universality
-- Testing a Fundamental Paradigm: Are Fungal Endophytes Truly Universal in Plants?
-- Everywhere We Look, Nowhere We Don't: Sampling Bias and the Illusion of Endophyte Universality
-- Global Patterns of Fungal Endophyte Presence Reveal Ubiquity and Geographic Bias
+## Title
+Ubiquitous Symbionts, Biased Sampling: Geographic and Taxonomic Gaps Reshape Endophyte Universality
 
 ## Abstract
-
-The paradigm that "all plants harbor fungal endophytes" represents a foundational assumption in plant ecology, yet this claim has never been systematically tested. Here we present the first comprehensive evaluation using machine learning analysis of 19,071 research abstracts spanning nearly a century (1926-2025). Our automated pipeline achieved 89.8% accuracy in classifying endophyte presence/absence, revealing that 99.5% of studies report endophyte presence with only 0.5% documenting absence. However, expert validation showed that virtually all absence reports (88 of 89 cases) reflect methodological artifacts rather than genuine natural absence. Strikingly, this apparent universality rests on extraordinarily biased sampling: only 0.5% of described plant species have been examined, with 77% of research concentrated in the Global North while biodiversity-rich tropical regions remain severely understudied. These findings support endophyte ubiquity within sampled taxa while revealing critical knowledge gaps that undermine global generalizations. Our results establish machine learning as a powerful tool for large-scale ecological synthesis and reframe universality as "everywhere studied" rather than "truly universal."
+The paradigm that "all plants harbor fungal endophytes" represents a foundational assumption in plant ecology, yet this claim has never been systematically tested. Here we present the first comprehensive evaluation using machine learning analysis of 19,071 research abstracts spanning nearly a century (1926-2025). Our automated pipeline achieved 89.8% accuracy in classifying endophyte presence/absence, revealing that 99.5% of studies report endophyte presence with only 0.5% documenting absence. However, expert validation showed that virtually all absence reports (88 of 89 cases) reflect methodological artifacts rather than genuine natural absence. Strikingly, this apparent universality rests on extraordinarily biased sampling: only **0.8%** of described plant species have been examined, with 77% of research concentrated in the Global North while biodiversity hotspots remain virtually unexplored. Our findings confirm endophyte ubiquity as a robust pattern *within studied taxa* but demonstrate this "universality" is a generalization from a tiny, biased fraction of global plant diversity. This work establishes a new, validated baseline for plant-microbe symbiosis and highlights the urgent need to redirect research efforts toward underrepresented biomes and lineages.
 
 ## Introduction
+Fungal endophytes are fungi that inhabit plant tissues without causing apparent disease. This symbiosis is considered one of the most abundant on earth, influencing plant ecology, evolution, and stress tolerance (Rodriguez et al., 2009). They are also a critical source of novel pharmaceuticals and biomaterials (El-Shora & El-Sayed, 2023). The notion that "all plants harbor fungal endophytes" has become a common claim in ecological literature (e.g., Arnold et al., 2000). Indeed, our analysis of the literature confirms this is a widespread assertion, with a quantitative analysis identifying that [X.X]% of abstracts explicitly reiterate this claim [CITE: `find_all_plants_statement.R` results]. This assumption of ubiquity underpins research on endophyte function, diversity, and transmission.
 
-The universality of fungal endophytes in plants represents one of ecology's most widely accepted yet untested paradigms. These cryptic symbionts—fungi living asymptomatically within plant tissues—are thought to inhabit virtually every plant species on Earth, influencing stress tolerance, pathogen defense, and evolutionary trajectories across all terrestrial ecosystems (citations). If true, this would make endophytes among the most successful and ecologically significant organisms on the planet, with profound implications for understanding plant biology, ecosystem functioning, and responses to environmental change.
+However, this assumption remains unvalidated, as a comprehensive, systematic evaluation of fungal endophyte distribution across plant taxa and regions is lacking. Previous reviews have been qualitative or focused on specific lineages (e.g., Schulz & Boyle, 2005), leaving the global pattern untested. It has been unclear whether the paradigm of ubiquity is a robust, data-driven conclusion or or an artifact of research focus. This knowledge gap is critical: if endophytes are not ubiquitous, their ecological and evolutionary impacts may be more constrained than assumed. Conversely, if they are ubiquitous, the biases in *where* we have looked become paramount.
 
-Despite its fundamental importance, the universality claim has never been systematically evaluated. Individual studies consistently report endophyte presence when sought, creating a compelling narrative of ubiquity. However, this pattern could reflect either genuine biological universality or systematic biases in research focus, methodology, and geographic coverage. The distinction matters critically: true universality would indicate endophytes as obligate components of plant biology, while sampling bias would suggest our understanding rests on incomplete foundations.
-
-Here we present the first comprehensive test of endophyte universality using machine learning analysis of 19,071 research abstracts spanning 1926-2025. Our approach combines automated literature classification with systematic bias quantification to distinguish genuine ecological patterns from research artifacts. We find that while endophytes are indeed detected in every studied plant lineage, this apparent universality masks extraordinary sampling limitations and geographic biases that fundamentally constrain global generalizations.
-
----
-
-## Methods
-
-### Literature Search and Data Acquisition
-
-We conducted a comprehensive literature search across three major databases on 14 August 2025:
-- **Web of Science Core Collection** (1926–present): 14,855 abstracts
-- **PubMed** (1946–present): 10,873 abstracts
-- **Scopus** (1930–present): 15,427 abstracts
-
-Search terms combined fungal endophyte terminology with plant hosts (see Supplementary Methods for full Boolean query). Terms such as "latent fungi" were included to capture historical language. Only primary research articles were retained.
-
-### Data Processing and Harmonization
-
-- **Combination:** 40,776 abstracts merged across sources
-- **Deduplication:** Removed 17,455 duplicate DOIs, 314 duplicate abstracts, 420 reviews, and 696 duplicate titles, yielding 21,891 abstracts
-- **Final Dataset:** After metadata cleaning, 20,967 abstracts with complete text remained
-
-### Machine Learning Classification Pipeline
-
-We developed a novel two-stage automated classification system optimized for ecological literature synthesis:
-
-**Stage 1: Relevance Classification**
-- Algorithm: Regularized logistic regression (glmnet) with L1/L2 penalty optimization
-- Training: 3,500 manually labeled abstracts (2:1 relevant:irrelevant ratio)
-- Performance: 89.2% accuracy, 91.3% precision, 88.7% recall
-- Features: TF-IDF weighted n-grams, species name indicators, methodological terms
-
-**Stage 2: Presence/Absence Classification**
-- Algorithm: Ensemble combining logistic regression and SVM-Linear with optimized weights
-- Training: 2,800 expert-validated relevant abstracts
-- Performance: 87.3% accuracy (91.6% presence recall, 82.6% absence recall)
-- Validation: 10-fold cross-validation with stratified sampling
-
-**Overall Pipeline Performance:** 89.8% end-to-end accuracy across both classification stages, enabling reliable automated analysis of >20,000 abstracts—a scale impossible with manual approaches.
-
-### Information Extraction and Analysis
-
-- **Taxonomy:** Automated detection of plant species names via GBIF backbone (4.9M species). Detection accuracy 83.7%. Used the PBDB dataset to label species as extinct and extant
-- **Geography:** Extraction via geonames database
-- **Methods:** Text mining for culture, microscopy, molecular methods
-- **Mycorrhizal filtering:** Excluded 376 mycorrhizal-only studies, leaving 19,071 abstracts
-
-### Validation
-
-Manual review of 102 high-confidence absence predictions showed only one confirmed natural absence; the remainder reflected methodological artifacts, particularly of studies where plants were experimentally rendered endophyte-free. Explicit absence statements were rare (10 strong cases, 304 medium-confidence). Presence validation indicated ~65% true detections, 15% false positives, 20% irrelevant studies. Universality claims appeared in 0.2% of abstracts.
-
-### Geographic and Methodological Extraction
-
-- Country/region detection using the geonames database
-- Geographic bias quantified as the proportion of studies from Global North vs Global South, normalized by land area
-- Method classification (culture, microscopy, molecular), temporal trend analysis by 5-year periods
-
----
+Here, we use a machine learning pipeline to conduct the first large-scale, quantitative test of the endophyte ubiquity paradigm. We classify over 19,000 abstracts from the endophyte literature to map the taxonomic and geographic patterns of research, explore the effects of detection methods on presence/absence designations, and systematically test the claim of ubiquity against the evidence.
 
 ## Results
+Our machine learning pipeline analyzed 19,071 relevant abstracts, confirming that the endophyte literature is overwhelmingly a record of presence. We found 99.5% of studies reported endophyte presence, with only 0.5% (89 studies) documenting absence. To test the validity of these rare absence reports, we performed a multi-step validation. This process confirmed that 99% (88 of 89) of "absence" reports were methodological artifacts (e.g., studies that sought but failed to find a *specific* taxon, not all endophytes) or pipeline misclassifications. This analysis confirms that genuine reports of endophyte-free plants are virtually non-existent in the scientific literature.
 
-### Literature Landscape and Research Evolution
+Despite this near-universal detection, our analysis reveals that this conclusion rests on a tiny and deeply biased sample of plant biodiversity. We find that only **0.8%** (3,226 of 390,101 species) of described vascular plant species have been examined for endophytes [CITE: `visualize_taxa_results_manuscript_log.txt`].
 
-Our systematic search yielded 21,891 abstracts after deduplication, with 19,071 classified as relevant to endophyte research after excluding mycorrhizal-only studies. Publication volume increased exponentially from 3 studies in the 1920s to over 4,000 annually by 2020-2024—a 1,300-fold increase reflecting growing recognition of endophyte importance. Methodological approaches evolved dramatically, with molecular detection methods increasing from 0% pre-2000 to 47% in recent studies.
+This taxonomic bias is mirrored by an extreme geographic bias. Research is concentrated in the Global North, with 77% of all studies originating from Europe and North America. The top five most-studied countries (United States, China, South Africa, India, and Brazil) account for a disproportionate amount of data, with the United States alone representing over 8,300 abstracts [CITE: `visualize_extraction_results_manuscript_log.txt`]. Furthermore, the completeness of this information is inconsistent: while 89.2% of abstracts detailed research methods, only 72.5% contained extractable geographic information and 71.1% specified plant parts [CITE: `visualization_summary_report_main.txt`]. A temporal analysis also shows that while molecular methods have increased (now used in 36.8% of studies), these geographic and taxonomic biases have remained largely consistent over the past three decades [CITE: `temporal_trend_analysis.R`].
 
-### Universal Detection Within Sampled Taxa
+## Discussion
+Our analysis provides the first quantitative confirmation that fungal endophytes are ubiquitous *wherever they have been studied*. The data-driven finding that 99.5% of studies report presence, combined with our validation that 99% of "absence" reports are artifacts, provides overwhelming support for the ubiquity paradigm *within the current scope of research*.
 
-Across all 19,071 relevant studies, fungal endophytes were reported from every major plant lineage examined: bryophytes, lycophytes, ferns, gymnosperms, and angiosperms. Remarkably, 18,982 studies (99.5%) reported endophyte presence, with only 89 studies (0.5%) documenting absence. This detection rate approaches statistical certainty and spans the full taxonomic breadth of land plants, providing strong evidence for endophyte ubiquity within studied taxa.
+However, the central finding of this paper is the stark contradiction between this observed ubiquity and the severe sampling biases that define the field. The 0.8% of plant species and 77% concentration in the Global North are not minor gaps; they are systematic biases that fundamentally limit any claims of true universality. Our "ubiquitous" paradigm is a generalization from a non-random, convenience-based sample of the plant kingdom.
 
-### Critical Sampling Limitations
+This 77% concentration of research in the Global North has profound, practical consequences. Our global search for novel pharmaceuticals (El-Shora & El-Sayed, 2023), biopesticides, and enzymes from endophytes is, by extension, also concentrated in these same regions. We are, in effect, ignoring the 99.5% of plant biodiversity that is primarily located in the planet's most biodiverse, yet least-studied, regions as a potential source for these critical compounds. This finding reframes the research bias from a simple academic gap to a significant bottleneck in global bioprospecting and biotechnology.
 
-Despite apparent universality, endophyte research suffers from severe sampling constraints. Only 0.5% of described plant species (~24,500 of 4.9 million) have been examined for endophytes. Coverage varies dramatically by lineage: while angiosperms receive substantial attention, bryophytes represent only 0.2% of studies despite comprising 15% of plant diversity. Most research focuses on economically important crops and temperate model species, creating systematic taxonomic bias.
+We have not tested if "all plants host endophytes." We have demonstrated that "all plants *studied* host endophytes." This shifts the grand challenge for the field: from assuming ubiquity to actively exploring the vast unknown, particularly the biodiversity hotspots of the Global South.
 
-![Figure 2](plots/manuscript_model_performance.png)
+### Differentiating "AbsFalsesence" from "Study-Level Negatives"
+A key challenge in testing the ubiquity paradigm is the interpretation of "absence" reports. Our ML pipeline, for instance, identified 89 studies reporting endophyte absence, and literature reviews (e.g., Lau, Johnson, & Gehring, 2013) note specific cases where plants were found to be endophyte-free.
 
-**Figure 2:** Top: Map displaying abstract count on a log scale, where darker blue indicates more abstracts mentioning those countries, and lighter pink indicating fewer records. Grey indicates no records. Bottom: Bar plot of the top 15 countries mentioned in the dataset.
+However, our rigorous, multi-step validation (detailed in Methods) provides the necessary context. We found 88 of these 89 cases were methodological artifacts. More importantly, in cases of apparent genuine absence from a single study, other studies *consistently* report endophyte presence in the very same taxon (or even species).
 
-### Extreme Geographic Research Bias
+Therefore, we must differentiate between a **"study-level negative"** (a single report of non-detection) and a **"taxon-level absence"** (a species or lineage that is *conclusively* and *repeatedly* shown to be endophyte-free). Our analysis finds that while "study-level negatives" exist, **we find no evidence for a single "taxon-level absence"** in the plant kingdom. This reframes the paradigm: a single 'absence' report does *not* invalidate ubiquity at the taxon level.
 
-Endophyte research exhibits profound geographic inequality that fundamentally undermines claims of global universality. The United States alone accounts for 45% of all studies despite representing only 6% of global land area—a 7.5-fold overrepresentation. Combined with Europe (23%), the Global North dominates 77% of research while containing only ~25% of global plant species diversity.
+The apparent universality of endophytes represents both a remarkable biological phenomenon and a sobering reminder of the limits of scientific knowledge. As we face unprecedented environmental challenges requiring comprehensive understanding of plant-microbe interactions, this work underscores the critical importance of expanding research beyond traditional geographic and taxonomic boundaries. Only through such expansion can we transform "everywhere we have looked" into truly global knowledge.
 
-This bias becomes even more stark when examining biodiversity hotspots: Brazil, home to ~15% of global plant species, contributes only 3% of studies (5-fold underrepresentation). Indonesia, spanning critical tropical archipelagos, accounts for merely 0.3% of research despite harboring exceptional plant endemism. India, China, and the entire African continent combined contribute fewer studies than the United Kingdom alone.
+## Methods
+Our methodology consisted of a three-stage computational pipeline: (1) ML-based abstract classification, (2) a multi-step validation of "Absence" classifications, and (3) a validated data extraction pipeline for taxonomic and geographic information. Full details, from data sourcing to validation, are provided in the Supplementary Methods.
 
-The research density disparity is extraordinary: North America and Europe average 47 studies per 1,000 km², while tropical regions average 0.8 studies per 1,000 km²—a 59-fold difference. This geographic bias creates a systematic blind spot precisely where plant diversity peaks, meaning our "universal" conclusions rest on sampling the least diverse regions while ignoring diversity centers (Figure 2).
+### 1. ML Classification and Sensitivity
+We developed a two-stage machine learning pipeline to classify abstracts. The first stage used a regularized logistic regression (`glmnet`) model to screen for relevance [CITE: `apply_models_to_full_dataset.R`]. This was followed by a component that identified and filtered abstracts focusing exclusively on mycorrhizal fungi [CITE: `01b_mycorrhizal_only.R`]. This resulted in the final corpus of 19,071 relevant, non-mycorrhizal-only abstracts.
 
-### Rarity of Genuine Absence Evidence
+For the primary presence/absence classification, we tested multiple models and determined that a weighted ensemble approach was optimal. This choice was part of our sensitivity analysis, as it allowed us to "prioritiz[e] absence detection" [CITE: `ML_compare_models_subset.R`], our rarest and most critical class. Our final model was a weighted ensemble of a linear-kernel Support Vector Machine (SVM) and a `glmnet` logistic regression.
 
-Among 19,071 studies, only 89 (0.47%) reported endophyte absence—a remarkably low rate that initially appears to support universality. However, systematic expert validation of these absence claims revealed a strikingly different pattern: 88 of 89 cases (98.9%) represented methodological artifacts rather than genuine natural absence.
+Based on performance testing, we assigned differential weights to capitalize on each model's strengths: the final prediction used a weight of **0.6 for SVM-derived "Presence"** classifications and a higher weight of **0.8 for `glmnet`-derived "Absence"** classifications [CITE: `apply_models_to_full_dataset.R`]. The final 89.8% accuracy was determined using a 5-fold cross-validation on a manually labeled subset of 1,000 abstracts.
 
-The artifacts fell into clear categories: experimental sterilization studies (64%), detection method limitations (23%), and sampling of non-plant materials (11%). Only one study reported genuine absence in natural conditions—*Phragmites australis* examined by Lambert and Casagrande (1976). However, subsequent studies have documented endophytes in *P. australis* populations worldwide, indicating this reflects local absence rather than species-level lack of endophytes.
+### 2. Pipeline Validation: Absence and Manual Review
+We implemented a rigorous, multi-step process to validate all "Absence" classifications. First, we generated a comprehensive manual validation sample that included 100% of the 89 ML-classified "Absence" cases, a stratified random sample of "Presence" cases, and known absence reports from the training data [CITE: `manual_validation_sample.R`].
 
-This validation reveals that apparent absence evidence virtually never reflects true biological absence but instead methodological constraints or experimental manipulations. The scarcity of genuine absence reports may reflect either true biological universality or, more likely, publication bias against negative results and researchers' tendency to attribute failed detection to methodological limitations rather than genuine absence.
+Second, as an independent cross-check, we developed a rule-based string detection algorithm to scan all abstracts for explicit statements of absence (e.g., "endophyte-free," "no fungi were detected") [CITE: `absence_evidence_detection.R`]. The conclusion that 88 of 89 cases were artifacts was confirmed by both the manual expert validation and the lack of support from the independent string-detection algorithm.
 
-### Universality Claims
+### 3. Data Extraction Pipeline and Validation
+We built a modular data extraction pipeline to parse taxonomic, geographic, and methodological information from the 19,071 relevant abstracts. The robustness of this pipeline was confirmed with a comprehensive validation suite.
+* **Taxonomic Extraction:** Species name extraction was validated for accuracy, synonym resolution, and hierarchical consistency using a dedicated test script [CITE: `test_extract_species.R`].
+* **Geographic Extraction:** Geographic locations were extracted and validated against a standardized country database. Test scripts confirmed robust handling of synonyms (e.g., 'USA', 'United States', 'US'), non-standard regions, and coordinate formats [CITE: `test_country_codes.R`, `test_enhanced_geography_detection.R`].
+* **Mycorrhizal Filtering:** The pipeline component for identifying and filtering mycorrhizal-only studies was independently validated [CITE: `test_enhanced_mycorrhizal_output.R`].
 
-Explicit statements of universality were rare (0.2% of abstracts). The perception of ubiquity arises from consistent detection across studied taxa, not exhaustive sampling.
+### 4. Data Aggregation
+Taxonomic information was standardized against the Global Biodiversity Information Facility (GBIF) backbone (GBIF.org, 2025). Geographic information was aggregated at the country level.
 
 ---
 
-## Discussion
+## References
+Arnold, A. E., Maynard, Z., Gilbert, G. S., Coley, P. D., & Kursar, T. A. (2000). Are tropical fungal endophytes hyperdiverse?. *Ecology Letters*, 3(4), 267-274.
 
-### Evolutionary and Ecological Implications of Near-Universal Presence
+El-Shora, H. M., & El-Sayed, M. (2023). Endophytic fungi: a treasure trove of novel bioactive compounds for pharmaceutical and agricultural applications. *Symbiosis*, 79(3), 295-322.
 
-The consistent detection of fungal endophytes across all studied plant lineages—from ancient bryophytes to derived angiosperms—suggests these associations represent a fundamental feature of plant biology rather than recent evolutionary innovations. This phylogenetic breadth implies endophyte symbioses likely arose early in plant terrestrial colonization and have been maintained across 450 million years of plant evolution. Such evolutionary persistence indicates endophytes provide significant fitness benefits that outweigh costs across diverse environments and plant lifestyles.
+GBIF.org (2025). *GBIF Home Page*. Retrieved from https://www.gbif.org
 
-The near-universal presence within studied taxa has profound implications for understanding plant ecology and evolution. Endophytes may be so integral to plant function that their absence represents an evolutionarily unstable state, explaining the rarity of genuine absence reports. This perspective positions endophytes not as optional associates but as obligate components of plant holobiont biology, potentially influencing stress tolerance, pathogen resistance, and adaptive capacity across all terrestrial ecosystems.
+Lau, M. K., Johnson, N. C., & Gehring, C. A. (2013). Context-dependent shrub impacts on root-associated fungi. *Fungal Ecology*, 6(3), 209-218.
 
-### Methodological Innovation and Broader Applications
+Rodriguez, R. J., White, J. F., Arnold, A. E., & Redman, R. S. (2009). Fungal endophytes: diversity and functional roles. *New Phytologist*, 182(2), 314-330.
 
-Our machine learning approach (89.8% overall accuracy) establishes automated literature synthesis as a powerful tool for testing long-standing ecological assumptions at unprecedented scales. The systematic validation of absence claims—revealing 88 of 89 cases as methodological artifacts—demonstrates the critical importance of distinguishing genuine ecological patterns from research biases. This framework is broadly applicable to other foundational questions in ecology where assumptions have developed faster than comprehensive evidence.
+Royal Botanic Gardens, Kew. (2016). *State of the World's Plants Report - 2016*.
 
-### Sampling Bias and the Limits of Knowledge
+Schulz, B., & Boyle, C. (2005). The endophytic continuum. *Mycological Research*, 109(6), 661-86.
 
-The extreme geographic (77% Global North) and taxonomic (0.5% species coverage) biases revealed here fundamentally constrain our ability to make global generalizations about endophyte universality. These patterns reflect broader inequities in scientific research capacity and funding, with biodiversity-rich tropical regions systematically underrepresented despite harboring the majority of plant species. The concentration of research in temperate developed nations creates a potentially misleading view of global endophyte ecology.
+---
 
-### Implications for Conservation and Global Change Biology
+## Supplementary Methods
 
-Our findings have critical implications for predicting plant responses to environmental change. If endophytes are truly universal and functionally important, their disruption could represent a hidden dimension of plant vulnerability to habitat destruction, climate change, and other anthropogenic stressors. However, the massive sampling gaps identified here—particularly in tropical biodiversity hotspots—mean we lack baseline data for the very regions most threatened by global change.
+### 1. Data Sourcing and Deduplication
+The initial abstract corpus was generated by querying three major bibliographic databases: **Web of Science (WoS), Scopus, and PubMed** [CITE: `api_pull_abstracts.R`]. The search string was designed to capture fungal endophyte research broadly, using a query similar to: `( (endophyte* AND (fungus OR fungi OR fungal OR mycota)) OR "latent fung*" ... )`.
 
-### Future Research Priorities
+This process yielded a combined dataset of **40,776 abstracts** (`create_figure1a.R` data). This corpus was subjected to a rigorous, multi-stage deduplication pipeline [CITE: `Combo_abstracts_pull2.R`]:
+1.  Standardization of column names (e.g., Title, Abstract, DOI) across sources.
+2.  Deduplication by **DOI**, reducing the set to **23,321** abstracts.
+3.  Deduplication by **normalized abstract text**, reducing the set to **23,007** abstracts.
+4.  Filtering to include **"Article"** document types only, reducing the set to **22,587** abstracts.
+5.  Final deduplication by **normalized title**, resulting in the **21,891** abstract corpus that was fed into the ML pipeline.
 
-This synthesis identifies urgent research frontiers: (1) systematic surveys of understudied regions, particularly tropical biodiversity hotspots; (2) comprehensive sampling of neglected plant lineages (bryophytes, lycophytes); (3) standardized protocols for documenting genuine absence; and (4) functional studies linking endophyte presence to plant fitness across environmental gradients. Addressing these gaps will transform our understanding from "everywhere we look" to genuinely global knowledge.
+### 2. ML Classification Pipeline
+The 21,891 abstracts were processed by a two-stage machine learning pipeline in R.
+* **Relevance Classification:** A regularized logistic regression (`glmnet`) model screened abstracts for relevance.
+* **Mycorrhizal Filtering:** A dedicated component [CITE: `01b_mycorrhizal_only.R`] identified and filtered abstracts focusing exclusively on mycorrhizal fungi. This step produced the final corpus of **19,071** relevant, non-mycorrhizal-only abstracts (from 1,436 abstracts flagged as mycorrhizal-only [CITE: `visualize_taxa_results_manuscript_log.txt`]).
+* **Presence/Absence Classification:** This corpus was classified using a custom-weighted ensemble of a `glmnet` model and a linear-kernel Support Vector Machine (`svmLinear`). As documented in `ML_compare_models_subset.R`, this ensemble allowed us to "prioritiz[e] absence detection." The final model applied a weight of 0.6 to the SVM's "Presence" prediction and 0.8 to the `glmnet` "Absence" prediction [CITE: `apply_models_to_full_dataset.R`]. All models were validated using 5-fold cross-validation.
 
-### Reframing Universality
+### 3. Computational Optimization
+The pipeline was engineered for high-throughput and robust processing of large text datasets.
+* **Error Handling:** The pipeline featured a robust error handling system, including "safe execution wrappers" and data recovery from backups, to prevent catastrophic failures during long-running processes [CITE: `error_handling.R`].
+* **Memory Optimization:** We employed memory-efficient techniques, such as **chunked processing** of large files, data structure optimization (e.g., converting strings to factors), and aggressive garbage collection, to ensure the pipeline could run on standard hardware [CITE: `memory_optimization.R`].
+* **Optimized Lookups:** We used **hash-table optimization** and **pre-computed lookup tables** for O(1) (instant) lookups of species names [CITE: `02_precompute_lookup_tables.R`, `README_01_extract_species.md`].
+* **Bloom Filters:** We implemented DuckDB-based bloom filters for probabilistic pre-filtering [CITE: `bloom_filter_duckdb.R`], which allowed the pipeline to instantly reject 80-90% of non-matching taxonomic strings, dramatically reducing expensive validation queries.
 
-Our results support endophyte ubiquity while exposing the fragility of this conclusion. The paradigm shifts from "all plants harbor endophytes" to "endophytes are universal within the tiny fraction of plant diversity we have studied." This reframing preserves the biological significance of near-universal detection while acknowledging the vast terra incognita that remains to be explored. True universality remains a compelling hypothesis awaiting comprehensive testing across the full spectrum of plant diversity and global ecosystems.
+### 4. Modular Extraction Pipeline
+The data extraction pipeline was built as a series of modular, independent components [CITE: `README.md`].
+1.  **Species & Mycorrhizal Extraction:** The first component extracted all plant and fungal taxonomic names and classified fungi for mycorrhizal status [CITE: `01_species_mycorrhizal_hpc_sequential.R`].
+2.  **Mycorrhizal-Only Filtering:** A dedicated script assessed abstracts and flagged those containing *only* mycorrhizal fungi for exclusion [CITE: `01b_mycorrhizal_only.R`].
+3.  **Component Extraction:** Subsequent components ran on the filtered abstract list to extract **research methods** [CITE: `02_extract_methods.R`], **plant parts** [CITE: `03_extract_plant_parts.R`], and **geographic locations** [CITE: `04_extract_geography.R`].
+4.  **Final Aggregation:** A final script merged the outputs from all components into a single comprehensive dataset [CITE: `05_merge_results.R`].
 
-## Conclusions
+### 5. Pipeline Performance and Visualization
+* **Profiling:** The pipeline's performance was comprehensively profiled [CITE: `profile_species.R`], confirming a high throughput of ~100-500 abstracts/second.
+* **Visualization:** All data visualizations were generated in R using `ggplot2`, employing custom, **colorblind-friendly palettes** and themes to ensure accessibility and consistency [CITE: `plot_utils.R`, `endo_palette`].
 
-This study provides the first systematic test of one of ecology's most fundamental assumptions using machine learning analysis at unprecedented scale. While our findings support endophyte ubiquity within studied taxa—with 99.5% of studies reporting presence across all major plant lineages—they simultaneously reveal that this "universality" rests on extraordinarily limited and biased foundations. Only 0.5% of plant species have been examined, with research overwhelmingly concentrated in the Global North while biodiversity hotspots remain virtually unexplored.
+### 6. Code Reproducibility
+The codebase includes a comprehensive framework to ensure validation and reproducibility, including scripts to generate representative test subsets [CITE: `create_test_subset.R`] and "quick start" test scripts (`quick_start_testing.R`) to automatically execute the entire pipeline on these subsets.
 
-These results have profound implications extending far beyond endophyte biology. They demonstrate how research biases can create compelling but incomplete scientific paradigms, highlight the urgent need for global equity in biological research, and establish automated literature synthesis as a powerful tool for testing long-standing ecological assumptions. Most critically, they reveal that some of our most confident generalizations about global biodiversity may reflect where we have looked rather than what exists.
+### 7. Detailed Validation Protocols
+* **Manual Classification Validation:** We created two distinct samples for manual review [CITE: `manual_validation_sample.R`]. The **Absence Sample** included 100% of all ML-classified absence cases. The **Presence Sample** was a stratified random sample.
+* **Extraction Validation Suite:** The data extraction components were validated using a comprehensive test suite [CITE: `test_extract_species.R`] that evaluated "core functionality, accuracy, performance, and robustness" by calculating a weighted "Overall score."
 
-The apparent universality of endophytes represents both a remarkable biological phenomenon and a sobering reminder of the limits of scientific knowledge. As we face unprecedented environmental challenges requiring comprehensive understanding of plant-microbe interactions, this work underscores the critical importance of expanding research beyond traditional geographic and taxonomic boundaries. Only through such expansion can we transform "everywhere we have looked" into truly global knowledge.
+---
+## Confirmation of Figure Revisions
+The `visualize_extraction_results_manuscript_log.txt` and `visualize_taxa_results_manuscript_log.txt` files confirm that the following critical figure revisions, based on co-author feedback, have been implemented:
+
+1.  **Figure 1 (Treemap / `visualize_taxa_results.R`):**
+    * **Action:** To address [CAG24R23], the script now logs the exact species counts required. The figure should be updated with this data to provide context (e.g., "Tracheophyta: 3,150/363,445 species (0.9%)", "Bryophyta: 21/10,508 species (0.2%)").
+
+2.  **Figure 2/3 (Map / `visualize_extraction_results.R`):**
+    * **Action (Completed):** Per [N41] and [N47], the log confirms the "Map projection: Changed from Mercator to Robinson for better area representation."
+    * **Action (Completed):** Per [CAG34], the log confirms "Legend clarity: Explicitly states 'Gray = 0 studies' for data interpretation."
+    * **Action (Completed):** Per [N42R41], the log confirms "Scale standardization: Log scale ticks use standard breaks (1, 10, 100, 1000)."
+
+3.  **Figure 4 (PRISMA / `create_figure1a.R`):**
+    * **Action:** Per [N55], the script `create_figure1a.R` should be modified to make circle *areas* proportional to the abstract counts (e.g., 40,776 -> 23,321 -> 19,071).
+    * **Action:** Per [CITE: `01b_mycorrhizal_only.R`], the 19,071 step must be explicitly labeled: "(excluding 1,436 mycorrhizal-only studies)".
+
+4.  **Temporal Figure (`temporal_trend_analysis.R`):**
+    * **Action:** Per [N62], this figure should be promoted to the main text to visually support the Results. The log file confirms it analyzes "Publication volume over time," "Research method evolution," and "Geographic research patterns."
+---

@@ -197,6 +197,53 @@ get_phylum_order <- function(kingdom_filter) {
 plant_phylum_order <- rev(get_phylum_order("Plantae"))
 fungi_phylum_order <- rev(get_phylum_order("Fungi"))
 
+# Create common name mappings for major phyla
+get_phylum_common_names <- function() {
+  # Plant phyla common names
+  plant_common_names <- c(
+    "Tracheophyta" = "vascular plants",
+    "Magnoliophyta" = "flowering plants",
+    "Pinophyta" = "conifers",
+    "Polypodiophyta" = "ferns",
+    "Bryophyta" = "mosses",
+    "Marchantiophyta" = "liverworts",
+    "Anthocerotophyta" = "hornworts",
+    "Lycopodiophyta" = "club mosses",
+    "Equisetophyta" = "horsetails",
+    "Psilotophyta" = "whisk ferns",
+    "Cycadophyta" = "cycads",
+    "Ginkgophyta" = "ginkgo",
+    "Gnetophyta" = "gnetophytes",
+    "Rhodophyta" = "red algae",
+    "Pteridophyta" = "ferns",
+    "Chlorophyta" = "green algae",
+    "Charophyta" = "stoneworts",
+    "Glaucophyta" = "glaucophyte algae",
+    "Lycopodiophyta" = "club mosses",
+    "Zosterophyllophyta" = "zosterophylls",
+    "Langiophytophyta" = "proto-vascular plants"
+  )
+
+  # Fungal phyla common names
+  fungi_common_names <- c(
+    "Ascomycota" = "sac fungi",
+    "Basidiomycota" = "club fungi",
+    "Mucoromycota" = "pin molds",
+    "Zygomycota" = "conjugation fungi",
+    "Chytridiomycota" = "chytrids",
+    "Glomeromycota" = "arbuscular mycorrhizal fungi",
+    "Blastocladiomycota" = "blastoclads",
+    "Neocallimastigomycota" = "rumen fungi",
+    "Cryptomycota" = "cryptomycetes",
+    "Microsporidia" = "microsporidians"
+  )
+
+  list(plantae = plant_common_names, fungi = fungi_common_names)
+}
+
+# Get phylum common names
+phylum_common_names <- get_phylum_common_names()
+
 message("Plant phylum order (by species count, reversed for plot): ", paste(plant_phylum_order, collapse = ", "))
 message("Fungi phylum order (by species count, reversed for plot): ", paste(fungi_phylum_order, collapse = ", "))
 
@@ -339,18 +386,39 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       mutate(phylum = factor(phylum, levels = fungi_phylum_order))
   }
 
-  count_plot <- ggplot(count_data, aes(x = phylum, y = Count, fill = Status)) +
+  # Format phylum labels with species counts and common names for context
+  count_data_with_totals <- count_data %>%
+    left_join(phylum_data %>% select(phylum, total), by = "phylum") %>%
+    mutate(
+      common_name = case_when(
+        kingdom_filter == "Plantae" ~ phylum_common_names$plantae[phylum],
+        kingdom_filter == "Fungi" ~ phylum_common_names$fungi[phylum],
+        TRUE ~ NA_character_
+      ),
+      phylum_label = if_else(
+        !is.na(common_name),
+        paste0(phylum, " (", common_name, ")\n", scales::comma(total), " ", tolower(level_name_plural), " known"),
+        paste0(phylum, "\n(", scales::comma(total), " ", tolower(level_name_plural), " known)")
+      )
+    )
+
+  count_plot <- ggplot(count_data_with_totals, aes(x = phylum_label, y = Count, fill = Status)) +
     geom_col(width = 0.8) +
     coord_flip() +
     labs(
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Count)"),
-      subtitle = paste("Number of", tolower(level_name), "found vs. not found in each phylum (hierarchical)"),
+      subtitle = paste("Number of", tolower(level_name), "found vs. not found in each phylum (hierarchical). Data from GBIF Backbone Taxonomy"),
       x = "Phylum",
-      y = paste("Number of", level_name_plural)
+      y = paste("Number of", level_name_plural),
+      caption = "GBIF = Global Biodiversity Information Facility (gbif.org)"
     ) +
-    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20")) +
+    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20"),
+                     name = "Status") +
     endo_theme() +
-    theme(axis.text.y = element_text(size = 8))
+    theme(axis.text.y = element_text(size = 10),
+          legend.position = "bottom",
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 11))
 
   # Create percentage plot
   percent_data <- phylum_data %>%
@@ -371,24 +439,45 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       mutate(phylum = factor(phylum, levels = fungi_phylum_order))
   }
 
-  percent_plot <- ggplot(percent_data, aes(x = phylum, y = Percent, fill = Status)) +
+  # Format phylum labels with species counts and common names for context
+  percent_data_with_totals <- percent_data %>%
+    left_join(phylum_data %>% select(phylum, total), by = "phylum") %>%
+    mutate(
+      common_name = case_when(
+        kingdom_filter == "Plantae" ~ phylum_common_names$plantae[phylum],
+        kingdom_filter == "Fungi" ~ phylum_common_names$fungi[phylum],
+        TRUE ~ NA_character_
+      ),
+      phylum_label = if_else(
+        !is.na(common_name),
+        paste0(phylum, " (", common_name, ")\n", scales::comma(total), " ", tolower(level_name_plural), " known"),
+        paste0(phylum, "\n(", scales::comma(total), " ", tolower(level_name_plural), " known)")
+      )
+    )
+
+  percent_plot <- ggplot(percent_data_with_totals, aes(x = phylum_label, y = Percent, fill = Status)) +
     geom_col(width = 0.8) +
     geom_text(
       aes(label = ifelse(Percent > 0, sprintf("%.1f%%", Percent), "")),
       position = position_stack(vjust = 0.5),
-      size = 2.5,
+      size = 3.5,
       fontface = "bold"
     ) +
     coord_flip() +
     labs(
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Percent)"),
-      subtitle = paste("Percentage of", tolower(level_name), "found vs. not found in each phylum (hierarchical)"),
+      subtitle = paste("Percentage of", tolower(level_name), "found vs. not found in each phylum (hierarchical). Data from GBIF Backbone Taxonomy"),
       x = "Phylum",
-      y = paste("Percentage of", level_name_plural)
+      y = paste("Percentage of", level_name_plural),
+      caption = "GBIF = Global Biodiversity Information Facility (gbif.org)"
     ) +
-    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20")) +
+    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20"),
+                     name = "Status") +
     endo_theme() +
-    theme(axis.text.y = element_text(size = 8))
+    theme(axis.text.y = element_text(size = 10),
+          legend.position = "bottom",
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 11))
 
   # Save both plots with subfolder organization
   ggsave(paste0("plots/", subfolder, "/", output_name, "_by_phylum_count.png"), count_plot, width = 12, height = 8)
@@ -784,6 +873,93 @@ create_manuscript_summary <- function() {
 
 # Create the manuscript summary
 create_manuscript_summary()
+
+# Create manuscript-ready log file with key statistics
+create_manuscript_log <- function() {
+  log_file <- "results/visualize_taxa_results_manuscript_log.txt"
+
+  # Calculate key statistics for manuscript
+  total_species_gbif <- nrow(accepted_species %>% filter(kingdom == "Plantae", !is.na(canonicalName)))
+  species_found <- taxa_results_main %>%
+    filter(kingdom == "Plantae", final_classification == "Presence", !is.na(canonicalName_final), match_type == "species") %>%
+    distinct(canonicalName_final) %>% nrow()
+  species_percent <- round((species_found / total_species_gbif) * 100, 1)
+
+  # Top phyla by representation
+  phylum_summary <- accepted_species %>%
+    filter(kingdom == "Plantae", !is.na(canonicalName)) %>%
+    group_by(phylum) %>%
+    summarise(total_species = n_distinct(canonicalName), .groups = "drop") %>%
+    left_join(
+      taxa_results_main %>%
+        filter(kingdom == "Plantae", final_classification == "Presence", !is.na(canonicalName_final), match_type == "species") %>%
+        distinct(phylum, canonicalName_final) %>%
+        group_by(phylum) %>%
+        summarise(found_species = n_distinct(canonicalName_final), .groups = "drop"),
+      by = "phylum"
+    ) %>%
+    mutate(
+      found_species = replace_na(found_species, 0),
+      percent_found = round((found_species / total_species) * 100, 1)
+    ) %>%
+    arrange(desc(percent_found))
+
+  capture.output({
+    cat("=== VISUALIZE_TAXA_RESULTS.R MANUSCRIPT STATISTICS ===\n")
+    cat("Generated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
+
+    cat("OVERALL PLANT SPECIES COVERAGE:\n")
+    cat("===============================\n")
+    cat(sprintf("- Total plant species in GBIF reference: %s\n", format(total_species_gbif, big.mark = ",")))
+    cat(sprintf("- Plant species found in literature: %s\n", format(species_found, big.mark = ",")))
+    cat(sprintf("- Percentage coverage: %.1f%%\n", species_percent))
+    cat(sprintf("- Mycorrhizal-only abstracts excluded: %s\n\n",
+                format(nrow(taxa_results_deduped) - nrow(taxa_results_main), big.mark = ",")))
+
+    cat("PLANT PHYLUM REPRESENTATION (Top 10 by coverage):\n")
+    cat("===============================================\n")
+    top_phyla <- head(phylum_summary, 10)
+    for(i in 1:nrow(top_phyla)) {
+      phyl <- top_phyla[i,]
+      cat(sprintf("%d. %s: %s/%s species (%.1f%%)\n",
+                  i, phyl$phylum,
+                  format(phyl$found_species, big.mark = ","),
+                  format(phyl$total_species, big.mark = ","),
+                  phyl$percent_found))
+    }
+    cat("\n")
+
+    cat("VISUALIZATION OUTPUTS:\n")
+    cat("=====================\n")
+    cat("- 24 phylum-based plots (12 main + 12 supplementary)\n")
+    cat("- 3 geographic-taxonomic visualizations\n")
+    cat("- 6 kingdoms × 2 taxonomic levels (count + percent) × 2 modes\n")
+    cat("- 2 data files: unrepresented taxa + geographic analysis\n")
+    cat("- Total: 27 visualization files + 2 data files\n\n")
+
+    cat("METHODOLOGY DETAILS:\n")
+    cat("===================\n")
+    cat("- Data source: GBIF Backbone Taxonomy\n")
+    cat("- Taxonomic validation: Synonym resolution to accepted names\n")
+    cat("- Filtering: Excludes extinct species, includes mycorrhizal classification\n")
+    cat("- Hierarchical counting: Species → Genera → Families within phyla\n")
+    cat("- Visualization: Enhanced with common names and species counts\n\n")
+
+    cat("KEY FINDINGS FOR MANUSCRIPT:\n")
+    cat("===========================\n")
+    cat(sprintf("- Plant endophyte research covers %.1f%% of known plant species diversity\n", species_percent))
+    cat("- Most studied phylum:", phylum_summary$phylum[1], sprintf("(%.1f%% coverage)\n", phylum_summary$percent_found[1]))
+    cat("- Least studied phylum:", tail(phylum_summary$phylum, 1), sprintf("(%.1f%% coverage)\n", tail(phylum_summary$percent_found, 1)))
+    cat("- Analysis includes both presence and absence evidence detection\n")
+    cat("- Geographic distribution shows research concentration patterns\n")
+
+  }, file = log_file)
+
+  message("Manuscript-ready statistics saved to: ", log_file)
+}
+
+# Generate the manuscript log
+create_manuscript_log()
 
 message("All visualizations and data exports completed!")
 message("Created:")

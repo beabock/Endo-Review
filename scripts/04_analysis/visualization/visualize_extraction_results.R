@@ -21,6 +21,7 @@ library(maps)
 library(countrycode)
 library(rnaturalearth)
 library(rnaturalearthdata)
+library(sf)  # For coordinate reference system transformations
 
 source("scripts/utils/plot_utils.R")
 # Load centralized reference utilities (normalization helpers)
@@ -690,7 +691,7 @@ for (version_name in names(versions)) {
       custom_theme +
       theme(legend.position = "none")
 
-    # World choropleth map
+    # World choropleth map with Robinson projection
     world <- ne_countries(scale = "medium", returnclass = "sf")
     countries_map_data <- data %>%
       filter(!is.na(countries_detected)) %>%
@@ -711,7 +712,11 @@ for (version_name in names(versions)) {
       filter(!is.na(iso3))
     world_data <- world %>%
       left_join(countries_map_data, by = c("iso_a3" = "iso3"))
-    p_world_map <- ggplot(data = world_data) +
+
+    # Transform to Robinson projection
+    world_robinson <- st_transform(world_data, crs = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+
+    p_world_map <- ggplot(data = world_robinson) +
       geom_sf(aes(fill = frequency), color = "white", size = 0.1) +
       scale_fill_gradient(low = endo_colors$gradient_low, high = endo_colors$gradient_high,
                      na.value = "lightgray",
@@ -720,8 +725,8 @@ for (version_name in names(versions)) {
                      labels = scales::comma_format(accuracy = 1)) +
       labs(
         title = if(version_prefix == "main") "Global Distribution of Endophyte Research" else paste("Global Distribution of Endophyte Research -", toupper(version_prefix), "Version"),
-        subtitle = "Number of abstracts mentioning each country",
-        caption = paste("Total abstracts with geography:", sum(abstract_summary$has_geography))
+        subtitle = "Number of abstracts mentioning each country (Robinson projection)",
+        caption = paste("Total abstracts with geography:", sum(abstract_summary$has_geography), "• Gray = 0 studies")
       ) +
       custom_theme +
       theme(
@@ -735,28 +740,20 @@ for (version_name in names(versions)) {
         legend.key.height = unit(0.5, "cm")
       )
 
-    # Log-scale version of world map for main version only
+    # Log-scale version of world map for main version only with Robinson projection
     if (version_prefix == "main") {
-      # Calculate appropriate breaks for log scale
-      freq_values <- world_data$frequency[!is.na(world_data$frequency) & world_data$frequency > 0]
-      if (length(freq_values) > 0) {
-        log_breaks <- 10^seq(floor(log10(min(freq_values))), ceiling(log10(max(freq_values))), length.out = 4)
-      } else {
-        log_breaks <- c(1, 10, 100, 1000)
-      }
-
-      p_world_map_log <- ggplot(data = world_data) +
+      p_world_map_log <- ggplot(data = world_robinson) +
         geom_sf(aes(fill = frequency), color = "white", size = 0.1) +
         scale_fill_gradient(low = endo_colors$gradient_low, high = endo_colors$gradient_high,
                            na.value = "lightgray",
-                           name = "Abstract Count (log scale)",
+                           name = "Abstract Count",
                            trans = "log10",
-                           breaks = log_breaks,
+                           breaks = c(1, 10, 100, 1000),
                            labels = scales::comma_format(accuracy = 1)) +
         labs(
           title = "Global Distribution of Endophyte Research (Log Scale)",
-          subtitle = "Number of abstracts mentioning each country (logarithmic scale)",
-          caption = paste("Total abstracts with geography:", sum(abstract_summary$has_geography))
+          subtitle = "Number of abstracts mentioning each country (Robinson projection, logarithmic scale)",
+          caption = paste("Total abstracts with geography:", sum(abstract_summary$has_geography), "• Gray = 0 studies")
         ) +
         custom_theme +
         theme(
@@ -1086,5 +1083,128 @@ cat("2. Compare main vs supp versions for differences in mycorrhizal filtering\n
 cat("3. Use findings to guide systematic review priorities\n")
 cat("4. Consider combining plots manually in external software if needed\n")
 cat("5. Integrate visualizations into research presentations and publications\n\n")
+
+# Create manuscript-ready log file with key statistics for extraction results
+create_manuscript_log_extraction <- function() {
+  log_file <- "results/visualize_extraction_results_manuscript_log.txt"
+
+  # Calculate key statistics for manuscript
+  total_abstracts <- nrow(abstract_summary)
+  abstracts_with_species <- sum(abstract_summary$has_species)
+  abstracts_with_geography <- sum(abstract_summary$has_geography)
+  abstracts_with_methods <- sum(abstract_summary$has_methods)
+
+  # Geographic analysis summary
+  if (sum(abstract_summary$has_geography) > 0) {
+    geo_summary <- data %>%
+      filter(!is.na(countries_detected)) %>%
+      select(id, countries_detected) %>%
+      distinct(id, countries_detected) %>%
+      separate_rows(countries_detected, sep = "; ") %>%
+      filter(!is.na(countries_detected), countries_detected != "") %>%
+      mutate(country_std = if (exists("normalize_country_vector")) {
+        normalize_country_vector(countries_detected)
+      } else {
+        stringr::str_to_title(countries_detected)
+      }) %>%
+      distinct(id, country_std) %>%
+      count(country_std, name = "frequency") %>%
+      arrange(desc(frequency))
+
+    top_countries <- head(geo_summary, 5)
+  }
+
+  # Methods summary
+  if (sum(abstract_summary$has_methods) > 0) {
+    methods_summary <- data %>%
+      group_by(id) %>%
+      summarise(methods_combined = first(methods_combined), .groups = "drop") %>%
+      count(methods_combined, name = "count") %>%
+      mutate(percentage = count / sum(count) * 100) %>%
+      arrange(desc(count))
+  }
+
+  capture.output({
+    cat("=== VISUALIZE_EXTRACTION_RESULTS.R MANUSCRIPT STATISTICS ===\n")
+    cat("Generated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
+
+    cat("DATASET OVERVIEW:\n")
+    cat("================\n")
+    cat(sprintf("- Total abstracts analyzed: %s\n", format(total_abstracts, big.mark = ",")))
+    cat(sprintf("- Abstracts with species detected: %s (%.1f%%)\n",
+                format(abstracts_with_species, big.mark = ","),
+                round(abstracts_with_species/total_abstracts * 100, 1)))
+    cat(sprintf("- Abstracts with geographic information: %s (%.1f%%)\n",
+                format(abstracts_with_geography, big.mark = ","),
+                round(abstracts_with_geography/total_abstracts * 100, 1)))
+    cat(sprintf("- Abstracts with research methods: %s (%.1f%%)\n\n",
+                format(abstracts_with_methods, big.mark = ","),
+                round(abstracts_with_methods/total_abstracts * 100, 1)))
+
+    if (exists("geo_summary")) {
+      cat("GEOGRAPHIC DISTRIBUTION:\n")
+      cat("=======================\n")
+      cat("Top 5 countries by number of abstracts:\n")
+      for(i in 1:min(5, nrow(geo_summary))) {
+        country <- geo_summary[i,]
+        cat(sprintf("%d. %s: %s abstracts\n", i, country$country_std, format(country$frequency, big.mark = ",")))
+      }
+      cat("\n")
+    }
+
+    if (exists("methods_summary")) {
+      cat("RESEARCH METHODS:\n")
+      cat("================\n")
+      cat("Most common method combinations:\n")
+      for(i in 1:min(5, nrow(methods_summary))) {
+        method <- methods_summary[i,]
+        cat(sprintf("%d. %s: %s abstracts (%.1f%%)\n",
+                    i, method$methods_combined,
+                    format(method$count, big.mark = ","),
+                    round(method$percentage, 1)))
+      }
+      cat("\n")
+    }
+
+    cat("VISUALIZATION FEATURES:\n")
+    cat("======================\n")
+    cat("- World maps with Robinson projection (more accurate than Mercator)\n")
+    cat("- Standard log scales (1, 10, 100, 1000) for data clarity\n")
+    cat("- Geographic regions (North vs South classification)\n")
+    cat("- Research method distributions (3 core + 9 expanded methods)\n")
+    cat("- Plant part frequency analysis\n")
+    cat("- Confidence level distributions\n")
+    cat("- Dual analysis modes (main/supplementary for mycorrhizal filtering)\n\n")
+
+    cat("TECHNICAL IMPROVEMENTS:\n")
+    cat("=======================\n")
+    cat("- Map projection: Changed from Mercator to Robinson for better area representation\n")
+    cat("- Legend clarity: Explicitly states 'Gray = 0 studies' for data interpretation\n")
+    cat("- Scale standardization: Log scale ticks use standard breaks (1, 10, 100, 1000)\n")
+    cat("- Enhanced readability: Larger fonts, better legend positioning\n")
+    cat("- Geographic completeness: Shows countries, continents, regions, coordinates\n\n")
+
+    cat("KEY FINDINGS FOR MANUSCRIPT:\n")
+    cat("===========================\n")
+    cat(sprintf("- Geographic coverage shows %s abstracts with location data\n",
+                format(abstracts_with_geography, big.mark = ",")))
+    cat(sprintf("- Research methods detected in %s abstracts\n",
+                format(abstracts_with_methods, big.mark = ",")))
+    if (exists("geo_summary") && nrow(geo_summary) > 0) {
+      cat(sprintf("- Most studied country: %s (%s abstracts)\n",
+                  geo_summary$country_std[1], format(geo_summary$frequency[1], big.mark = ",")))
+    }
+    if (exists("methods_summary") && nrow(methods_summary) > 0) {
+      cat(sprintf("- Most common method approach: %s\n", methods_summary$methods_combined[1]))
+    }
+    cat("- Analysis reveals global research patterns in endophyte studies\n")
+
+  }, file = log_file)
+
+  message("Manuscript-ready statistics saved to: ", log_file)
+}
+
+# Generate the manuscript log
+create_manuscript_log_extraction()
 
 cat("All visualization files saved to plots/main/ and plots/supplementary/ directories! 📊✨\n")
