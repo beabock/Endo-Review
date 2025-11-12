@@ -1,4 +1,4 @@
-# Manuscript Preparation - Version 13 (Final Polish)
+# Manuscript Preparation - Version 12 (Log File Integration)
 **Authors:** B. Bock, N. McKay, N.C. Johnson, C.A. Gehring
 **Goal journal:** Nature
 
@@ -6,10 +6,10 @@
 Ubiquitous Symbionts, Biased Sampling: Geographic and Taxonomic Gaps Reshape Endophyte Universality
 
 ## Abstract
-The paradigm that "all plants harbor fungal endophytes" represents a foundational assumption in plant ecology, yet this claim has never been systematically tested. Here we present the first comprehensive evaluation using machine learning analysis of 19,071 research abstracts spanning nearly a century (1926-2025). Our automated pipeline achieved 89.8% accuracy in classifying endophyte presence/absence, revealing that 99.5% of studies report endophyte presence with only 0.5% documenting absence. However, expert validation showed that virtually all absence reports (88 of 89 cases) reflect methodological artifacts rather than genuine natural absence. Strikingly, this apparent universality rests on extraordinarily biased sampling: only **0.8%** of described plant species have been examined, with 77% of research concentrated in the Global North. Our findings confirm endophyte ubiquity as a robust pattern *within studied taxa* but demonstrate this "universality" is a generalization from a tiny fraction of global plant diversity. This work establishes a validated baseline for plant-microbe symbiosis and reveals this bias as a critical bottleneck in biodiversity research.
+The paradigm that "all plants harbor fungal endophytes" represents a foundational assumption in plant ecology, yet this claim has never been systematically tested. Here we present the first comprehensive evaluation using machine learning analysis of 19,071 research abstracts spanning nearly a century (1926-2025). Our automated pipeline achieved 89.8% accuracy in classifying endophyte presence/absence, revealing that 99.5% of studies report endophyte presence with only 0.5% documenting absence. However, expert validation showed that virtually all absence reports (88 of 89 cases) reflect methodological artifacts rather than genuine natural absence. Strikingly, this apparent universality rests on extraordinarily biased sampling: only **0.8%** of described plant species have been examined, with 77% of research concentrated in the Global North while biodiversity hotspots remain virtually unexplored. Our findings confirm endophyte ubiquity as a robust pattern *within studied taxa* but demonstrate this "universality" is a generalization from a tiny, biased fraction of global plant diversity. This work establishes a new, validated baseline for plant-microbe symbiosis and highlights the urgent need to redirect research efforts toward underrepresented biomes and lineages.
 
 ## Introduction
-Fungal endophytes are fungi that inhabit plant tissues without causing apparent disease. This symbiosis is considered one of the most abundant on earth, influencing plant ecology, evolution, and stress tolerance (Rodriguez et al., 2009). They are also a critical source of novel pharmaceuticals and biomaterials (El-Shora & El-Sayed, 2023). The notion that "all plants harbor fungal endophytes" has become a common claim in ecological literature (e.g., Arnold et al., 2000). Indeed, our analysis of the literature confirms this is a widespread assertion, with a quantitative analysis identifying that **[X.X]%** of abstracts explicitly reiterate this claim [CITE: `find_all_plants_statement.R` results]. This assumption of ubiquity underpins research on endophyte function, diversity, and transmission.
+Fungal endophytes are fungi that inhabit plant tissues without causing apparent disease. This symbiosis is considered one of the most abundant on earth, influencing plant ecology, evolution, and stress tolerance (Rodriguez et al., 2009). They are also a critical source of novel pharmaceuticals and biomaterials (El-Shora & El-Sayed, 2023). The notion that "all plants harbor fungal endophytes" has become a common claim in ecological literature (e.g., Arnold et al., 2000). Indeed, our analysis of the literature confirms this is a widespread assertion, with a quantitative analysis identifying that [X.X]% of abstracts explicitly reiterate this claim [CITE: `find_all_plants_statement.R` results]. This assumption of ubiquity underpins research on endophyte function, diversity, and transmission.
 
 However, this assumption remains unvalidated, as a comprehensive, systematic evaluation of fungal endophyte distribution across plant taxa and regions is lacking. Previous reviews have been qualitative or focused on specific lineages (e.g., Schulz & Boyle, 2005), leaving the global pattern untested. It has been unclear whether the paradigm of ubiquity is a robust, data-driven conclusion or or an artifact of research focus. This knowledge gap is critical: if endophytes are not ubiquitous, their ecological and evolutionary impacts may be more constrained than assumed. Conversely, if they are ubiquitous, the biases in *where* we have looked become paramount.
 
@@ -20,7 +20,7 @@ Our machine learning pipeline analyzed 19,071 relevant abstracts, confirming tha
 
 Despite this near-universal detection, our analysis reveals that this conclusion rests on a tiny and deeply biased sample of plant biodiversity. We find that only **0.8%** (3,226 of 390,101 species) of described vascular plant species have been examined for endophytes [CITE: `visualize_taxa_results_manuscript_log.txt`].
 
-This taxonomic bias is mirrored by an extreme geographic bias. Research is concentrated in the Global North, with 77% of all studies originating from Europe and North America. The top five most-studied countries (United States, China, South Africa, India, and Brazil) account for a disproportionate amount of data [CITE: `visualize_extraction_results_manuscript_log.txt`]. Furthermore, the completeness of this information is inconsistent: while 89.2% of abstracts detailed research methods, only 72.5% contained extractable geographic information [CITE: `visualization_summary_report_main.txt`]. A temporal analysis also shows that while research methods have modernized, with molecular techniques now used in **36.8%** of studies, these geographic and taxonomic biases are not historical artifacts; they have remained largely consistent over the past three decades [CITE: `temporal_trend_analysis.R`, `visualization_summary_report_main.txt`].
+This taxonomic bias is mirrored by an extreme geographic bias. Research is concentrated in the Global North, with 77% of all studies originating from Europe and North America. The top five most-studied countries (United States, China, South Africa, India, and Brazil) account for a disproportionate amount of data [CITE: `visualize_extraction_results_manuscript_log.txt`]. Furthermore, the completeness of this information is inconsistent: while 89.2% of abstracts detailed research methods, only 72.5% contained extractable geographic information and 71.1% specified plant parts [CITE: `visualization_summary_report_main.txt`]. A temporal analysis also shows that while molecular methods have increased (now used in 36.8% of studies), these geographic and taxonomic biases have remained largely consistent over the past three decades [CITE: `temporal_trend_analysis.R`].
 
 ## Discussion
 Our analysis provides the first quantitative confirmation that fungal endophytes are ubiquitous *wherever they have been studied*. The data-driven finding that 99.5% of studies report presence, combined with our validation that 99% of "absence" reports are artifacts, provides overwhelming support for the ubiquity paradigm *within the current scope of research*.
@@ -34,12 +34,9 @@ We have not tested if "all plants host endophytes." We have demonstrated that "a
 ### Differentiating "Absence" from "Study-Level Negatives"
 A key challenge in testing the ubiquity paradigm is the interpretation of "absence" reports. Our ML pipeline, for instance, identified 89 studies reporting endophyte absence, and literature reviews (e.g., Lau, Johnson, & Gehring, 2013) note specific cases where plants were found to be endophyte-free.
 
-However, our rigorous, multi-step validation (detailed in Methods) provides the necessary context. We found 88 of these 89 cases were methodological artifacts. More importantly, in cases of apparent genuine absence from a single study, other studies *consistently* report endophyte presence in the very same taxon (or even species).
+However, our rigorous, multi-step validation (detailed in Methods) provides the necessary context. We found 88 of 89 cases were methodological artifacts. More importantly, in cases of apparent genuine absence from a single study, other studies *consistently* report endophyte presence in the very same taxon (or even species).
 
 Therefore, we must differentiate between a **"study-level negative"** (a single report of non-detection) and a **"taxon-level absence"** (a species or lineage that is *conclusively* and *repeatedly* shown to be endophyte-free). Our analysis finds that while "study-level negatives" exist, **we find no evidence for a single "taxon-level absence"** in the plant kingdom. This reframes the paradigm: a single 'absence' report does *not* invalidate ubiquity at the taxon level.
-
-### Limitations of Scope
-We acknowledge that this analysis is based on data extracted from scientific abstracts, not full-text articles. This is a standard and necessary trade-off for a meta-analysis of this scale. This may result in an under-counting of species, as some abstracts may not list every plant species studied. Therefore, our 0.8% coverage figure should be viewed as a conservative, data-driven estimate representing the *minimum* known boundary of the field.
 
 The apparent universality of endophytes represents both a remarkable biological phenomenon and a sobering reminder of the limits of scientific knowledge. As we face unprecedented environmental challenges requiring comprehensive understanding of plant-microbe interactions, this work underscores the critical importance of expanding research beyond traditional geographic and taxonomic boundaries. Only through such expansion can we transform "everywhere we have looked" into truly global knowledge.
 
@@ -54,7 +51,7 @@ For the primary presence/absence classification, we tested multiple models and d
 Based on performance testing, we assigned differential weights to capitalize on each model's strengths: the final prediction used a weight of **0.6 for SVM-derived "Presence"** classifications and a higher weight of **0.8 for `glmnet`-derived "Absence"** classifications [CITE: `apply_models_to_full_dataset.R`]. The final 89.8% accuracy was determined using a 5-fold cross-validation on a manually labeled subset of 1,000 abstracts.
 
 ### 2. Pipeline Validation: Absence and Manual Review
-We implemented a rigorous, multi-step process to validate all "Absence" classifications. First, we generated a comprehensive manual validation sample that included **100% of the 89 ML-classified "Absence" cases**, a stratified random sample of "Presence" cases, and known absence reports from the training data [CITE: `manual_validation_sample.R`].
+We implemented a rigorous, multi-step process to validate all "Absence" classifications. First, we generated a comprehensive manual validation sample that included 100% of the 89 ML-classified "Absence" cases, a stratified random sample of "Presence" cases, and known absence reports from the training data [CITE: `manual_validation_sample.R`].
 
 Second, as an independent cross-check, we developed a rule-based string detection algorithm to scan all abstracts for explicit statements of absence (e.g., "endophyte-free," "no fungi were detected") [CITE: `absence_evidence_detection.R`]. The conclusion that 88 of 89 cases were artifacts was confirmed by both the manual expert validation and the lack of support from the independent string-detection algorithm.
 
@@ -101,7 +98,7 @@ This process yielded a combined dataset of **40,776 abstracts** (`create_figure1
 ### 2. ML Classification Pipeline
 The 21,891 abstracts were processed by a two-stage machine learning pipeline in R.
 * **Relevance Classification:** A regularized logistic regression (`glmnet`) model screened abstracts for relevance.
-* **Mycorrhizal Filtering:** A dedicated component [CITE: `01b_mycorrhizal_only.R`] identified and filtered abstracts focusing exclusively on mycorrhizal fungi. This step produced the final corpus of **19,071** relevant, non-mycorrhizal-only abstracts (from 1,436 abstracts flagged as mycorrhizal-only [CITE: `visualize_taxa_results_manuscript_log.txt`]).
+* **Mycorrhizal Filtering:** A dedicated component [CITE: `01b_mycorrhizal_only.R`] identified and filtered abstracts focusing exclusively on mycorrhizal fungi. This step produced the final corpus of **19,071** relevant, non-mycorrhizal-only abstracts (from **1,436** abstracts flagged as mycorrhizal-only [CITE: `visualize_taxa_results_manuscript_log.txt`]).
 * **Presence/Absence Classification:** This corpus was classified using a custom-weighted ensemble of a `glmnet` model and a linear-kernel Support Vector Machine (`svmLinear`). As documented in `ML_compare_models_subset.R`, this ensemble allowed us to "prioritiz[e] absence detection." The final model applied a weight of 0.6 to the SVM's "Presence" prediction and 0.8 to the `glmnet` "Absence" prediction [CITE: `apply_models_to_full_dataset.R`]. All models were validated using 5-fold cross-validation.
 
 ### 3. Computational Optimization
@@ -130,21 +127,21 @@ The codebase includes a comprehensive framework to ensure validation and reprodu
 * **Extraction Validation Suite:** The data extraction components were validated using a comprehensive test suite [CITE: `test_extract_species.R`] that evaluated "core functionality, accuracy, performance, and robustness" by calculating a weighted "Overall score."
 
 ---
-## Notes on Final Figures
-**Figure 1: Pipeline and Temporal Bias (New Recommendation)**
-* **Strategy:** Combine the PRISMA flow chart and the temporal trend plot into a multi-panel **Figure 1**. This is a high-impact opening that shows (a) the data source and (b) that the bias problem is current and persistent [N62].
-* **(a) PRISMA Panel:** Use `create_figure1a.R`. Make circle areas proportional to abstract counts [N55] and label the 19,071 step as "(excluding 1,436 mycorrhizal-only studies)" [CITE: `visualize_taxa_results_manuscript_log.txt`].
-* **(b) Temporal Panel:** Use `temporal_trend_analysis.R`. Plot publication volume over time, overlaid with the geographic bias (e.g., % Global North), to visually confirm the bias is persistent.
+## Confirmation of Figure Revisions
+The `visualize_extraction_results_manuscript_log.txt` and `visualize_taxa_results_manuscript_log.txt` files confirm that the following critical figure revisions, based on co-author feedback, have been implemented:
 
-**Figure 2: Geographic Bias (World Map)**
-* **Script:** `visualize_extraction_results.R`
-* **Confirmation:** The log file `visualize_extraction_results_manuscript_log.txt` confirms all co-author feedback is **complete**:
-    * **Projection:** Changed to **Robinson** [N41, N47].
-    * **Legend:** Explicitly states **"Gray = 0 studies"** [CAG34].
-    * **Scale:** Uses standard log breaks **(1, 10, 100, 1000)** [N42R41].
-* **Action:** Consider removing the redundant bar chart [N43].
+1.  **Figure 1 (Treemap / `visualize_taxa_results.R`):**
+    * **Action:** To address [CAG24R23], the script now logs the exact species counts required. The figure should be updated with this data to provide context (e.g., "Tracheophyta: 3,150/363,445 species (0.9%)", "Bryophyta: 21/10,508 species (0.2%)").
 
-**Figure 3: Taxonomic Bias (Treemap)**
-* **Script:** `visualize_taxa_results.R`
-* **Action:** The log file `visualize_taxa_results_manuscript_log.txt` provides the exact numbers needed. The figure must be updated to include the species counts (e.g., "Tracheophyta: 3,150/363,445") to give context, as requested by [CAG24R23].
+2.  **Figure 2/3 (Map / `visualize_extraction_results.R`):**
+    * **Action (Completed):** Per [N41] and [N47], the log confirms the "Map projection: Changed from Mercator to Robinson for better area representation."
+    * **Action (Completed):** Per [CAG34], the log confirms "Legend clarity: Explicitly states 'Gray = 0 studies' for data interpretation."
+    * **Action (Completed):** Per [N42R41], the log confirms "Scale standardization: Log scale ticks use standard breaks (1, 10, 100, 1000)."
+
+3.  **Figure 4 (PRISMA / `create_figure1a.R`):**
+    * **Action:** Per [N55], the script `create_figure1a.R` should be modified to make circle *areas* proportional to the abstract counts (e.g., 40,776 -> 23,321 -> 19,071).
+    * **Action:** Per [CITE: `visualize_taxa_results_manuscript_log.txt`], the 19,071 step must be explicitly labeled: "(excluding 1,436 mycorrhizal-only studies)".
+
+4.  **Temporal Figure (`temporal_trend_analysis.R`):**
+    * **Action:** Per [N62], this figure should be promoted to the main text to visually support the Results. The log file confirms it analyzes "Publication volume over time," "Research method evolution," and "Geographic research patterns."
 ---
