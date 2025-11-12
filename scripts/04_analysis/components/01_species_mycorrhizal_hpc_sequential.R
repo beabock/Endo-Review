@@ -4,7 +4,18 @@
 #
 # Purpose: Robust sequential version for HPC when parallel processing hangs
 #
+# Description: Alternative implementation of species detection using sequential processing
+# instead of parallel execution. Provides reliable fallback when cluster setup fails.
+#
+# Author: B. Bock
+# Date: 2024-09-26
+#
 # Usage: Use this if the parallel version hangs during cluster setup
+#
+# Dependencies: optimized_taxa_detection.R, reference_data_utils.R, memory_optimization.R
+#
+# Inputs: consolidated_dataset.csv, lookup_tables.rds, species.rds, funtothefun.csv
+# Outputs: species_mycorrhizal_results_sequential.csv, processing logs
 #
 # =============================================================================
 
