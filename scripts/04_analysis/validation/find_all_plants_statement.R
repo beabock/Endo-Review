@@ -111,16 +111,12 @@ primary = c(
     "every plant has endophytes",
     "all plants are colonized by fungi",
     "universal fungal endophytes",
-    "ubiquitous endophytic fungi"
+    "ubiquitous endophytic fungi",
+    "all plants host endophytic fungi"
   ),
 
   # Secondary patterns - variations and synonyms
   secondary = c(
-    "most plants host fungi",
-    "nearly all plants host fungi",
-    "vast majority of plants host fungi",
-    "plants generally host fungi",
-    "plants typically host fungal",
     "fungi present in all plants",
     "fungal presence in all plants",
     "ubiquitous fungal colonization",
@@ -179,28 +175,6 @@ primary = c(
     "ubiquitous endosymbiotic fungi",
     "all terrestrial plants host fungi",
     "fungal endophytes in all ecosystems"
-  ),
-
-  # Review/generalization patterns - statements about fungal ubiquity
-  review = c(
-    "fungal endophytes are widespread",
-    "endophytic fungi are widespread",
-    "fungi are common in plants",
-    "fungal colonization is common",
-    "prevalent fungal colonization",
-    "widespread fungal presence",
-    "fungi are prevalent in plants",
-    "fungal endophytes are prevalent",
-    "endophytes are found everywhere",
-    "fungal endophytes are common",
-    "fungi commonly colonize plants",
-    "frequent fungal colonization",
-    "regular fungal presence",
-    "routine fungal colonization",
-    "typical fungal endophytes",
-    "standard fungal colonization",
-    "normal fungal presence",
-    "expected fungal endophytes"
   ),
 
   # Quantitative patterns - numerical statements suggesting universality

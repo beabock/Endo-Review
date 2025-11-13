@@ -31,9 +31,9 @@ endo_palette <- c(
 
 # Define custom color mappings for common plot categories in Endo-Review
 endo_colors <- list(
-  presence_absence = c(Presence = "#46ACC8", Absence = "#B40F20"),
-  relevant_irrelevant = c(Relevant = "#46ACC8", Irrelevant = "#B40F20"),
-  found_not_found = c(Found = "#46ACC8", `Not Found` = "#B40F20"),
+  presence_absence = c(Presence = "#76B7B2", Absence = "#E07A5F"),
+relevant_irrelevant = c(Relevant = "#76B7B2", Irrelevant = "#E07A5F"),
+found_not_found = c(Found = "#76B7B2", `Not Found` = "#E07A5F"),
   # Gradient colors with high contrast for continuous scales
   gradient_low = "#C9B2C7",      # Muted lavender/pink for low values
   gradient_high = "#2C5F7C",     # Deep blue-gray for high values
