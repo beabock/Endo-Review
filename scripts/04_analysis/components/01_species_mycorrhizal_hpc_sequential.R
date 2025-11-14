@@ -126,6 +126,14 @@ extract_species_data <- function(
   verbose = TRUE,
   hash_threshold = 10000
 ) {
+
+  # Validate input data structure
+  required_cols <- c("id", "abstract")
+  missing_cols <- setdiff(required_cols, colnames(abstracts_data))
+
+  if (length(missing_cols) > 0) {
+    stop("❌ Missing required columns in abstracts_data: ", paste(missing_cols, collapse = ", "))
+  }
   
   cat("🚀 SEQUENTIAL MODE - No parallel processing overhead\n")
   cat("   Processing mode: Sequential only\n")
@@ -150,17 +158,38 @@ extract_species_data <- function(
   species <- readRDS(species_file)
   if (verbose) log_message("   Loaded species reference data:", nrow(species), "species records", log_file = log_file)
   
+  # Handle empty data early
+  if (nrow(abstracts_data) == 0) {
+    if (verbose) log_message("⚠️ Empty abstracts data provided, returning empty results", log_file = log_file)
+    # Create empty result structure
+    empty_result <- tibble(
+      id = integer(0),
+      predicted_label = character(0),
+      match_type = character(0),
+      canonicalName = character(0),
+      kingdom = character(0),
+      phylum = character(0),
+      family = character(0),
+      genus = character(0),
+      status = character(0),
+      resolved_name = character(0),
+      acceptedScientificName = character(0)
+    )
+    write_csv(empty_result, output_file)
+    return(empty_result)
+  }
+
   # Process in batches
   tic("Sequential species detection")
   n_batches <- ceiling(nrow(abstracts_data) / batch_size)
   all_results <- list()
-  
+
   if (verbose) {
     log_message("📊 Processing", nrow(abstracts_data), "abstracts in", n_batches, "batches", log_file = log_file)
     log_message("⚙️ Batch size:", batch_size, "abstracts per batch", log_file = log_file)
     log_message("🕐 Started at", format(Sys.time(), "%H:%M:%S"), log_file = log_file)
   }
-  
+
   overall_start_time <- Sys.time()
   total_species_found <- 0  # Initialize cumulative counter outside loop
   
