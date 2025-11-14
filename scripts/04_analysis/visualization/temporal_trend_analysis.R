@@ -106,10 +106,8 @@ pubs_plot <- ggplot(annual_counts, aes(x = publication_year, y = publications)) 
   geom_point(color = endo_colors$presence_absence["Absence"], size = 2) +
   endo_theme() +
   labs(
-    title = "Endophyte Research Publications Over Time",
     x = "Year",
-    y = "Number of Publications",
-    caption = "Data: Comprehensive Extraction Results"
+    y = "Number of Publications"
   ) +
   scale_x_continuous(breaks = seq(min(annual_counts$publication_year), max(annual_counts$publication_year), by = 2)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05)))

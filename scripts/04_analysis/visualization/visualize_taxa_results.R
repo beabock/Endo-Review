@@ -22,10 +22,6 @@ tryCatch({
       )
   }
 
-  # Define fallback colors
-  endo_colors <- list(
-    found_not_found = c(Found = "#46ACC8", `Not Found` = "#B40F20")
-  )
 })
 
 # Source optimized taxa detection functions for potential use
@@ -409,10 +405,9 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Count)"),
       subtitle = paste("Number of", tolower(level_name), "found vs. not found in each phylum (hierarchical). Data from GBIF Backbone Taxonomy"),
       x = "Phylum",
-      y = paste("Number of", level_name_plural),
-      caption = "GBIF = Global Biodiversity Information Facility (gbif.org)"
+      y = paste("Number of", level_name_plural)
     ) +
-    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20"),
+    scale_fill_manual(values = c(Found = "#76B7B2", `Not Found` = "#E07A5F"),
                      name = "Status") +
     endo_theme() +
     theme(axis.text.y = element_text(size = 10),
@@ -471,8 +466,7 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       y = paste("Percentage of", level_name_plural),
       caption = "GBIF = Global Biodiversity Information Facility (gbif.org)"
     ) +
-    scale_fill_manual(values = c(Found = "#46ACC8", `Not Found` = "#B40F20"),
-                     name = "Status") +
+    scale_fill_manual(values = c(Found = "#76B7B2", `Not Found` = "#E07A5F"), name = "Status") +
     endo_theme() +
     theme(axis.text.y = element_text(size = 10),
           legend.position = "bottom",

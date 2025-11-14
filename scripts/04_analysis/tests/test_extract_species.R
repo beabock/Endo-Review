@@ -73,7 +73,8 @@ for (line in file_content) {
 
   # Check if this is a function definition
   if (grepl("^[a-zA-Z_][a-zA-Z0-9_]*\\s*<-\\s*function", line) ||
-      grepl("^extract_species_mycorrhizal_data_sequential\\s*<-\\s*function", line)) {
+      grepl("^extract_species_mycorrhizal_data_sequential\\s*<-\\s*function", line) ||
+      grepl("^extract_species_data\\s*<-\\s*function", line)) {
     in_function <- TRUE
     brace_count <- 0
     function_lines <- c(function_lines, line)
@@ -994,7 +995,6 @@ test_typo_handling <- function() {
 
     cat("   📊 Typo Handling Precision:", round(precision * 100, 1), "%\n")
     cat("   📊 Typo Handling Recall:", round(recall * 100, 1), "%\n")
-    cat("   📊 Detectable cases found:", detected_in_detectable, "out of", expected_in_detectable, "expected\n")
 
     # For typo handling, we focus on cases that should be detectable with normalization
     # Only count the cases that have expected species (cases 1, 2, 3, 4, 7)
@@ -1015,10 +1015,14 @@ test_typo_handling <- function() {
     } else {
       precision <- 0
     }
-    recall <- expected_in_detectable / expected_in_detectable  # Should be 1.0 for detectable cases
+    recall <- if (expected_in_detectable > 0) detected_in_detectable / expected_in_detectable else 0
 
     score <- (precision + recall) / 2  # F1-like score for Typo Handling Accuracy
     passed <- score >= 0.6  # Higher threshold for detectable cases
+
+    # Calculate overall precision/recall for reporting
+    overall_precision <- if (total_detected > 0) true_positives / total_detected else 0
+    overall_recall <- if (total_expected > 0) true_positives / total_expected else 0
 
     if (passed) {
       cat("   ✅ PASS: Typo Handling Accuracy score =", round(score, 3), "\n")

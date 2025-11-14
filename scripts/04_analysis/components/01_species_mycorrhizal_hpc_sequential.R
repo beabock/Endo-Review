@@ -114,6 +114,23 @@ load_precomputed_lookup_tables <- function(verbose = TRUE) {
   return(lookup_tables)
 }
 
+# Helper function to create empty result
+create_empty_result_df <- function() {
+  tibble(
+    id = character(0),
+    predicted_label = character(0),
+    match_type = character(0),
+    canonicalName = character(0),
+    kingdom = character(0),
+    phylum = character(0),
+    family = character(0),
+    genus = character(0),
+    status = character(0),
+    resolved_name = character(0),
+    acceptedScientificName = character(0)
+  )
+}
+
 # =============================================================================
 # SEQUENTIAL EXTRACTION FUNCTION - NO PARALLEL PROCESSING
 # =============================================================================
@@ -133,6 +150,15 @@ extract_species_data <- function(
 
   if (length(missing_cols) > 0) {
     stop("❌ Missing required columns in abstracts_data: ", paste(missing_cols, collapse = ", "))
+  }
+
+  # Check for empty abstract column
+  non_na_abstracts <- sum(!is.na(abstracts_data$abstract) & abstracts_data$abstract != "", na.rm = TRUE)
+  if (non_na_abstracts == 0) {
+    if (verbose) log_message("⚠️ All abstracts are empty or NA, returning empty results", log_file = NULL)
+    empty_result <- create_empty_result_df()
+    write_csv(empty_result, output_file)
+    return(empty_result)
   }
   
   cat("🚀 SEQUENTIAL MODE - No parallel processing overhead\n")
@@ -161,20 +187,7 @@ extract_species_data <- function(
   # Handle empty data early
   if (nrow(abstracts_data) == 0) {
     if (verbose) log_message("⚠️ Empty abstracts data provided, returning empty results", log_file = log_file)
-    # Create empty result structure
-    empty_result <- tibble(
-      id = integer(0),
-      predicted_label = character(0),
-      match_type = character(0),
-      canonicalName = character(0),
-      kingdom = character(0),
-      phylum = character(0),
-      family = character(0),
-      genus = character(0),
-      status = character(0),
-      resolved_name = character(0),
-      acceptedScientificName = character(0)
-    )
+    empty_result <- create_empty_result_df()
     write_csv(empty_result, output_file)
     return(empty_result)
   }

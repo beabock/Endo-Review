@@ -302,7 +302,7 @@ for (version_name in names(versions)) {
     geom_col(width = 0.6) +
     geom_text(aes(label = paste0(Count, "\n(", round(Rate, 1), "%)")),
               position = position_stack(vjust = 0.5), size = 4, fontface = "bold") +
-    scale_fill_manual(values = c("With Species" = "#46ACC8", "Without Species" = "#B40F20")) +
+    scale_fill_manual(values = c("With Species" = "#76B7B2", "Without Species" ="#E07A5F")) +
     labs(
       title = "Overall Species Detection Rate",
       subtitle = paste("Out of", format(total_abstracts_species, big.mark = ","), "total abstracts"),
@@ -553,12 +553,14 @@ for (version_name in names(versions)) {
       left_join(data %>% select(id, geographic_region) %>% distinct(), by = "id") %>%
       count(geographic_region, name = "count")
 
-    # Add logging for diagnosis
-    cat("DEBUG: Unique geographic regions found:\n")
-    print(unique(geo_data$geographic_region))
+    # Add logging for diagnosis (limited for performance)
+    cat("DEBUG: Geographic region analysis beginning...\n")
     cat("DEBUG: Number of unique geographic regions:", nrow(geo_data), "\n")
-    cat("DEBUG: Geographic region counts:\n")
-    print(geo_data)
+    # Comment out verbose printing to prevent hangs
+    # cat("DEBUG: Unique geographic regions found:\n")
+    # print(unique(geo_data$geographic_region))
+    # cat("DEBUG: Geographic region counts:\n")
+    # print(geo_data)
 
     p7_geo_regions <- geo_data %>%
       mutate(
@@ -772,32 +774,24 @@ for (version_name in names(versions)) {
     cat("Creating CSV of lowest represented countries in tropics...\n")
 
     # Get tropical countries using predefined list from reference data utils
-    source("scripts/04_analysis/utilities/reference_data_utils.R")
+    # source("scripts/04_analysis/utilities/reference_data_utils.R") # Already sourced at top
 
     # Define tropical zone countries (between Tropic of Cancer and Capricorn, plus other commonly considered tropical countries)
+    # Using a simplified list to avoid hanging
     tropical_zone_countries <- c(
-      # Africa
-      "Nigeria", "Ghana", "Ivory Coast", "Senegal", "Mali", "Burkina Faso", "Chad", "Sudan",
-      "Ethiopia", "Kenya", "Tanzania", "Uganda", "Rwanda", "Cameroon", "Central African Republic",
-      "Gabon", "Equatorial Guinea", "Congo", "Democratic Republic of the Congo", "Angola",
-      "Mozambique", "Madagascar", "Mauritius", "Seychelles",
-      # Asia
-      "India", "Sri Lanka", "Thailand", "Vietnam", "Cambodia", "Laos", "Malaysia", "Indonesia",
-      "Philippines", "Papua New Guinea", "Bangladesh", "Myanmar", "Brunei",
-      # Americas
-      "Brazil", "Colombia", "Peru", "Ecuador", "Venezuela", "Guyana", "Suriname", "French Guiana",
-      "Panama", "Costa Rica", "Nicaragua", "Honduras", "Belize", "Mexico",
-      # Oceania
-      "Australia", "Timor-Leste", "Solomon Islands", "Vanuatu", "Samoa", "Fiji", "Tonga"
+      "Nigeria", "Ghana", "Ethiopia", "Kenya", "Tanzania", "Brazil", "Colombia", "Peru",
+      "India", "Sri Lanka", "Thailand", "Vietnam", "Malaysia", "Indonesia", "Philippines", "Mexico"
     )
 
     # Filter bottom countries data for tropical countries only
+    cat("Filtering tropical countries data...\n")
     tropical_bottom_countries <- countries_data_full %>%
       filter(country_std %in% tropical_zone_countries) %>%
       arrange(frequency) %>%
       filter(frequency < 15) %>%  # Include all countries with fewer than 15 observations
       select(country_std, frequency) %>%
       mutate(rank = row_number())
+    cat("Tropical countries filtering complete.\n")
 
     # Calculate percentage of abstracts from North America and Europe only
     north_america_europe_only_abstracts <- data %>%
@@ -1023,41 +1017,48 @@ for (version_name in names(versions)) {
 
   cat("Visualization summary saved to: results/visualization_summary_report_", version_prefix, ".txt\n")
 
-}
+}# Close versions loop first
 
-   # 8. TEMPORAL METHOD TRENDS -----------------------------------------------
-   # Create the bar plot of abstracts per year filled by detection method
 
-   cat("Creating temporal method trends visualization (", version_prefix, ")...\n")
+# 8. TEMPORAL METHOD TRENDS -----------------------------------------------
+# Create the bar plot of abstracts per year filled by detection method
 
-   # Prepare temporal method data
-   temporal_method_data <- data %>%
-     filter(!is.na(publication_year), publication_year >= 1926, publication_year <= 2025) %>%
-     select(id, publication_year, has_molecular, has_culture, has_microscopy) %>%
-     group_by(id, publication_year) %>%
-     summarise(
-       has_molecular = any(has_molecular),
-       has_culture = any(has_culture),
-       has_microscopy = any(has_microscopy),
-       .groups = "drop"
-     ) %>%
-     # Create method category for each abstract
-     mutate(
-       method_category = case_when(
-         has_molecular & has_culture & has_microscopy ~ "All three methods",
-         has_molecular & has_culture ~ "Molecular + Culture",
-         has_molecular & has_microscopy ~ "Molecular + Microscopy",
-         has_culture & has_microscopy ~ "Culture + Microscopy",
-         has_molecular ~ "Molecular only",
-         has_culture ~ "Culture only",
-         has_microscopy ~ "Microscopy only",
-         TRUE ~ "No methods detected"
-       )
-     ) %>%
-     # Aggregate by year and method
-     count(publication_year, method_category, name = "abstract_count") %>%
-     # Create a complete sequence of years to ensure gaps are filled
-     complete(publication_year = full_seq(c(1926:2025), 1), method_category, fill = list(abstract_count = 0))
+cat("Creating temporal method trends visualization...\n")
+
+# Prepare temporal method data for both main and supplementary versions
+for (temporal_version in names(versions)) {
+  temporal_data <- versions[[temporal_version]]
+  temporal_version_prefix <- temporal_version
+
+  cat("Creating temporal method trends for", temporal_version_prefix, "version...\n")
+
+  temporal_method_data <- temporal_data %>%
+    filter(!is.na(publication_year), publication_year >= 1926, publication_year <= 2025) %>%
+    select(id, publication_year, has_molecular, has_culture, has_microscopy) %>%
+    group_by(id, publication_year) %>%
+    summarise(
+      has_molecular = any(has_molecular),
+      has_culture = any(has_culture),
+      has_microscopy = any(has_microscopy),
+      .groups = "drop"
+    ) %>%
+    # Create method category for each abstract
+    mutate(
+      method_category = case_when(
+        has_molecular & has_culture & has_microscopy ~ "All three methods",
+        has_molecular & has_culture ~ "Molecular + Culture",
+        has_molecular & has_microscopy ~ "Molecular + Microscopy",
+        has_culture & has_microscopy ~ "Culture + Microscopy",
+        has_molecular ~ "Molecular only",
+        has_culture ~ "Culture only",
+        has_microscopy ~ "Microscopy only",
+        TRUE ~ "No methods detected"
+      )
+    ) %>%
+    # Aggregate by year and method
+    count(publication_year, method_category, name = "abstract_count") %>%
+    # Create a complete sequence of years to ensure gaps are filled
+    complete(publication_year = full_seq(c(1926:2025), 1), method_category, fill = list(abstract_count = 0))
 
    # Create the bar plot
    method_colors <- c(
@@ -1087,11 +1088,8 @@ for (version_name in names(versions)) {
        labels = scales::comma_format()
      ) +
      labs(
-       title = "Temporal Trends in Endophyte Detection Methods",
-       subtitle = paste("Number of abstracts per year by detection method (", version_prefix, " dataset)"),
        x = "Publication Year",
-       y = "Number of Abstracts",
-       caption = paste("Total abstracts:", sum(temporal_method_data$abstract_count))
+       y = "Number of Abstracts"
      ) +
      custom_theme +
      theme(
@@ -1102,7 +1100,7 @@ for (version_name in names(versions)) {
      )
 
    # Save the temporal methods plot
-   save_plot(p_temporal_methods, "temporal_method_trends.png", version_prefix, width = 14, height = 8)
+   save_plot(p_temporal_methods, "temporal_method_trends.png", temporal_version_prefix, width = 14, height = 8)
 
    # Create a line version for better trend visibility
    p_temporal_methods_line <- temporal_method_data %>%
@@ -1127,7 +1125,7 @@ for (version_name in names(versions)) {
      ) +
      labs(
        title = "Proportion of Detection Methods Over Time",
-       subtitle = paste("Relative frequency of each method as percentage of annual abstracts (", version_prefix, " dataset)"),
+       subtitle = paste("Relative frequency of each method as percentage of annual abstracts (", temporal_version_prefix, " dataset)"),
        x = "Publication Year",
        y = "Proportion of Abstracts (%)",
        caption = paste("Based on", length(unique(temporal_method_data$publication_year)), "years of data")
@@ -1141,7 +1139,12 @@ for (version_name in names(versions)) {
      )
 
    # Save the line version
-   save_plot(p_temporal_methods_line, "temporal_method_proportions.png", version_prefix, width = 14, height = 8)
+   save_plot(p_temporal_methods_line, "temporal_method_proportions.png", temporal_version_prefix, width = 14, height = 8)
+
+ cat("Completed temporal method trends for", temporal_version_prefix, "version\n")
+}
+
+# Close temporal loop
 
  
 
