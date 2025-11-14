@@ -768,6 +768,88 @@ for (version_name in names(versions)) {
         )
     }
 
+    # Create CSV of lowest represented countries in the tropics
+    cat("Creating CSV of lowest represented countries in tropics...\n")
+
+    # Get tropical countries using predefined list from reference data utils
+    source("scripts/04_analysis/utilities/reference_data_utils.R")
+
+    # Define tropical zone countries (between Tropic of Cancer and Capricorn, plus other commonly considered tropical countries)
+    tropical_zone_countries <- c(
+      # Africa
+      "Nigeria", "Ghana", "Ivory Coast", "Senegal", "Mali", "Burkina Faso", "Chad", "Sudan",
+      "Ethiopia", "Kenya", "Tanzania", "Uganda", "Rwanda", "Cameroon", "Central African Republic",
+      "Gabon", "Equatorial Guinea", "Congo", "Democratic Republic of the Congo", "Angola",
+      "Mozambique", "Madagascar", "Mauritius", "Seychelles",
+      # Asia
+      "India", "Sri Lanka", "Thailand", "Vietnam", "Cambodia", "Laos", "Malaysia", "Indonesia",
+      "Philippines", "Papua New Guinea", "Bangladesh", "Myanmar", "Brunei",
+      # Americas
+      "Brazil", "Colombia", "Peru", "Ecuador", "Venezuela", "Guyana", "Suriname", "French Guiana",
+      "Panama", "Costa Rica", "Nicaragua", "Honduras", "Belize", "Mexico",
+      # Oceania
+      "Australia", "Timor-Leste", "Solomon Islands", "Vanuatu", "Samoa", "Fiji", "Tonga"
+    )
+
+    # Filter bottom countries data for tropical countries only
+    tropical_bottom_countries <- countries_data_full %>%
+      filter(country_std %in% tropical_zone_countries) %>%
+      arrange(frequency) %>%
+      filter(frequency < 15) %>%  # Include all countries with fewer than 15 observations
+      select(country_std, frequency) %>%
+      mutate(rank = row_number())
+
+    # Calculate percentage of abstracts from North America and Europe only
+    north_america_europe_only_abstracts <- data %>%
+      filter(!is.na(countries_detected)) %>%
+      mutate(
+        # Check if countries are only from North America and Europe
+        countries_list = str_split(countries_detected, "; "),
+        is_north_america_europe_only = sapply(countries_list, function(countries) {
+          if (length(countries) == 0) return(NA)
+          # Get standardized country names
+          std_countries <- if (exists("normalize_country_vector")) {
+            normalize_country_vector(countries)
+          } else {
+            stringr::str_to_title(countries)
+          }
+          # Get Global North countries
+          global_north <- get_global_north_countries()
+          # Check if all countries are in Global North (which includes North America and Europe)
+          all(std_countries %in% global_north)
+        })
+      ) %>%
+      filter(is_north_america_europe_only == TRUE) %>%
+      distinct(id) %>%
+      nrow()
+
+    total_abstracts_with_geography <- data %>%
+      filter(!is.na(countries_detected)) %>%
+      distinct(id) %>%
+      nrow()
+
+    north_america_europe_only_percentage <- if (total_abstracts_with_geography > 0) {
+      round((north_america_europe_only_abstracts / total_abstracts_with_geography) * 100, 2)
+    } else {
+      0
+    }
+
+    # Create summary text for North America/Europe dominance
+    na_eu_summary <- paste0(
+      "North America and Europe Only Analysis (", toupper(version_prefix), " VERSION)\n",
+      "Total abstracts with geography: ", total_abstracts_with_geography, "\n",
+      "Abstracts from North America/Europe only: ", north_america_europe_only_abstracts, "\n",
+      "Percentage: ", north_america_europe_only_percentage, "%\n"
+    )
+
+    # Save to a separate file
+    writeLines(na_eu_summary, file.path("results", paste0("north_america_europe_only_analysis_", version_prefix, ".txt")))
+    cat("✓ Saved North America/Europe dominance analysis to results/north_america_europe_only_analysis_", version_prefix, ".txt\n")
+
+    # Save to CSV
+    write.csv(tropical_bottom_countries, file.path("results", paste0("lowest_represented_tropical_countries_", version_prefix, ".csv")), row.names = FALSE)
+    cat("✓ Saved lowest represented tropical countries to results/lowest_represented_tropical_countries_", version_prefix, ".csv\n")
+
     # Save geography plots individually
     save_plot(p7_geo_regions, "geographic_regions.png", version_prefix, height = 6)
     save_plot(p8_countries, "top_countries.png", version_prefix, height = 8)

@@ -19,10 +19,6 @@
 #
 # =============================================================================
 
-# Ensure we're working from the correct root directory
-if (!file.exists("01_species_mycorrhizal_hpc_optimized.R")) {
-  stop("❌ Script must be run from the project root directory containing this file")
-}
 
 # Force sequential mode from the start
 cat("🔄 HPC SEQUENTIAL MODE - Robust processing without parallel overhead\n\n")
@@ -32,12 +28,12 @@ library(tictoc)
 library(janitor)
 
 # Source required functions only (not the main script)
-source("optimized_taxa_detection.R")
-source("reference_data_utils.R")
+source("scripts/04_analysis/components/optimized_taxa_detection.R")
+source("scripts/04_analysis/utilities/reference_data_utils.R")
 
 # Source memory optimization utilities if available
 tryCatch({
-  source("memory_optimization.R")
+  source("scripts/utils/memory_optimization.R")
 }, error = function(e) {
   cat("⚠️ Memory optimization utilities not found, running with basic memory management\n")
 })
@@ -77,7 +73,7 @@ setup_logging <- function(output_file) {
 load_precomputed_lookup_tables <- function(verbose = TRUE) {
   if (verbose) cat("🔍 Loading pre-computed lookup tables...\n")
   
-  required_files <- c("lookup_tables.rds")
+  required_files <- c("models/lookup_tables.rds")
   missing_files <- c()
   
   for (file in required_files) {
@@ -95,10 +91,10 @@ load_precomputed_lookup_tables <- function(verbose = TRUE) {
   }
   
   if (verbose) cat("   📂 Loading lookup_tables.rds...\n")
-  lookup_tables <- readRDS("lookup_tables.rds")
+  lookup_tables <- readRDS("models/lookup_tables.rds")
   
   # Load optional hash tables
-  hash_files <- c("species_hash.rds", "genus_hash.rds", "family_hash.rds")
+  hash_files <- c("models/species_hash.rds", "models/genus_hash.rds", "models/family_hash.rds")
   for (hash_file in hash_files) {
     if (file.exists(hash_file)) {
       if (verbose) cat("   📂 Loading", hash_file, "...\n")
@@ -122,11 +118,13 @@ load_precomputed_lookup_tables <- function(verbose = TRUE) {
 # SEQUENTIAL EXTRACTION FUNCTION - NO PARALLEL PROCESSING
 # =============================================================================
 
-extract_species_mycorrhizal_data_sequential <- function(
+extract_species_data <- function(
   abstracts_data,
   output_file = "species_mycorrhizal_results_sequential.csv",
   batch_size = 100,
-  verbose = TRUE
+  force_rerun = FALSE,
+  verbose = TRUE,
+  hash_threshold = 10000
 ) {
   
   cat("🚀 SEQUENTIAL MODE - No parallel processing overhead\n")
@@ -144,7 +142,7 @@ extract_species_mycorrhizal_data_sequential <- function(
   log_file <- setup_logging(output_file)
   
   # Load species reference data
-  species_file <- "species.rds"
+  species_file <- "models/species.rds"
   if (!file.exists(species_file)) {
     stop("❌ Species reference data not found: species.rds")
   }
@@ -327,7 +325,7 @@ cat("Pure sequential mode - no parallel processing\n\n")
 output_file <- "species_mycorrhizal_results_sequential.csv"
 
 # Load consolidated dataset
-abstracts_file <- "consolidated_dataset.csv"
+abstracts_file <- "results/consolidated_dataset.csv"
 cat("📂 Loading consolidated dataset...\n")
 
 if (!file.exists(abstracts_file)) {
@@ -341,7 +339,7 @@ load_time <- as.numeric(difftime(Sys.time(), load_start, units = "secs"))
 cat("✅ Loaded", nrow(abstracts_data), "abstracts in", round(load_time, 1), "seconds\n\n")
 
 # Check for FUNGuild dataset
-if (!file.exists("funtothefun.csv")) {
+if (!file.exists("data/raw/funtothefun.csv")) {
   stop("❌ funtothefun.csv not found in root directory")
 }
 cat("✅ FUNGuild dataset found\n\n")
@@ -350,7 +348,7 @@ cat("✅ FUNGuild dataset found\n\n")
 cat("🚀 Starting sequential processing...\n")
 processing_start <- Sys.time()
 
-results <- extract_species_mycorrhizal_data_sequential(
+results <- extract_species_data(
   abstracts_data = abstracts_data,
   output_file = output_file,
   batch_size = 100,

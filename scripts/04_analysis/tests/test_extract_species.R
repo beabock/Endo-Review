@@ -25,7 +25,80 @@ library(tictoc)
 library(janitor)
 
 # Source the component script (assumes it's in the same project structure)
-source("scripts/04_analysis/components/01_extract_species.R")
+# Source required utility functions directly
+source("scripts/04_analysis/utilities/reference_data_utils.R")
+source("scripts/04_analysis/components/optimized_taxa_detection.R")
+source("scripts/04_analysis/components/01_species_mycorrhizal_hpc_sequential.R")
+
+# Create a simplified version that doesn't have the directory check
+# We'll define a wrapper that calls the main function with error handling
+
+# Create a temporary environment to store functions
+temp_env <- new.env()
+
+# Read the file and extract functions manually
+file_path <- "scripts/04_analysis/components/01_species_mycorrhizal_hpc_sequential.R"
+if (!file.exists(file_path)) {
+  stop("Error: Cannot find file ", file_path)
+}
+file_content <- readLines(file_path)
+
+# Find function definitions and extract them
+function_lines <- character(0)
+in_function <- FALSE
+brace_count <- 0
+in_skipped_block <- FALSE
+
+for (line in file_content) {
+  # Skip the problematic directory check and its entire block
+  if (grepl("if \\(!file\\.exists.*01_species_mycorrhizal_hpc_optimized\\.R.*\\)", line)) {
+    in_skipped_block <- TRUE
+    next
+  }
+  if (in_skipped_block) {
+    if (grepl("^\\s*}\\s*$", line)) {
+      in_skipped_block <- FALSE
+    }
+    next
+  }
+
+  # Skip the cat commands that print mode messages
+  if (grepl("cat.*HPC SEQUENTIAL MODE", line)) {
+    next
+  }
+  # Skip main execution code
+  if (grepl("cat.*HPC SEQUENTIAL SPECIES DETECTION.*\\n.*$", line)) {
+    break
+  }
+
+  # Check if this is a function definition
+  if (grepl("^[a-zA-Z_][a-zA-Z0-9_]*\\s*<-\\s*function", line) ||
+      grepl("^extract_species_mycorrhizal_data_sequential\\s*<-\\s*function", line)) {
+    in_function <- TRUE
+    brace_count <- 0
+    function_lines <- c(function_lines, line)
+  } else if (in_function) {
+    function_lines <- c(function_lines, line)
+    brace_count <- brace_count + (str_count(line, "\\{") - str_count(line, "\\}"))
+
+    # If braces balance, we've reached the end of the function
+    if (brace_count == 0 && grepl("\\}", line)) {
+      in_function <- FALSE
+    }
+  } else if (!grepl("^\\s*#", line) && !grepl("^\\s*$", line) && !grepl("^library\\(", line)) {
+    # Include other code that's not in functions (like variable assignments)
+    function_lines <- c(function_lines, line)
+  }
+}
+
+# Evaluate the extracted functions
+eval(parse(text = paste(function_lines, collapse = "\n")), envir = temp_env)
+
+# Copy functions to global environment
+for (obj_name in ls(temp_env)) {
+  assign(obj_name, get(obj_name, temp_env), envir = .GlobalEnv)
+}
+
 
 cat("=== SPECIES EXTRACTION TEST SUITE ===\n\n")
 
@@ -932,7 +1005,7 @@ test_typo_handling <- function() {
     return(list(passed = FALSE, score = 0))
   })
 }
-1
+
 # =============================================================================
 # RUN ALL TESTS
 # =============================================================================

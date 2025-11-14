@@ -396,16 +396,84 @@ Precision = (Correct 'Absence' labels) / (Total 'Absence' labels checked)
   return(report_content)
 }
 
+#' Analyze presence validation data
+#' @param presence_file Path to presence validation CSV file
+analyze_presence_validation <- function(presence_file = "results/manual_validation/presence_validation_sample_for_manual_review_BB.csv") {
+  if (!file.exists(presence_file)) {
+    cat("Presence validation file not found:", presence_file, "\n")
+    return(NULL)
+  }
+
+  cat("\n=== PRESENCE VALIDATION ANALYSIS ===\n")
+  presence_ds <- read_csv(presence_file, show_col_types = FALSE)
+
+  cat("Presence validation dataset dimensions:", dim(presence_ds), "\n")
+
+  if ("manual_label" %in% colnames(presence_ds)) {
+    cat("Manual label distribution:\n")
+    print(table(presence_ds$manual_label, useNA = "ifany"))
+  }
+
+  if ("predicted_label" %in% colnames(presence_ds)) {
+    cat("\nPredicted label distribution:\n")
+    print(table(presence_ds$predicted_label, useNA = "ifany"))
+  }
+
+  # Compare manual vs predicted labels
+  if ("manual_label" %in% colnames(presence_ds) && "predicted_label" %in% colnames(presence_ds)) {
+    cat("\nManual vs Predicted label comparison:\n")
+    comparison_table <- table(presence_ds$manual_label, presence_ds$predicted_label, useNA = "ifany")
+    print(comparison_table)
+
+    # Calculate agreement metrics
+    agreement <- sum(diag(comparison_table)) / sum(comparison_table)
+    cat("Agreement rate:", round(agreement * 100, 2), "%\n")
+
+    # Cohen's Kappa if possible
+    if (nrow(comparison_table) == 2 && ncol(comparison_table) == 2) {
+      # Simple Kappa calculation
+      total <- sum(comparison_table)
+      row_sums <- rowSums(comparison_table)
+      col_sums <- colSums(comparison_table)
+      expected <- sum(row_sums * col_sums) / total
+      observed <- sum(diag(comparison_table))
+      kappa <- (observed - expected) / (total - expected)
+      cat("Cohen's Kappa:", round(kappa, 3), "\n")
+    }
+  }
+
+  if ("manual_confidence" %in% colnames(presence_ds)) {
+    presence_ds$manual_confidence <- as.numeric(presence_ds$manual_confidence)
+    cat("\nManual confidence summary:\n")
+    print(summary(presence_ds$manual_confidence))
+  }
+
+  if ("confidence" %in% colnames(presence_ds)) {
+    presence_ds$confidence <- as.numeric(presence_ds$confidence)
+    cat("\nModel confidence summary:\n")
+    print(summary(presence_ds$confidence))
+  }
+
+  return(presence_ds)
+}
+
 #' Main analysis function
 #' @param input_file Path to input CSV file
 #' @param output_dir Output directory for results
+#' @param include_presence Whether to include presence validation analysis
 main <- function(input_file = "results/manual_validation/absence_validation_sample_for_manual_review_BB.csv",
-                 output_dir = "results/manual_validation/analysis") {
+                 output_dir = "results/manual_validation/analysis",
+                 include_presence = TRUE) {
 
   # Read and validate data
   cat("Reading validation data...\n")
   data <- read_validation_data(input_file)
   cat(sprintf("Loaded %d validation records\n", nrow(data)))
+
+  # Analyze presence validation if requested
+  if (include_presence) {
+    presence_data <- analyze_presence_validation()
+  }
 
   # Generate analysis report
   cat("Generating analysis report...\n")
@@ -417,7 +485,7 @@ main <- function(input_file = "results/manual_validation/absence_validation_samp
   cat("Analysis complete!\n")
   cat("Results saved to:", output_dir, "\n")
 
-  return(list(data = data, report = report))
+  return(list(data = data, report = report, presence_data = if(exists("presence_data")) presence_data else NULL))
 }
 
 # Run analysis if script is called directly
