@@ -24,7 +24,7 @@ library(tictoc)
 library(janitor)
 
 # Source the detection functions
-source("scripts/04_analysis/optimized_taxa_detection.R") #Maybe remove the whole testing thing from that script bc its annoying when it runs every time.
+source("scripts/04_analysis/components/optimized_taxa_detection.R") #Maybe remove the whole testing thing from that script bc its annoying when it runs every time.
 
 # Load centralized reference data utilities
 source("scripts/04_analysis/utilities/reference_data_utils.R")
@@ -616,8 +616,7 @@ all_species_results <- map_dfr(1:n_batches, function(i) {
   # Process this batch with OPTIMIZED settings and verbose output
   batch_results <- process_abstracts_parallel(
     abstracts = batch_data,
-    lookup_tables = lookup_tables,
-    plant_parts_keywords = plant_parts_keywords_species,
+    species_path = "models/species.rds",
     batch_size = 50,  # Increased internal batch size from 10
     workers = 1       # Avoid nested parallelism
   )

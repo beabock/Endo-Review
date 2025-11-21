@@ -7,7 +7,7 @@ source("scripts/utils/plot_utils.R")
 setwd(here())
 
 # Source the visualization script
-source("visualize_taxa_results.R")
+source("scripts/04_analysis/visualization/visualize_taxa_results.R")
 
 # Run the analysis with your specific file paths
 message("Starting taxa representation analysis...")

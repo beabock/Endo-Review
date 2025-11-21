@@ -31,12 +31,12 @@ merge_extraction_results <- function(
 ) {
 
   # Recovery mechanism
-  if (file.exists(output_file) && !force_rerun) {
-    if (verbose) cat("✅ Found existing comprehensive results\n")
-    existing_results <- read_csv(output_file, show_col_types = FALSE)
-    if (verbose) cat("   Loaded", nrow(existing_results), "existing records\n")
-    return(existing_results)
-  }
+  #if (file.exists(output_file) && !force_rerun) {
+   # if (verbose) cat("✅ Found existing comprehensive results\n")
+    #existing_results <- read_csv(output_file, show_col_types = FALSE)
+    #if (verbose) cat("   Loaded", nrow(existing_results), "existing records\n")
+    #return(existing_results)
+  #}
 
   # Check for consolidated dataset
   consolidated_file <- "results/consolidated_dataset.csv"
@@ -175,6 +175,9 @@ merge_extraction_results <- function(
       select(-all_of(training_cols))
   }
 
+  merged_data <- merged_data %>%
+          filter(is_mycorrhizal == FALSE | is.na(is_mycorrhizal)) %>%#Removing any mycorrhizal entries.
+          filter(phylum != "Glomeromycota") #AMF, just in case not captured by funguild
   # Save comprehensive results
   write_csv(merged_data, output_file)
 

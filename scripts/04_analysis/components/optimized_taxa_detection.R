@@ -476,12 +476,11 @@ extract_plant_info <- function(text, abstract_id, predicted_label, lookup_tables
   )
 
   # Combine results
-  final_df <- bind_rows(all_rows)
-  if (nrow(final_df) == 0) {
-    final_df <- create_empty_result(abstract_id, predicted_label)
+  if (length(all_rows) > 0) {
+    return(bind_rows(all_rows))
+  } else {
+    return(create_empty_result(abstract_id, predicted_label))
   }
-
-  return(final_df)
 }
 
 # Helper function to create empty result

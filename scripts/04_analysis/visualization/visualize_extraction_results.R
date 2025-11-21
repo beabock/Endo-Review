@@ -284,6 +284,7 @@ for (version_name in names(versions)) {
   cat("- With methods:", sum(abstract_summary$has_methods),
       "(", round(100 * mean(abstract_summary$has_methods), 1), "%)\n\n")
 
+
   # 1. SPECIES DETECTION OVERVIEW ------------------------------------------
 
   cat("Creating species detection overview plots (", version_prefix, ")...\n")
@@ -508,6 +509,9 @@ for (version_name in names(versions)) {
       coord_flip() +
       custom_theme
 
+    cat("Plant part counts summary:\n")
+    print(plant_parts_data)
+
     # Plant parts count distribution analysis (unique abstracts only)
     parts_count_summary <- data %>%
       filter(has_plant_parts) %>%
@@ -517,6 +521,7 @@ for (version_name in names(versions)) {
         percentage = abstracts_per_count / sum(abstracts_per_count) * 100,
         parts_count = fct_reorder(as.factor(parts_count), parts_count)
       )
+
 
     p6b_plant_parts_distribution <- parts_count_summary %>%
       ggplot(aes(x = parts_count, y = abstracts_per_count, fill = parts_count)) +
@@ -1170,6 +1175,77 @@ cat("4. Consider combining plots manually in external software if needed\n")
 cat("5. Integrate visualizations into research presentations and publications\n\n")
 
 # Create manuscript-ready log file with key statistics for extraction results
+
+# =============================================================================
+# NEW SUMMARY STATISTICS REQUESTED
+# =============================================================================
+
+cat("\n=== ADDITIONAL SUMMARY STATISTICS ===\n")
+
+# 1. Top 5 Plant Parts
+cat("\n--- Top 5 Plant Parts ---\n")
+top_5_parts <- main_data %>%
+  filter(!is.na(parts_normalized) & parts_normalized != "") %>%
+  separate_rows(parts_normalized, sep = "; ") %>%
+  distinct(id, parts_normalized) %>%
+  count(parts_normalized, sort = TRUE, name = "unique_abstract_count") %>%
+  head(5)
+
+# Print the results in a formatted way
+if (nrow(top_5_parts) > 0) {
+  for(i in 1:nrow(top_5_parts)) {
+    cat(sprintf("%d. %s: %d unique abstracts\n", i, str_to_title(top_5_parts$parts_normalized[i]), top_5_parts$unique_abstract_count[i]))
+  }
+} else {
+  cat("No plant part data found to analyze.\n")
+}
+
+
+# 2. & 3. Plant Family and Genus Ratios
+cat("\n--- Plant Taxonomic Coverage ---\n")
+
+# Load the full species reference dataset to get totals
+species_ref_path <- "models/species.rds"
+if (file.exists(species_ref_path)) {
+  species_ref <- readRDS(species_ref_path)
+  
+  # Filter for plants only in the reference data
+  plant_ref <- species_ref %>% filter(kingdom == "Plantae")
+  
+  # Total unique families and genera in reference data
+  total_plant_families <- plant_ref %>% filter(!is.na(family)) %>% distinct(family) %>% nrow()
+  total_plant_genera <- plant_ref %>% filter(!is.na(genus)) %>% distinct(genus) %>% nrow()
+
+  # Detected unique families and genera in the results
+  detected_plant_families <- main_data %>%
+    filter(kingdom == "Plantae", !is.na(family)) %>%
+    distinct(family) %>%
+    nrow()
+    
+  detected_plant_genera <- main_data %>%
+    filter(kingdom == "Plantae", !is.na(genus)) %>%
+    distinct(genus) %>%
+    nrow()
+
+  # Print the ratios
+  cat(sprintf("Family Coverage: %d detected / %d total plant families (%.1f%%)\n",
+              detected_plant_families,
+              total_plant_families,
+              100 * detected_plant_families / total_plant_families))
+              
+  cat(sprintf("Genus Coverage: %d detected / %d total plant genera (%.1f%%)\n",
+              detected_plant_genera,
+              total_plant_genera,
+              100 * detected_plant_genera / total_plant_genera))
+
+} else {
+  cat("Could not find species reference file at:", species_ref_path, "\n")
+  cat("Skipping plant taxonomic coverage analysis.\n")
+}
+
+cat("\n=====================================\n\n")
+
+
 create_manuscript_log_extraction <- function() {
   log_file <- "results/visualize_extraction_results_manuscript_log.txt"
 

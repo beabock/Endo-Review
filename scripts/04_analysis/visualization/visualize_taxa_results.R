@@ -497,6 +497,70 @@ message("Creating phylum-based visualization plots...")
 taxa_results_main <- filter_mycorrhizal_papers(taxa_results_deduped, include_mycorrhizal_only = FALSE)
 taxa_results_supplementary <- filter_mycorrhizal_papers(taxa_results_deduped, include_mycorrhizal_only = TRUE)
 
+# =============================================================================
+# FUNGAL REPRESENTATION SUMMARY
+# =============================================================================
+
+cat("\n=== FUNGAL TAXONOMIC REPRESENTATION SUMMARY ===\n")
+
+# Use the main dataset for the summary
+fungal_data_to_summarize <- taxa_results_main
+
+# Total Fungi in reference data
+fungal_ref <- accepted_species %>% filter(kingdom == "Fungi")
+total_fungal_families <- fungal_ref %>% filter(!is.na(family)) %>% distinct(family) %>% nrow()
+total_fungal_genera <- fungal_ref %>% filter(!is.na(genus)) %>% distinct(genus) %>% nrow()
+total_fungal_species <- fungal_ref %>% filter(!is.na(canonicalName_resolved)) %>% distinct(canonicalName_resolved) %>% nrow()
+
+# Detected Fungi in results
+detected_fungal_families <- fungal_data_to_summarize %>%
+  filter(kingdom == "Fungi", !is.na(family_final)) %>%
+  distinct(family_final) %>%
+  nrow()
+
+detected_fungal_genera <- fungal_data_to_summarize %>%
+  filter(kingdom == "Fungi", !is.na(genus_final)) %>%
+  distinct(genus_final) %>%
+  nrow()
+
+detected_fungal_species <- fungal_data_to_summarize %>%
+  filter(kingdom == "Fungi", !is.na(canonicalName_final)) %>%
+  distinct(canonicalName_final) %>%
+  nrow()
+
+# Print the ratios
+cat(sprintf("Family Coverage: %d detected / %d total fungal families (%.1f%%)\n",
+            detected_fungal_families,
+            total_fungal_families,
+            100 * detected_fungal_families / total_fungal_families))
+
+cat(sprintf("Genus Coverage: %d detected / %d total fungal genera (%.1f%%)\n",
+            detected_fungal_genera,
+            total_fungal_genera,
+            100 * detected_fungal_genera / total_fungal_genera))
+
+cat(sprintf("Species Coverage: %d detected / %d total fungal species (%.1f%%)\n",
+            detected_fungal_species,
+            total_fungal_species,
+            100 * detected_fungal_species / total_fungal_species))
+
+cat("===============================================\n\n")
+
+#Want to get a feel of the overlap in mycorrhizal and non.
+unique(taxa_results_main$is_mycorrhizal)
+
+taxa_results_main %>%
+  group_by(id) %>%
+  summarize(is_mycorrhizal = any(is_mycorrhizal)) %>%
+  ungroup() %>%
+  count(is_mycorrhizal)
+
+  taxa_results_main %>%
+  filter(is.na(is_mycorrhizal)) %>%
+  slice_head(n = 10)
+
+  #Could remove the 498 is_mycorrhizal records and rerun analyses?
+
 message("Creating main visualizations (excluding mycorrhizal-only papers)...")
 # Plant phylum plots - MAIN MODE
 create_phylum_taxa_plot("Plantae", "Family", "family", "plantae_family_representation_main", taxa_results_main)

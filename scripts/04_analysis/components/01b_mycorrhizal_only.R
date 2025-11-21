@@ -21,8 +21,8 @@ cat("🔍 MYCORRHIZAL-ONLY ABSTRACT ASSESSMENT\n")
 cat("=====================================\n\n")
 
 # Check if input file exists
-input_file <- "species_mycorrhizal_results_sequential.csv"
-output_file <- "mycorrhizal_only_abstracts.csv"
+input_file <- "results/species_mycorrhizal_results_sequential.csv"
+output_file <- "results/mycorrhizal_only_abstracts.csv"
 
 if (!file.exists(input_file)) {
   stop("❌ Input file not found: ", input_file, "\nPlease run 01_species_mycorrhizal_hpc_sequential.R first.")
@@ -84,10 +84,6 @@ if (file.exists("scripts/04_analysis/components/01_species_mycorrhizal.R")) {
       return(TRUE)
     }
     
-    # Endophytes are NOT mycorrhizal - they live inside plants but don't form mycorrhizal symbiosis
-    if (str_detect(guild, "Endophyte")) {
-      return(FALSE)
-    }
     
     # Conservative default: assume not mycorrhizal if unclear
     return(FALSE)
@@ -160,22 +156,39 @@ if (file.exists("scripts/04_analysis/components/01_species_mycorrhizal.R")) {
       filter(trait_name == "guild_fg") %>%
       select(species, guild = value) %>%
       distinct()
+      
+    # Create lookup table for higher clade information
+    clade_lookup <- fun_data %>%
+      filter(trait_name == "higher_clade") %>%
+      select(species, higher_clade = value) %>%
+      distinct()
     
     # Classify each taxon
     classification_results <- map_dfr(unique_taxa, function(taxon) {
       
-      # Try exact species match
-      exact_match <- guild_lookup %>%
-        filter(species == taxon)
-      
-      if (nrow(exact_match) > 0) {
-        guild <- exact_match$guild[1]
-        return(tibble(
-          resolved_name = taxon,
-          is_mycorrhizal = classify_guild_as_mycorrhizal(guild),
-          funguild_guild = guild,
-          confidence_ranking = 0.9  # High confidence for exact match
-        ))
+      # Get all info for the taxon first
+      guild_info <- guild_lookup %>% filter(species == taxon)
+      clade_info <- clade_lookup %>% filter(species == taxon)
+
+      # Rule A: Glomeromycota is always mycorrhizal
+      if (nrow(clade_info) > 0 && clade_info$higher_clade[1] == "Glomeromycota") {
+          return(tibble(
+              resolved_name = taxon,
+              is_mycorrhizal = TRUE,
+              funguild_guild = if (nrow(guild_info) > 0 && guild_info$guild[1] != "Unknown") guild_info$guild[1] else "Unknown (Glomeromycota)",
+              confidence_ranking = 0.95 # Very high confidence
+          ))
+      }
+
+      # Rule B: Exact guild match (for non-Glomeromycota)
+      if (nrow(guild_info) > 0) {
+          guild <- guild_info$guild[1]
+          return(tibble(
+              resolved_name = taxon,
+              is_mycorrhizal = classify_guild_as_mycorrhizal(guild),
+              funguild_guild = guild,
+              confidence_ranking = 0.9
+          ))
       }
       
       # Try genus-level match (extract genus from species name)
