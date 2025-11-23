@@ -117,6 +117,12 @@ source("scripts/utils/plot_utils.R")
 
 theme_set(endo_theme())
 
+
+output_file <- "results/outputs/ML_training_results.txt"
+sink(output_file, append = FALSE, split = TRUE)
+cat("Analysis run on:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
+
+
 cat("=== ENDOPHYTE MODEL TRAINING PIPELINE ===\n")
 cat("Training relevance and presence/absence classification models\n\n")
 
@@ -558,7 +564,7 @@ model_info <- list(
 
 # Save model information
 capture.output({
-  cat("=== MODEL TRAINING INFORMATION FOR MANUSCRIPT ===\n")
+  cat("=== RELEVANCE CLASSIFICATION (STAGE 1) - MODEL TRAINING INFORMATION FOR MANUSCRIPT ===\n")
   cat("Generated:", Sys.time(), "\n\n")
 
   cat("MODEL DETAILS:\n")
@@ -570,6 +576,11 @@ capture.output({
   cat("Preprocessing:", model_info$preprocessing, "\n")
   cat("Sampling Method:", model_info$sampling_method, "\n")
   cat("Random Seed:", model_info$random_seed, "\n\n")
+
+  cat("FINAL MODEL HYPERPARAMETERS:\n")
+  cat("The following hyperparameters were selected for the final model:\n")
+  print(best_model$bestTune)
+  cat("\n")
 
   cat("DATASET INFORMATION:\n")
   cat("Original training samples:", model_info$original_samples, "\n")
@@ -583,7 +594,7 @@ capture.output({
   cat("CLASS DISTRIBUTION:\n")
   print(training_summary)
 
-}, file = "results/manuscript_model_details.txt")
+}, file = "results/outputs/manuscript_model_details.txt")
 cat("✓ Saved model details for manuscript Methods section\n")
 
 # 5. Feature Importance Analysis (Top 20 features)
@@ -726,6 +737,7 @@ cat("• manuscript_model_evaluation_table.csv - Performance table\n")
 cat("• manuscript_data_processing_workflow.txt - Processing workflow\n")
 cat("• manuscript_feature_importance.csv - Feature importance data\n")
 cat("• manuscript_feature_comparison_pa.csv - Feature comparison data\n")
+cat("• manuscript_pa_model_details.txt - P/A model info for Methods\n")
 cat("\nAll files are publication-ready and follow academic formatting standards!\n")
 
 cm <- confusion_matrices[[evaluation_table$model[1]]]$table
@@ -956,6 +968,9 @@ labeled_abstracts %>%
 # FEATURE ENGINEERING: Text Preprocessing and N-gram Creation
 #===============================================================================
 
+cat("\n=== FEATURE ENGINEERING: TEXT MINING AND N-GRAMS ===\n")
+cat("Generating Document-Term Matrix (DTM) with Unigrams and Bigrams.\n")
+
 # Create unigram features (single words) with filtering and cleaning
 dtm_unigrams <- labeled_abstracts %>%
   unnest_tokens(word, abstract, token = "words") %>%  # Tokenize into individual words
@@ -1007,7 +1022,11 @@ dtm_df <- as.data.frame(dtm_matrix)
 # Check
 stopifnot(!any(duplicated(colnames(dtm_df))))
 
-
+cat("DTM created successfully.\n")
+cat("- Total documents (Relevant abstracts):", nrow(dtm_df), "\n")
+cat("- Total unique features (Unigrams + Bigrams):", ncol(dtm_df), "\n")
+cat("- DTM sparsity:", sprintf("%.2f%%", dtm_combined$sparsity * 100), "\n")
+cat("--------------------------------------------------\n")
 
 # Get column names ordered by decreasing column sum
 order_cols <- names(sort(colSums(dtm_df), decreasing = TRUE))
@@ -1030,6 +1049,7 @@ labeled_abstracts <- labeled_abstracts %>%
   mutate(presence_both_absence = factor(presence_both_absence))
 
 # Train-test split
+cat("Splitting data into Training (80%) and Testing (20%) sets...\n")
 train_index <- createDataPartition(labeled_abstracts$presence_both_absence, p = 0.8, list = FALSE)
 train_data <- labeled_abstracts[train_index, ]
 test_data <- labeled_abstracts[-train_index, ]
@@ -1045,16 +1065,26 @@ train_df <- as.data.frame(as.matrix(train_matrix)) %>% mutate(presence_both_abse
 
 test_df <- as.data.frame(as.matrix(test_matrix)) %>% mutate(presence_both_absence = test_data$presence_both_absence)
 
+cat("- Training set size:", nrow(train_df), "abstracts.\n")
+cat("- Testing set size:", nrow(test_df), "abstracts.\n")
+cat("--------------------------------------------------\n")
 
 # Testing models ----------------------------------------------------------
 
 
 #glmnet and svmLinear are super fast.
-
+cat("\nApplying SMOTE for class balancing on Presence/Absence training data...\n")
 train_recipe <- recipe(presence_both_absence ~ ., data = train_df) %>%
   step_smote(presence_both_absence) %>%
   prep()
 balanced_train <- juice(train_recipe)
+
+cat("SMOTE application complete.\n")
+cat("Original Training Distribution:\n")
+print(table(train_df$presence_both_absence))
+cat("Balanced Training Distribution (SMOTE):\n")
+print(table(balanced_train$presence_both_absence))
+cat("--------------------------------------------------\n")
 
 # 15. Class Distribution Before/After Balancing (Presence/Absence)
 cat("Generating class distribution plots for presence/absence classification...\n")
@@ -1121,6 +1151,9 @@ results <- list()
 
 for (method in models_to_try) {
   cat("\nTraining:", method, "\n")
+  cat("\n------------------------------------------------\n")
+  cat("Training Presence/Absence Model:", method, "...\n")
+  tic(paste("Time for", method, "(P/A)"))
   tic(paste("Time for", method))
   result <- tryCatch({
     if (method == "glmnet") {
@@ -1173,6 +1206,8 @@ for (method in models_to_try) {
   results[[method]] <- result
 }
 
+cat("\nIndividual model training complete for Presence/Absence classification.\n")
+
 confusion_matrices <- list() 
 # Evaluate with focus on both classes, especially Absence recall
 evaluation_table_pa <- tibble(
@@ -1210,6 +1245,32 @@ evaluation_table_pa <- tibble(
 print("P/A Model Performance (sorted by Absence recall):")
 print(evaluation_table_pa)
 
+# Save P/A model details for manuscript
+capture.output({
+  cat("=== PRESENCE/ABSENCE CLASSIFICATION (STAGE 2) - MODEL TRAINING INFORMATION FOR MANUSCRIPT ===\n")
+  cat("Generated:", Sys.time(), "\n\n")
+
+  if (!is.null(results[["glmnet"]])) {
+    cat("--- GLMNET MODEL (Optimized for Absence Recall) ---\n")
+    cat("FINAL MODEL HYPERPARAMETERS:\n")
+    print(results[["glmnet"]]$bestTune)
+    cat("\nPERFORMANCE:\n")
+    print(evaluation_table_pa %>% filter(model == "glmnet"))
+    cat("\n\n")
+  }
+
+  if (!is.null(results[["svmLinear"]])) {
+    cat("--- SVM (LINEAR) MODEL (Optimized for Presence Recall) ---\n")
+    cat("FINAL MODEL HYPERPARAMETERS:\n")
+    print(results[["svmLinear"]]$bestTune)
+    cat("\nPERFORMANCE:\n")
+    print(evaluation_table_pa %>% filter(model == "svmLinear"))
+    cat("\n")
+  }
+
+}, file = "results/outputs/manuscript_pa_model_details.txt")
+cat("✓ Saved presence/absence model details for manuscript Methods section\n")
+
 
 
 for (m in names(confusion_matrices)) {
@@ -1234,8 +1295,11 @@ svm_model <- results[["svmLinear"]]   # Best for Presence detection (95.8% recal
 #===============================================================================
 
 # Create ensemble predictions using complementary model strengths
-cat("\n=== ENSEMBLE APPROACH ===\n")
-cat("Using glmnet for Absence detection and svmLinear for Presence detection\n")
+cat("\n=== ENSEMBLE DEFINITION: WEIGHTED PROBABILITY ===\n")
+cat("Combining glmnet and svmLinear for enhanced Absence detection.\n")
+cat("- Strategy: Weighted average of individual model probabilities.\n")
+cat("- Default Weights: SVM (Presence) = 0.6, GLMNet (Absence) = 0.6 (Implicitly 0.4 for Presence).\n")
+cat("--------------------------------------------------\n")
 
 # Get predictions from both models for ensemble construction
 glmnet_preds <- predict(glmnet_model, newdata = test_df)  # Conservative absence detection
@@ -1305,6 +1369,72 @@ ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_for_absence +
 ensemble_preds_weighted <- ifelse(ensemble_presence_prob > ensemble_absence_prob, 
                                  "Presence", "Absence")
 ensemble_preds_weighted <- factor(ensemble_preds_weighted, levels = c("Presence", "Absence"))
+
+cat("\n=== ENSEMBLE DEFINITION: WEIGHTED PROBABILITY ===\n")
+cat("Combining glmnet and svmLinear for enhanced Absence detection.\n")
+cat("- Strategy: Weighted average of individual model probabilities.\n")
+cat("- Default Weights: SVM (Presence) = 0.6, GLMNet (Absence) = 0.6 (Implicitly 0.4 for Presence).\n")
+cat("--------------------------------------------------\n")
+
+
+# Save ensemble function for later use (matching the manual calculation approach)
+ensemble_predict_weighted <- function(glmnet_model, svm_model, newdata,
+                                     svm_weight_for_presence = 0.6, glm_weight_for_absence = 0.8) {
+  # Get probabilities from both models
+  glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
+  svm_probs <- predict(svm_model, newdata = newdata, type = "prob")
+
+  # Create weighted probability ensemble - prioritizing absence detection (matches manual calculation)
+  ensemble_presence_prob <- (svm_probs$Presence * svm_weight_for_presence +
+                            glmnet_probs$Presence * (1 - svm_weight_for_presence))
+
+  ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_for_absence +
+                           svm_probs$Absence * (1 - glm_weight_for_absence))
+
+  # Make predictions using simple probability comparison (matches manual calculation)
+  ensemble_preds <- ifelse(ensemble_presence_prob > ensemble_absence_prob, "Presence", "Absence")
+
+  return(factor(ensemble_preds, levels = c("Presence", "Absence")))
+}
+
+
+# Run Ensemble and Evaluate
+ensemble_preds_weighted <- ensemble_predict_weighted(glmnet_model, svm_model, test_df_pa, 
+                                                     svm_weight_for_presence = 0.6,
+                                                     glm_weight_for_absence = 0.6)
+
+# Function to calculate metrics
+calculate_metrics <- function(preds, actuals, positive_class = "Presence") {
+  cm <- confusionMatrix(preds, actuals, positive = positive_class)
+  return(list(
+    accuracy = cm$overall["Accuracy"],
+    presence_recall = cm$byClass["Sensitivity"],
+    absence_recall = cm$byClass["Specificity"],
+    f1_score = cm$byClass["F1"]
+  ))
+}
+
+# Evaluate all approaches
+glmnet_metrics <- calculate_metrics(predict(glmnet_model, test_df_pa), test_df_pa$presence_both_absence)
+svm_metrics <- calculate_metrics(predict(svm_model, test_df_pa), test_df_pa$presence_both_absence)
+ensemble_metrics_weighted <- calculate_metrics(ensemble_preds_weighted, test_df_pa$presence_both_absence)
+
+
+comparison_results <- tibble(
+  approach = c("GLMNet Only", "SVM Only", "Weighted Ensemble"),
+  accuracy = c(glmnet_metrics$accuracy, svm_metrics$accuracy, ensemble_metrics_weighted$accuracy),
+  presence_recall = c(glmnet_metrics$presence_recall, svm_metrics$presence_recall, ensemble_metrics_weighted$presence_recall),
+  absence_recall = c(glmnet_metrics$absence_recall, svm_metrics$absence_recall, ensemble_metrics_weighted$absence_recall),
+  f1_score = c(glmnet_metrics$f1_score, svm_metrics$f1_score, ensemble_metrics_weighted$f1_score)
+) %>%
+  mutate(approach = factor(approach, levels = approach)) # Ensure proper order
+
+# R Coder Addition: Print final comparison table and selection
+cat("\n=== FINAL PRESENCE/ABSENCE MODEL COMPARISON ===\n")
+# Print the results table clearly
+print(comparison_results %>% 
+  mutate(across(where(is.numeric), ~sprintf("%.4f", .)))) # Format for manuscript readability
+cat("--------------------------------------------------\n")
 
 # Evaluate weighted ensemble
 ensemble_cm_weighted <- confusionMatrix(ensemble_preds_weighted, test_df$presence_both_absence, positive = "Presence")
@@ -2083,6 +2213,22 @@ aggressive_best <- comparison_results %>%
 cat("Best approach:", aggressive_best$approach, "\n")
 cat("- Presence Recall:", sprintf("%.1f%%", aggressive_best$presence_recall * 100), "\n")
 
+aggressive_best <- comparison_results %>%
+  mutate(
+    # Custom score emphasizing Presence Recall (50%) and Absence Recall (20%)
+    aggressive_score = 0.3 * accuracy + 0.5 * presence_recall + 0.2 * absence_recall
+  ) %>%
+  arrange(desc(aggressive_score)) %>%
+  slice(1)
+
+cat("Best overall approach (Aggressive Scoring for Manuscript):", aggressive_best$approach, "\n")
+cat("- Accuracy:", sprintf("%.3f", aggressive_best$accuracy), "\n")
+cat("- Presence Recall (Primary Target):", sprintf("%.3f", aggressive_best$presence_recall), "\n")
+cat("- Absence Recall (Secondary Target):", sprintf("%.3f", aggressive_best$absence_recall), "\n")
+cat("- F1 Score:", sprintf("%.3f", aggressive_best$f1_score), "\n")
+cat("--------------------------------------------------\n")
+
+
 cat("\n=== SUMMARY ===\n")
 cat("• Weighted Ensemble: Best overall performance and F1 score\n")
 cat("• GLMNet Only: Best for avoiding false Absence classifications\n") 
@@ -2099,26 +2245,6 @@ cat("• Threshold Ensemble: Ineffective (identical to GLMNet)\n")
 # Save both models for ensemble use
 saveRDS(glmnet_model, file = "models/best_model_presence_glmnet_ensemble.rds")
 saveRDS(svm_model, file = "models/best_model_presence_svmLinear_ensemble.rds")
-
-# Save ensemble function for later use (matching the manual calculation approach)
-ensemble_predict_weighted <- function(glmnet_model, svm_model, newdata,
-                                     svm_weight_for_presence = 0.6, glm_weight_for_absence = 0.8) {
-  # Get probabilities from both models
-  glmnet_probs <- predict(glmnet_model, newdata = newdata, type = "prob")
-  svm_probs <- predict(svm_model, newdata = newdata, type = "prob")
-
-  # Create weighted probability ensemble - prioritizing absence detection (matches manual calculation)
-  ensemble_presence_prob <- (svm_probs$Presence * svm_weight_for_presence +
-                            glmnet_probs$Presence * (1 - svm_weight_for_presence))
-
-  ensemble_absence_prob <- (glmnet_probs$Absence * glm_weight_for_absence +
-                           svm_probs$Absence * (1 - glm_weight_for_absence))
-
-  # Make predictions using simple probability comparison (matches manual calculation)
-  ensemble_preds <- ifelse(ensemble_presence_prob > ensemble_absence_prob, "Presence", "Absence")
-
-  return(factor(ensemble_preds, levels = c("Presence", "Absence")))
-}
 
 # Alternative threshold-optimized ensemble function
 ensemble_predict_threshold_optimized <- function(glmnet_model, svm_model, newdata, 
@@ -2167,12 +2293,7 @@ ensemble_predict <- function(glmnet_model, svm_model, newdata, absence_threshold
   return(factor(ensemble_preds, levels = c("Presence", "Absence")))
 }
 
-# Removed ensemble function test since we're not using the threshold-based approach
-
-# TODO LIST UPDATE
-# - [x] Remove the failing ensemble function test
-# - [x] Clean up unused ensemble function if needed
-# - [x] Verify the script runs without errors
-
-
+cat("✓ Saved models and ensemble functions for future use\n")
 # MODEL TRAINING COMPLETE - Use scripts/03_prediction/apply_models_to_full_dataset.R for predictions
+
+sink()

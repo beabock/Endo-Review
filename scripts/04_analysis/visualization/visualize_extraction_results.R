@@ -23,6 +23,9 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(sf)  # For coordinate reference system transformations
 
+
+
+
 source("scripts/utils/plot_utils.R")
 # Load centralized reference utilities (normalization helpers)
 utils_path <- "scripts/04_analysis/utilities/reference_data_utils.R"
@@ -33,7 +36,7 @@ if (file.exists(utils_path)) {
 }
 
 # Need to adjust abstract counts throughout to group by abstract.id
-
+version_prefix <- "main"
 
 # Custom theme for consistent visualization
 custom_theme <- endo_theme(base_size = 12) +
@@ -49,8 +52,8 @@ custom_theme <- endo_theme(base_size = 12) +
 
 
 # Function to save plots with consistent format
-save_plot <- function(plot, filename, version, width = 12, height = 8, dpi = 300) {
-  dir_path <- if(version == "main") "plots/main/" else "plots/supplementary/"
+save_plot <- function(plot, filename, width = 12, height = 8, dpi = 300) {
+  dir_path <- "plots/main/"
   full_path <- paste0(dir_path, filename)
   dir.create(dirname(full_path), showWarnings = FALSE, recursive = TRUE)
   ggsave(full_path, plot, width = width, height = height, dpi = dpi, units = "in")
@@ -212,7 +215,6 @@ abstract_summary <- results_clean %>%
     has_plant_parts = any(has_plant_parts),
     has_geography = any(has_geography),
     has_methods = any(methods_combined != "No methods detected"),
-    has_mycorrhizal_only = any(is_mycorrhizal_only),
     predicted_label = first(predicted_label),
     .groups = "drop"
   )
@@ -228,61 +230,34 @@ cat("- With geography:", sum(abstract_summary$has_geography),
 cat("- With methods:", sum(abstract_summary$has_methods),
     "(", round(100 * mean(abstract_summary$has_methods), 1), "%)\n\n")
 
-# Add mycorrhizal filtering capabilities for dual analysis modes
-filter_mycorrhizal_papers <- function(data, include_mycorrhizal_only = FALSE) {
-  if (!"is_mycorrhizal_only" %in% colnames(data)) {
-    message("Mycorrhizal classification not available in dataset")
-    return(data)
-  }
 
-  if (include_mycorrhizal_only) {
-    message("Including mycorrhizal-only papers in analysis (supplementary mode)")
-    return(data)
-  } else {
-    message("Excluding mycorrhizal-only papers from analysis (main mode)")
-    filtered_data <- data %>%
-      filter(is.na(is_mycorrhizal_only) | !is_mycorrhizal_only)
-    message("Filtered out ", nrow(data) - nrow(filtered_data), " mycorrhizal-only abstracts")
-    return(filtered_data)
-  }
-}
+# Process the data
+data <- results_clean
 
-# Create main and supplementary datasets for dual analysis
-main_data <- filter_mycorrhizal_papers(results_clean, include_mycorrhizal_only = FALSE)
-supp_data <- filter_mycorrhizal_papers(results_clean, include_mycorrhizal_only = TRUE)
+cat("\n=== GENERATING VISUALIZATIONS ===\n\n")
 
-# Create versions for dual analysis
-versions <- list("main" = main_data, "supp" = supp_data)
+# Recalculate summary statistics for this dataset
+abstract_summary <- data %>%
+  group_by(id) %>%
+  summarise(
+    has_species = any(has_species),
+    has_plant_parts = any(has_plant_parts),
+    has_geography = any(has_geography),
+    has_methods = any(methods_combined != "No methods detected"),
+    predicted_label = first(predicted_label),
+    .groups = "drop"
+  )
 
-for (version_name in names(versions)) {
-  data <- versions[[version_name]]
-  version_prefix <- version_name
-
-  cat("\n=== GENERATING", toupper(version_prefix), "VERSION VISUALIZATIONS ===\n\n")
-
-  # Recalculate summary statistics for this dataset
-  abstract_summary <- data %>%
-    group_by(id) %>%
-    summarise(
-      has_species = any(has_species),
-      has_plant_parts = any(has_plant_parts),
-      has_geography = any(has_geography),
-      has_methods = any(methods_combined != "No methods detected"),
-      has_mycorrhizal_only = any(is_mycorrhizal_only),
-      predicted_label = first(predicted_label),
-      .groups = "drop"
-    )
-
-  cat("\nData Summary for ", version_prefix, ":\n")
-  cat("- Total abstracts:", nrow(abstract_summary), "\n")
-  cat("- With species detected:", sum(abstract_summary$has_species),
-      "(", round(100 * mean(abstract_summary$has_species), 1), "%)\n")
-  cat("- With plant parts:", sum(abstract_summary$has_plant_parts),
-      "(", round(100 * mean(abstract_summary$has_plant_parts), 1), "%)\n")
-  cat("- With geography:", sum(abstract_summary$has_geography),
-      "(", round(100 * mean(abstract_summary$has_geography), 1), "%)\n")
-  cat("- With methods:", sum(abstract_summary$has_methods),
-      "(", round(100 * mean(abstract_summary$has_methods), 1), "%)\n\n")
+cat("\nData Summary:\n")
+cat("- Total abstracts:", nrow(abstract_summary), "\n")
+cat("- With species detected:", sum(abstract_summary$has_species),
+    "(", round(100 * mean(abstract_summary$has_species), 1), "%)\n")
+cat("- With plant parts:", sum(abstract_summary$has_plant_parts),
+    "(", round(100 * mean(abstract_summary$has_plant_parts), 1), "%)\n")
+cat("- With geography:", sum(abstract_summary$has_geography),
+    "(", round(100 * mean(abstract_summary$has_geography), 1), "%)\n")
+cat("- With methods:", sum(abstract_summary$has_methods),
+    "(", round(100 * mean(abstract_summary$has_methods), 1), "%)\n\n")
 
 
   # 1. SPECIES DETECTION OVERVIEW ------------------------------------------
@@ -315,7 +290,7 @@ for (version_name in names(versions)) {
     theme(legend.position = "bottom")
 
   # Save species detection plot
-  save_plot(p1_species_detection, "species_detection_rate.png", version_prefix, height = 6)
+  save_plot(p1_species_detection, "species_detection_rate.png", height = 6)
 
   # 2. RESEARCH METHODS ANALYSIS -------------------------------------------
 
@@ -466,10 +441,10 @@ for (version_name in names(versions)) {
     theme(legend.position = "none")
 
   # Save methods plots individually
-  save_plot(p3_methods_individual, "methods_individual_core.png", version_prefix, height = 6)
-  save_plot(p3b_methods_expanded, "methods_individual_expanded.png", version_prefix, height = 8)
-  save_plot(p4_methods_combined, "methods_combined_core.png", version_prefix, height = 6)
-  save_plot(p4b_methods_expanded_combined, "methods_combined_expanded.png", version_prefix, height = 8)
+  save_plot(p3_methods_individual, "methods_individual_core.png", height = 6)
+  save_plot(p3b_methods_expanded, "methods_individual_expanded.png", height = 8)
+  save_plot(p4_methods_combined, "methods_combined_core.png", height = 6)
+  save_plot(p4b_methods_expanded_combined, "methods_combined_expanded.png", height = 8)
 
   # 3. PLANT PARTS ANALYSIS ------------------------------------------------
 
@@ -539,8 +514,8 @@ for (version_name in names(versions)) {
       theme(legend.position = "none")
 
     # Save plant parts plots individually
-    save_plot(p6_plant_parts_freq, "plant_parts_frequency.png", version_prefix, height = 8)
-    save_plot(p6b_plant_parts_distribution, "plant_parts_distribution.png", version_prefix, height = 6)
+    save_plot(p6_plant_parts_freq, "plant_parts_frequency.png", height = 8)
+    save_plot(p6b_plant_parts_distribution, "plant_parts_distribution.png", height = 6)
 
   } else {
     cat("No plant parts data available for visualization.\n")
@@ -619,19 +594,25 @@ for (version_name in names(versions)) {
       coord_flip() +
       custom_theme
 
-    # Bottom countries distribution
-    all_countries <- unique(countrycode::codelist$country.name.en)
-    all_countries_std <- if (exists("normalize_country_vector")) {
-      normalize_country_vector(all_countries)
-    } else {
-      stringr::str_to_title(all_countries)
-    }
-    all_countries_df <- data.frame(country_std = all_countries_std, frequency = 0)
-    countries_data_full <- all_countries_df %>%
-      left_join(countries_data %>% select(country_std, frequency), by = "country_std", suffix = c("", ".y")) %>%
-      mutate(frequency = coalesce(frequency.y, 0)) %>%
+    # To improve performance, we'll create a mapping of standardized names from the full dataset
+    # This avoids running the slow normalization on the entire list of world countries
+    all_countries_map <- data.frame(country_std = unique(
+      c(countries_data$country_std,
+        if (exists("normalize_country_vector")) {
+          normalize_country_vector(world$name)
+        } else {
+          stringr::str_to_title(world$name)
+        })
+    )) %>%
+      mutate(frequency = 0)
+
+    countries_data_full <- all_countries_map %>%
+      left_join(countries_data, by = "country_std") %>%
+      mutate(frequency = coalesce(frequency.y, frequency.x)) %>%
       select(country_std, frequency)
+
     bottom_countries_data <- countries_data_full %>%
+      filter(!is.na(country_std) & country_std != "") %>%
       arrange(frequency) %>%
       head(15) %>%
       mutate(country_display = fct_reorder(stringr::str_to_title(country_std), frequency))
@@ -781,12 +762,32 @@ for (version_name in names(versions)) {
     # Get tropical countries using predefined list from reference data utils
     # source("scripts/04_analysis/utilities/reference_data_utils.R") # Already sourced at top
 
-    # Define tropical zone countries (between Tropic of Cancer and Capricorn, plus other commonly considered tropical countries)
-    # Using a simplified list to avoid hanging
-    tropical_zone_countries <- c(
-      "Nigeria", "Ghana", "Ethiopia", "Kenya", "Tanzania", "Brazil", "Colombia", "Peru",
-      "India", "Sri Lanka", "Thailand", "Vietnam", "Malaysia", "Indonesia", "Philippines", "Mexico"
+    # Define tropical zone countries using a more comprehensive list from rnaturalearth
+    # This is more robust than the previous hardcoded list.
+    world_countries_for_tropics <- ne_countries(scale = "medium", returnclass = "sf")
+    tropical_subregions <- c(
+      "Caribbean", "Central America",
+      "Western Africa", "Middle Africa", "Eastern Africa",
+      "South-Eastern Asia", "Southern Asia",
+      "Melanesia"
     )
+    tropical_zone_countries <- world_countries_for_tropics %>%
+      filter(subregion %in% tropical_subregions | continent %in% c("South America", "Africa")) %>%
+      pull(name)
+
+    # Also include countries that straddle the tropics but might be in other subregions
+    tropical_zone_countries <- unique(c(
+      tropical_zone_countries, "Mexico", "India", "Australia", "China", "Saudi Arabia", "Oman",
+      "United Arab Emirates", "Egypt", "Libya", "Algeria", "Brazil", "Vietnam", "Taiwan",
+      "Bangladesh", "Myanmar", "Philippines", "Indonesia", "Nigeria", "Colombia", "Peru", "Venezuela", "Bolivia", "Ecuador"
+    ))
+    
+    # Normalize the country names to match the style in countries_data_full
+    tropical_zone_countries <- if (exists("normalize_country_vector")) {
+        normalize_country_vector(tropical_zone_countries)
+      } else {
+        stringr::str_to_title(tropical_zone_countries)
+      }
 
     # Filter bottom countries data for tropical countries only
     cat("Filtering tropical countries data...\n")
@@ -850,31 +851,17 @@ for (version_name in names(versions)) {
     cat("✓ Saved lowest represented tropical countries to results/lowest_represented_tropical_countries_", version_prefix, ".csv\n")
 
     # Save geography plots individually
-    save_plot(p7_geo_regions, "geographic_regions.png", version_prefix, height = 6)
-    save_plot(p8_countries, "top_countries.png", version_prefix, height = 8)
-    save_plot(p8_bottom_countries, "bottom_countries.png", version_prefix, height = 8)
-    save_plot(p8c_geo_completeness, "geographic_completeness.png", version_prefix, height = 6)
-    save_plot(p_world_map, "world_map_countries.png", version_prefix, width = 12, height = 8)
-    if (version_prefix == "main") {
-      save_plot(p_world_map_log, "world_map_countries_log.png", version_prefix, width = 12, height = 8)
-    }
+    save_plot(p7_geo_regions, "geographic_regions.png", height = 6)
+    save_plot(p8_countries, "top_countries.png", height = 8)
+    save_plot(p8_bottom_countries, "bottom_countries.png", height = 8)
+    save_plot(p8c_geo_completeness, "geographic_completeness.png", height = 6)
+    save_plot(p_world_map, "world_map_countries.png", width = 12, height = 8)
+    save_plot(p_world_map_log, "world_map_countries_log.png", width = 12, height = 8)
 
   } else {
     cat("No geographic data available for visualization.\n")
   }
 
-  if (version_prefix == "supp") {
-    # 4. MYCORRHIZAL CLASSIFICATION ANALYSIS ---------------------------------
-
-    cat("Creating mycorrhizal classification analysis plots (supp only)...\n")
-
-    if (sum(!is.na(data$is_mycorrhizal)) > 0) {
-
-
-    } else {
-      cat("No mycorrhizal classification data available for visualization.\n")
-    }
-  }
 
 
   # 6. COMPREHENSIVE SUMMARY DASHBOARD ------------------------------------
@@ -948,14 +935,12 @@ for (version_name in names(versions)) {
     theme(legend.position = "none")
 
   # Save summary dashboard plots individually
-  save_plot(p_summary_text, "summary_text.png", version_prefix, width = 8, height = 8)
-  save_plot(p_info_summary, "info_summary.png", version_prefix, width = 8, height = 8)
+  save_plot(p_summary_text, "summary_text.png", width = 8, height = 8)
+  save_plot(p_info_summary, "info_summary.png", width = 8, height = 8)
 
   # 7. SAVE VISUALIZATION SUMMARY ------------------------------------------
 
   cat("\nCreating visualization summary report (", version_prefix, ")...\n")
-
-  dir_prefix <- if(version_prefix == "main") "plots/main/" else "plots/supplementary/"
 
   capture.output({
     cat("=== EXTRACTION RESULTS VISUALIZATION SUMMARY (", toupper(version_prefix), " VERSION) ===\n")
@@ -963,28 +948,28 @@ for (version_name in names(versions)) {
     cat("Source: comprehensive_extraction_results.csv\n\n")
 
     cat("FILES GENERATED:\n")
-    cat("1. ", dir_prefix, "species_detection_rate.png - Overall species detection rate\n")
-    cat("2. ", dir_prefix, "methods_individual_core.png - Core research methods (3 traditional types)\n")
-    cat("3. ", dir_prefix, "methods_individual_expanded.png - Expanded research methods (all 9 types)\n")
-    cat("4. ", dir_prefix, "methods_combined_core.png - Combined core method frequencies\n")
-    cat("5. ", dir_prefix, "methods_combined_expanded.png - Combined expanded method frequencies\n")
+    cat("1. ", "plots/main/", "species_detection_rate.png - Overall species detection rate\n")
+    cat("2. ", "plots/main/", "methods_individual_core.png - Core research methods (3 traditional types)\n")
+    cat("3. ", "plots/main/", "methods_individual_expanded.png - Expanded research methods (all 9 types)\n")
+    cat("4. ", "plots/main/", "methods_combined_core.png - Combined core method frequencies\n")
+    cat("5. ", "plots/main/", "methods_combined_expanded.png - Combined expanded method frequencies\n")
     if (sum(abstract_summary$has_plant_parts) > 0) {
-      cat("6. ", dir_prefix, "plant_parts_frequency.png - Most studied plant parts (enhanced)\n")
-      cat("7. ", dir_prefix, "plant_parts_distribution.png - Plant parts count distribution\n")
+      cat("6. ", "plots/main/", "plant_parts_frequency.png - Most studied plant parts (enhanced)\n")
+      cat("7. ", "plots/main/", "plant_parts_distribution.png - Plant parts count distribution\n")
       
     }
     if (sum(abstract_summary$has_geography) > 0) {
-      cat("9. ", dir_prefix, "geographic_regions.png - Geographic distribution by region\n")
-      cat("10. ", dir_prefix, "top_countries.png - Most studied countries\n")
-      cat("11. ", dir_prefix, "bottom_countries.png - Least represented countries\n")
-      cat("12. ", dir_prefix, "geographic_completeness.png - Geographic information completeness\n")
-      cat("13. ", dir_prefix, "world_map_countries.png - World choropleth map of countries\n")
+      cat("9. ", "plots/main/", "geographic_regions.png - Geographic distribution by region\n")
+      cat("10. ", "plots/main/", "top_countries.png - Most studied countries\n")
+      cat("11. ", "plots/main/", "bottom_countries.png - Least represented countries\n")
+      cat("12. ", "plots/main/", "geographic_completeness.png - Geographic information completeness\n")
+      cat("13. ", "plots/main/", "world_map_countries.png - World choropleth map of countries\n")
       if (version_prefix == "main") {
-        cat("13b. ", dir_prefix, "world_map_countries_log.png - World choropleth map of countries (log scale)\n")
+        cat("13b. ", "plots/main/", "world_map_countries_log.png - World choropleth map of countries (log scale)\n")
       }
     }
-    cat("13. ", dir_prefix, "summary_text.png - Overall summary statistics\n")
-    cat("14. ", dir_prefix, "info_summary.png - Information detection overview\n\n")
+    cat("13. ", "plots/main/", "summary_text.png - Overall summary statistics\n")
+    cat("14. ", "plots/main/", "info_summary.png - Information detection overview\n\n")
 
     cat("KEY FINDINGS:\n")
     cat("- Species detection rate:", round(species_rate, 1), "%\n")
@@ -1022,350 +1007,4 @@ for (version_name in names(versions)) {
 
   cat("Visualization summary saved to: results/visualization_summary_report_", version_prefix, ".txt\n")
 
-}# Close versions loop first
-
-
-# 8. TEMPORAL METHOD TRENDS -----------------------------------------------
-# Create the bar plot of abstracts per year filled by detection method
-
-cat("Creating temporal method trends visualization...\n")
-
-# Prepare temporal method data for both main and supplementary versions
-for (temporal_version in names(versions)) {
-  temporal_data <- versions[[temporal_version]]
-  temporal_version_prefix <- temporal_version
-
-  cat("Creating temporal method trends for", temporal_version_prefix, "version...\n")
-
-  temporal_method_data <- temporal_data %>%
-    filter(!is.na(publication_year), publication_year >= 1926, publication_year <= 2025) %>%
-    select(id, publication_year, has_molecular, has_culture, has_microscopy) %>%
-    group_by(id, publication_year) %>%
-    summarise(
-      has_molecular = any(has_molecular),
-      has_culture = any(has_culture),
-      has_microscopy = any(has_microscopy),
-      .groups = "drop"
-    ) %>%
-    # Create method category for each abstract
-    mutate(
-      method_category = case_when(
-        has_molecular & has_culture & has_microscopy ~ "All three methods",
-        has_molecular & has_culture ~ "Molecular + Culture",
-        has_molecular & has_microscopy ~ "Molecular + Microscopy",
-        has_culture & has_microscopy ~ "Culture + Microscopy",
-        has_molecular ~ "Molecular only",
-        has_culture ~ "Culture only",
-        has_microscopy ~ "Microscopy only",
-        TRUE ~ "No methods detected"
-      )
-    ) %>%
-    # Aggregate by year and method
-    count(publication_year, method_category, name = "abstract_count") %>%
-    # Create a complete sequence of years to ensure gaps are filled
-    complete(publication_year = full_seq(c(1926:2025), 1), method_category, fill = list(abstract_count = 0))
-
-   # Create the bar plot
-   method_colors <- c(
-     "All three methods" = "#5B8FA8",
-     "Molecular + Culture" = "#7FB77E",
-     "Molecular + Microscopy" = "#D18C63",
-     "Culture + Microscopy" = "#9C6843",
-     "Molecular only" = "#B78FA8",
-     "Culture only" = "#6E6E6E",
-     "Microscopy only" = "#C9B28E",
-     "No methods detected" = "lightgrey"
-   )
-
-   p_temporal_methods <- temporal_method_data %>%
-     ggplot(aes(x = publication_year, y = abstract_count, fill = method_category)) +
-     geom_bar(stat = "identity", position = "stack", width = 0.8) +
-     scale_fill_manual(
-       values = method_colors,
-       name = "Detection Method"
-     ) +
-     scale_x_continuous(
-       breaks = seq(1930, 2025, by = 10),
-       expand = c(0, 0)
-     ) +
-     scale_y_continuous(
-       expand = c(0, 0),
-       labels = scales::comma_format()
-     ) +
-     labs(
-       x = "Publication Year",
-       y = "Number of Abstracts"
-     ) +
-     custom_theme +
-     theme(
-       legend.position = "bottom",
-       legend.title = element_text(size = 10),
-       legend.text = element_text(size = 9),
-       axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
-     )
-
-   # Save the temporal methods plot
-   save_plot(p_temporal_methods, "temporal_method_trends.png", temporal_version_prefix, width = 14, height = 8)
-
-   # Create a line version for better trend visibility
-   p_temporal_methods_line <- temporal_method_data %>%
-     group_by(publication_year) %>%
-     mutate(total_abstracts = sum(abstract_count)) %>%
-     ungroup() %>%
-     mutate(method_proportion = abstract_count / total_abstracts) %>%
-     ggplot(aes(x = publication_year, y = method_proportion, color = method_category)) +
-     geom_line(linewidth = 1.2, alpha = 0.8) +
-     geom_point(size = 2, alpha = 0.8) +
-     scale_color_manual(
-       values = method_colors,
-       name = "Detection Method"
-     ) +
-     scale_x_continuous(
-       breaks = seq(1930, 2025, by = 10),
-       expand = c(0, 0)
-     ) +
-     scale_y_continuous(
-       labels = scales::percent_format(),
-       expand = c(0, 0)
-     ) +
-     labs(
-       title = "Proportion of Detection Methods Over Time",
-       subtitle = paste("Relative frequency of each method as percentage of annual abstracts (", temporal_version_prefix, " dataset)"),
-       x = "Publication Year",
-       y = "Proportion of Abstracts (%)",
-       caption = paste("Based on", length(unique(temporal_method_data$publication_year)), "years of data")
-     ) +
-     custom_theme +
-     theme(
-       legend.position = "bottom",
-       legend.title = element_text(size = 10),
-       legend.text = element_text(size = 9),
-       axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
-     )
-
-   # Save the line version
-   save_plot(p_temporal_methods_line, "temporal_method_proportions.png", temporal_version_prefix, width = 14, height = 8)
-
- cat("Completed temporal method trends for", temporal_version_prefix, "version\n")
-}
-
 # Close temporal loop
-
- 
-
-# Close the loop
-
-# Clean up
-cat("\n=== VISUALIZATION COMPLETE ===\n")
-cat("Generated dual-version visualization files in plots/main/ and plots/supplementary/ subdirectories\n")
-cat("Generated separate summary reports: results/visualization_summary_report_main.txt and results/visualization_summary_report_supp.txt\n")
-cat("\nKey outputs:\n")
-cat("📊 Species detection patterns and kingdom distribution (main and supp versions)\n")
-cat("🔬 Research methods usage and combinations - both core (3 types) and expanded (9 types)\n")
-cat("📈 Temporal method trends - stacked bar plot and proportion line plot (NEW)\n")
-if (sum(main_data$has_plant_parts) > 0) cat("🌱 Enhanced plant parts frequency with normalization and count distribution\n")
-if (sum(main_data$has_geography) > 0) cat("🌍 Comprehensive geographic distribution with countries, continents, regions, and world choropleth map (linear and log scale)\n")
-cat("📋 Summary statistics and information overview (individual plots)\n\n")
-
-cat("Next steps:\n")
-cat("1. Review generated individual plots for patterns and insights\n")
-cat("2. Compare main vs supp versions for differences in mycorrhizal filtering\n")
-cat("3. Use findings to guide systematic review priorities\n")
-cat("4. Consider combining plots manually in external software if needed\n")
-cat("5. Integrate visualizations into research presentations and publications\n\n")
-
-# Create manuscript-ready log file with key statistics for extraction results
-
-# =============================================================================
-# NEW SUMMARY STATISTICS REQUESTED
-# =============================================================================
-
-cat("\n=== ADDITIONAL SUMMARY STATISTICS ===\n")
-
-# 1. Top 5 Plant Parts
-cat("\n--- Top 5 Plant Parts ---\n")
-top_5_parts <- main_data %>%
-  filter(!is.na(parts_normalized) & parts_normalized != "") %>%
-  separate_rows(parts_normalized, sep = "; ") %>%
-  distinct(id, parts_normalized) %>%
-  count(parts_normalized, sort = TRUE, name = "unique_abstract_count") %>%
-  head(5)
-
-# Print the results in a formatted way
-if (nrow(top_5_parts) > 0) {
-  for(i in 1:nrow(top_5_parts)) {
-    cat(sprintf("%d. %s: %d unique abstracts\n", i, str_to_title(top_5_parts$parts_normalized[i]), top_5_parts$unique_abstract_count[i]))
-  }
-} else {
-  cat("No plant part data found to analyze.\n")
-}
-
-
-# 2. & 3. Plant Family and Genus Ratios
-cat("\n--- Plant Taxonomic Coverage ---\n")
-
-# Load the full species reference dataset to get totals
-species_ref_path <- "models/species.rds"
-if (file.exists(species_ref_path)) {
-  species_ref <- readRDS(species_ref_path)
-  
-  # Filter for plants only in the reference data
-  plant_ref <- species_ref %>% filter(kingdom == "Plantae")
-  
-  # Total unique families and genera in reference data
-  total_plant_families <- plant_ref %>% filter(!is.na(family)) %>% distinct(family) %>% nrow()
-  total_plant_genera <- plant_ref %>% filter(!is.na(genus)) %>% distinct(genus) %>% nrow()
-
-  # Detected unique families and genera in the results
-  detected_plant_families <- main_data %>%
-    filter(kingdom == "Plantae", !is.na(family)) %>%
-    distinct(family) %>%
-    nrow()
-    
-  detected_plant_genera <- main_data %>%
-    filter(kingdom == "Plantae", !is.na(genus)) %>%
-    distinct(genus) %>%
-    nrow()
-
-  # Print the ratios
-  cat(sprintf("Family Coverage: %d detected / %d total plant families (%.1f%%)\n",
-              detected_plant_families,
-              total_plant_families,
-              100 * detected_plant_families / total_plant_families))
-              
-  cat(sprintf("Genus Coverage: %d detected / %d total plant genera (%.1f%%)\n",
-              detected_plant_genera,
-              total_plant_genera,
-              100 * detected_plant_genera / total_plant_genera))
-
-} else {
-  cat("Could not find species reference file at:", species_ref_path, "\n")
-  cat("Skipping plant taxonomic coverage analysis.\n")
-}
-
-cat("\n=====================================\n\n")
-
-
-create_manuscript_log_extraction <- function() {
-  log_file <- "results/visualize_extraction_results_manuscript_log.txt"
-
-  # Calculate key statistics for manuscript
-  total_abstracts <- nrow(abstract_summary)
-  abstracts_with_species <- sum(abstract_summary$has_species)
-  abstracts_with_geography <- sum(abstract_summary$has_geography)
-  abstracts_with_methods <- sum(abstract_summary$has_methods)
-
-  # Geographic analysis summary
-  if (sum(abstract_summary$has_geography) > 0) {
-    geo_summary <- data %>%
-      filter(!is.na(countries_detected)) %>%
-      select(id, countries_detected) %>%
-      distinct(id, countries_detected) %>%
-      separate_rows(countries_detected, sep = "; ") %>%
-      filter(!is.na(countries_detected), countries_detected != "") %>%
-      mutate(country_std = if (exists("normalize_country_vector")) {
-        normalize_country_vector(countries_detected)
-      } else {
-        stringr::str_to_title(countries_detected)
-      }) %>%
-      distinct(id, country_std) %>%
-      count(country_std, name = "frequency") %>%
-      arrange(desc(frequency))
-
-    top_countries <- head(geo_summary, 5)
-  }
-
-  # Methods summary
-  if (sum(abstract_summary$has_methods) > 0) {
-    methods_summary <- data %>%
-      group_by(id) %>%
-      summarise(methods_combined = first(methods_combined), .groups = "drop") %>%
-      count(methods_combined, name = "count") %>%
-      mutate(percentage = count / sum(count) * 100) %>%
-      arrange(desc(count))
-  }
-
-  capture.output({
-    cat("=== VISUALIZE_EXTRACTION_RESULTS.R MANUSCRIPT STATISTICS ===\n")
-    cat("Generated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
-
-    cat("DATASET OVERVIEW:\n")
-    cat("================\n")
-    cat(sprintf("- Total abstracts analyzed: %s\n", format(total_abstracts, big.mark = ",")))
-    cat(sprintf("- Abstracts with species detected: %s (%.1f%%)\n",
-                format(abstracts_with_species, big.mark = ","),
-                round(abstracts_with_species/total_abstracts * 100, 1)))
-    cat(sprintf("- Abstracts with geographic information: %s (%.1f%%)\n",
-                format(abstracts_with_geography, big.mark = ","),
-                round(abstracts_with_geography/total_abstracts * 100, 1)))
-    cat(sprintf("- Abstracts with research methods: %s (%.1f%%)\n\n",
-                format(abstracts_with_methods, big.mark = ","),
-                round(abstracts_with_methods/total_abstracts * 100, 1)))
-
-    if (exists("geo_summary")) {
-      cat("GEOGRAPHIC DISTRIBUTION:\n")
-      cat("=======================\n")
-      cat("Top 5 countries by number of abstracts:\n")
-      for(i in 1:min(5, nrow(geo_summary))) {
-        country <- geo_summary[i,]
-        cat(sprintf("%d. %s: %s abstracts\n", i, country$country_std, format(country$frequency, big.mark = ",")))
-      }
-      cat("\n")
-    }
-
-    if (exists("methods_summary")) {
-      cat("RESEARCH METHODS:\n")
-      cat("================\n")
-      cat("Most common method combinations:\n")
-      for(i in 1:min(5, nrow(methods_summary))) {
-        method <- methods_summary[i,]
-        cat(sprintf("%d. %s: %s abstracts (%.1f%%)\n",
-                    i, method$methods_combined,
-                    format(method$count, big.mark = ","),
-                    round(method$percentage, 1)))
-      }
-      cat("\n")
-    }
-
-    cat("VISUALIZATION FEATURES:\n")
-    cat("======================\n")
-    cat("- World maps with Robinson projection (more accurate than Mercator)\n")
-    cat("- Standard log scales (1, 10, 100, 1000) for data clarity\n")
-    cat("- Geographic regions (North vs South classification)\n")
-    cat("- Research method distributions (3 core + 9 expanded methods)\n")
-    cat("- Plant part frequency analysis\n")
-    cat("- Confidence level distributions\n")
-    cat("- Dual analysis modes (main/supplementary for mycorrhizal filtering)\n\n")
-
-    cat("TECHNICAL IMPROVEMENTS:\n")
-    cat("=======================\n")
-    cat("- Map projection: Changed from Mercator to Robinson for better area representation\n")
-    cat("- Legend clarity: Explicitly states 'Gray = 0 studies' for data interpretation\n")
-    cat("- Scale standardization: Log scale ticks use standard breaks (1, 10, 100, 1000)\n")
-    cat("- Enhanced readability: Larger fonts, better legend positioning\n")
-    cat("- Geographic completeness: Shows countries, continents, regions, coordinates\n\n")
-
-    cat("KEY FINDINGS FOR MANUSCRIPT:\n")
-    cat("===========================\n")
-    cat(sprintf("- Geographic coverage shows %s abstracts with location data\n",
-                format(abstracts_with_geography, big.mark = ",")))
-    cat(sprintf("- Research methods detected in %s abstracts\n",
-                format(abstracts_with_methods, big.mark = ",")))
-    if (exists("geo_summary") && nrow(geo_summary) > 0) {
-      cat(sprintf("- Most studied country: %s (%s abstracts)\n",
-                  geo_summary$country_std[1], format(geo_summary$frequency[1], big.mark = ",")))
-    }
-    if (exists("methods_summary") && nrow(methods_summary) > 0) {
-      cat(sprintf("- Most common method approach: %s\n", methods_summary$methods_combined[1]))
-    }
-    cat("- Analysis reveals global research patterns in endophyte studies\n")
-
-  }, file = log_file)
-
-  message("Manuscript-ready statistics saved to: ", log_file)
-}
-
-# Generate the manuscript log
-create_manuscript_log_extraction()
-
-cat("All visualization files saved to plots/main/ and plots/supplementary/ directories! 📊✨\n")

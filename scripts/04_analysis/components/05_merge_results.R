@@ -175,29 +175,26 @@ merge_extraction_results <- function(
       select(-all_of(training_cols))
   }
 
-  merged_data <- merged_data %>%
-          filter(is_mycorrhizal == FALSE | is.na(is_mycorrhizal)) %>%#Removing any mycorrhizal entries.
-          filter(phylum != "Glomeromycota") #AMF, just in case not captured by funguild
-  # Save comprehensive results
-  write_csv(merged_data, output_file)
 
   # Generate summary report
   if (verbose) {
     cat("\n📈 Comprehensive Extraction Results Summary:\n")
     cat("==========================================\n")
-    cat("Total abstracts processed:", nrow(merged_data), "\n")
+    
+    total_unique_abstracts <- length(unique(merged_data$id))
+    cat("Total unique abstracts processed:", total_unique_abstracts, "\n")
 
     # Species and mycorrhizal summary
     if ("resolved_name" %in% names(merged_data) || "canonicalName" %in% names(merged_data)) {
-      species_cols <- intersect(c("resolved_name", "canonicalName"), names(merged_data))
-      species_found <- merged_data %>%
-        select(any_of(species_cols)) %>%
-        mutate(has_species = rowSums(!is.na(across(everything()))) > 0) %>%
-        pull(has_species) %>%
-        sum()
+      
+      # Correctly count unique abstracts with species
+      abstracts_with_species <- merged_data %>%
+        filter(!is.na(resolved_name) | !is.na(canonicalName)) %>%
+        distinct(id) %>%
+        nrow()
 
-      cat("✓ Species detection:", species_found,
-          "(", round(100 * species_found / nrow(merged_data), 1), "%)\n")
+      cat("✓ Species detection:", abstracts_with_species,
+          "(", round(100 * abstracts_with_species / total_unique_abstracts, 1), "%)\n")
     }
 
     # Mycorrhizal summary
@@ -231,6 +228,34 @@ merge_extraction_results <- function(
 
       cat("✓ Geography detection: Countries(", countries_found, "), Continents(", continents_found, "), Regions(", regions_found, ")\n")
     }
+
+  cat("Number of mycorrhizal only rows:", sum(merged_data$is_mycorrhizal_only, na.rm = TRUE), "\n")
+  cat("Number of mycorrhizal rows:", sum(merged_data$is_mycorrhizal == "TRUE", na.rm = TRUE), "\n")
+  cat("Unique abstracts before  filtering:", length(unique(merged_data$id)), "\n")
+  cat("rows before filtering out mycorrhizal entries (is_mycorrhizal or Glomeromycota):", nrow(merged_data), "\n")
+  cat("number of rows with phylum Glomeromycota:", sum(merged_data$phylum == "Glomeromycota", na.rm = TRUE), "\n")
+
+    merged_data <- merged_data %>%
+          filter(is_mycorrhizal == FALSE | is.na(is_mycorrhizal)) 
+
+   cat("number of rows after filtering for is_mycorrhizal FALSE and NA:", nrow(merged_data), "\n")
+   cat("number of unique abstracts after filtering for is_mycorrhizal FALSE and NA:", length(unique(merged_data$id)), "\n")
+
+  merged_data <- merged_data %>%
+          filter(phylum != "Glomeromycota" | is.na(phylum)) #AMF, just in case not captured by funguild
+  # Save comprehensive results
+  
+  cat("Rows after filtering out mycorrhizal entries (is_mycorrhizal or Glomeromycota):", nrow(merged_data), "\n")
+  
+  cat("Number of mycorrhizal only rows after filtering:", sum(merged_data$is_mycorrhizal_only, na.rm = TRUE), "\n")
+  merged_data <- merged_data %>%
+         filter(is_mycorrhizal_only == FALSE) 
+  cat("Rows after filtering out mycorrhizal only entries:", nrow(merged_data), "\n")
+  cat("Unique abstracts before final save:", length(unique(merged_data$id)), "\n")
+  
+  cat("Unique abstracts after filtering:", length(unique(merged_data$id)), "\n")
+  write_csv(merged_data, output_file)
+
 
     cat("\n💾 Results saved to:", output_file, "\n")
     cat("📊 Total columns:", ncol(merged_data), "\n")

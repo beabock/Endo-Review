@@ -84,24 +84,6 @@ taxa_results <- read_csv("results/comprehensive_extraction_results.csv", show_co
 message("Comprehensive taxa results loaded: ", nrow(taxa_results), " entries")
 message("Available columns: ", length(names(taxa_results)))
 
-# Add mycorrhizal filtering capabilities for dual analysis modes
-filter_mycorrhizal_papers <- function(data, include_mycorrhizal_only = FALSE) {
-  if (!"is_mycorrhizal_only" %in% colnames(data)) {
-    message("Mycorrhizal classification not available in dataset")
-    return(data)
-  }
-
-  if (include_mycorrhizal_only) {
-    message("Including mycorrhizal-only papers in analysis (supplementary mode)")
-    return(data)
-  } else {
-    message("Excluding mycorrhizal-only papers from analysis (main mode)")
-    filtered_data <- data %>%
-      filter(!is_mycorrhizal_only)
-    message("Filtered out ", nrow(data) - nrow(filtered_data), " mycorrhizal-only abstracts")
-    return(filtered_data)
-  }
-}
 
 # Handle synonym resolution for taxa_results (if columns exist)
 # First, ensure basic columns exist and add defaults for missing ones
