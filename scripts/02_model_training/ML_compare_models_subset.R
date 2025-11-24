@@ -1154,7 +1154,6 @@ for (method in models_to_try) {
   cat("\n------------------------------------------------\n")
   cat("Training Presence/Absence Model:", method, "...\n")
   tic(paste("Time for", method, "(P/A)"))
-  tic(paste("Time for", method))
   result <- tryCatch({
     if (method == "glmnet") {
       # For glmnet, heavily weight Absence class to avoid misclassifying it

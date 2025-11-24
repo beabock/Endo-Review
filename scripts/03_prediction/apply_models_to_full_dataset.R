@@ -1428,3 +1428,5 @@ cat("3. Spot-check 'Presence' classifications for quality assurance\n")
 cat("4. Time permitting, review 'Uncertain' classifications\n\n")
 
 cat("Pipeline complete! 🎉\n")
+
+sink()
