@@ -385,11 +385,15 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     coord_flip() +
     labs(
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Count)"),
-      subtitle = paste("Number of", tolower(level_name), "found vs. not found in each phylum (hierarchical). Data from GBIF Backbone Taxonomy"),
+      subtitle = paste("Number of", tolower(level_name), "studied vs. not studied in each phylum (hierarchical)."),
       x = "Phylum",
       y = paste("Number of", level_name_plural)
     ) +
     scale_fill_manual(values = c(Found = "#76B7B2", `Not Found` = "#E07A5F"),
+    labels = c(
+    "Found" = "Studied",
+    "Not Found" = "Not Studied"
+  ),
                      name = "Status") +
     endo_theme() +
     theme(axis.text.y = element_text(size = 10),
@@ -443,12 +447,14 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     coord_flip() +
     labs(
       title = paste(kingdom_filter, level_name, "Representation by Phylum (Percent)"),
-      subtitle = paste("Percentage of", tolower(level_name), "found vs. not found in each phylum (hierarchical). Data from GBIF Backbone Taxonomy"),
+      subtitle = paste("Percentage of", tolower(level_name), "studied vs. not studied in each phylum (hierarchical)."),
       x = "Phylum",
-      y = paste("Percentage of", level_name_plural),
-      caption = "GBIF = Global Biodiversity Information Facility (gbif.org)"
+      y = paste("Percentage of", level_name_plural)
     ) +
-    scale_fill_manual(values = c(Found = "#76B7B2", `Not Found` = "#E07A5F"), name = "Status") +
+    scale_fill_manual(values = c(Found = "#76B7B2", `Not Found` = "#E07A5F"),labels = c(
+    "Found" = "Studied",
+    "Not Found" = "Not Studied"
+  ), name = "Status") +
     endo_theme() +
     theme(axis.text.y = element_text(size = 10),
           legend.position = "bottom",
@@ -469,15 +475,14 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
 # Create output directories
 dir.create("plots", showWarnings = FALSE)
 dir.create("plots/main", showWarnings = FALSE, recursive = TRUE)
-dir.create("plots/supplementary", showWarnings = FALSE, recursive = TRUE)
 dir.create("plots/geographic", showWarnings = FALSE, recursive = TRUE)
 
-# Create phylum-based representation plots with dual modes (main vs supplementary)
+# Create phylum-based representation plots
 message("Creating phylum-based visualization plots...")
 
-# Apply mycorrhizal filtering to create two datasets
-taxa_results_main <- filter_mycorrhizal_papers(taxa_results_deduped, include_mycorrhizal_only = FALSE)
-taxa_results_supplementary <- filter_mycorrhizal_papers(taxa_results_deduped, include_mycorrhizal_only = TRUE)
+
+taxa_results_main <- taxa_results_deduped
+
 
 # =============================================================================
 # FUNGAL REPRESENTATION SUMMARY
@@ -553,17 +558,6 @@ create_phylum_taxa_plot("Plantae", "Species", "canonicalName", "plantae_species_
 create_phylum_taxa_plot("Fungi", "Family", "family", "fungi_family_representation_main", taxa_results_main)
 create_phylum_taxa_plot("Fungi", "Genus", "genus", "fungi_genus_representation_main", taxa_results_main)
 create_phylum_taxa_plot("Fungi", "Species", "canonicalName", "fungi_species_representation_main", taxa_results_main)
-
-message("Creating supplementary visualizations (including mycorrhizal-only papers)...")
-# Plant phylum plots - SUPPLEMENTARY MODE
-create_phylum_taxa_plot("Plantae", "Family", "family", "plantae_family_representation_supplementary", taxa_results_supplementary, "supplementary")
-create_phylum_taxa_plot("Plantae", "Genus", "genus", "plantae_genus_representation_supplementary", taxa_results_supplementary, "supplementary")
-create_phylum_taxa_plot("Plantae", "Species", "canonicalName", "plantae_species_representation_supplementary", taxa_results_supplementary, "supplementary")
-
-# Fungi phylum plots - SUPPLEMENTARY MODE
-create_phylum_taxa_plot("Fungi", "Family", "family", "fungi_family_representation_supplementary", taxa_results_supplementary, "supplementary")
-create_phylum_taxa_plot("Fungi", "Genus", "genus", "fungi_genus_representation_supplementary", taxa_results_supplementary, "supplementary")
-create_phylum_taxa_plot("Fungi", "Species", "canonicalName", "fungi_species_representation_supplementary", taxa_results_supplementary, "supplementary")
 
 # Create geographic-taxonomic analysis function
 create_geographic_taxa_analysis <- function() {
@@ -864,7 +858,7 @@ create_manuscript_summary <- function() {
 
   cat("Overall Plant Kingdom:\n")
   cat(sprintf("- Total species in reference database: %d\n", total_species))
-  cat(sprintf("- Species found in literature: %d (%.1f%%)\n", found_species, percent_species))
+  cat(sprintf("- Species Studied in literature: %d (%.1f%%)\n", found_species, percent_species))
   cat(sprintf("- Mycorrhizal-only abstracts excluded: %d\n\n", nrow(taxa_results_deduped) - nrow(taxa_results_main)))
 
   # Phylum-by-phylum breakdown
@@ -951,7 +945,7 @@ create_manuscript_log <- function() {
     cat("OVERALL PLANT SPECIES COVERAGE:\n")
     cat("===============================\n")
     cat(sprintf("- Total plant species in GBIF reference: %s\n", format(total_species_gbif, big.mark = ",")))
-    cat(sprintf("- Plant species found in literature: %s\n", format(species_found, big.mark = ",")))
+    cat(sprintf("- Plant species studied in literature: %s\n", format(species_found, big.mark = ",")))
     cat(sprintf("- Percentage coverage: %.1f%%\n", species_percent))
     cat(sprintf("- Mycorrhizal-only abstracts excluded: %s\n\n",
                 format(nrow(taxa_results_deduped) - nrow(taxa_results_main), big.mark = ",")))
@@ -971,12 +965,11 @@ create_manuscript_log <- function() {
 
     cat("VISUALIZATION OUTPUTS:\n")
     cat("=====================\n")
-    cat("- 24 phylum-based plots (12 main + 12 supplementary)\n")
+    cat("- 12 phylum-based plots (main mode only)\n")
     cat("- 3 geographic-taxonomic visualizations\n")
-    cat("- 6 kingdoms × 2 taxonomic levels (count + percent) × 2 modes\n")
+    cat("- 6 kingdoms × 2 taxonomic levels (count + percent) × 1 mode\n")
     cat("- 2 data files: unrepresented taxa + geographic analysis\n")
-    cat("- Total: 27 visualization files + 2 data files\n\n")
-
+    cat("- Total: 21 visualization files + 2 data files\n\n")
     cat("METHODOLOGY DETAILS:\n")
     cat("===================\n")
     cat("- Data source: GBIF Backbone Taxonomy\n")
@@ -1003,14 +996,13 @@ create_manuscript_log()
 
 message("All visualizations and data exports completed!")
 message("Created:")
-message("- 24 phylum-based plots (12 main + 12 supplementary)")
+message("- 12 phylum-based plots (main mode only)")
 message("- 3 geographic-taxonomic visualizations")
-message("- 6 kingdoms × 2 taxonomic levels (count + percent) × 2 modes (main + supplementary)")
+message("- 6 kingdoms × 2 taxonomic levels (count + percent) × 1 mode")
 message("- 2 data files: unrepresented taxa + geographic analysis")
-message("Total: 27 visualization files in plots/ directory + 2 data files")
+message("Total: 21 visualization files in plots/ directory + 2 data files")
 message("Analysis modes:")
 message("- MAIN: Excludes mycorrhizal-only papers (endophyte focus)")
-message("- SUPPLEMENTARY: Includes mycorrhizal-only papers")
 message("Geographic visualizations:")
 message("- plots/geographic_taxonomic_diversity.png")
 message("- plots/plant_species_by_country.png")

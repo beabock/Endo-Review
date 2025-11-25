@@ -164,7 +164,7 @@ library(digest)
 library(here)
 setwd(here())
 # Redirect output to txt file
-sink("results/abstracts_pull_summary.txt")
+sink("results/outputs/abstracts_pull_summary.txt")
 
 
 wos_folder <- "data/raw/All_abstracts_8-14-25/WoS"
@@ -400,10 +400,15 @@ normalize_text <- function(x) {
   return(x)
 }
 
+cat("Deduplication: to lowercase, collapse whitespace, remove punctuation, trim spaces\n")
+
 # Step 1: Deduplicate by DOI (preserving NA DOIs)
 ds_no_na <- ds %>% filter(!is.na(DOI) & DOI != "")
+cat("Rows with non-missing DOIs:", nrow(ds_no_na), "\n")
 ds_na <- ds %>% filter(is.na(DOI) | DOI == "")
+cat("Rows with missing DOIs:", nrow(ds_na), "\n")
 deduplicated <- ds_no_na %>% distinct(DOI, .keep_all = TRUE)
+cat("After DOI deduplication (non-missing DOIs):", nrow(deduplicated), "\n")
 deduplicated <- bind_rows(deduplicated, ds_na)
 cat("After DOI deduplication:", nrow(deduplicated), "\n")
 write.csv(deduplicated, "data/processed/intermediate_after_doi_dedup.csv", row.names = FALSE)
@@ -413,6 +418,7 @@ deduplicated <- deduplicated %>%
   mutate(Abstract_norm = normalize_text(Abstract),
          Title_norm = normalize_text(Title),
          Authors_norm = normalize_text(Authors))
+cat("Normalized text columns (abstract, title, authors) created.\n")
 
 # Step 3: Deduplicate by abstract
 deduplicated <- deduplicated %>%
