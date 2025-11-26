@@ -1,30 +1,33 @@
 ---
+title: "The Sparsely Sampled Ubiquity of Global Fungal Endophytes"
 output:
-  word_document: default
-  html_document: default
+  word_document:
+    fig_caption: true
+    df_print: kable
+bibliography: Endo_Review_Refs.bib
+csl: nature.csl
 ---
-# Manuscript Preparation
+
+Title: The Sparsely Sampled Ubiquity of Global Fungal Endophytes
 
 Authors: B. M. Bock^1,2^, N. McKay^3^, N.C. Johnson^1, 3^, C.A. Gehring^1,2^
 
 1. Department of Biological Sciences, Northern Arizona University
+
 2. Center for Adaptable Western Landscapes, Northern Arizona University
+
 3. School of Earth and Sustainability, Northern Arizona University
-
-Goal journal: Nature
-
-Title: The Sparsely Sampled Ubiquity of Global Fungal Endophytes
 
 
 ## Abstract
 The paradigm that 'all plants harbor fungal endophytes' is a widely accepted axiom in plant ecology, yet this claim has never been systematically tested at a global scale. Here, we use a machine learning pipeline to analyze 21,891 research abstracts spanning nearly a century. We developed a high-sensitivity screening tool to find and manually validate all potential claims of endophyte absence. This comprehensive validation revealed no evidence of a verifiable endophyte-free plant taxon within the entire scientific literature surveyed. This finding confirms that endophyte ubiquity is a robust pattern wherever plants have been studied. However, we show that this "ubiquitous" paradigm is a generalization from an extraordinarily biased sample: only 0.8% of described plant species have been examined for fungal endophytes, with 77% of all research concentrated in the Global North. Our analysis reframes a foundational paradigm, revealing that our understanding of a "global" symbiosis is based on a tiny fraction of biodiversity. This sampling bias represents a critical bottleneck in biodiversity research, limiting our discovery of novel biotechnologies and climate-resilient symbioses in the world's most threatened ecosystems.
 
 ## Introduction
-Fungal endophytes represent one of the largest and most chemically diverse microbial reservoirs on Earth (Kusari et al., 2012). These symbionts, distinguished from mycorrhizal fungi by their ability to inhabit broad plant tissues without forming specific root interfaces (Cosner et al., 2025) and without causing disease (Petrini, 1991), are not merely passive passengers; they actively modulate plant stress tolerance, drive ecosystem productivity, and produce a vast array of bioactive compounds with pharmaceutical and agricultural applications (Rodriguez et al., 2009; Strobel, 2003). Underpinning this functional potential is the foundational paradigm that this symbiosis is ubiquitous. Influential book chapters (e.g., Stone et al., 2000) and the introductions of highly cited research articles (e.g., Arnold et al., 2000) state this claim explicitly. This idea has become a central, defining assumption in ecology, which is restated in contemporary reviews (e.g., Cosner et al., 2025) noting they are "found in nearly all plants," and underpins research on endophyte function, diversity, and transmission.
+Fungal endophytes represent one of the largest and most chemically diverse microbial reservoirs on Earth [@kusari_chemical_2012]. These symbionts, distinguished from mycorrhizal fungi by their ability to inhabit broad plant tissues without forming specific root interfaces [@cosner_fungal_2025] and without causing disease [@brock_fungal_1991], are not merely passive passengers; they actively modulate plant stress tolerance, drive ecosystem productivity, and produce a vast array of bioactive compounds with pharmaceutical and agricultural applications [@rodriguez_fungal_2009; @strobel_endophytes_2003]. Underpinning this functional potential is the foundational paradigm that this symbiosis is ubiquitous. Influential book chapters (e.g., [@stone_overview_2000]) and the introductions of highly cited research articles (e.g., [@arnold_are_2000]) state this claim explicitly. This idea has become a central, defining assumption in ecology, which is restated in contemporary reviews (e.g., [@cosner_fungal_2025]) noting they are "found in nearly all plants," and underpins research on endophyte function, diversity, and transmission.
 
-However, this assumption of ubiquity remains unvalidated, as a comprehensive, systematic evaluation of fungal endophyte distribution across plant taxa and regions is lacking. Previous reviews have been qualitative or focused on specific lineages (e.g., Schulz & Boyle, 2005; U’Ren et al., 2012), leaving the global pattern untested. Crucially, testing this paradigm requires distinguishing between a "study-level absence" (a failure to detect endophytes in a specific sample or experiment) and a "taxon-level absence" (a plant taxon that always lacks endophytes). While study-level absences are expected due to detection limits and differing methodological approaches, a confirmed taxon-level absence would fundamentally challenge the ubiquity paradigm. Conversely, confirming ubiquity while revealing major sampling gaps would expose a critical bottleneck in our ability to bioprospect this global reservoir for novel functions.
+However, this assumption of ubiquity remains unvalidated, as a comprehensive, systematic evaluation of fungal endophyte distribution across plant taxa and regions is lacking. Previous reviews have been qualitative or focused on specific lineages (e.g., [@schulz_endophytic_2005; @uren_host_2012]), leaving the global pattern untested. Crucially, testing this paradigm requires distinguishing between a "study-level absence" (a failure to detect endophytes in a specific sample or experiment) and a "taxon-level absence" (a plant taxon that always lacks endophytes). While study-level absences are expected due to detection limits and differing methodological approaches, a confirmed taxon-level absence would fundamentally challenge the ubiquity paradigm. Conversely, confirming ubiquity while revealing major sampling gaps would expose a critical bottleneck in our ability to bioprospect this global reservoir for novel functions.
 
-Here, we leverage a novel machine learning pipeline to conduct the first large-scale, quantitative meta-ecology test of endophyte ubiquity. We classify 21,891 abstracts to map the taxonomic and geographic patterns of research and systematically test the claim of ubiquity. Our analysis confirms that endophyte ubiquity is a robust global pattern, yet reveals it is founded on a dataset that ignores the vast majority of plant biodiversity.
+Here, we leverage a novel machine learning pipeline to conduct the first large-scale, quantitative meta-ecology test of endophyte ubiquity. We classify 21,891 abstracts to map the taxonomic and geographic patterns of research and systematically test the claim of ubiquity. Our analysis confirms that endophyte ubiquity is a robust global pattern yet reveals it is founded on a dataset that ignores the vast majority of plant biodiversity.
 
 ## Results
 Our analysis of 21,891 abstracts confirms that the literature is overwhelmingly a record of presence. Given that 'true absence' is an exceptionally rare event, we designed a high-sensitivity screening pipeline to find and manually validate all potential absence candidates.
@@ -38,17 +41,16 @@ Despite this confirmed ubiquity, our analysis reveals that this conclusion rests
 
 ![Figure 1: Plant species representation by phylum in the analyzed literature. Bars show the percentage of described species within each phylum present in the 21,891-abstract dataset. Overall coverage = 0.8% (3,226 of 390,101 described plant species).](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/main/plantae_species_representation_main_by_phylum_percent.png)
 
-This bias systematically overlooks critical evolutionary lineages. For example, Charophyta (Stoneworts), the closest algal relatives to land plants, have no coverage (0 of 2,012 species) in our dataset. This is a critical knowledge gap, as it leaves the aquatic origins of plant-fungal symbiosis almost completely untested, which is a relationship thought to predate the colonization of land by millions of years (Martin et al., 2017; Strullu-Derrien et al., 2018). Similarly, Bryophyta (Mosses), representing some of the earliest land plants, have only 0.2% coverage (21 of 10,508 species). This gap obscures our understanding of how these symbioses evolved after plants first colonized land.
+This bias systematically overlooks critical evolutionary lineages. For example, Charophyta (Stoneworts), the closest algal relatives to land plants, have no coverage (0 of 2,012 species) in our dataset. This is a critical knowledge gap, as it leaves the aquatic origins of plant-fungal symbiosis almost completely untested, which is a relationship thought to predate the colonization of land by millions of years [@martin_ancestral_2017; @strulluderrien_origin_2018]. Similarly, Bryophyta (Mosses), representing some of the earliest land plants, have only 0.2% coverage (21 of 10,508 species). This gap obscures our understanding of how these symbioses evolved after plants first colonized land.
 
 Even within the relatively well-studied Tracheophyta (Vascular Plants), which encompasses familiar groups like ferns, conifers, and flowering plants, coverage remains exceptionally low at 0.9% (3,150 of 363,445 species). This demonstrates that our knowledge of endophyte ubiquity is largely derived from a thin sliver of plant diversity.
 
-This taxonomic bias is mirrored by an extreme geographic bias (Figure 2; Supp. Fig. 3). Research is concentrated in high-income countries (the Global North), which account for 77% of all geographically coded studies (World Bank, 2025). This concentration is driven almost entirely by just two regions: North America and Europe alone account for 70.3% of all studies. Conversely, entire nations with unique biodiversity, such as Tonga, have zero studies detected in our dataset. A temporal analysis shows that these geographic and taxonomic biases are not historical artifacts; they have remained largely consistent over the past three decades, even as molecular methods have become standard (used in 36.8% of all studies; Figure 3; Supp. Fig. 4).
+This taxonomic bias is mirrored by an extreme geographic bias (Figure 2; Supp. Fig. 3). Research is concentrated in high-income countries (the Global North), which account for 77% of all geographically coded studies [@world_bank_world_2025]. This concentration is driven almost entirely by just two regions: North America and Europe alone account for 70.3% of all studies. Conversely, entire nations with unique biodiversity, such as Tonga, have zero studies detected in our dataset. A temporal analysis shows that these geographic and taxonomic biases are not historical artifacts; they have remained largely consistent over the past three decades, even as molecular methods have become standard (used in 36.8% of all studies; Figure 3; Supp. Fig. 4).
 
 ![Figure 2: Global geographic bias in fungal endophyte research. The heatmap displays the frequency of studies per country (log10 scale), where darker colors indicate higher research intensity and light gray indicates zero studies detected in the analyzed corpus. The distribution reveals a stark concentration of research in the Global North (e.g., North America and Europe), while vast regions of the Global South, including large portions of Africa and Southeast Asia, remain virtually invisible in the indexed scientific literature.](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/main/world_map_countries_log.png)
 
 Finally, analysis of plant tissues reported in the abstracts shows that research has covered a wide range, with roots, leaves, seeds, stem, shoot, and fruit being the most frequently studied structures (Supp. Fig. 7). This demonstrates thorough sampling across tissue types within the limited taxonomic breadth.
 
----
 ## Discussion
 Our analysis provides the first large-scale, data-driven confirmation of the fungal endophyte ubiquity paradigm. By demonstrating that there is no evidence for a single endophyte-free plant taxon in the literature, we confirm that ubiquity is a robust pattern wherever plants have been studied.
 
@@ -56,30 +58,30 @@ However, the central finding of this paper is the stark contradiction between th
 
 Our data strongly suggest that the true biodiversity of fungal endophytes is severely underestimated, a conclusion reinforced by both biological and methodological constraints. First, standard definitions of 'endophyte' exclude obligate symbionts such as Glomeromycota (Arbuscular Mycorrhizal Fungi); thus, our dataset represents a conservative lower bound of plant-associated fungal diversity. Second, despite analyzing 21,891 abstracts, we found evidence for only 3.5% of described fungal species (5,064 of 143,957) and 16.5% of fungal genera.
 
-Given that we have sampled only 0.8% of global plant diversity, the 'missing' fungal biodiversity likely resides within the 99.2% of known plant species that remain unexplored. This sampling gap has fundamental implications for estimates of global fungal richness, which rely heavily on extrapolations of plant-to-fungus ratios (Hawksworth & Lücking, 2017). Our data suggest that current ratios, derived largely from the depauperate endophyte communities of well-studied, temperate crops, likely fail to capture the hyperdiversity of the tropical and arid hosts that dominate the global flora. Current estimates of global fungal richness may therefore require significant upward revision as we expand sampling beyond the few dominant plant hosts currently represented in the literature. 
+Given that we have sampled only 0.8% of global plant diversity, the 'missing' fungal biodiversity likely resides within the 99.2% of known plant species that remain unexplored. This sampling gap has fundamental implications for estimates of global fungal richness, which rely heavily on extrapolations of plant-to-fungus ratios [@hawksworth_fungal_2017]. Our data suggest that current ratios, derived largely from the depauperate endophyte communities of well-studied, temperate crops, likely fail to capture the hyperdiversity of the tropical and arid hosts that dominate the global flora. Current estimates of global fungal richness may therefore require significant upward revision as we expand sampling beyond the few dominant plant hosts currently represented in the literature. 
 
 ![Figure 3: Temporal trends in methods reported for detecting fungal endophytes across the 21,891-abstract corpus. Molecular approaches were negligible before the 1990s and rose sharply after 2000; overall, 36.8% of studies in the corpus report molecular methods.](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/supplementary/temporal_method_trends.png)
 
 ### From "Study-Level Negatives" to "Taxon-Level Ubiquity"
 A key challenge in testing ubiquity is the interpretation of "absence" reports. Our screening pipeline flagged 102 abstracts that indicated absence. Manual validation clarified that these were either irrelevant (40), simple false positives (i.e., abstracts incorrectly classified as 'Absence' by the model; 46), or reports of mixed results (15) where endophytes were found in some tissues but not others or in some plant individuals but not others.
 
-We identified only a single genuine "study-level absence" in the literature: a study reporting no fungal endophytes in *Phragmites australis* (Lambert & Casagrande, 2006). However, this absence is contradicted by numerous other studies that confirm diverse fungal endophyte communities in the same host species (e.g., Wirsel et al., 2001; Angelini et al., 2012; Clay et al., 2016). This specific case perfectly illustrates our core distinction: while individual studies may fail to detect endophytes ("study-level negatives"), "taxon-level ubiquity" holds true. We found no evidence of a plant taxon that is consistently free of fungal endophytes.
+We identified only a single genuine "study-level absence" in the literature: a study reporting no fungal endophytes in *Phragmites australis* [@lambert_no_2006]. However, this absence is contradicted by numerous other studies that confirm diverse fungal endophyte communities in the same host species [@wirsel_genetic_2001; @angelini_endophytic_2012; @clay_diversity_2016]. This specific case perfectly illustrates our core distinction: while individual studies may fail to detect endophytes ("study-level negatives"), "taxon-level ubiquity" holds true. We found no evidence of a plant taxon that is consistently free of fungal endophytes.
 
 ### Limitations of Scope
 Our analysis relies on metadata and claims extracted from scientific abstracts. While this approach enables a scale of analysis impossible with manual full-text review, it inherently produces a conservative dataset, as abstracts may not explicitly list every host species or collection site. However, even if full-text mining significantly increased species recovery, the vast majority of global plant biodiversity would remain verifyingly unexplored.
 
-We also consider the role of publication bias, or the 'file drawer problem' (Rosenthal, 1979). In the context of the ubiquity paradigm, this bias is likely circular: failure to detect endophytes is often attributed to methodological error rather than biological absence, discouraging the publication of negative results. Thus, our 'zero verifiable absence' finding reflects the consensus of the published record, which is itself shaped by the assumption of ubiquity.
+We also consider the role of publication bias, or the 'file drawer problem' [@rosenthal_file_1979]. In the context of the ubiquity paradigm, this bias is likely circular: failure to detect endophytes is often attributed to methodological error rather than biological absence, discouraging the publication of negative results. Thus, our 'zero verifiable absence' finding reflects the consensus of the published record, which is itself shaped by the assumption of ubiquity.
 
 Finally, our restriction to English-language abstracts imposes a linguistic filter on the map of knowledge. Consequently, the 'zero' counts observed in many nations in the Global South (e.g., across substantial portions of Africa) likely reflect a dual failure: a genuine scarcity of funded biodiversity monitoring, compounded by an indexing bias that excludes regional or non-English journals from global databases.
 
 ### Conclusions
-This concentration of research has profound practical consequences. By prioritizing the Global North, we are effectively ignoring the tropical and arid biodiversity hotspots of the Global South (Myers et al., 2000), regions where plants face some of the most extreme environmental pressures (Seneviratne et al., 2021). This geographic skew is particularly critical given the contrasting biogeography of fungal guilds. While the diversity of key soil guilds, particularly ectomycorrhizal fungi (definitionally excluded from being endophytes), peaks in temperate and boreal zones (Tedersoo et al., 2014), foliar endophytes appear to follow the canonical latitudinal diversity gradient, reaching peak richness in the tropics (Arnold et al., 2000). By concentrating 77% of research in the Global North, the field has inadvertently aligned its sampling effort with the diversity centers of mycorrhizae, while systematically ignoring the hyperdiverse centers of endophytic life.
+This concentration of research has profound practical consequences. By prioritizing the Global North, we are effectively ignoring the tropical and arid biodiversity hotspots of the Global South [@myers_biodiversity_2000], regions where plants face some of the most extreme environmental pressures [@seneviratne_weather_2023]. This geographic skew is particularly critical given the contrasting biogeography of fungal guilds. While the diversity of key soil guilds, particularly ectomycorrhizal fungi (definitionally excluded from being endophytes), peaks in temperate and boreal zones [@tedersoo_global_2014], foliar endophytes appear to follow the canonical latitudinal diversity gradient, reaching peak richness in the tropics [@arnold_are_2000]. By concentrating 77% of research in the Global North, the field has inadvertently aligned its sampling effort with the diversity centers of mycorrhizae, while systematically ignoring the hyperdiverse centers of endophytic life.
 
-This reframes the research bias from a simple academic gap to a significant bottleneck in global bioprospecting (El-Shora & El-Sayed, 2023; Newman & Cragg, 2012; Strobel, 2003). The cost of this omission is illustrated by recent successes in under-sampled, extreme environments; for instance, endophytes from the Antarctic angiosperm *Colobanthus quitensis* have yielded unique metabolic pathways with potential applications in neurodegenerative disease treatment (Bertini et al., 2022). Such discoveries confirm that the 99% of plant hosts currently excluded from our limited, sampling biased toward the Global North represent a vast, untapped reservoir of functional biology.
+This reframes the research bias from a simple academic gap to a significant bottleneck in global bioprospecting ([@newman_natural_2012]; [@strobel_endophytes_2003]). The cost of this omission is illustrated by recent successes in under-sampled, extreme environments; for instance, endophytes from the Antarctic angiosperm *Colobanthus quitensis* have yielded unique metabolic pathways with potential applications in neurodegenerative disease treatment [@bertini_biodiversity_2022]. Such discoveries confirm that the 99% of plant hosts currently excluded from our limited, sampling biased toward the Global North represent a vast, untapped reservoir of functional biology.
 
 Beyond quantifying this bias, our analysis provides a corrective tool: a data-driven roadmap of the plant taxa and geographic regions that define the 'missing' majority of the literature. Provided in the Supplementary Information, this resource identifies priority targets, such as the phyla Charophyta and Bryophyta and nations like Tonga, where directed sampling is most likely to maximize novelty. Having established the global ubiquity of fungal endophytes, the field must now pivot from verifying their presence to exploring their function. By redirecting research toward these neglected lineages and regions, we can unlock the next generation of climate-resilient symbioses and biotechnologies hidden within the world's most threatened ecosystems.
 
----
+
 ## Methods
 Our methodology followed a three-phase computational workflow. Phase 1: High-Sensitivity Screening. We developed a two-stage machine learning pipeline to first isolate relevant primary research (n=19,447) and then classify these abstracts for potential absence claims. Phase 2: Human Validation. We manually reviewed all abstracts flagged as potential absences (n=102) to verify the 'zero absence' finding. Phase 3: Extraction & Mapping. We applied a validated extraction pipeline to the relevant corpus. To ensure our bias analysis focused strictly on endophytes, we excluded abstracts focused solely on mycorrhizal fungi, resulting in a final analytical dataset of 19,199 abstracts for taxonomic and geographic mapping.
 
@@ -94,13 +96,13 @@ We implemented a rigorous, multi-step process to validate all potential "Absence
 We manually reviewed all of these 102 abstracts. The results, detailed in the Supplementary Methods, confirmed that zero represented a true, taxon-level absence.
 
 ### 3. Data Extraction Pipeline and Validation
-We built a modular data extraction pipeline to parse taxonomic, geographic, and methodological information. The robustness of every component, from species name extraction to geographic coordinate parsing, was verified using a comprehensive, automated test suite. This suite evaluated core functionality, accuracy, synonym resolution, and error handling, ensuring high fidelity in the extracted data. After taxonomic information was attached to taxon names in the abstracts, any taxa listed as mycorrhizal in FungalTraits (Põlme et al., 2020) and any taxa with the phylum Glomeromycota were removed. Although mycorrhizal fungi inhabit plant tissues, they represent a distinct, well-characterized functional guild separate from the general "endophyte" paradigm tested here (Cosner et al., 2025); therefore, abstracts focusing exclusively on mycorrhizal fungi were excluded to avoid confounding the results on endophytic fungi (which include root endophytes).
+We built a modular data extraction pipeline to parse taxonomic, geographic, and methodological information. The robustness of every component, from species name extraction to geographic coordinate parsing, was verified using a comprehensive, automated test suite. This suite evaluated core functionality, accuracy, synonym resolution, and error handling, ensuring high fidelity in the extracted data. After taxonomic information was attached to taxon names in the abstracts, any taxa listed as mycorrhizal in FungalTraits [@polme_fungaltraits_2020] and any taxa with the phylum Glomeromycota were removed. Although mycorrhizal fungi inhabit plant tissues, they represent a distinct, well-characterized functional guild separate from the general "endophyte" paradigm tested here [@cosner_fungal_2025]; therefore, abstracts focusing exclusively on mycorrhizal fungi were excluded to avoid confounding the results on endophytic fungi (which include root endophytes).
 
 
 ### 4. Data Aggregation
-Taxonomic names were standardized and synonyms were resolved against the Global Biodiversity Information Facility (GBIF) backbone (GBIF.org, 2025) to ensure accurate aggregation of species counts. Geographic information was aggregated at the country and region level. For regional analysis, countries were classified as 'Global North' or 'Global South' based on the World Bank's income group classifications (e.g., 'High income' vs. 'Low/Middle income') (World Bank, 2025).
+Taxonomic names were standardized and synonyms were resolved against the Global Biodiversity Information Facility (GBIF) backbone [@registry-migrationgbiforg_gbif_2023] to ensure accurate aggregation of species counts. Geographic information was aggregated at the country and region level. For regional analysis, countries were classified as 'Global North' or 'Global South' based on the World Bank's income group classifications (e.g., 'High income' vs. 'Low/Middle income') [@world_bank_world_2025].
 
----
+
 
 ## References
 Kusari, S., Hertweck, C. & Spiteller, M. Chemical ecology of endophytic fungi: origins of secondary metabolites. Chem. Biol. 19, 792–798 (2012).
@@ -145,8 +147,6 @@ Seneviratne, S. I. et al. Weather and climate extreme events in a changing clima
 
 Tedersoo, L. et al. Global diversity and geography of soil fungi. Science 346, 1256688 (2014).
 
-El-Shora, H. M. & El-Sayed, M. Endophytic fungi: a treasure trove of novel bioactive compounds for pharmaceutical and agricultural applications. Symbiosis 79, 295–322 (2023).
-
 Newman, D. J. & Cragg, G. M. Natural products as sources of new drugs over the 30 years from 1981 to 2010. J. Nat. Prod. 75, 311–335 (2012).
 
 Bertini, L. et al. Biodiversity and bioprospecting of fungal endophytes from the Antarctic plant Colobanthus quitensis. J. Fungi 8, 979 (2022).
@@ -161,7 +161,6 @@ R Core Team. R: A language and environment for statistical computing https://www
 
 Wickham, H. ggplot2: Elegant Graphics for Data Analysis (Springer, 2016).
 
----
 
 ## Author Contributions
 B.B. conceived the study, designed the methodology, performed the data analysis and machine learning, and wrote the manuscript. N.M., N.C.J. and C.A.G. contributed to the final manuscript text. All authors read and approved the final manuscript.
@@ -175,7 +174,6 @@ This work was supported by National Science Foundation (NSF)  MacroSystems grant
 ## Data and Code Availability
 The full code for the data analysis pipeline, including all R scripts used for machine learning, validation, and figure generation, is available at [GitHub/Zenodo DOI]. The final abstract dataset and model outputs generated during this study are available at [Zenodo/Dryad DOI].
 
----
 
 ## Supplementary Methods
 
@@ -240,7 +238,7 @@ The pipeline was engineered for high-throughput and robust processing of large t
 
 * Optimized Lookups: We used hash-table optimization and pre-computed lookup tables for O(1) (instant) lookups of species names.
 
-* Bloom Filters: We implemented DuckDB-based bloom filters for probabilistic pre-filtering (Raasveldt & Mühleisen, 2019), which allowed the pipeline to instantly reject 80-90% of non-matching taxonomic strings, dramatically reducing expensive validation queries.
+* Bloom Filters: We implemented DuckDB-based bloom filters for probabilistic pre-filtering [@raasveldt_duckdb_2019], which allowed the pipeline to instantly reject 80-90% of non-matching taxonomic strings, dramatically reducing expensive validation queries.
 
 ### 5. Modular Extraction Pipeline
 The data extraction pipeline was built as a series of modular, independent components.
@@ -259,7 +257,7 @@ The extraction components demonstrated high fidelity, successfully detecting pla
 
 * Profiling: The pipeline's performance was comprehensively profiled, confirming a high throughput of ~100-500 abstracts/second.
 
-* Visualization: All data visualizations were generated in R using `ggplot2`, employing custom, colorblind-friendly palettes and themes to ensure accessibility and consistency (R Core Team, 2021; Wickham, 2016).
+* Visualization: All data visualizations were generated in R using `ggplot2`, employing custom, colorblind-friendly palettes and themes to ensure accessibility and consistency ([@r_core_team_r_2023]; [@wickham_ggplot2_2016]).
 
 ### 7. Code Reproducibility
 The codebase includes a comprehensive framework to ensure validation and reproducibility, including scripts to generate representative test subsets and "quick start" test scripts to automatically execute the entire pipeline on these subsets.
@@ -292,7 +290,7 @@ This validation confirmed zero verifiable taxon-level absences in the corpus.
 
 ![Supp. Fig. 4: Combined detection methods overview. Relative and absolute counts of method types (molecular, culture-based, microscopy/visual) across studies that reported methods.](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/main/methods_combined_core.png)
 
-![Supp. Fig. 5: Distribution of publication years in the training dataset.](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/training_publication_years.png")
+![Supp. Fig. 5: Distribution of publication years in the training dataset.](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/training_publication_years.png)
 
 ![Supp. Fig. 6: Fungal species representation by phylum. Percent of described fungal species represented in the dataset by fungal phylum.](C:/Users/beabo/OneDrive%20-%20Northern%20Arizona%20University/NAU/Endo-Review/plots/main/fungi_species_representation_main_by_phylum_percent.png)
 
