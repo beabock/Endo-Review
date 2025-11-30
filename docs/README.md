@@ -1,5 +1,7 @@
 # Endo-Review - Comprehensive Endophyte Research Analysis Pipeline
 
+doi: https://doi.org/10.5281/zenodo.17770500
+
 This repository implements a complete machine learning and analysis pipeline for endophyte research literature classification and species extraction. The project addresses the fundamental question: **"Do all plants host fungal endophytes?"** through systematic analysis of scientific literature.
 
 ## Overview
