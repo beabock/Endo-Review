@@ -45,8 +45,12 @@ if ("label" %in% colnames(ds)) {
   # Origin distribution by label
   if ("origin" %in% colnames(ds)) {
     cat("\nOrigin distribution by label:\n")
-    origin_by_label <- table(ds$origin, ds$label, useNA = "ifany")
-    print(origin_by_label)
+   origin_by_label <- table(ds$origin, ds$label, useNA = "ifany")
+
+# Add a row-sum column
+    origin_by_label_with_sum <- cbind(origin_by_label,
+                                  RowSum = rowSums(origin_by_label))
+    print(origin_by_label_with_sum)
     cat("\nOrigin percentages by label:\n")
     print(prop.table(origin_by_label, margin = 2) * 100)
   }
