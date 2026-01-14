@@ -81,6 +81,13 @@ get_country_classifications <- function() {
     "Mexico", "Global South",
     "México", "Global South",
     "United Mexican States", "Global South",
+    "Guatemala", "Global South",
+    "Belize", "Global South",
+    "Honduras", "Global South",
+    "El Salvador", "Global South",
+    "Nicaragua", "Global South",
+    "Costa Rica", "Global South",
+    "Panama", "Global South",
     "Argentina", "Global South",
     "Chile", "Global South",
     "Colombia", "Global South",
@@ -107,6 +114,8 @@ get_country_classifications <- function() {
     "Kenya", "Global South",
     "Ethiopia", "Global South",
     "Ghana", "Global South",
+    "Guinea", "Global South",
+    "Guinea-Bissau", "Global South",
     "Morocco", "Global South",
     "Egypt", "Global South",
     "Tunisia", "Global South",
@@ -116,6 +125,7 @@ get_country_classifications <- function() {
     "Tanzania", "Global South",
     "Uganda", "Global South",
     "Rwanda", "Global South",
+    "Burundi", "Global South",
     "Cameroon", "Global South",
     "Ivory Coast", "Global South",
     "Senegal", "Global South",
@@ -340,11 +350,12 @@ get_geographic_keywords <- function() {
     # Major geographic regions
     "Middle East", "Central Asia", "Southeast Asia", "East Asia", "South Asia", "West Asia", "Southwest Asia",
     "Eastern Europe", "Western Europe", "Northern Europe", "Southern Europe", "Central Europe", "Southeastern Europe",
-    "Central America", "Caribbean", "Mesoamerica", "Amazonia", "Amazon Basin", "Amazon", "Amazonian",
-    "Patagonia", "Andes", "Andean", "Mediterranean", "Scandinavia", "Scandinavian",
-    "Siberia", "Siberian", "Far East", "Near East", "Levant", "Balkans", "Caucasus", "Caucasian",
-    "Sub-Saharan Africa", "Maghreb", "Horn of Africa", "East Africa", "West Africa", "Southern Africa", "Central Africa",
-    "Indian Subcontinent", "Indo-Pacific", "Polynesia", "Melanesia", "Micronesia",
+    "Central America", "Caribbean", "Mesoamerica", "Mesoamerican", "Amazonia", "Amazon Basin", "Amazon", "Amazonian",
+    "Patagonia", "Patagonian", "Andes", "Andean", "Mediterranean", "Scandinavia", "Scandinavian",
+    "Siberia", "Siberian", "Far East", "Near East", "Levant", "Balkans", "Balkan", "Baltic", "Caucasus", "Caucasian",
+    "Sub-Saharan Africa", "Sub-Saharan", "Saharan", "Sahelian", "Maghreb", "Horn of Africa", "East Africa", "East African",
+    "West Africa", "West African", "Southern Africa", "Southern African", "Central Africa",
+    "Indian Subcontinent", "Indo-Pacific", "Indomalayan", "Polynesia", "Polynesian", "Melanesia", "Melanesian", "Micronesia",
     "Sahel", "Sahara", "Kalahari", "Namib", "Gobi", "Taklamakan", "Thar", "Arabian Desert",
     "Great Lakes", "Rift Valley", "African Great Lakes", "Lake Victoria", "Lake Tanganyika", "Lake Malawi",
     "Himalayas", "Himalayan", "Tibetan Plateau", "Pamir Mountains", "Altai Mountains", "Ural Mountains",
@@ -352,13 +363,18 @@ get_geographic_keywords <- function() {
 
     # Subregions and specific areas
     "Bengal", "Deccan", "Malabar Coast", "Coromandel Coast", "Western Ghats", "Eastern Ghats",
-    "Indochina", "Indochinese Peninsula", "Malay Peninsula", "Korean Peninsula", "Arabian Peninsula",
-    "Iberian Peninsula", "Balkan Peninsula", "Scandinavian Peninsula", "Italian Peninsula",
+    "Indochina", "Indochinese", "Indochinese Peninsula", "Malay Peninsula", "Malayan", "Korean Peninsula", "Arabian Peninsula",
+    "Iberian Peninsula", "Iberian", "Balkan Peninsula", "Scandinavian Peninsula", "Italian Peninsula",
     "Anatolia", "Anatolian", "Mesopotamia", "Fertile Crescent", "Levant", "Transcaucasia",
     "Pacific Northwest", "Great Plains", "Midwest", "Southwest", "Northeast", "Southeast",
     "Pampas", "Gran Chaco", "Pantanal", "Cerrado", "Mata Atlântica", "Atlantic Forest",
     "Taiga", "Steppe", "Prairie", "Puszta", "Veld", "Bushveld", "Karoo", "Fynbos",
     "Outback", "Great Barrier Reef", "Coral Triangle", "Ring of Fire",
+    "Neotropical", "Neotropics", "Paleotropical", "Paleotropics", "Afrotropical", "Holarctic",
+    "Borneo", "Bornean", "Sumatra", "Sumatran", "Indonesian", "Californian", "Appalachian",
+    "Tibetan", "Himalayan", "Guinean", "Congolese", "Congo Basin", "Southeast Asian",
+    "Alaskan", "Canadian", "Australasian", "West Indian", "Arctic", "Antarctic", "Subarctic",
+    "Panamanian",
 
     # Biodiversity hotspots and conservation areas
     "Biodiversity hotspot", "endemic area", "center of diversity", "refugia", "refugium",
@@ -642,7 +658,6 @@ standardize_country_name <- function(country_text) {
     "U.S.A." = "United States",
     "U.S." = "United States",
     "United States Of America" = "United States",
-    "America" = "United States",  # Note: This is ambiguous - could refer to continents
     "The United States" = "United States",
 
     # United Kingdom and variants
@@ -851,6 +866,8 @@ cat("- get_plant_parts_keywords()\n")
 cat("- get_geographic_keywords()\n")
 cat("- get_continent_keywords() # subset of geographic keywords\n")
 cat("- get_region_keywords() # subset of geographic keywords\n")
+cat("- get_research_institution_mappings() # map institutions to countries\n")
+cat("- get_adjectival_region_mappings() # map regional adjectives to countries/regions\n")
 cat("- get_method_keywords()\n")
 cat("- standardize_country_name()\n")
 cat("- filter_country_homonyms()\n")
@@ -877,6 +894,149 @@ get_region_keywords <- function() {
   
   regions <- setdiff(geographic_keywords, continents)
   return(regions)
+}
+
+# Function to map research institutions to their countries
+# Maps institutional acronyms and full names to geographic locations
+get_research_institution_mappings <- function() {
+  list(
+    # Major tropical research institutions
+    "STRI" = "Panama",
+    "Smithsonian Tropical Research Institute" = "Panama",
+    "Smithsonian Tropical Research" = "Panama",
+    
+    # UK institutions
+    "Kew" = "United Kingdom",
+    "Royal Botanic Gardens Kew" = "United Kingdom",
+    "Royal Botanic Gardens, Kew" = "United Kingdom",
+    "RBG Kew" = "United Kingdom",
+    "Royal Botanic Garden Edinburgh" = "United Kingdom",
+    "RBGE" = "United Kingdom",
+    
+    # Australian institutions
+    "CSIRO" = "Australia",
+    "Commonwealth Scientific and Industrial Research Organisation" = "Australia",
+    "Royal Botanic Gardens Victoria" = "Australia",
+    "Royal Botanic Gardens Sydney" = "Australia",
+    "Australian National Herbarium" = "Australia",
+    
+    # US institutions
+    "USDA" = "United States",
+    "United States Department of Agriculture" = "United States",
+    "Smithsonian Institution" = "United States",
+    "New York Botanical Garden" = "United States",
+    "NYBG" = "United States",
+    "Missouri Botanical Garden" = "United States",
+    "MBG" = "United States",
+    "Harvard University Herbaria" = "United States",
+    
+    # Asian institutions
+    "Chinese Academy of Sciences" = "China",
+    "CAS" = "China",
+    "RIKEN" = "Japan",
+    "National Institute for Basic Biology" = "Japan",
+    "NIBB" = "Japan",
+    
+    # European institutions
+    "Max Planck Institute" = "Germany",
+    "MPI" = "Germany",
+    "INRA" = "France",
+    "Institut National de la Recherche Agronomique" = "France",
+    "Wageningen University" = "Netherlands",
+    "Wageningen UR" = "Netherlands",
+    
+    # Latin American institutions
+    "INPA" = "Brazil",
+    "Instituto Nacional de Pesquisas da Amazônia" = "Brazil",
+    "UNAM" = "Mexico",
+    "Universidad Nacional Autónoma de México" = "Mexico",
+    
+    # African institutions
+    "ICRAF" = "Kenya",
+    "World Agroforestry Centre" = "Kenya",
+    "World Agroforestry Center" = "Kenya",
+    
+    # International institutions with specific locations
+    "CIAT" = "Colombia",
+    "Centro Internacional de Agricultura Tropical" = "Colombia",
+    "CIMMYT" = "Mexico",
+    "International Maize and Wheat Improvement Center" = "Mexico",
+    "IRRI" = "Philippines",
+    "International Rice Research Institute" = "Philippines"
+  )
+}
+
+# Function to map adjectival and regional terms to countries or regions
+# Captures geographic information from regional adjectives and demonyms
+get_adjectival_region_mappings <- function() {
+  list(
+    # South American regional forms
+    "Amazonian" = c("region" = "Amazon Basin", "countries" = "Brazil; Peru; Colombia; Ecuador; Bolivia; Venezuela"),
+    "Andean" = c("region" = "Andes Mountains", "countries" = "Peru; Ecuador; Colombia; Bolivia; Chile; Argentina"),
+    "Patagonian" = c("region" = "Patagonia", "countries" = "Argentina; Chile"),
+    
+    # Central American regional forms
+    "Mesoamerican" = c("region" = "Mesoamerica", "countries" = "Mexico; Guatemala; Belize; Honduras; El Salvador; Nicaragua; Costa Rica; Panama"),
+    "Panamanian" = c("region" = "Central America", "countries" = "Panama"),
+    "Costa Rican" = c("region" = "Central America", "countries" = "Costa Rica"),
+    
+    # African regional forms
+    "Sub-Saharan" = c("region" = "Sub-Saharan Africa", "countries" = "Multiple African countries"),
+    "Saharan" = c("region" = "Sahara", "countries" = "Multiple North African countries"),
+    "Sahelian" = c("region" = "Sahel", "countries" = "Multiple West African countries"),
+    "Guinean" = c("region" = "Guinea region", "countries" = "Guinea; Guinea-Bissau"),
+    "Congolese" = c("region" = "Congo Basin", "countries" = "Democratic Republic of the Congo; Republic of the Congo"),
+    "East African" = c("region" = "East Africa", "countries" = "Kenya; Tanzania; Uganda; Rwanda; Burundi; Ethiopia"),
+    "West African" = c("region" = "West Africa", "countries" = "Nigeria; Ghana; Senegal; Mali; Burkina Faso"),
+    "Southern African" = c("region" = "Southern Africa", "countries" = "South Africa; Zimbabwe; Botswana; Namibia; Zambia"),
+    
+    # Asian regional forms
+    "Southeast Asian" = c("region" = "Southeast Asia", "countries" = "Thailand; Vietnam; Malaysia; Indonesia; Philippines; Myanmar; Cambodia; Laos"),
+    "Indochinese" = c("region" = "Indochina", "countries" = "Vietnam; Cambodia; Laos; Thailand; Myanmar"),
+    "Malayan" = c("region" = "Malay Peninsula", "countries" = "Malaysia; Singapore; Thailand"),
+    "Indonesian" = c("region" = "Indonesian Archipelago", "countries" = "Indonesia"),
+    "Bornean" = c("region" = "Borneo", "countries" = "Indonesia; Malaysia; Brunei"),
+    "Sumatran" = c("region" = "Sumatra", "countries" = "Indonesia"),
+    "Himalayan" = c("region" = "Himalayas", "countries" = "Nepal; India; Bhutan; China; Pakistan"),
+    "Tibetan" = c("region" = "Tibetan Plateau", "countries" = "China; India; Nepal; Bhutan"),
+    
+    # European regional forms
+    "Mediterranean" = c("region" = "Mediterranean Basin", "countries" = "Spain; Italy; Greece; Turkey; France"),
+    "Scandinavian" = c("region" = "Scandinavia", "countries" = "Sweden; Norway; Denmark; Finland; Iceland"),
+    "Baltic" = c("region" = "Baltic region", "countries" = "Estonia; Latvia; Lithuania; Poland; Germany"),
+    "Iberian" = c("region" = "Iberian Peninsula", "countries" = "Spain; Portugal"),
+    "Balkan" = c("region" = "Balkans", "countries" = "Greece; Bulgaria; Albania; Serbia; Bosnia and Herzegovina; Croatia"),
+    
+    # North American regional forms
+    "Appalachian" = c("region" = "Appalachian Mountains", "countries" = "United States; Canada"),
+    "Californian" = c("region" = "California", "countries" = "United States"),
+    "Canadian" = c("region" = "Canada", "countries" = "Canada"),
+    "Alaskan" = c("region" = "Alaska", "countries" = "United States"),
+    
+    # Oceanian regional forms
+    "Australasian" = c("region" = "Australasia", "countries" = "Australia; New Zealand"),
+    "Polynesian" = c("region" = "Polynesia", "countries" = "Multiple Pacific islands"),
+    "Melanesian" = c("region" = "Melanesia", "countries" = "Papua New Guinea; Fiji; Solomon Islands; Vanuatu"),
+    
+    # Middle Eastern forms
+    "Iranian" = c("region" = "Iran", "countries" = "Iran"),
+    
+    # Caribbean regional forms
+    "Caribbean" = c("region" = "Caribbean", "countries" = "Multiple Caribbean countries"),
+    "West Indian" = c("region" = "Caribbean", "countries" = "Multiple Caribbean countries"),
+    
+    # Polar regional forms
+    "Arctic" = c("region" = "Arctic", "countries" = "Multiple northern countries"),
+    "Antarctic" = c("region" = "Antarctica", "countries" = "Antarctica"),
+    "Subarctic" = c("region" = "Subarctic", "countries" = "Multiple northern countries"),
+    
+    # Additional specific regional terms
+    "Neotropical" = c("region" = "Neotropics"),
+    "Paleotropical" = c("region" = "Paleotropics"),
+    "Indomalayan" = c("region" = "Indomalayan region", "countries" = "South and Southeast Asian countries"),
+    "Afrotropical" = c("region" = "Afrotropical region", "countries" = "African countries"),
+    "Holarctic" = c("region" = "Holarctic", "countries" = "Northern hemisphere temperate countries")
+  )
 }
 
 # Vectorized wrapper that standardizes country names and optionally ensures membership

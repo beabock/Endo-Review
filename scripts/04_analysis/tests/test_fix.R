@@ -1,5 +1,0 @@
-library(readr)
-source('scripts/04_analysis/components/01_extract_species.R')
-abstracts_data <- read_csv('test_data/test_subset_random_100.csv')
-results <- extract_species_data(abstracts_data, output_file='test_results/species_test.csv', batch_size=10, verbose=FALSE)
-print('Success!')

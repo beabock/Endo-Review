@@ -9,6 +9,24 @@
 library(tidyverse)
 library(stringr)
 
+# Initialize scoring
+total_tests <- 0
+passed_tests <- 0
+failed_tests <- 0
+
+# Helper function for scoring
+test_result <- function(passed, test_name, details = "") {
+  total_tests <<- total_tests + 1
+  if (passed) {
+    passed_tests <<- passed_tests + 1
+    cat("   ✅ PASS:", test_name, "\n")
+  } else {
+    failed_tests <<- failed_tests + 1
+    cat("   ❌ FAIL:", test_name, "\n")
+    if (details != "") cat("      Details:", details, "\n")
+  }
+}
+
 # Source the plant parts extraction function
 source("scripts/04_analysis/components/03_extract_plant_parts.R")
 
@@ -120,14 +138,107 @@ for (i in 1:nrow(results_with_ids)) {
 }
 
 if (!duplicate_issues) {
+  test_result(TRUE, "Plant parts deduplication", "No duplicates found in all test cases")
+  test_result(TRUE, "Parts count accuracy", "Counts match actual unique parts detected")
   cat("✅ All test cases passed! No duplicates found.\n")
   cat("✅ Each plant part is counted only once per abstract.\n")
   cat("✅ Parts counts match actual unique parts detected.\n")
 } else {
+  test_result(FALSE, "Plant parts deduplication", "Duplicates or count mismatches detected")
   cat("❌ Some test cases failed. Duplicates or count mismatches detected.\n")
 }
 
-cat("\n📋 Additional Analysis:\n")
+cat("\n4. Accuracy Testing with Expected Plant Parts:\n")
+cat("=============================================\n")
+
+# Define expected plant parts for each test case (normalized forms)
+expected_parts <- list(
+  # Test case 1: roots, root tips, root hairs -> root
+  c("root"),
+  
+  # Test case 2: leaves, stems -> leaf, stem
+  c("leaf", "stem"),
+  
+  # Test case 3: root hair, root tip, root system, fibrous roots, tap roots -> root
+  c("root"),
+  
+  # Test case 4: foliar, leaf blades, leaf surfaces, leaves, leaf margin, leaf tip -> leaf
+  c("leaf"),
+  
+  # Test case 5: seeds, fruits, flowers, seed coat, flower buds -> seed, fruit, flower
+  c("seed", "fruit", "flower"),
+  
+  # Test case 6: vascular bundles, stems, vascular tissue, vascular bundle, stem vascular -> stem
+  c("stem")
+)
+
+cat("Testing accuracy against expected plant parts...\n\n")
+
+accuracy_results <- data.frame(
+  test_case = 1:6,
+  expected_parts = I(expected_parts),
+  detected_parts = I(vector("list", 6)),
+  correct_detections = 0,
+  false_positives = 0,
+  false_negatives = 0,
+  precision = 0,
+  recall = 0
+)
+
+for (i in 1:nrow(results_with_ids)) {
+  # Get detected normalized parts for this test case
+  detected_parts <- c()
+  if (!is.na(results_with_ids$parts_normalized[i])) {
+    detected_parts <- str_split(results_with_ids$parts_normalized[i], "; ")[[1]]
+  }
+  
+  expected <- expected_parts[[i]]
+  
+  # Calculate accuracy metrics
+  correct <- sum(detected_parts %in% expected)
+  false_positives <- sum(!(detected_parts %in% expected))
+  false_negatives <- sum(!(expected %in% detected_parts))
+  
+  precision <- if (length(detected_parts) > 0) correct / length(detected_parts) else 0
+  recall <- if (length(expected) > 0) correct / length(expected) else 0
+  
+  accuracy_results$detected_parts[[i]] <- detected_parts
+  accuracy_results$correct_detections[i] <- correct
+  accuracy_results$false_positives[i] <- false_positives
+  accuracy_results$false_negatives[i] <- false_negatives
+  accuracy_results$precision[i] <- precision
+  accuracy_results$recall[i] <- recall
+  
+  cat("Test case", i, ":\n")
+  cat("  Expected: ", paste(expected, collapse = ", "), "\n")
+  cat("  Detected: ", paste(detected_parts, collapse = ", "), "\n")
+  cat("  Precision: ", round(precision * 100, 1), "%, Recall: ", round(recall * 100, 1), "%\n\n")
+}
+
+# Overall accuracy metrics
+total_correct <- sum(accuracy_results$correct_detections)
+total_detected <- sum(sapply(accuracy_results$detected_parts, length))
+total_expected <- sum(sapply(accuracy_results$expected_parts, length))
+
+overall_precision <- total_correct / total_detected
+overall_recall <- total_correct / total_expected
+overall_f1 <- 2 * (overall_precision * overall_recall) / (overall_precision + overall_recall)
+
+cat("Overall Accuracy Metrics:\n")
+cat("  Total expected parts: ", total_expected, "\n")
+cat("  Total detected parts: ", total_detected, "\n")
+cat("  Correct detections: ", total_correct, "\n")
+cat("  Precision: ", round(overall_precision * 100, 1), "%\n")
+cat("  Recall: ", round(overall_recall * 100, 1), "%\n")
+cat("  F1 Score: ", round(overall_f1 * 100, 1), "%\n\n")
+
+# Test results
+test_result(overall_precision >= 0.8, "Plant parts detection precision", 
+            paste0("Precision: ", round(overall_precision * 100, 1), "%"))
+test_result(overall_recall >= 0.8, "Plant parts detection recall", 
+            paste0("Recall: ", round(overall_recall * 100, 1), "%"))
+test_result(overall_f1 >= 0.8, "Plant parts detection F1 score", 
+            paste0("F1: ", round(overall_f1 * 100, 1), "%"))
 cat("======================\n")
 
 # Check for proper normalization (e.g., roots/root should be the same)
@@ -142,5 +253,14 @@ for (i in 1:nrow(results_with_ids)) {
     }
   }
 }
+
+# Final scoring summary
+cat("\n" , rep("=", 50), "\n", sep = "")
+cat("TEST SUMMARY\n")
+cat(rep("=", 50), "\n", sep = "")
+cat(sprintf("Total Tests:        %d\n", total_tests))
+cat(sprintf("Passed:             %d (%.1f%%)\n", passed_tests, 100 * passed_tests / total_tests))
+cat(sprintf("Failed:             %d (%.1f%%)\n", failed_tests, 100 * failed_tests / total_tests))
+cat(rep("=", 50), "\n", sep = "")
 
 cat("\n📋 Test completed.\n")

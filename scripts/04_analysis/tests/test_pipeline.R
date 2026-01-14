@@ -2,6 +2,24 @@
 # B. Bock
 # Test individual components of the pipeline
 
+# Initialize scoring
+total_tests <- 0
+passed_tests <- 0
+failed_tests <- 0
+
+# Helper function for scoring
+test_result <- function(passed, test_name, details = "") {
+  total_tests <<- total_tests + 1
+  if (passed) {
+    passed_tests <<- passed_tests + 1
+    cat("   ✅ PASS:", test_name, "\n")
+  } else {
+    failed_tests <<- failed_tests + 1
+    cat("   ❌ FAIL:", test_name, "\n")
+    if (details != "") cat("      Details:", details, "\n")
+  }
+}
+
 # Load configuration and utilities
 source("scripts/config/pipeline_config.R")
 source("scripts/utils/error_handling.R")
@@ -27,6 +45,10 @@ for (file_path in test_files) {
   cat(status, basename(file_path), "-", file_path, "\n")
 }
 
+# Score file system check
+files_exist <- all(sapply(test_files, file.exists))
+test_result(files_exist, "File system access", paste0(sum(sapply(test_files, file.exists)), "/", length(test_files), " files found"))
+
 # =============================================================================
 # TEST 2: Configuration Loading
 # =============================================================================
@@ -38,6 +60,10 @@ cat("✓ INPUT_FILES$training_labeled:", INPUT_FILES$training_labeled, "\n")
 cat("✓ MODEL_FILES$relevance_model:", MODEL_FILES$relevance_model, "\n")
 cat("✓ ENSEMBLE_WEIGHTS$svm_weight_presence:", ENSEMBLE_WEIGHTS$svm_weight_presence, "\n")
 cat("✓ BATCH_SIZES$species_detection:", BATCH_SIZES$species_detection, "\n")
+
+# Score configuration loading
+config_loaded <- exists("INPUT_FILES") && exists("MODEL_FILES") && exists("ENSEMBLE_WEIGHTS") && exists("BATCH_SIZES")
+test_result(config_loaded, "Configuration loading", "All required config objects exist")
 
 # =============================================================================
 # TEST 3: Safe File Reading
@@ -99,6 +125,9 @@ if (training_test$success) {
   }
 }
 
+# Score safe file reading
+test_result(training_test$success, "Safe file reading", ifelse(training_test$success, "Training data loaded successfully", "Failed to load training data"))
+
 # =============================================================================
 # TEST 4: Error Handling
 # =============================================================================
@@ -132,6 +161,10 @@ if (!error_test$success) {
   cat("❌ Error handling not working\n")
 }
 
+# Score error handling
+error_handling_works <- !error_test$success && safe_test$success
+test_result(error_handling_works, "Error handling", ifelse(error_handling_works, "Safe execution and error capture working", "Error handling issues detected"))
+
 # =============================================================================
 # TEST 5: Memory Management
 # =============================================================================
@@ -146,6 +179,10 @@ cat("   Memory used:", round(mem_status$memory_used_gb, 2), "GB\n")
 # Test garbage collection
 aggressive_gc(verbose = FALSE)
 cat("✅ Garbage collection working\n")
+
+# Score memory management
+memory_functions_exist <- exists("monitor_memory") && exists("aggressive_gc")
+test_result(memory_functions_exist, "Memory management", ifelse(memory_functions_exist, "Memory monitoring and GC functions available", "Memory management functions missing"))
 
 # =============================================================================
 # TEST 6: Data Validation
@@ -168,7 +205,13 @@ if (training_test$success) {
     cat("❌ Data validation failed\n")
     cat("   Error:", validation_test$error, "\n")
   }
+} else {
+  cat("⚠️ Skipping data validation - no training data available\n")
+  validation_test <- list(success = TRUE)  # Don't fail if no data to validate
 }
+
+# Score data validation
+test_result(validation_test$success, "Data validation", ifelse(validation_test$success, "Data validation functions working", "Data validation failed"))
 
 # =============================================================================
 # TEST 7: Pipeline Stage Check
@@ -192,38 +235,26 @@ if (exists("PIPELINE_STAGES")) {
   cat("❌ Pipeline stages not loaded\n")
 }
 
+# Score pipeline configuration
+pipeline_configured <- exists("PIPELINE_STAGES") && length(PIPELINE_STAGES) > 0
+test_result(pipeline_configured, "Pipeline configuration", ifelse(pipeline_configured, paste0(length(PIPELINE_STAGES), " pipeline stages configured"), "Pipeline stages not properly configured"))
+
 # =============================================================================
-# SUMMARY
+# PERFORMANCE SUMMARY
 # =============================================================================
 
-cat("\n=== TEST SUMMARY ===\n")
+cat("\n=== PERFORMANCE SUMMARY ===\n")
+cat("Total Tests:", total_tests, "\n")
+cat("Passed:", passed_tests, "(", round(passed_tests/total_tests * 100, 1), "%)\n")
+cat("Failed:", failed_tests, "(", round(failed_tests/total_tests * 100, 1), "%)\n")
 
-# Count test results
-tests <- list(
-  "File system access" = all(file.exists(test_files)),
-  "Configuration loading" = exists("INPUT_FILES"),
-  "Safe file reading" = training_test$success,
-  "Error handling" = TRUE,  # If we got here, it's working
-  "Memory management" = TRUE,
-  "Data validation" = validation_test$success,
-  "Pipeline configuration" = exists("PIPELINE_STAGES")
-)
-
-passed_tests <- sum(unlist(tests))
-total_tests <- length(tests)
-
-cat("Tests passed:", passed_tests, "/", total_tests, "\n")
-
-if (passed_tests == total_tests) {
+if (failed_tests == 0) {
   cat("🎉 All tests passed! Pipeline is ready to run.\n")
   cat("\nTry running:\n")
   cat("  source('scripts/run_pipeline.R')\n")
   cat("  run_endophyte_pipeline()\n")
 } else {
   cat("⚠️ Some tests failed. Check the output above for details.\n")
-
-  failed_tests <- names(tests)[!unlist(tests)]
-  cat("Failed tests:", paste(failed_tests, collapse = ", "), "\n")
 }
 
 # Save test results

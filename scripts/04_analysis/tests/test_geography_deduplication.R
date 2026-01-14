@@ -12,6 +12,30 @@ library(stringr)
 # Source the geography extraction function
 source("scripts/04_analysis/components/04_extract_geography.R")
 
+# =============================================================================
+# PERFORMANCE SCORING FRAMEWORK
+# =============================================================================
+
+# Global counters for test results
+total_tests <- 0
+passed_tests <- 0
+failed_tests <- 0
+
+# Helper function for scoring
+test_result <- function(passed, test_name, details = "") {
+  total_tests <<- total_tests + 1
+  if (passed) {
+    passed_tests <<- passed_tests + 1
+    cat("✅ PASS:", test_name, "\n")
+  } else {
+    failed_tests <<- failed_tests + 1
+    cat("❌ FAIL:", test_name, "\n")
+  }
+  if (details != "") {
+    cat("   ", details, "\n")
+  }
+}
+
 cat("🧪 TESTING GEOGRAPHY DEDUPLICATION\n")
 cat("=================================\n\n")
 
@@ -45,6 +69,10 @@ cat("\n🔬 Running geography detection...\n")
 
 # Test the geography detection function directly
 results <- detect_geographic_locations_batch(test_cases$abstract)
+
+# Score geography detection
+geography_detection_works <- !is.null(results) && nrow(results) == nrow(test_cases)
+test_result(geography_detection_works, "Geography detection", paste0("Processed ", nrow(results), " abstracts"))
 
 # Add IDs for clarity
 results_with_ids <- bind_cols(
@@ -123,4 +151,22 @@ if (!duplicate_issues) {
   cat("❌ Some test cases failed. Duplicates detected.\n")
 }
 
+# Score deduplication
+test_result(!duplicate_issues, "Geography deduplication", ifelse(duplicate_issues, "Duplicates found in results", "All geographical entities properly deduplicated"))
+
 cat("\n📋 Test completed.\n")
+
+# =============================================================================
+# PERFORMANCE SUMMARY
+# =============================================================================
+
+cat("\n=== PERFORMANCE SUMMARY ===\n")
+cat("Total Tests:", total_tests, "\n")
+cat("Passed:", passed_tests, "(", round(passed_tests/total_tests * 100, 1), "%)\n")
+cat("Failed:", failed_tests, "(", round(failed_tests/total_tests * 100, 1), "%)\n")
+
+if (failed_tests == 0) {
+  cat("🎉 All tests passed! Geography deduplication is working correctly.\n")
+} else {
+  cat("⚠️ Some tests failed. Check the output above for details.\n")
+}

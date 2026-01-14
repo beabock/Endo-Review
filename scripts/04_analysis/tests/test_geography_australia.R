@@ -8,6 +8,30 @@ library(stringr)
 source("scripts/04_analysis/utilities/reference_data_utils.R")
 source("scripts/04_analysis/components/04_extract_geography.R")
 
+# =============================================================================
+# PERFORMANCE SCORING FRAMEWORK
+# =============================================================================
+
+# Global counters for test results
+total_tests <- 0
+passed_tests <- 0
+failed_tests <- 0
+
+# Helper function for scoring
+test_result <- function(passed, test_name, details = "") {
+  total_tests <<- total_tests + 1
+  if (passed) {
+    passed_tests <<- passed_tests + 1
+    cat("✅ PASS:", test_name, "\n")
+  } else {
+    failed_tests <<- failed_tests + 1
+    cat("❌ FAIL:", test_name, "\n")
+  }
+  if (details != "") {
+    cat("   ", details, "\n")
+  }
+}
+
 cat("=== Testing Australia Detection in Geography Extraction ===\n\n")
 
 # Define test abstracts that mention Australia in different contexts
@@ -31,6 +55,11 @@ cat("\n")
 # Run the geography detection
 cat("Running geography detection...\n")
 results <- detect_geographic_locations_batch(test_abstracts)
+
+# Score geography detection
+geography_detection_works <- !is.null(results) && nrow(results) == length(test_abstracts)
+test_result(geography_detection_works, "Geography detection execution", 
+           paste0("Processed ", nrow(results), " test abstracts"))
 
 cat("Results:\n")
 print(results)
@@ -66,6 +95,15 @@ cat(sprintf("Australia detected as country: %d/%d (%.1f%%)\n",
 cat(sprintf("Australia detected as continent: %d/%d (%.1f%%)\n",
             australia_continent_count, total_abstracts, 100 * australia_continent_count / total_abstracts))
 
+# Score Australia detection
+australia_country_detection_works <- australia_country_count > 0
+test_result(australia_country_detection_works, "Australia country detection", 
+           paste0("Australia detected as country in ", australia_country_count, "/", total_abstracts, " abstracts"))
+
+australia_continent_detection_works <- australia_continent_count >= australia_country_count  # Continent detection should work at least as well
+test_result(australia_continent_detection_works, "Australia continent detection", 
+           paste0("Australia detected as continent in ", australia_continent_count, "/", total_abstracts, " abstracts"))
+
 # Check for issues
 if (australia_country_count == 0) {
   cat("\n❌ ISSUE: Australia not detected as country in any test case!\n")
@@ -85,3 +123,18 @@ if (australia_country_count == 0) {
 }
 
 cat("\n=== Test Complete ===\n")
+
+# =============================================================================
+# PERFORMANCE SUMMARY
+# =============================================================================
+
+cat("\n=== PERFORMANCE SUMMARY ===\n")
+cat("Total Tests:", total_tests, "\n")
+cat("Passed:", passed_tests, "(", round(passed_tests/total_tests * 100, 1), "%)\n")
+cat("Failed:", failed_tests, "(", round(failed_tests/total_tests * 100, 1), "%)\n")
+
+if (failed_tests == 0) {
+  cat("🎉 All tests passed! Australia geography detection is working correctly.\n")
+} else {
+  cat("⚠️ Some tests failed. Check the output above for details.\n")
+}

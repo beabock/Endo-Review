@@ -36,6 +36,8 @@ detect_geographic_locations_batch <- function(text_vector) {
   global_south <- get_global_south_countries()
   continents <- get_continent_keywords()
   regions <- get_region_keywords()
+  institutions <- get_research_institution_mappings()
+  adjectival_mappings <- get_adjectival_region_mappings()
 
   # Function to normalize country names using enhanced synonym system
   normalize_country_batch <- function(country_vector) {
@@ -58,7 +60,15 @@ detect_geographic_locations_batch <- function(text_vector) {
     text_lower <- str_to_lower(text)
     text_title <- str_to_title(text)  # For proper name matching
     found <- character(0)
-
+    
+    # Pre-check: Identify texts that should be filtered out due to homonyms
+    # Filter out obvious non-country contexts
+    is_fungal_context <- grepl("\\b(fungus|fungi|fungal|mycology|mold|spore|aspergillus|fusarium|trametes|polypore)\\b", text, ignore.case = TRUE)
+    is_food_context <- grepl("\\b(pepper|spice|sauce|culinary|cooking|recipe|flavor|taste)\\b", text, ignore.case = TRUE)
+    is_ceramic_context <- grepl("\\b(plate|ceramic|porcelain|pottery|dishware|china ware)\\b", text, ignore.case = TRUE)
+    is_water_context <- grepl("\\b(spring water|mineral water|bottled water|water quality|water source)\\b", text, ignore.case = TRUE)
+    is_tree_context <- grepl("\\b(spruce|pine|tree|conifer|growth pattern|forestry)\\b", text, ignore.case = TRUE)
+    
     # First pass: Direct pattern matching with enhanced synonyms
     for(country in all_countries) {
       country_lower <- str_to_lower(country)
@@ -75,16 +85,18 @@ detect_geographic_locations_batch <- function(text_vector) {
         }
       } else if (country_lower == "turkey") {
         # Enhanced Turkey detection (country vs bird/fungus/food)
-        if (str_detect(text, "\\bTurkey\\b") &&
-            !grepl("\\b(turkey\\s+(tail|red|wild|domestic)|trametes\\s+versicolor|bracket\\s+fungus|polypore|mushroom|bird|poultry|roast|meat)\\b", text,
-                   ignore.case = TRUE) &&
-            !grepl("\\bturkey\\s+(mushroom|fungus|fungi|mycology|culinary|cooking)\\b", text, ignore.case = TRUE)) {
+        if (grepl("\\bturkey\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bturkey\\s+tail\\b", text, ignore.case = TRUE) &&
+            !grepl("\\b(trametes|polypore|bracket\\s+fungus)\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bturkey\\s+(red|wild|domestic|mushroom|bird|meat)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "chile") {
         # Chile (country vs pepper)
-        if (str_detect(text, "\\bChile\\b") &&
-            !grepl("\\bchil[ei]\\s+(pepper|pod|sauce|spice|powder|flakes|paste)\\b", text, ignore.case = TRUE)) {
+        if (grepl("\\bchile\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bchil[ei]\\s+pepper\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bpepper\\b", text, ignore.case = TRUE) &&
+            !grepl("\\b(capsicum|jalape[ñn]o|habanero|spice)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "georgia") {
@@ -108,8 +120,9 @@ detect_geographic_locations_batch <- function(text_vector) {
         }
       } else if (country_lower == "china") {
         # China (country vs ceramics)
-        if (str_detect(text, "\\bChina\\b") &&
-            !grepl("\\bchina\\s+(plate|cup|ware|porcelain|ceramic|clay|pottery)\\b", text, ignore.case = TRUE)) {
+        if (grepl("\\bchina\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bchina\\s+plate\\b", text, ignore.case = TRUE) &&
+            !grepl("\\b(plate|ceramic|porcelain|pottery|dishware)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "japan") {
@@ -119,9 +132,10 @@ detect_geographic_locations_batch <- function(text_vector) {
           found <- c(found, country)
         }
       } else if (country_lower == "poland") {
-        # Poland (country vs polish/finish)
-        if (str_detect(text, "\\bPoland\\b") &&
-            !grepl("\\bpoland\\s+(spring|notation|ball|chicken)\\b", text, ignore.case = TRUE)) {
+        # Poland (country vs polish/finish/water brand)
+        if (grepl("\\bpoland\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bpoland\\s+spring\\b", text, ignore.case = TRUE) &&
+            !grepl("\\b(water|quality|mineral|spring)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country_lower == "armenia") {
@@ -138,8 +152,9 @@ detect_geographic_locations_batch <- function(text_vector) {
         }
       } else if (country_lower == "serbia") {
         # Serbia (country vs spruce)
-        if (str_detect(text, "\\bSerbia\\b") &&
-            !grepl("\\bserbia\\s+spruce\\b", text, ignore.case = TRUE)) {
+        if (grepl("\\bserbia\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bserbia\\s+spruce\\b", text, ignore.case = TRUE) &&
+            !grepl("\\b(spruce|picea|growth\\s+pattern|tree|conifer)\\b", text, ignore.case = TRUE)) {
           found <- c(found, country)
         }
       } else if (country == "South Korea" || country == "North Korea") {
@@ -153,15 +168,32 @@ detect_geographic_locations_batch <- function(text_vector) {
           }
         }
       } else {
-        # Standard pattern matching for other countries
-        country_pattern <- paste0("\\b", str_replace_all(country, "\\s+", "\\\\s+"), "\\b")
-        if (grepl(country_pattern, text, ignore.case = TRUE)) {
-          found <- c(found, country)
+        # Standard pattern matching for other countries - but skip if context suggests homonym
+        should_skip <- FALSE
+        
+        # Check for homonym contexts that should prevent country detection
+        if (country_lower == "turkey" && (is_fungal_context || grepl("\\bturkey\\s+tail\\b", text, ignore.case = TRUE))) {
+          should_skip <- TRUE
+        } else if (country_lower == "chile" && is_food_context) {
+          should_skip <- TRUE
+        } else if (country_lower == "china" && is_ceramic_context) {
+          should_skip <- TRUE
+        } else if (country_lower == "poland" && is_water_context) {
+          should_skip <- TRUE
+        } else if (country_lower == "serbia" && is_tree_context) {
+          should_skip <- TRUE
         }
+        
+        if (!should_skip) {
+          country_pattern <- paste0("\\b", str_replace_all(country, "\\s+", "\\\\s+"), "\\b")
+          if (grepl(country_pattern, text, ignore.case = TRUE)) {
+            found <- c(found, country)
+          }
 
-        # Also try matching against title case version
-        if (str_detect(text_title, country_pattern)) {
-          found <- c(found, country)
+          # Also try matching against title case version
+          if (str_detect(text_title, country_pattern)) {
+            found <- c(found, country)
+          }
         }
       }
     }
@@ -172,15 +204,98 @@ detect_geographic_locations_batch <- function(text_vector) {
       potential_countries <- str_extract_all(text, "\\b[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*\\b")[[1]]
 
       if (length(potential_countries) > 0) {
-        # Try to standardize each potential country name
-        standardized <- normalize_country_batch(potential_countries)
-        valid_countries <- standardized[!is.na(standardized) & standardized %in% all_countries]
-        found <- c(found, valid_countries)
+        # Filter out potential countries that should be skipped due to homonym contexts
+        filtered_countries <- character(0)
+        for (potential in potential_countries) {
+          pot_lower <- str_to_lower(potential)
+          should_skip <- FALSE
+          
+          if (pot_lower == "turkey" && (is_fungal_context || grepl("\\bturkey\\s+tail\\b", text, ignore.case = TRUE))) {
+            should_skip <- TRUE
+          } else if (pot_lower == "chile" && is_food_context) {
+            should_skip <- TRUE
+          } else if (pot_lower == "china" && is_ceramic_context) {
+            should_skip <- TRUE
+          } else if (pot_lower == "poland" && is_water_context) {
+            should_skip <- TRUE
+          } else if (pot_lower == "serbia" && is_tree_context) {
+            should_skip <- TRUE
+          }
+          
+          if (!should_skip) {
+            filtered_countries <- c(filtered_countries, potential)
+          }
+        }
+        
+        # Try to standardize each filtered potential country name
+        if (length(filtered_countries) > 0) {
+          standardized <- normalize_country_batch(filtered_countries)
+          valid_countries <- standardized[!is.na(standardized) & standardized %in% all_countries]
+          found <- c(found, valid_countries)
+        }
       }
     }
 
     # Ensure each country is only counted once per abstract, even if mentioned multiple times
     return(unique(found))
+  })
+
+  # Detect countries from research institutions
+  institution_countries <- purrr::map(text_vector, function(text) {
+    if (is.na(text) || text == "") return(character(0))
+    
+    found_countries <- character(0)
+    
+    # Check each institution pattern
+    for (institution_name in names(institutions)) {
+      # Create pattern that matches institution name (case insensitive)
+      pattern <- paste0("\\b", str_replace_all(institution_name, "\\s+", "\\\\s+"), "\\b")
+      
+      if (grepl(pattern, text, ignore.case = TRUE)) {
+        country <- institutions[[institution_name]]
+        found_countries <- c(found_countries, country)
+      }
+    }
+    
+    return(unique(found_countries))
+  })
+  
+  # Detect countries from adjectival/regional forms
+  adjectival_countries <- purrr::map(text_vector, function(text) {
+    if (is.na(text) || text == "") return(character(0))
+    
+    found_countries <- character(0)
+    
+    # Check each adjectival form
+    for (adj_form in names(adjectival_mappings)) {
+      # Create pattern that matches the adjectival form (case insensitive)
+      pattern <- paste0("\\b", adj_form, "\\b")
+      
+      if (grepl(pattern, text, ignore.case = TRUE)) {
+        # Get the countries associated with this adjectival form
+        mapping <- adjectival_mappings[[adj_form]]
+        if ("countries" %in% names(mapping)) {
+          # Split the semicolon-separated country list
+          countries <- str_split(mapping["countries"], ";\\s*")[[1]]
+          # Only add if it's a specific country (not "Multiple ... countries" or placeholder text)
+          valid_countries <- countries[!grepl("Multiple|countries$", countries)]
+          # Also filter out any that aren't in the all_countries list
+          valid_countries <- valid_countries[valid_countries %in% all_countries]
+          found_countries <- c(found_countries, valid_countries)
+        }
+      }
+    }
+    
+    return(unique(found_countries))
+  })
+  
+  # Merge country detections from all sources
+  country_matches <- purrr::map2(country_matches, institution_countries, function(direct, inst) {
+    unique(c(direct, inst))
+  })
+  
+  country_matches <- purrr::map2(country_matches, adjectival_countries, function(current, adj) {
+    unique(c(current, adj))
   })
 
   # Enhanced continent and region detection using comprehensive keywords

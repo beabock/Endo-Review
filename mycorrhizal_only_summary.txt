@@ -1,0 +1,25 @@
+MYCORRHIZAL-ONLY ABSTRACT ASSESSMENT SUMMARY
+==========================================
+Generated:  2026-01-14 11:50:06 
+
+INPUT FILE:  results/species_mycorrhizal_results_sequential.csv 
+OUTPUT FILES: 
+   -  results/mycorrhizal_only_abstracts.csv 
+   -  mycorrhizal_only_detailed_results.csv 
+
+ABSTRACT-LEVEL SUMMARY:
+   - Total abstracts assessed:  19380 
+   - Abstracts with fungal taxa:  11458  ( 59.1 %)
+   - Mycorrhizal-only abstracts:  91  ( 0.5 %)
+   - Mixed/non-mycorrhizal abstracts:  11367 
+
+FUNGAL TAXA SUMMARY:
+   - Total fungal detections:  44003 
+   - Mycorrhizal fungal detections:  805  ( 1.8 %)
+   - Non-mycorrhizal fungal detections:  43198 
+
+ASSESSMENT CATEGORIES:
+   -  Only non-mycorrhizal fungi detected :  10961  abstracts
+   -  No fungal taxa detected :  7922  abstracts
+   -  Mixed: mycorrhizal and non-mycorrhizal fungi detected :  406  abstracts
+   -  Only mycorrhizal fungi detected :  91  abstracts

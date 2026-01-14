@@ -19,6 +19,30 @@ library(tictoc)
 # Source the memory-optimized script
 source("scripts/04_analysis/components/01_species_mycorrhizal.R")
 
+# =============================================================================
+# PERFORMANCE SCORING FRAMEWORK
+# =============================================================================
+
+# Global counters for test results
+total_tests <- 0
+passed_tests <- 0
+failed_tests <- 0
+
+# Helper function for scoring
+test_result <- function(passed, test_name, details = "") {
+  total_tests <<- total_tests + 1
+  if (passed) {
+    passed_tests <<- passed_tests + 1
+    cat("✅ PASS:", test_name, "\n")
+  } else {
+    failed_tests <<- failed_tests + 1
+    cat("❌ FAIL:", test_name, "\n")
+  }
+  if (details != "") {
+    cat("   ", details, "\n")
+  }
+}
+
 cat("=== MEMORY-OPTIMIZED SPECIES DETECTION TEST ===\n")
 cat("Testing memory optimizations with smaller datasets first\n\n")
 
@@ -31,6 +55,12 @@ if (!file.exists(abstracts_file)) {
 cat("📂 Loading consolidated dataset...\n")
 full_data <- read_csv(abstracts_file, show_col_types = FALSE)
 cat("   Loaded", nrow(full_data), "abstracts\n\n")
+
+# Score data loading
+data_loaded <- !is.null(full_data) && nrow(full_data) > 0
+test_result(data_loaded, "Dataset loading", 
+           ifelse(data_loaded, paste0("Loaded ", nrow(full_data), " abstracts successfully"),
+                  "Failed to load consolidated dataset"))
 
 # Test with progressively larger datasets
 test_sizes <- c(10, 50, 100)
@@ -56,6 +86,10 @@ for (test_size in test_sizes) {
   # Time the test
   tic(paste("Test with", test_size, "abstracts"))
 
+  test_success <- FALSE
+  test_results <- NULL
+  memory_increase <- 0
+
   tryCatch({
     # Run memory-optimized species detection
     test_results <- extract_species_mycorrhizal_data(
@@ -73,10 +107,13 @@ for (test_size in test_sizes) {
     mem_after <- monitor_memory(threshold_gb = 8, context = "After test")
     cat(round(mem_after$memory_used_gb, 2), "GB\n")
 
+    memory_increase <- mem_after$memory_used_gb - mem_before$memory_used_gb
+    test_success <- TRUE
+
     # Report results
     cat("   ✅ Test completed successfully!\n")
     cat("      Results:", nrow(test_results), "species detection records\n")
-    cat("      Memory increase:", round(mem_after$memory_used_gb - mem_before$memory_used_gb, 2), "GB\n\n")
+    cat("      Memory increase:", round(memory_increase, 2), "GB\n\n")
 
     # Clean up test file if desired
     # unlink(paste0("results/test_species_mycorrhizal_", test_size, ".csv"))
@@ -100,6 +137,11 @@ for (test_size in test_sizes) {
       cat("   ⚠️ Memory cleanup also failed:", conditionMessage(gc_error), "\n")
     })
   })
+
+  # Score this test iteration
+  test_result(test_success, paste0("Memory test (", test_size, " abstracts)"), 
+             ifelse(test_success, paste0("Processed ", nrow(test_results), " records, memory increase: ", round(memory_increase, 2), "GB"),
+                    "Test failed - check error messages above"))
 }
 
 # Final memory cleanup
@@ -109,3 +151,18 @@ aggressive_gc(verbose = TRUE)
 cat("=== MEMORY OPTIMIZATION TESTING COMPLETE ===\n")
 cat("If all tests passed, you can proceed with the full dataset.\n")
 cat("Monitor memory usage and adjust batch sizes if needed.\n")
+
+# =============================================================================
+# PERFORMANCE SUMMARY
+# =============================================================================
+
+cat("\n=== PERFORMANCE SUMMARY ===\n")
+cat("Total Tests:", total_tests, "\n")
+cat("Passed:", passed_tests, "(", round(passed_tests/total_tests * 100, 1), "%)\n")
+cat("Failed:", failed_tests, "(", round(failed_tests/total_tests * 100, 1), "%)\n")
+
+if (failed_tests == 0) {
+  cat("🎉 All tests passed! Memory optimizations are working correctly.\n")
+} else {
+  cat("⚠️ Some tests failed. Check the output above for details.\n")
+}
