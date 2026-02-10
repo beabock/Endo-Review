@@ -213,7 +213,7 @@ get_country_classifications <- function() {
     "Syria", "Global South",
     "Mongolia", "Global South",
     "North Korea", "Global South",
-    "Antarctica", "Global South"  # Research station territories
+    "Antarctica", "Global South"  # Include for plotting coverage
   )
   
   return(country_classifications)
@@ -880,7 +880,7 @@ cat("- normalize_plant_part() # singular/plural normalization for plant parts\n"
 # Convenience function to get just continent keywords (subset of geographic keywords)
 get_continent_keywords <- function() {
   c("africa", "asia", "europe", "north america", "south america", 
-    "australia", "oceania", "antarctica")
+    "australia", "oceania", "antarctica", "antarctic")
 }
 
 # Convenience function to get region/ecosystem keywords (subset of geographic keywords)  

@@ -598,10 +598,12 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     # This avoids running the slow normalization on the entire list of world countries
     all_countries_map <- data.frame(country_std = unique(
       c(countries_data$country_std,
-        if (exists("normalize_country_vector")) {
+        if (exists("world") && !is.null(world) && exists("normalize_country_vector")) {
           normalize_country_vector(world$name)
-        } else {
+        } else if (exists("world") && !is.null(world)) {
           stringr::str_to_title(world$name)
+        } else {
+          character(0)  # Skip world countries if not available
         })
     )) %>%
       mutate(frequency = 0)
@@ -680,26 +682,32 @@ cat("- With methods:", sum(abstract_summary$has_methods),
       theme(legend.position = "none")
 
     # World choropleth map with Robinson projection
-    world <- ne_countries(scale = "medium", returnclass = "sf")
-    countries_map_data <- data %>%
-      filter(!is.na(countries_detected)) %>%
-      select(id, countries_detected) %>%
-      distinct(id, countries_detected) %>%
-      separate_rows(countries_detected, sep = "; ") %>%
-      filter(!is.na(countries_detected), countries_detected != "") %>%
-      mutate(country_std = if (exists("normalize_country_vector")) {
-        normalize_country_vector(countries_detected)
-      } else {
-        stringr::str_to_title(countries_detected)
-      }) %>%
-      distinct(id, country_std) %>%
-      count(country_std, name = "frequency") %>%
-      mutate(country_std = str_trim(country_std))
-    countries_map_data <- countries_map_data %>%
-      mutate(iso3 = countrycode(country_std, "country.name", "iso3c", warn = FALSE)) %>%
-      filter(!is.na(iso3))
-    world_data <- world %>%
-      left_join(countries_map_data, by = c("iso_a3" = "iso3"))
+    world <- tryCatch({
+      ne_countries(scale = "medium", returnclass = "sf")
+    }, error = function(e) {
+      warning("Could not load world map data: ", e$message, ". Skipping world map visualizations.")
+      NULL
+    })
+    
+    if (!is.null(world)) {
+      countries_map_data <- data %>%
+        filter(!is.na(countries_detected)) %>%
+        select(id, countries_detected) %>%
+        distinct(id, countries_detected) %>%
+        separate_rows(countries_detected, sep = "; ") %>%
+        filter(!is.na(countries_detected), countries_detected != "") %>%
+        mutate(country_std = if (exists("normalize_country_vector")) {
+          normalize_country_vector(countries_detected)
+        } else {
+          stringr::str_to_title(countries_detected)
+        }) %>%
+        distinct(id, country_std) %>%
+        count(country_std, name = "frequency") %>%
+        mutate(country_std = str_trim(country_std)) %>%
+        mutate(iso3 = countrycode(country_std, "country.name", "iso3c", warn = FALSE)) %>%
+        filter(!is.na(iso3))
+      world_data <- world %>%
+        left_join(countries_map_data, by = c("iso_a3" = "iso3"))
 
     # Transform to Robinson projection
     world_robinson <- st_transform(world_data, crs = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
@@ -755,6 +763,7 @@ cat("- With methods:", sum(abstract_summary$has_methods),
           legend.key.height = unit(0.5, "cm")
         )
     }
+    }  # close the world if
 
     # Create CSV of lowest represented countries in the tropics
     cat("Creating CSV of lowest represented countries in tropics...\n")
@@ -855,8 +864,12 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     save_plot(p8_countries, "top_countries.png", height = 8)
     save_plot(p8_bottom_countries, "bottom_countries.png", height = 8)
     save_plot(p8c_geo_completeness, "geographic_completeness.png", height = 6)
-    save_plot(p_world_map, "world_map_countries.png", width = 12, height = 8)
-    save_plot(p_world_map_log, "world_map_countries_log.png", width = 12, height = 8)
+    if (!is.null(world)) {
+      save_plot(p_world_map, "world_map_countries.png", width = 12, height = 8)
+      if (version_prefix == "main") {
+        save_plot(p_world_map_log, "world_map_countries_log.png", width = 12, height = 8)
+      }
+    }
 
   } else {
     cat("No geographic data available for visualization.\n")
