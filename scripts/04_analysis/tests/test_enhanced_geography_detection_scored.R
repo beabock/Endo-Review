@@ -353,6 +353,167 @@ for (i in 1:nrow(edge_tests)) {
   }
 }
 
+# Test 8: Undetected Countries Coverage
+cat("\n8. TESTING UNDETECTED COUNTRIES COVERAGE:\n")
+cat("=", rep("=", 70), "\n", sep = "")
+
+undetected_countries <- c(
+  "Aruba", "Angola", "Anguilla", "Aland", "Andorra", "American Samoa", 
+  "Ashmore And Cartier Is.", "Fr. S. Antarctic Lands", "Antigua And Barb.", 
+  "Benin", "Bahamas", "Bosnia And Herz.", "St-Barthélemy", "Bermuda", 
+  "Barbados", "Central African Rep.", "Côte D'ivoire", "Dem. Rep. Congo", 
+  "Cook Is.", "Comoros", "Cape Verde", "Cuba", "Curaçao", "Cayman Is.", 
+  "N. Cyprus", "Czech Rep.", "Djibouti", "Dominica", "Dominican Rep.", 
+  "Eritrea", "Falkland Is.", "Faeroe Is.", "Micronesia", "Gabon", 
+  "Guernsey", "Gambia", "Eq. Guinea", "Grenada", "Greenland", "Guam", 
+  "Heard I. And Mcdonald Is.", "Haiti", "Isle Of Man", "Indian Ocean Ter.", 
+  "Br. Indian Ocean Ter.", "Jamaica", "Jersey", "Siachen Glacier", 
+  "Kiribati", "St. Kitts And Nevis", "Korea", "Kosovo", "Kuwait", 
+  "Lao Pdr", "Liberia", "Libya", "Saint Lucia", "Liechtenstein", 
+  "Lesotho", "Macao", "St-Martin", "Monaco", "Moldova", "Maldives", 
+  "Marshall Is.", "N. Mariana Is.", "Mauritania", "Montserrat", 
+  "New Caledonia", "Norfolk Island", "Niue", "Nauru", "Pitcairn Is.", 
+  "Palau", "Puerto Rico", "Dem. Rep. Korea", "Palestine", "Fr. Polynesia", 
+  "W. Sahara", "S. Sudan", "S. Geo. And S. Sandw. Is.", "Saint Helena", 
+  "Solomon Is.", "Sierra Leone", "San Marino", "Somaliland", "Somalia", 
+  "St. Pierre And Miquelon", "São Tomé And Principe", "Suriname", 
+  "Swaziland", "Sint Maarten", "Seychelles", "Turks And Caicos Is.", 
+  "Togo", "Tajikistan", "Turkmenistan", "Timor-Leste", "Tonga", 
+  "Trinidad And Tobago", "Vatican", "St. Vin. And Gren.", 
+  "British Virgin Is.", "U.s. Virgin Is.", "Wallis And Futuna Is.", "Yemen"
+)
+
+# Create test cases for undetected countries
+undetected_tests <- tibble(
+  text = c(
+    "Endophyte research in Angola reveals diverse fungal communities",
+    "Endophyte research in Åland Islands reveals diverse fungal communities",
+    "Endophyte research in Ashmore and Cartier Islands reveals diverse fungal communities",
+    "Endophyte research in French Southern and Antarctic Lands reveals diverse fungal communities",
+    "Endophyte research in Antigua and Barbuda reveals diverse fungal communities",
+    "Endophyte research in Bahamas reveals diverse fungal communities",
+    "Endophyte research in Bosnia and Herzegovina reveals diverse fungal communities",
+    "Endophyte research in Saint Barthélemy reveals diverse fungal communities",
+    "Endophyte research in Barbados reveals diverse fungal communities",
+    "Endophyte research in Central African Republic reveals diverse fungal communities",
+    "Endophyte research in Côte d'Ivoire reveals diverse fungal communities",
+    "Endophyte research in Democratic Republic of the Congo reveals diverse fungal communities",
+    "Endophyte research in Cook Islands reveals diverse fungal communities",
+    "Endophyte research in Comoros reveals diverse fungal communities",
+    "Endophyte research in Cabo Verde reveals diverse fungal communities",
+    "Endophyte research in Cuba reveals diverse fungal communities",
+    "Endophyte research in Cayman Islands reveals diverse fungal communities",
+    "Endophyte research in Northern Cyprus reveals diverse fungal communities",
+    "Endophyte research in Czech Republic reveals diverse fungal communities",
+    "Endophyte research in Dominican Republic reveals diverse fungal communities",
+    "Endophyte research in Falkland Islands reveals diverse fungal communities",
+    "Endophyte research in Faroe Islands reveals diverse fungal communities",
+    "Endophyte research in Gambia reveals diverse fungal communities",
+    "Endophyte research in Equatorial Guinea reveals diverse fungal communities",
+    "Endophyte research in Heard Island and McDonald Islands reveals diverse fungal communities",
+    "Endophyte research in Haiti reveals diverse fungal communities",
+    "Endophyte research in British Indian Ocean Territory reveals diverse fungal communities",
+    "Endophyte research in British Indian Ocean Territory reveals diverse fungal communities",
+    "Endophyte research in Jamaica reveals diverse fungal communities",
+    "Endophyte research in Saint Kitts and Nevis reveals diverse fungal communities",
+    "Endophyte research in South Korea reveals diverse fungal communities",
+    "Endophyte research in Laos reveals diverse fungal communities",
+    "Endophyte research in Saint Martin reveals diverse fungal communities",
+    "Endophyte research in Marshall Islands reveals diverse fungal communities",
+    "Endophyte research in Northern Mariana Islands reveals diverse fungal communities",
+    "Endophyte research in Mauritania reveals diverse fungal communities",
+    "Endophyte research in Pitcairn Islands reveals diverse fungal communities",
+    "Endophyte research in North Korea reveals diverse fungal communities",
+    "Endophyte research in French Polynesia reveals diverse fungal communities",
+    "Endophyte research in Western Sahara reveals diverse fungal communities",
+    "Endophyte research in South Sudan reveals diverse fungal communities",
+    "Endophyte research in South Georgia and the South Sandwich Islands reveals diverse fungal communities",
+    "Endophyte research in Solomon Islands reveals diverse fungal communities",
+    "Endophyte research in Sierra Leone reveals diverse fungal communities",
+    "Endophyte research in Somalia reveals diverse fungal communities",
+    "Endophyte research in Saint Pierre and Miquelon reveals diverse fungal communities",
+    "Endophyte research in São Tomé and Príncipe reveals diverse fungal communities",
+    "Endophyte research in Turks and Caicos Islands reveals diverse fungal communities",
+    "Endophyte research in Togo reveals diverse fungal communities",
+    "Endophyte research in Vatican City reveals diverse fungal communities",
+    "Endophyte research in Saint Vincent and the Grenadines reveals diverse fungal communities",
+    "Endophyte research in British Virgin Islands reveals diverse fungal communities",
+    "Endophyte research in United States Virgin Islands reveals diverse fungal communities",
+    "Endophyte research in Wallis and Futuna reveals diverse fungal communities"
+  ),
+  expected_country = c(
+    "Angola",
+    "Åland Islands",
+    "Ashmore and Cartier Islands",
+    "French Southern and Antarctic Lands",
+    "Antigua and Barbuda",
+    "Bahamas",
+    "Bosnia and Herzegovina",
+    "Saint Barthélemy",
+    "Barbados",
+    "Central African Republic",
+    "Côte d'Ivoire",
+    "Democratic Republic of the Congo",
+    "Cook Islands",
+    "Comoros",
+    "Cabo Verde",
+    "Cuba",
+    "Cayman Islands",
+    "Northern Cyprus",
+    "Czech Republic",
+    "Dominican Republic",
+    "Falkland Islands",
+    "Faroe Islands",
+    "Gambia",
+    "Equatorial Guinea",
+    "Heard Island and McDonald Islands",
+    "Haiti",
+    "British Indian Ocean Territory",
+    "British Indian Ocean Territory",
+    "Jamaica",
+    "Saint Kitts and Nevis",
+    "South Korea",
+    "Laos",
+    "Saint Martin",
+    "Marshall Islands",
+    "Northern Mariana Islands",
+    "Mauritania",
+    "Pitcairn Islands",
+    "North Korea",
+    "French Polynesia",
+    "Western Sahara",
+    "South Sudan",
+    "South Georgia and the South Sandwich Islands",
+    "Solomon Islands",
+    "Sierra Leone",
+    "Somalia",
+    "Saint Pierre and Miquelon",
+    "São Tomé and Príncipe",
+    "Turks and Caicos Islands",
+    "Togo",
+    "Vatican City",
+    "Saint Vincent and the Grenadines",
+    "British Virgin Islands",
+    "United States Virgin Islands",
+    "Wallis and Futuna"
+  )
+)
+
+undetected_results <- detect_geographic_locations_batch(undetected_tests$text)
+
+for (i in 1:nrow(undetected_tests)) {
+  actual <- ifelse(is.na(undetected_results$countries_detected[i]), "NONE", undetected_results$countries_detected[i])
+  expected <- undetected_tests$expected_country[i]
+  
+  passed <- check_detection(actual, expected, undetected_tests$text[i], "Undetected Countries")
+  
+  cat(sprintf("%-60s %s\n", substr(undetected_tests$text[i], 1, 60), 
+              if(passed) "✓" else "✗"))
+  if (!passed) {
+    cat(sprintf("  Expected: %s | Got: %s\n", expected, actual))
+  }
+}
+
 # Summary Report
 cat("\n")
 cat("=" , rep("=", 80), "\n", sep = "")

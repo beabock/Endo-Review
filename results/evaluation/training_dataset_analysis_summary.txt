@@ -1,0 +1,75 @@
+TRAINING DATASET ANALYSIS SUMMARY
+==================================
+
+Dataset: data/raw/Training_labeled_abs_6.csv 
+Dimensions: 876 88 
+Analysis Date: 2025-11-14 09:25:06 
+
+Label Distribution:
+
+          Absence     Both    Other Presence   Review 
+       1      117      180       81      346      151 
+
+Publication Year Range: 1932 2024 
+Abstract Length Range: 62 3609 
+Citation Range: Inf -Inf 
+
+Missing Data Summary:
+                    label                   authors             article_title 
+                        1                       334                       345 
+                      doi          publication_year                         X 
+                      343                       334                       139 
+             book_authors              book_editors        book_group_authors 
+                      856                       815                       872 
+        author_full_names    book_author_full_names              source_title 
+                      454                       856                       354 
+        book_series_title      book_series_subtitle                  language 
+                      837                       876                       831 
+            document_type          conference_title           conference_date 
+                      829                       852                       860 
+      conference_location        conference_sponsor           conference_host 
+                      860                       866                       866 
+          author_keywords             keywords_plus                 addresses 
+                      833                       828                       821 
+             affiliations         reprint_addresses           email_addresses 
+                      815                       829                       864 
+           researcher_ids                   orci_ds              funding_orgs 
+                      624                       602                       848 
+   funding_name_preferred              funding_text          cited_references 
+                      851                       853                       824 
+    cited_reference_count     times_cited_wo_s_core times_cited_all_databases 
+                      865                       876                       876 
+     x180_day_usage_count    since_2013_usage_count                 publisher 
+                      876                       872                       845 
+           publisher_city         publisher_address                      issn 
+                      866                       865                       490 
+                   e_issn                      isbn      journal_abbreviation 
+                      561                       829                       827 
+ journal_iso_abbreviation          publication_date                    volume 
+                      865                       494                       451 
+                    issue                supplement             special_issue 
+                      494                       845                       862 
+         meeting_abstract                start_page                  end_page 
+                      864                       558                       539 
+           article_number                  doi_link                  book_doi 
+                      788                       485                       860 
+        early_access_date           number_of_pages           wo_s_categories 
+                      804                       834                       876 
+           research_areas                ids_number                 pubmed_id 
+                      876                       872                       662 
+ open_access_designations       highly_cited_status          hot_paper_status 
+                      834                       871                       876 
+           date_of_export          ut_unique_wos_id     web_of_science_record 
+                      869                       487                       627 
+                       id           predicted_label                       X.1 
+                      153                       701                       858 
+                      X.2                       X.3                       X.4 
+                      862                       873                       873 
+                      X.5                       X.6                       X.7 
+                      876                       875                       870 
+                      X.8                       X.9                      X.10 
+                      861                       854                       854 
+                     X.11                      X.12                      X.13 
+                      847                       845                       833 
+          abstract_length 
+                       19 

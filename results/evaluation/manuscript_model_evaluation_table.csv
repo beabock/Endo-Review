@@ -1,0 +1,2 @@
+"Model","Accuracy","Recall (Relevant)","Specificity","F1 Score"
+"Glmnet","0.895 (0.875-0.915)","0.976","0.674","0.932"

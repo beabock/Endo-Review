@@ -1,0 +1,14 @@
+=== EXAMPLE CLASSIFICATIONS ===
+High-confidence predictions for manuscript methods
+
+Example 1  -  Presence (confidence: 0.938 )
+Abstract: Foliar application of a number of broad-spectrum systemic fungicides (particularly conazole fungicides) to loose smut-infected plants of wheat and barley in a 3-spray programme resulted in a marked re ...
+
+Example 2  -  Presence (confidence: 0.917 )
+Abstract: The effects of high vs. low levels of endophytic fungi on the phenotypic plasticity of cloned genotypes were examined in perennial ryegrass (Lolium perenne L.). The objectives were to determine whethe ...
+
+Example 3  -  Presence (confidence: 0.97 )
+Abstract: The interactive effects of asexual Epichloe (formerly known as Neotyphodium) endophytes isolated from Hordeum brevisubulatum, Elymus tangutorum and Achnatherum inebrians, and seed-borne fungi on Elymu ...
+
+These examples demonstrate the model's ability to distinguish between
+endophyte presence and absence based on textual content.

@@ -1,0 +1,30 @@
+Number of WoS files read: 15 
+Total rows after binding: 14855 
+Number of Scopus files read: 4 
+Total rows after binding: 15426 
+Number of PubMed files read: 6 
+Total rows after binding: 10873 
+WoS columns: 71 
+Scopus columns: 46 
+PubMed columns: 6 
+WoS standardized columns: 69 
+Wos earliest year: 4 
+Scopus earliest year: 1930 
+PubMed earliest year: 1946 
+Common columns: 7 
+Combined dataset rows: 40776 
+Deduplication: to lowercase, collapse whitespace, remove punctuation, trim spaces
+Rows with non-missing DOIs: 38373 
+Rows with missing DOIs: 2403 
+After DOI deduplication (non-missing DOIs): 20918 
+After DOI deduplication: 23321 
+Normalized text columns (abstract, title, authors) created.
+After abstract deduplication: 23007 
+After filtering to articles: 22587 
+After title deduplication: 21891 
+Final dataset rows: 21891 
+Missing DOIs: 1630 
+Missing Authors: 1 
+Missing Titles: 0 
+Missing Abstracts: 0 
+Data written to: data/processed/All_abstracts_deduped.csv

@@ -25,7 +25,7 @@ cat("Combining all extraction results into comprehensive dataset\n\n")
 
 # Main merge function
 merge_extraction_results <- function(
-  output_file = "results/comprehensive_extraction_results.csv",
+  output_file = "results/datasets/comprehensive_extraction_results.csv",
   force_rerun = FALSE,
   verbose = TRUE
 ) {
@@ -39,7 +39,7 @@ merge_extraction_results <- function(
   #}
 
   # Check for consolidated dataset
-  consolidated_file <- "results/consolidated_dataset.csv"
+  consolidated_file <- "results/datasets/consolidated_dataset.csv"
   if (!file.exists(consolidated_file)) {
     stop("❌ Consolidated dataset not found: ", consolidated_file)
   }
@@ -55,10 +55,10 @@ merge_extraction_results <- function(
 
   # List of component result files to merge (memory-efficient outputs)
   component_files <- c(
-    "results/mycorrhizal_only_detailed_results.csv", #species detection + mycorrhizal
-    "results/methods_detection_results.csv",
-    "results/plant_parts_detection_results.csv",
-    "results/geography_detection_results.csv"
+    "results/species/mycorrhizal_only_detailed_results.csv", #species detection + mycorrhizal
+    "results/methods_detect/methods_detection_results.csv",
+    "results/plant_parts/plant_parts_detection_results.csv",
+    "results/geographic/geography_detection_results.csv"
   )
 
   component_names <- c("species_mycorrhizal", "methods", "plant_parts", "geography")

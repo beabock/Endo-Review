@@ -1,0 +1,4 @@
+"Model_Component","Description","Accuracy","Key_Features","Training_Data","Strengths"
+"Relevance Classification","Regularized Logistic Regression (glmnet)","89.2%","Text unigrams/bigrams from abstracts","~3,500 labeled abstracts","Effective at filtering irrelevant studies"
+"Presence/Absence Ensemble","Weighted Ensemble (glmnet + SVM-Linear)","87.3%","Text unigrams/bigrams, weighted by model strengths","~2,800 relevant abstracts","Balances precision/recall trade-offs"
+"Overall Pipeline (Relevance + P/A)","Two-stage classification pipeline","89.8%","Combined relevance filtering + P/A detection","~3,500 labeled abstracts (two-stage)","Comprehensive endophyte literature screening"

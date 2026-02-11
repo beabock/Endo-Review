@@ -1,0 +1,42 @@
+=== EXTRACTION RESULTS VISUALIZATION SUMMARY ( SUPP  VERSION) ===
+Generated: 1763743957 
+Source: comprehensive_extraction_results.csv
+
+FILES GENERATED:
+1.  plots/supplementary/ species_detection_rate.png - Overall species detection rate
+2.  plots/supplementary/ methods_individual_core.png - Core research methods (3 traditional types)
+3.  plots/supplementary/ methods_individual_expanded.png - Expanded research methods (all 9 types)
+4.  plots/supplementary/ methods_combined_core.png - Combined core method frequencies
+5.  plots/supplementary/ methods_combined_expanded.png - Combined expanded method frequencies
+6.  plots/supplementary/ plant_parts_frequency.png - Most studied plant parts (enhanced)
+7.  plots/supplementary/ plant_parts_distribution.png - Plant parts count distribution
+9.  plots/supplementary/ geographic_regions.png - Geographic distribution by region
+10.  plots/supplementary/ top_countries.png - Most studied countries
+11.  plots/supplementary/ bottom_countries.png - Least represented countries
+12.  plots/supplementary/ geographic_completeness.png - Geographic information completeness
+13.  plots/supplementary/ world_map_countries.png - World choropleth map of countries
+13.  plots/supplementary/ summary_text.png - Overall summary statistics
+14.  plots/supplementary/ info_summary.png - Information detection overview
+
+KEY FINDINGS:
+- Species detection rate: 100 %
+- Research methods coverage: 90.8 %
+- Geographic information: 77.3 %
+- Plant parts information: 73.6 %
+
+SPECIES BY KINGDOM:
+- Fungi : 42237 abstracts ( 57.8 %)
+- Plantae : 30799 abstracts ( 42.2 %)
+
+RESEARCH METHODS BREAKDOWN:
+- Molecular methods: 6239 abstracts
+- Culture-based methods: 12719 abstracts
+- Microscopy methods: 3392 abstracts
+
+
+RECOMMENDations FOR ANALYSIS:
+1. Focus manual review on 'Presence' predictions with species detected
+2. Investigate 'Absence' predictions that have species (potential misclassification)
+3. Prioritize abstracts with complete information (species + methods + geography)
+4. Use plant parts data for ecological niche analysis
+5. Consider geographic patterns for global endophyte distribution studies

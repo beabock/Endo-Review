@@ -1,0 +1,26 @@
+=== PRESENCE/ABSENCE CLASSIFICATION (STAGE 2) - MODEL TRAINING INFORMATION FOR MANUSCRIPT ===
+Generated: 1763945904 
+
+--- GLMNET MODEL (Optimized for Absence Recall) ---
+FINAL MODEL HYPERPARAMETERS:
+  alpha     lambda
+3   0.1 0.01237848
+
+PERFORMANCE:
+# A tibble: 1 × 6
+  model  accuracy presence_recall absence_recall f1_score balanced_accuracy
+  <chr>     <dbl>           <dbl>          <dbl>    <dbl>             <dbl>
+1 glmnet    0.832           0.814          0.913    0.888                NA
+
+
+--- SVM (LINEAR) MODEL (Optimized for Presence Recall) ---
+FINAL MODEL HYPERPARAMETERS:
+  C
+1 1
+
+PERFORMANCE:
+# A tibble: 1 × 6
+  model     accuracy presence_recall absence_recall f1_score balanced_accuracy
+  <chr>        <dbl>           <dbl>          <dbl>    <dbl>             <dbl>
+1 svmLinear     0.88           0.980          0.435    0.930                NA
+

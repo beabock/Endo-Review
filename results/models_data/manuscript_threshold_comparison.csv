@@ -1,0 +1,8 @@
+"Threshold_Type","Threshold_Value","Purpose","Recommended_Use","Total_Classified"
+"Relevance_Loose",0.5,"Inclusive relevance screening","Primary screening (recommended)",21429
+"Relevance_Medium",0.6,"Balanced relevance screening","Secondary analysis",21429
+"Relevance_Strict",0.8,"Conservative relevance screening","Conservative estimates",21429
+"PA_Loose",0.5,"Inclusive P/A classification","Comprehensive inclusion",19447
+"PA_Medium",0.6,"Balanced P/A classification","Balanced approach",19447
+"PA_Strict",0.8,"Conservative P/A classification","High-confidence results",19447
+"PA_Super_Strict",0.9,"Very conservative P/A classification","Minimal false positives",19447

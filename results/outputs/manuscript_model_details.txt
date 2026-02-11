@@ -1,0 +1,37 @@
+=== RELEVANCE CLASSIFICATION (STAGE 1) - MODEL TRAINING INFORMATION FOR MANUSCRIPT ===
+Generated: 1763945196 
+
+MODEL DETAILS:
+Model Name: glmnet 
+Algorithm: Regularized Logistic Regression (glmnet) 
+Cross-validation: 5-fold repeated CV (3 repeats) 
+Class Weights: Relevant: 2x, Irrelevant: 1x 
+Feature Selection: Term frequency from unigrams 
+Preprocessing: Stop word removal, lowercase conversion, numeric removal 
+Sampling Method: SMOTE (Synthetic Minority Over-sampling Technique) 
+Random Seed: 1998 
+
+FINAL MODEL HYPERPARAMETERS:
+The following hyperparameters were selected for the final model:
+  alpha     lambda
+4   0.1 0.02944618
+
+DATASET INFORMATION:
+Original training samples: 861 
+Balanced training samples: 1008 
+Number of features: 9631 
+
+PERFORMANCE METRICS:
+# A tibble: 1 × 5
+  model  accuracy sensitivity_relevant specificity f1_score
+  <chr>     <dbl>                <dbl>       <dbl>    <dbl>
+1 glmnet    0.895                0.976       0.674    0.932
+
+CLASS DISTRIBUTION:
+# A tibble: 4 × 4
+  label_category count percentage avg_abstract_length
+  <chr>          <int>      <dbl>               <dbl>
+1 Absence          117       13.6                   0
+2 Other            231       26.8                   0
+3 Presence         333       38.7                   0
+4 Relevant         180       20.9                   0

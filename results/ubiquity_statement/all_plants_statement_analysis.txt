@@ -1,0 +1,58 @@
+=== 'ALL PLANTS HOST FUNGI' STATEMENT ANALYSIS ===
+Generated: 1763075524 
+
+SEARCH PARAMETERS:
+Total abstracts searched: 19447 
+Abstracts containing statement: 29 
+Percentage with statement: 0.15 %
+Total patterns found: 32 
+
+PATTERNS FOUND BY CATEGORY:
+# A tibble: 1 × 2
+  found_categories count
+  <chr>            <int>
+1 primary             29
+
+MOST COMMON PATTERNS:
+# A tibble: 7 × 2
+  found_patterns                               count
+  <chr>                                        <int>
+1 endophytes are ubiquitous                       15
+2 endophytic fungi are ubiquitous                  9
+3 endophytes are ubiquitous (fuzzy: 0.92)          2
+4 fungi are ubiquitous in plants                   2
+5 ubiquitous endophytic fungi                      2
+6 endophytes are ubiquitous (fuzzy: 0.93)          1
+7 fungi are ubiquitous in plants (fuzzy: 0.97)     1
+
+SAMPLE ABSTRACTS:
+--- Abstract 1 ---
+Title: Chitinolytic activities of endophytic bacteria isolated from symptom-free Chinese cabbage leaves 
+DOI: NA 
+Found patterns: endophytes are ubiquitous 
+Context: by endophytic microorganisms, often bacteria and fungi. Endophytes are ubiquitous colonizers of the inner plant tissues where they do not 
+
+--- Abstract 2 ---
+Title: Are tropical fungal endophytes hyperdiverse? 
+DOI: 10.1046/j.1461-0248.2000.00159.x 
+Found patterns: endophytes are ubiquitous 
+Context: Fungal endophytes are ubiquitous fungi that inhabit healthy plant tissues without causing 
+
+--- Abstract 3 ---
+Title: Bioactive secondary metabolites and their exploitation in the pharmaceutical industry produced by endophytic fungi 
+DOI: NA 
+Found patterns: endophytic fungi are ubiquitous 
+Context: tions in the agriculture, pharmaceutical and food industry. Endophytic fungi are ubiquitous microorganisms living asymptomatically within the tissue 
+
+--- Abstract 4 ---
+Title: Fungal root endophytes influence plants in a species-specific manner that depends on plant's growth stage 
+DOI: 10.1111/1365-2745.13584 
+Found patterns: ubiquitous endophytic fungi 
+Context: mutualistic and pathogenic fungi, the functional role of ubiquitous endophytic fungi remains little explored. We examined how root-inhabiting 
+
+--- Abstract 5 ---
+Title: Nitrogen-fixing bacteria and Oxalis - evidence for a vertically inherited bacterial symbiosis. 
+DOI: 10.1186/s12870-019-2049-7 
+Found patterns: endophytes are ubiquitous (fuzzy: 0.92) 
+Context: No context available
+

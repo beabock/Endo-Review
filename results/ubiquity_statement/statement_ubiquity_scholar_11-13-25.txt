@@ -1,0 +1,11 @@
+search string: ("fungal endophytes" OR "endophytic fungi") AND 
+(ubiquitous OR "occur in all plants" OR "found in all plants" OR "present in all plant species" OR "every plant" OR "all plants harbor" OR "all plants host" OR "common to all plants" OR "found in every plant")
+
+date: 11-13-25 at 11:27 AM
+
+On Google Scholar: 22,300 results
+
+On Lens.org: 2,937 Scholarly Works
+
+On PubMed: 2,114 results
+

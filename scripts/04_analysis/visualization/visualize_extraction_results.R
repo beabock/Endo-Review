@@ -66,17 +66,17 @@ cat("=== COMPREHENSIVE EXTRACTION VISUALIZATION ===\n")
 cat("Loading results from extract_species_simple.R...\n\n")
 
 # Check for required input files
-if (!file.exists("results/comprehensive_extraction_results.csv")) {
+if (!file.exists("results/datasets/comprehensive_extraction_results.csv")) {
   stop("Error: comprehensive_extraction_results.csv not found. Please run extract_species_simple.R first.")
 }
 
 # Load main results
-if (!file.exists("results/comprehensive_extraction_results.csv")) {
-  stop("File results/comprehensive_extraction_results.csv not found. Please ensure the extraction pipeline has been run first.")
+if (!file.exists("results/datasets/comprehensive_extraction_results.csv")) {
+  stop("File results/datasets/comprehensive_extraction_results.csv not found. Please ensure the extraction pipeline has been run first.")
 }
 
 # Check if the file has the expected structure for visualization
-results_check <- read_csv("results/comprehensive_extraction_results.csv", n_max = 5, show_col_types = FALSE)
+results_check <- read_csv("results/datasets/comprehensive_extraction_results.csv", n_max = 5, show_col_types = FALSE)
 expected_cols <- c("id", "predicted_label")  # Minimum required columns
 missing_cols <- setdiff(expected_cols, names(results_check))
 
@@ -95,7 +95,7 @@ if (length(missing_cols) > 0) {
 }
 
 # Load the full dataset
-results <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+results <- read_csv("results/datasets/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 cat("Loaded", nrow(results), "abstracts with comprehensive extraction data\n")
 
@@ -852,12 +852,12 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     )
 
     # Save to a separate file
-    writeLines(na_eu_summary, file.path("results", paste0("north_america_europe_only_analysis_", version_prefix, ".txt")))
-    cat("✓ Saved North America/Europe dominance analysis to results/north_america_europe_only_analysis_", version_prefix, ".txt\n")
+    writeLines(na_eu_summary, file.path("results", "summaries", paste0("north_america_europe_only_analysis_", version_prefix, ".txt")))
+    cat("✓ Saved North America/Europe dominance analysis to results/summaries/north_america_europe_only_analysis_", version_prefix, ".txt\n")
 
     # Save to CSV
-    write.csv(tropical_bottom_countries, file.path("results", paste0("lowest_represented_tropical_countries_", version_prefix, ".csv")), row.names = FALSE)
-    cat("✓ Saved lowest represented tropical countries to results/lowest_represented_tropical_countries_", version_prefix, ".csv\n")
+    write.csv(tropical_bottom_countries, file.path("results", "geographic", paste0("lowest_represented_tropical_countries_", version_prefix, ".csv")), row.names = FALSE)
+    cat("✓ Saved lowest represented tropical countries to results/geographic/lowest_represented_tropical_countries_", version_prefix, ".csv\n")
 
     # Save geography plots individually
     save_plot(p7_geo_regions, "geographic_regions.png", height = 6)
@@ -1016,8 +1016,8 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     cat("4. Use plant parts data for ecological niche analysis\n")
     cat("5. Consider geographic patterns for global endophyte distribution studies\n")
 
-  }, file = paste0("results/visualization_summary_report_", version_prefix, ".txt"))
+  }, file = paste0("results/summaries/visualization_summary_report_", version_prefix, ".txt"))
 
-  cat("Visualization summary saved to: results/visualization_summary_report_", version_prefix, ".txt\n")
+  cat("Visualization summary saved to: results/summaries/visualization_summary_report_", version_prefix, ".txt\n")
 
 # Close temporal loop

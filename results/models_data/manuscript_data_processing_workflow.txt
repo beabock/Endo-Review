@@ -1,0 +1,36 @@
+=== DATA PROCESSING WORKFLOW ===
+Manuscript Methods Section
+
+1 . Data Acquisition 
+   Description: Web of Science search results (n = initial count) 
+   Output: Raw abstracts with metadata 
+
+2 . Data Cleaning 
+   Description: Remove duplicates, filter by language, clean text 
+   Output: Processed abstracts dataset 
+
+3 . Text Preprocessing 
+   Description: Tokenization, stop word removal, lowercase conversion 
+   Output: Document-term matrix 
+
+4 . Feature Engineering 
+   Description: Term frequency weighting, feature selection 
+   Output: Feature matrix for modeling 
+
+5 . Model Training 
+   Description: glmnet with 5-fold repeated CV (3 repeats) and Relevant: 2x, Irrelevant: 1x 
+   Output: Trained classification model 
+
+6 . Model Evaluation 
+   Description: Cross-validation, confusion matrix analysis 
+   Output: Performance metrics and validation 
+
+SOFTWARE AND PACKAGES:
+• R version: R version 4.3.0 (2023-04-21 ucrt) 
+• Key packages: tidyverse, caret, glmnet, themis, tidytext
+• Random seed: 1998 for reproducibility
+
+COMPUTATIONAL RESOURCES:
+• Operating System: Windows 11 x64 (build 26100) 
+• CPU cores available: 12 
+• Memory management: Automatic garbage collection with chunked processing

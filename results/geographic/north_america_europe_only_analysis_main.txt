@@ -1,0 +1,5 @@
+North America and Europe Only Analysis (MAIN VERSION)
+Total abstracts with geography: 5308
+Abstracts from North America/Europe only: 1891
+Percentage: 35.63%
+

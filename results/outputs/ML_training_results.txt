@@ -1,0 +1,984 @@
+Analysis run on: 2025-11-23 17:40:02 
+
+=== ENDOPHYTE MODEL TRAINING PIPELINE ===
+Training relevance and presence/absence classification models
+
+Reading primary file: data/raw/Training_labeled_abs_6.csv 
+✓ Successfully read 876 rows from primary file
+Generating class distribution plots for relevance classification...
+✓ Saved class distribution plots for relevance classification
+Original class distribution:
+
+Irrelevant   Relevant 
+       185        504 
+Balanced class distribution:
+
+Irrelevant   Relevant 
+       504        504 
+
+Training: glmnet 
+Time for glmnet: 293.51 sec elapsed
+[1] "Model Performance (sorted by Relevant class recall):"
+# A tibble: 1 × 5
+  model  accuracy sensitivity_relevant specificity f1_score
+  <chr>     <dbl>                <dbl>       <dbl>    <dbl>
+1 glmnet    0.895                0.976       0.674    0.932
+✓ Saved evaluation table to results/evaluation_table_relevance.csv
+
+Confusion Matrix for model: glmnet 
+            Reference
+Prediction   Irrelevant Relevant
+  Irrelevant         31        3
+  Relevant           15      123
+
+Detailed stats:
+         Sensitivity          Specificity       Pos Pred Value 
+           0.9761905            0.6739130            0.8913043 
+      Neg Pred Value            Precision               Recall 
+           0.9117647            0.8913043            0.9761905 
+                  F1           Prevalence       Detection Rate 
+           0.9318182            0.7325581            0.7151163 
+Detection Prevalence    Balanced Accuracy 
+           0.8023256            0.8250518 
+
+
+=== GENERATING MANUSCRIPT FIGURES ===
+✓ Saved manuscript-ready performance plot
+✓ Saved manuscript-ready confusion matrix
+Warning: Error in nchar calculation, using 0
+✓ Saved training data summary for manuscript
+✓ Saved model details for manuscript Methods section
+✓ Saved feature importance analysis for manuscript
+✓ Saved model evaluation table for manuscript
+✓ Saved data processing workflow for manuscript
+
+=== MANUSCRIPT FIGURES AND TABLES GENERATED ===
+Files saved to results/ and plots/ directories:
+• manuscript_model_performance.png - Performance metrics plot
+• manuscript_confusion_matrix.png - Confusion matrix heatmap
+• manuscript_roc_curve_relevance.png - ROC curve for relevance classification
+• manuscript_roc_curve_presence_absence.png - ROC curve for presence/absence ensemble
+• manuscript_pr_curve_relevance.png - Precision-recall curve for relevance
+• manuscript_pr_curve_presence_absence.png - Precision-recall curve for ensemble
+• manuscript_threshold_analysis_ensemble.png - Threshold performance analysis
+• manuscript_model_comparison_relevance.png - Model comparison matrix (relevance)
+• manuscript_model_comparison_presence_absence.png - Model comparison matrix (P/A)
+• manuscript_ensemble_weight_sensitivity.png - Ensemble weight sensitivity analysis
+• manuscript_feature_importance_comparison_pa.png - Feature importance comparison
+• manuscript_learning_curves_relevance.png - Learning curves (relevance)
+• manuscript_learning_curves_presence_absence.png - Learning curves (ensemble)
+• manuscript_class_distribution_relevance.png - Class distribution before/after SMOTE
+• manuscript_class_distribution_presence_absence.png - Class distribution P/A
+• manuscript_feature_importance.png - Top 20 important features
+• manuscript_training_data_summary.csv - Training data statistics
+• manuscript_model_details.txt - Model information for Methods
+• manuscript_model_evaluation_table.csv - Performance table
+• manuscript_data_processing_workflow.txt - Processing workflow
+• manuscript_feature_importance.csv - Feature importance data
+• manuscript_feature_comparison_pa.csv - Feature comparison data
+• manuscript_pa_model_details.txt - P/A model info for Methods
+
+All files are publication-ready and follow academic formatting standards!
+
+Generating ROC curve for relevance classification...
+✓ Saved ROC curve for relevance classification
+Generating precision-recall curve for relevance classification...
+✓ Saved precision-recall curve for relevance classification
+Generating model comparison matrix for relevance classification...
+✓ Saved model comparison matrix for relevance classification
+Generating learning curves for relevance classification...
+✓ Saved learning curves for relevance classification
+
+=== FEATURE ENGINEERING: TEXT MINING AND N-GRAMS ===
+Generating Document-Term Matrix (DTM) with Unigrams and Bigrams.
+DTM created successfully.
+- Total documents (Relevant abstracts): 630 
+- Total unique features (Unigrams + Bigrams): 7492 
+- DTM sparsity:  
+--------------------------------------------------
+Splitting data into Training (80%) and Testing (20%) sets...
+- Training set size: 505 abstracts.
+- Testing set size: 125 abstracts.
+--------------------------------------------------
+
+Applying SMOTE for class balancing on Presence/Absence training data...
+SMOTE application complete.
+Original Training Distribution:
+
+Presence  Absence 
+     411       94 
+Balanced Training Distribution (SMOTE):
+
+Presence  Absence 
+     411      411 
+--------------------------------------------------
+Generating class distribution plots for presence/absence classification...
+✓ Saved class distribution plots for presence/absence classification
+P/A Original class distribution:
+
+Presence  Absence 
+     411       94 
+P/A Balanced class distribution:
+
+Presence  Absence 
+     411      411 
+
+Training: glmnet 
+
+------------------------------------------------
+Training Presence/Absence Model: glmnet ...
+Time for glmnet (P/A): 186.78 sec elapsed
+
+Training: svmLinear 
+
+------------------------------------------------
+Training Presence/Absence Model: svmLinear ...
+Time for svmLinear (P/A): 54.97 sec elapsed
+
+Individual model training complete for Presence/Absence classification.
+[1] "P/A Model Performance (sorted by Absence recall):"
+# A tibble: 2 × 6
+  model     accuracy presence_recall absence_recall f1_score balanced_accuracy
+  <chr>        <dbl>           <dbl>          <dbl>    <dbl>             <dbl>
+1 glmnet       0.832           0.814          0.913    0.888                NA
+2 svmLinear    0.88            0.980          0.435    0.930                NA
+✓ Saved presence/absence model details for manuscript Methods section
+
+Confusion Matrix for model: glmnet 
+          Reference
+Prediction Presence Absence
+  Presence       83       2
+  Absence        19      21
+
+Detailed stats:
+         Sensitivity          Specificity       Pos Pred Value 
+           0.8137255            0.9130435            0.9764706 
+      Neg Pred Value            Precision               Recall 
+           0.5250000            0.9764706            0.8137255 
+                  F1           Prevalence       Detection Rate 
+           0.8877005            0.8160000            0.6640000 
+Detection Prevalence    Balanced Accuracy 
+           0.6800000            0.8633845 
+
+
+Confusion Matrix for model: svmLinear 
+          Reference
+Prediction Presence Absence
+  Presence      100      13
+  Absence         2      10
+
+Detailed stats:
+         Sensitivity          Specificity       Pos Pred Value 
+           0.9803922            0.4347826            0.8849558 
+      Neg Pred Value            Precision               Recall 
+           0.8333333            0.8849558            0.9803922 
+                  F1           Prevalence       Detection Rate 
+           0.9302326            0.8160000            0.8000000 
+Detection Prevalence    Balanced Accuracy 
+           0.9040000            0.7075874 
+
+
+=== ENSEMBLE DEFINITION: WEIGHTED PROBABILITY ===
+Combining glmnet and svmLinear for enhanced Absence detection.
+- Strategy: Weighted average of individual model probabilities.
+- Default Weights: SVM (Presence) = 0.6, GLMNet (Absence) = 0.6 (Implicitly 0.4 for Presence).
+--------------------------------------------------
+GLMnet Absence prob range: 2.011443e-05 0.9908647 
+SVM Presence prob range: 0.0004458202 1 
+GLMnet predicts Absence (>0.5): 40 out of 125 
+SVM predicts Presence (>0.5): 113 out of 125 
+Testing different ensemble thresholds:
+Threshold 0.5 - Acc: 0.832 Pres: 0.814 Abs: 0.913 
+Threshold 0.6 - Acc: 0.864 Pres: 0.863 Abs: 0.87 
+Threshold 0.7 - Acc: 0.872 Pres: 0.882 Abs: 0.826 
+Threshold 0.8 - Acc: 0.872 Pres: 0.902 Abs: 0.739 
+=== TRUE ENSEMBLE WITH WEIGHTED PROBABILITIES ===
+Ensemble weights: SVM for presence = 0.6 , GLMNet for absence = 0.8 
+
+=== ENSEMBLE DEFINITION: WEIGHTED PROBABILITY ===
+Combining glmnet and svmLinear for enhanced Absence detection.
+- Strategy: Weighted average of individual model probabilities.
+- Default Weights: SVM (Presence) = 0.6, GLMNet (Absence) = 0.6 (Implicitly 0.4 for Presence).
+--------------------------------------------------
+Log file for applying models to the full dataset
+Generated by: scripts/03_prediction/apply_models_to_full_dataset.R
+Analysis run on: 2025-11-23 17:59:30 
+
+Memory optimization utilities loaded successfully!
+Available functions:
+  • monitor_memory() - Check memory usage
+  • aggressive_gc() - Free memory
+  • create_sparse_dtm() - Memory-efficient text matrices
+  • process_large_dataset() - Chunked processing
+  • optimize_dataframe() - Compress data structures
+=== ENDOPHYTE SYSTEMATIC REVIEW: FULL DATASET CLASSIFICATION ===
+Pipeline: Relevance → Presence/Absence Classification
+Models: glmnet (relevance), weighted ensemble (P/A)
+Memory optimization: Enabled
+
+Column name harmonization mapping defined.
+Step 1: Loading and preparing full dataset...
+  Loaded 21891 abstracts from full dataset
+Loaded in training data to avoid predicting on labeled abstracts
+  Excluded 462 training abstracts
+  Final dataset: 21429 abstracts for prediction
+Data loading and preparation: 4.45 sec elapsed
+
+Step 2: Relevance Classification...
+  Creating document-term matrix...
+Creating sparse DTM from 21429 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 15000 features
+  Creating sparse matrix...
+  DTM created: 21429 documents × 15000 terms
+  Sparsity: 99.5 %
+  DTM created: 21429 documents × 15000 terms
+  Loading trained relevance model...
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6930 
+  - Missing features: 2701 
+  - Total training features: 9631 
+  Adding 2701 missing features...
+  Feature alignment complete: 9631 features
+⚠️ High memory usage in Before relevance predictions : 4.78 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Using chunked prediction.
+  Predicting relevance...
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 20000 
+  Processing documents 20001 to 21000 
+  Processing documents 21001 to 21429 
+⚠️ High memory usage in After relevance predictions : 4.78 GB
+   Consider running gc() or processing in smaller chunks
+  Relevance classification results:
+# A tibble: 3 × 4
+  threshold        Irrelevant Relevant Uncertain
+  <chr>                 <int>    <int>     <int>
+1 relevance_loose        1982    19447         0
+2 relevance_medium       1603    18911       915
+3 relevance_strict        963    16882      3584
+  Selected 19447 relevant abstracts for P/A classification
+Relevance classification: 351.16 sec elapsed
+
+Step 3: Presence/Absence Classification...
+⚠️ High memory usage in Before P/A classification : 4.8 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage detected. Consider reducing dataset size or using chunked processing.
+  Creating memory-efficient P/A DTM with unigrams and bigrams...
+  Creating sparse DTM for unigrams...
+Creating sparse DTM from 19447 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 8000 features
+  Creating sparse matrix...
+  DTM created: 19447 documents × 8000 terms
+  Sparsity: 99.1 %
+  Creating bigrams...
+  Adding 2 documents with no valid bigrams as zero rows
+  Combining unigrams and bigrams...
+  Combined DTM: 19447 documents × 120245 features
+⚠️ High memory usage in After P/A DTM creation : 4.9 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage after DTM creation. Consider further reducing max_features.
+  Memory-efficient P/A DTM created: 19447 documents × 120245 terms
+  Sparsity: NA %
+  Loading trained P/A models...
+  Training vocabulary size: 7492 features
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6050 
+  - Missing features: 1442 
+  - Total training features: 7492 
+  Adding 1442 missing features in batches...
+  P/A feature alignment complete: 7492 features
+  Memory usage after alignment:
+⚠️ High memory usage in After feature alignment : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+  Applying memory-efficient ensemble predictions...
+⚠️ High memory usage in Before ensemble predictions : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Consider processing in chunks.
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 19447 
+  Combining chunk results...
+  Ensemble predictions complete
+⚠️ High memory usage in After ensemble predictions : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+  P/A classification results:
+# A tibble: 6 × 4
+  method             Absence Presence Uncertain
+  <chr>                <int>    <int>     <int>
+1 pa_loose               827    18620         0
+2 pa_medium              539    18219       689
+3 pa_strict              111    16788      2548
+4 pa_super_strict         10    14994      4443
+5 threshold_ensemble     331    19116         0
+6 weighted_ensemble       89    19358         0
+  Performing final memory cleanup...
+⚠️ High memory usage in End of P/A classification : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+Presence/Absence classification: 1329.97 sec elapsed
+  P/A classification completed successfully!
+  Memory optimization preserved system stability.
+
+Step 4: Saving results...
+⚠️ High memory usage in Before results processing : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage before results processing. Performing aggressive cleanup...
+  Saving main results...
+
+=== GENERATING ADDITIONAL MANUSCRIPT OUTPUTS FOR PUBLICATION ===
+✓ Saved temporal trends analysis for manuscript
+✓ Saved model performance summary for manuscript
+✓ Saved confidence calibration analysis for manuscript
+✓ Saved threshold comparison analysis for manuscript
+✓ Saved top predictive features analysis for manuscript
+
+=== GENERATING MANUSCRIPT FIGURES FOR PREDICTION ANALYSIS ===
+✓ Saved prediction distribution summary for manuscript
+✓ Saved confidence distribution plot for manuscript
+✓ Saved threshold analysis for manuscript Methods section
+✓ Saved classification examples for manuscript
+✓ Saved processing statistics for manuscript
+  Saving filtered subsets...
+  Creating summary statistics...
+Saving results: 33.45 sec elapsed
+
+=== CLASSIFICATION COMPLETE ===
+Results saved to results/ directory:
+- full_dataset_predictions.csv: Complete results with all classifications
+- relevant_abstracts_with_pa_predictions.csv: Relevant abstracts with P/A predictions
+- irrelevant_uncertain_abstracts.csv: Abstracts likely not relevant for review
+- classification_summary.txt: Summary statistics and recommendations
+- manuscript_*.csv/txt: 10+ manuscript-ready outputs for publication
+- plots/manuscript_confidence_distribution.png: Confidence visualization
+
+Key Statistics:
+- Total abstracts processed: 21429 
+- Relevant abstracts (loose): 19447 
+- Presence classifications: 19358 
+- Absence classifications: 89 
+- Uncertain classifications: 0 
+
+Recommended workflow:
+1. Use weighted ensemble results (final_classification) as primary screening
+2. Manually review all 'Absence' classifications to avoid missing relevant studies
+3. Spot-check 'Presence' classifications for quality assurance
+4. Time permitting, review 'Uncertain' classifications
+
+Pipeline complete! 🎉
+ts:
+# A tibble: 3 × 4
+  threshold        Irrelevant Relevant Uncertain
+  <chr>                 <int>    <int>     <int>
+1 relevance_loose        1982    19447         0
+2 relevance_medium       1603    18911       915
+3 relevance_strict        963    16882      3584
+  Selected 19447 relevant abstracts for P/A classification
+Relevance classification: 351.16 sec elapsed
+
+Step 3: Presence/Absence Classification...
+⚠️ High memory usage in Before P/A classification : 4.8 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage detected. Consider reducing dataset size or using chunked processing.
+  Creating memory-efficient P/A DTM with unigrams and bigrams...
+  Creating sparse DTM for unigrams...
+Creating sparse DTM from 19447 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 8000 features
+  Creating sparse matrix...
+  DTM created: 19447 documents × 8000 terms
+  Sparsity: 99.1 %
+  Creating bigrams...
+  Adding 2 documents with no valid bigrams as zero rows
+  Combining unigrams and bigrams...
+  Combined DTM: 19447 documents × 120245 features
+⚠️ High memory usage in After P/A DTM creation : 4.9 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage after DTM creation. Consider further reducing max_features.
+  Memory-efficient P/A DTM created: 19447 documents × 120245 terms
+  Sparsity: NA %
+  Loading trained P/A models...
+  Training vocabulary size: 7492 features
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6050 
+  - Missing features: 1442 
+  - Total training features: 7492 
+  Adding 1442 missing features in batches...
+  P/A feature alignment complete: 7492 features
+  Memory usage after alignment:
+⚠️ High memory usage in After feature alignment : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+  Applying memory-efficient ensemble predictions...
+⚠️ High memory usage in Before ensemble predictions : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Consider processing in chunks.
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 19447 
+  Combining chunk results...
+  Ensemble predictions complete
+⚠️ High memory usage in After ensemble predictions : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+  P/A classification results:
+# A tibble: 6 × 4
+  method             Absence Presence Uncertain
+  <chr>                <int>    <int>     <int>
+1 pa_loose               827    18620         0
+2 pa_medium              539    18219       689
+3 pa_strict              111    16788      2548
+4 pa_super_strict         10    14994      4443
+5 threshold_ensemble     331    19116         0
+6 weighted_ensemble       89    19358         0
+  Performing final memory cleanup...
+⚠️ High memory usage in End of P/A classification : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+Presence/Absence classification: 1329.97 sec elapsed
+  P/A classification completed successfully!
+  Memory optimization preserved system stability.
+
+Step 4: Saving results...
+⚠️ High memory usage in Before results processing : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage before results processing. Performing aggressive cleanup...
+  Saving main results...
+
+=== GENERATING ADDITIONAL MANUSCRIPT OUTPUTS FOR PUBLICATION ===
+✓ Saved temporal trends analysis for manuscript
+✓ Saved model performance summary for manuscript
+✓ Saved confidence calibration analysis for manuscript
+✓ Saved threshold comparison analysis for manuscript
+✓ Saved top predictive features analysis for manuscript
+
+=== GENERATING MANUSCRIPT FIGURES FOR PREDICTION ANALYSIS ===
+✓ Saved prediction distribution summary for manuscript
+✓ Saved confidence distribution plot for manuscript
+✓ Saved threshold analysis for manuscript Methods section
+✓ Saved classification examples for manuscript
+✓ Saved processing statistics for manuscript
+  Saving filtered subsets...
+  Creating summary statistics...
+Saving results: 33.45 sec elapsed
+
+=== CLASSIFICATION COMPLETE ===
+Results saved to results/ directory:
+- full_dataset_predictions.csv: Complete results with all classifications
+- relevant_abstracts_with_pa_predictions.csv: Relevant abstracts with P/A predictions
+- irrelevant_uncertain_abstracts.csv: Abstracts likely not relevant for review
+- classification_summary.txt: Summary statistics and recommendations
+- manuscript_*.csv/txt: 10+ manuscript-ready outputs for publication
+- plots/manuscript_confidence_distribution.png: Confidence visualization
+
+Key Statistics:
+- Total abstracts processed: 21429 
+- Relevant abstracts (loose): 19447 
+- Presence classifications: 19358 
+- Absence classifications: 89 
+- Uncertain classifications: 0 
+
+Recommended workflow:
+1. Use weighted ensemble results (final_classification) as primary screening
+2. Manually review all 'Absence' classifications to avoid missing relevant studies
+3. Spot-check 'Presence' classifications for quality assurance
+4. Time permitting, review 'Uncertain' classifications
+
+Pipeline complete! 🎉
+ghts: SVM (Presence) = 0.6, GLMNet (Absence) = 0.6 (Implicitly 0.4 for Presence).
+--------------------------------------------------
+Log file for applying models to the full dataset
+Generated by: scripts/03_prediction/apply_models_to_full_dataset.R
+Analysis run on: 2025-11-23 17:59:30 
+
+Memory optimization utilities loaded successfully!
+Available functions:
+  • monitor_memory() - Check memory usage
+  • aggressive_gc() - Free memory
+  • create_sparse_dtm() - Memory-efficient text matrices
+  • process_large_dataset() - Chunked processing
+  • optimize_dataframe() - Compress data structures
+=== ENDOPHYTE SYSTEMATIC REVIEW: FULL DATASET CLASSIFICATION ===
+Pipeline: Relevance → Presence/Absence Classification
+Models: glmnet (relevance), weighted ensemble (P/A)
+Memory optimization: Enabled
+
+Column name harmonization mapping defined.
+Step 1: Loading and preparing full dataset...
+  Loaded 21891 abstracts from full dataset
+Loaded in training data to avoid predicting on labeled abstracts
+  Excluded 462 training abstracts
+  Final dataset: 21429 abstracts for prediction
+Data loading and preparation: 4.45 sec elapsed
+
+Step 2: Relevance Classification...
+  Creating document-term matrix...
+Creating sparse DTM from 21429 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 15000 features
+  Creating sparse matrix...
+  DTM created: 21429 documents × 15000 terms
+  Sparsity: 99.5 %
+  DTM created: 21429 documents × 15000 terms
+  Loading trained relevance model...
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6930 
+  - Missing features: 2701 
+  - Total training features: 9631 
+  Adding 2701 missing features...
+  Feature alignment complete: 9631 features
+⚠️ High memory usage in Before relevance predictions : 4.78 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Using chunked prediction.
+  Predicting relevance...
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 20000 
+  Processing documents 20001 to 21000 
+  Processing documents 21001 to 21429 
+⚠️ High memory usage in After relevance predictions : 4.78 GB
+   Consider running gc() or processing in smaller chunks
+  Relevance classification results:
+# A tibble: 3 × 4
+  threshold        Irrelevant Relevant Uncertain
+  <chr>                 <int>    <int>     <int>
+1 relevance_loose        1982    19447         0
+2 relevance_medium       1603    18911       915
+3 relevance_strict        963    16882      3584
+  Selected 19447 relevant abstracts for P/A classification
+Relevance classification: 351.16 sec elapsed
+
+Step 3: Presence/Absence Classification...
+⚠️ High memory usage in Before P/A classification : 4.8 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage detected. Consider reducing dataset size or using chunked processing.
+  Creating memory-efficient P/A DTM with unigrams and bigrams...
+  Creating sparse DTM for unigrams...
+Creating sparse DTM from 19447 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 8000 features
+  Creating sparse matrix...
+  DTM created: 19447 documents × 8000 terms
+  Sparsity: 99.1 %
+  Creating bigrams...
+  Adding 2 documents with no valid bigrams as zero rows
+  Combining unigrams and bigrams...
+  Combined DTM: 19447 documents × 120245 features
+⚠️ High memory usage in After P/A DTM creation : 4.9 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage after DTM creation. Consider further reducing max_features.
+  Memory-efficient P/A DTM created: 19447 documents × 120245 terms
+  Sparsity: NA %
+  Loading trained P/A models...
+  Training vocabulary size: 7492 features
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6050 
+  - Missing features: 1442 
+  - Total training features: 7492 
+  Adding 1442 missing features in batches...
+  P/A feature alignment complete: 7492 features
+  Memory usage after alignment:
+⚠️ High memory usage in After feature alignment : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+  Applying memory-efficient ensemble predictions...
+⚠️ High memory usage in Before ensemble predictions : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Consider processing in chunks.
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 19447 
+  Combining chunk results...
+  Ensemble predictions complete
+⚠️ High memory usage in After ensemble predictions : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+  P/A classification results:
+# A tibble: 6 × 4
+  method             Absence Presence Uncertain
+  <chr>                <int>    <int>     <int>
+1 pa_loose               827    18620         0
+2 pa_medium              539    18219       689
+3 pa_strict              111    16788      2548
+4 pa_super_strict         10    14994      4443
+5 threshold_ensemble     331    19116         0
+6 weighted_ensemble       89    19358         0
+  Performing final memory cleanup...
+⚠️ High memory usage in End of P/A classification : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+Presence/Absence classification: 1329.97 sec elapsed
+  P/A classification completed successfully!
+  Memory optimization preserved system stability.
+
+Step 4: Saving results...
+⚠️ High memory usage in Before results processing : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage before results processing. Performing aggressive cleanup...
+  Saving main results...
+
+=== GENERATING ADDITIONAL MANUSCRIPT OUTPUTS FOR PUBLICATION ===
+✓ Saved temporal trends analysis for manuscript
+✓ Saved model performance summary for manuscript
+✓ Saved confidence calibration analysis for manuscript
+✓ Saved threshold comparison analysis for manuscript
+✓ Saved top predictive features analysis for manuscript
+
+=== GENERATING MANUSCRIPT FIGURES FOR PREDICTION ANALYSIS ===
+✓ Saved prediction distribution summary for manuscript
+✓ Saved confidence distribution plot for manuscript
+✓ Saved threshold analysis for manuscript Methods section
+✓ Saved classification examples for manuscript
+✓ Saved processing statistics for manuscript
+  Saving filtered subsets...
+  Creating summary statistics...
+Saving results: 33.45 sec elapsed
+
+=== CLASSIFICATION COMPLETE ===
+Results saved to results/ directory:
+- full_dataset_predictions.csv: Complete results with all classifications
+- relevant_abstracts_with_pa_predictions.csv: Relevant abstracts with P/A predictions
+- irrelevant_uncertain_abstracts.csv: Abstracts likely not relevant for review
+- classification_summary.txt: Summary statistics and recommendations
+- manuscript_*.csv/txt: 10+ manuscript-ready outputs for publication
+- plots/manuscript_confidence_distribution.png: Confidence visualization
+
+Key Statistics:
+- Total abstracts processed: 21429 
+- Relevant abstracts (loose): 19447 
+- Presence classifications: 19358 
+- Absence classifications: 89 
+- Uncertain classifications: 0 
+
+Recommended workflow:
+1. Use weighted ensemble results (final_classification) as primary screening
+2. Manually review all 'Absence' classifications to avoid missing relevant studies
+3. Spot-check 'Presence' classifications for quality assurance
+4. Time permitting, review 'Uncertain' classifications
+
+Pipeline complete! 🎉
+cts.csv: Abstracts likely not relevant for review
+- classification_summary.txt: Summary statistics and recommendations
+- manuscript_*.csv/txt: 10+ manuscript-ready outputs for publication
+- plots/manuscript_confidence_distribution.png: Confidence visualization
+
+Key Statistics:
+- Total abstracts processed: 21429 
+- Relevant abstracts (loose): 19447 
+- Presence classifications: 19358 
+- Absence classifications: 89 
+- Uncertain classifications: 0 
+
+Recommended workflow:
+1. Use weighted ensemble results (final_classification) as primary screening
+2. Manually review all 'Absence' classifications to avoid missing relevant studies
+3. Spot-check 'Presence' classifications for quality assurance
+4. Time permitting, review 'Uncertain' classifications
+
+Pipeline complete! 🎉
+tection.
+- Strategy: Weighted average of individual model probabilities.
+- Default Weights: SVM (Presence) = 0.6, GLMNet (Absence) = 0.6 (Implicitly 0.4 for Presence).
+--------------------------------------------------
+Log file for applying models to the full dataset
+Generated by: scripts/03_prediction/apply_models_to_full_dataset.R
+Analysis run on: 2025-11-23 17:59:30 
+
+Memory optimization utilities loaded successfully!
+Available functions:
+  • monitor_memory() - Check memory usage
+  • aggressive_gc() - Free memory
+  • create_sparse_dtm() - Memory-efficient text matrices
+  • process_large_dataset() - Chunked processing
+  • optimize_dataframe() - Compress data structures
+=== ENDOPHYTE SYSTEMATIC REVIEW: FULL DATASET CLASSIFICATION ===
+Pipeline: Relevance → Presence/Absence Classification
+Models: glmnet (relevance), weighted ensemble (P/A)
+Memory optimization: Enabled
+
+Column name harmonization mapping defined.
+Step 1: Loading and preparing full dataset...
+  Loaded 21891 abstracts from full dataset
+Loaded in training data to avoid predicting on labeled abstracts
+  Excluded 462 training abstracts
+  Final dataset: 21429 abstracts for prediction
+Data loading and preparation: 4.45 sec elapsed
+
+Step 2: Relevance Classification...
+  Creating document-term matrix...
+Creating sparse DTM from 21429 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 15000 features
+  Creating sparse matrix...
+  DTM created: 21429 documents × 15000 terms
+  Sparsity: 99.5 %
+  DTM created: 21429 documents × 15000 terms
+  Loading trained relevance model...
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6930 
+  - Missing features: 2701 
+  - Total training features: 9631 
+  Adding 2701 missing features...
+  Feature alignment complete: 9631 features
+⚠️ High memory usage in Before relevance predictions : 4.78 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Using chunked prediction.
+  Predicting relevance...
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 20000 
+  Processing documents 20001 to 21000 
+  Processing documents 21001 to 21429 
+⚠️ High memory usage in After relevance predictions : 4.78 GB
+   Consider running gc() or processing in smaller chunks
+  Relevance classification results:
+# A tibble: 3 × 4
+  threshold        Irrelevant Relevant Uncertain
+  <chr>                 <int>    <int>     <int>
+1 relevance_loose        1982    19447         0
+2 relevance_medium       1603    18911       915
+3 relevance_strict        963    16882      3584
+  Selected 19447 relevant abstracts for P/A classification
+Relevance classification: 351.16 sec elapsed
+
+Step 3: Presence/Absence Classification...
+⚠️ High memory usage in Before P/A classification : 4.8 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage detected. Consider reducing dataset size or using chunked processing.
+  Creating memory-efficient P/A DTM with unigrams and bigrams...
+  Creating sparse DTM for unigrams...
+Creating sparse DTM from 19447 documents
+  Tokenizing text...
+  Filtering terms (min frequency: 2 )...
+  Limiting to top 8000 features
+  Creating sparse matrix...
+  DTM created: 19447 documents × 8000 terms
+  Sparsity: 99.1 %
+  Creating bigrams...
+  Adding 2 documents with no valid bigrams as zero rows
+  Combining unigrams and bigrams...
+  Combined DTM: 19447 documents × 120245 features
+⚠️ High memory usage in After P/A DTM creation : 4.9 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage after DTM creation. Consider further reducing max_features.
+  Memory-efficient P/A DTM created: 19447 documents × 120245 terms
+  Sparsity: NA %
+  Loading trained P/A models...
+  Training vocabulary size: 7492 features
+  Performing memory-efficient feature alignment...
+  Feature alignment summary:
+  - Common features: 6050 
+  - Missing features: 1442 
+  - Total training features: 7492 
+  Adding 1442 missing features in batches...
+  P/A feature alignment complete: 7492 features
+  Memory usage after alignment:
+⚠️ High memory usage in After feature alignment : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+  Applying memory-efficient ensemble predictions...
+⚠️ High memory usage in Before ensemble predictions : 5.49 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage. Consider processing in chunks.
+  Large dataset detected. Processing in chunks of 1000 documents
+  Processing documents 1 to 1000 
+  Processing documents 1001 to 2000 
+  Processing documents 2001 to 3000 
+  Processing documents 3001 to 4000 
+  Processing documents 4001 to 5000 
+  Processing documents 5001 to 6000 
+  Processing documents 6001 to 7000 
+  Processing documents 7001 to 8000 
+  Processing documents 8001 to 9000 
+  Processing documents 9001 to 10000 
+  Processing documents 10001 to 11000 
+  Processing documents 11001 to 12000 
+  Processing documents 12001 to 13000 
+  Processing documents 13001 to 14000 
+  Processing documents 14001 to 15000 
+  Processing documents 15001 to 16000 
+  Processing documents 16001 to 17000 
+  Processing documents 17001 to 18000 
+  Processing documents 18001 to 19000 
+  Processing documents 19001 to 19447 
+  Combining chunk results...
+  Ensemble predictions complete
+⚠️ High memory usage in After ensemble predictions : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+  P/A classification results:
+# A tibble: 6 × 4
+  method             Absence Presence Uncertain
+  <chr>                <int>    <int>     <int>
+1 pa_loose               827    18620         0
+2 pa_medium              539    18219       689
+3 pa_strict              111    16788      2548
+4 pa_super_strict         10    14994      4443
+5 threshold_ensemble     331    19116         0
+6 weighted_ensemble       89    19358         0
+  Performing final memory cleanup...
+⚠️ High memory usage in End of P/A classification : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+Presence/Absence classification: 1329.97 sec elapsed
+  P/A classification completed successfully!
+  Memory optimization preserved system stability.
+
+Step 4: Saving results...
+⚠️ High memory usage in Before results processing : 5.5 GB
+   Consider running gc() or processing in smaller chunks
+⚠️ High memory usage before results processing. Performing aggressive cleanup...
+  Saving main results...
+
+=== GENERATING ADDITIONAL MANUSCRIPT OUTPUTS FOR PUBLICATION ===
+✓ Saved temporal trends analysis for manuscript
+✓ Saved model performance summary for manuscript
+✓ Saved confidence calibration analysis for manuscript
+✓ Saved threshold comparison analysis for manuscript
+✓ Saved top predictive features analysis for manuscript
+
+=== GENERATING MANUSCRIPT FIGURES FOR PREDICTION ANALYSIS ===
+✓ Saved prediction distribution summary for manuscript
+✓ Saved confidence distribution plot for manuscript
+✓ Saved threshold analysis for manuscript Methods section
+✓ Saved classification examples for manuscript
+✓ Saved processing statistics for manuscript
+  Saving filtered subsets...
+  Creating summary statistics...
+Saving results: 33.45 sec elapsed
+
+=== CLASSIFICATION COMPLETE ===
+Results saved to results/ directory:
+- full_dataset_predictions.csv: Complete results with all classifications
+- relevant_abstracts_with_pa_predictions.csv: Relevant abstracts with P/A predictions
+- irrelevant_uncertain_abstracts.csv: Abstracts likely not relevant for review
+- classification_summary.txt: Summary statistics and recommendations
+- manuscript_*.csv/txt: 10+ manuscript-ready outputs for publication
+- plots/manuscript_confidence_distribution.png: Confidence visualization
+
+Key Statistics:
+- Total abstracts processed: 21429 
+- Relevant abstracts (loose): 19447 
+- Presence classifications: 19358 
+- Absence classifications: 89 
+- Uncertain classifications: 0 
+
+Recommended workflow:
+1. Use weighted ensemble results (final_classification) as primary screening
+2. Manually review all 'Absence' classifications to avoid missing relevant studies
+3. Spot-check 'Presence' classifications for quality assurance
+4. Time permitting, review 'Uncertain' classifications
+
+Pipeline complete! 🎉

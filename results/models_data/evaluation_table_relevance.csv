@@ -1,0 +1,2 @@
+"model","accuracy","sensitivity_relevant","specificity","f1_score"
+"glmnet",0.895348837209302,0.976190476190476,0.673913043478261,0.931818181818182

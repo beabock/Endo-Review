@@ -1,0 +1,18 @@
+kingdom,phylum,top_missing_examples
+Fungi,Ascomycota,"Arthoniaceae (696), Lichinaceae (330), Tuberaceae (245), Rhizocarpaceae (173), Psoraceae (146)"
+Fungi,Basidiomycota,"Cortinariaceae (594), Gomphaceae (481), Raveneliaceae (362), Anthracoideaceae (306), Rhizopogonaceae (231)"
+Fungi,Blastocladiomycota,"Coelomomycetaceae (63), Blastocladiaceae (53), Sorochytriaceae (1)"
+Fungi,Chytridiomycota,"Synchytriaceae (248), Chytriomycetaceae (98), Endochytriaceae (37), Cladochytriaceae (26), Nowakowskiellaceae (16)"
+Fungi,Entomophthoromycota,"Ancylistaceae (71), Neozygitaceae (22), Meristacraceae (2)"
+Fungi,Glomeromycota,"Archaeosporaceae (8), Claroideoglomeraceae (1), Diversisporaceae (1), Paraglomeraceae (1), Pervetustaceae (1), Polonosporaceae (1), Scutellosporaceae (1)"
+Fungi,Mucoromycota,"Harpellaceae (60), Legeriomycetaceae (24), Orphellaceae (15), Asellariaceae (14), Dimargaritaceae (14)"
+Fungi,Sanchytriomycota,Sanchytriaceae (2)
+Fungi,Zoopagomycota,Zoopagaceae (11)
+Plantae,Anthocerotophyta,Leiosporocerotaceae (1)
+Plantae,Bryophyta,"Brachytheciaceae (610), Sematophyllaceae (573), Fissidentaceae (527), Pylaisiadelphaceae (375), Leucobryaceae (325)"
+Plantae,Charophyta,"Characeae (224), Desmidiaceae (158), Coleochaetaceae (19), Clavatoraceae (16), Klebsormidiaceae (15)"
+Plantae,Chlorophyta,"Chlamydomonadaceae (343), Dasycladaceae (188), Oocystaceae (157), Radiococcaceae (47), Characiaceae (46)"
+Plantae,Glaucophyta,Glaucocystaceae (5)
+Plantae,Marchantiophyta,"Plagiochilaceae (687), Frullaniaceae (618), Ricciaceae (294), Porellaceae (95), Adelanthaceae (72)"
+Plantae,Rhodophyta,"Delesseriaceae (245), Hapalidiaceae (159), Acrochaetiaceae (101), Peyssonneliaceae (85), Mesophyllumaceae (80)"
+Plantae,Tracheophyta,"Thesiaceae (378), Tectariaceae (359), Podostemaceae (349), Calceolariaceae (313), Connaraceae (276)"

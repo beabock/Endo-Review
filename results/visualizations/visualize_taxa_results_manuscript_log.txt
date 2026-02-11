@@ -1,0 +1,46 @@
+=== VISUALIZE_TAXA_RESULTS.R MANUSCRIPT STATISTICS ===
+Generated: 2025-11-24 09:34:08 
+
+OVERALL PLANT SPECIES COVERAGE:
+===============================
+- Total plant species in GBIF reference: 390,101
+- Plant species studied in literature: 3,286
+- Percentage coverage: 0.8%
+- Mycorrhizal-only abstracts excluded: 0
+
+PLANT PHYLUM REPRESENTATION (Top 10 by coverage):
+===============================================
+1. Langiophytophyta: 2/9 species (22.2%)
+2. Tracheophyta: 3,205/363,445 species (0.9%)
+3. Anthocerotophyta: 2/251 species (0.8%)
+4. Rhodophyta: 22/3,642 species (0.6%)
+5. Chlorophyta: 10/2,754 species (0.4%)
+6. Marchantiophyta: 22/6,216 species (0.4%)
+7. Bryophyta: 23/10,508 species (0.2%)
+8. Charophyta: 0/2,012 species (0.0%)
+9. Glaucophyta: 0/5 species (0.0%)
+10. NA: 0/1,259 species (0.0%)
+
+VISUALIZATION OUTPUTS:
+=====================
+- 24 phylum-based plots (12 main + 12 supplementary)
+- 3 geographic-taxonomic visualizations
+- 6 kingdoms × 2 taxonomic levels (count + percent) × 2 modes
+- 2 data files: unrepresented taxa + geographic analysis
+- Total: 27 visualization files + 2 data files
+
+METHODOLOGY DETAILS:
+===================
+- Data source: GBIF Backbone Taxonomy
+- Taxonomic validation: Synonym resolution to accepted names
+- Filtering: Excludes extinct species, includes mycorrhizal classification
+- Hierarchical counting: Species → Genera → Families within phyla
+- Visualization: Enhanced with common names and species counts
+
+KEY FINDINGS FOR MANUSCRIPT:
+===========================
+- Plant endophyte research covers 0.8% of known plant species diversity
+- Most studied phylum: Langiophytophyta (22.2% coverage)
+- Least studied phylum: NA (0.0% coverage)
+- Analysis includes both presence and absence evidence detection
+- Geographic distribution shows research concentration patterns

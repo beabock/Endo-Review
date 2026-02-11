@@ -1,0 +1,17 @@
+ML Accuracy Analysis Report
+Generated: 2025-09-26 13:32:43
+
+Overall Accuracy Metrics:
+                     Metric        Value
+Accuracy           Accuracy 9.974200e-01
+Kappa                 Kappa 0.000000e+00
+McnemarPValue McnemarPValue 4.218937e-12
+
+Per-Class Performance:
+     Class Precision Recall F1_Score Support
+1 Presence        NA     NA       NA   19380
+
+Confidence Analysis:
+            Class Mean_Confidence Median_Confidence Confidence_SD
+              All       0.8670304         0.9172271     0.1271855
+Presence Presence       0.8670304         0.9172271     0.1271855

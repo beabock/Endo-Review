@@ -1,0 +1,50 @@
+=== EXTRACTION RESULTS VISUALIZATION SUMMARY ===
+Generated: 1759419914 
+Source: comprehensive_extraction_results.csv
+
+FILES GENERATED:
+1. plots/extraction/species_detection_rate.png - Overall species detection rate
+2. plots/extraction/methods_individual_core.png - Core research methods (3 traditional types)
+3. plots/extraction/methods_individual_expanded.png - Expanded research methods (all 9 types)
+4. plots/extraction/methods_combined_core.png - Combined core method frequencies
+5. plots/extraction/methods_combined_expanded.png - Combined expanded method frequencies
+6. plots/extraction/plant_parts_frequency.png - Most studied plant parts (enhanced)
+7. plots/extraction/plant_parts_distribution.png - Plant parts count distribution
+8. plots/extraction/plant_parts_by_prediction.png - Plant parts detection by prediction type
+9. plots/extraction/geographic_regions.png - Geographic distribution by region
+10. plots/extraction/top_countries.png - Most studied countries
+11. plots/extraction/continents_distribution.png - Studies by continent
+12. plots/extraction/geographic_completeness.png - Geographic information completeness
+13. plots/extraction/mycorrhizal_distribution.png - Mycorrhizal-only papers distribution
+14. plots/extraction/fungal_guilds.png - Fungal guild distribution
+15. plots/extraction/confidence_distribution.png - Confidence distributions by prediction
+16. plots/extraction/completeness_by_confidence.png - Information completeness by confidence
+17. plots/extraction/quality_heatmap.png - Information detection rates heatmap
+18. plots/extraction/summary_text.png - Overall summary statistics
+19. plots/extraction/info_summary.png - Information detection overview
+
+KEY FINDINGS:
+- Species detection rate: 82.2 %
+- Research methods coverage: 89.1 %
+- Geographic information: 72.9 %
+- Plant parts information: 71.5 %
+
+SPECIES BY KINGDOM:
+- Fungi : 44003 abstracts ( 58.8 %)
+- Plantae : 30799 abstracts ( 41.2 %)
+
+RESEARCH METHODS BREAKDOWN:
+- Molecular methods: 7223 abstracts
+- Culture-based methods: 15146 abstracts
+- Microscopy methods: 4157 abstracts
+
+PREDICTION TYPE ANALYSIS:
+- Presence : 19330 abstracts ( 99.7 %)
+- Absence : 50 abstracts ( 0.3 %)
+
+RECOMMENDations FOR ANALYSIS:
+1. Focus manual review on 'Presence' predictions with species detected
+2. Investigate 'Absence' predictions that have species (potential misclassification)
+3. Prioritize abstracts with complete information (species + methods + geography)
+4. Use plant parts data for ecological niche analysis
+5. Consider geographic patterns for global endophyte distribution studies

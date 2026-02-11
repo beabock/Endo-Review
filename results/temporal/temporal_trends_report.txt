@@ -1,0 +1,95 @@
+=== TEMPORAL TRENDS IN ENDOPHYTE RESEARCH ===
+Analysis Report Generated: 1763919310 
+Data Source: Machine Learning Classification Results
+
+OVERVIEW:
+Analysis period: 1926 - 2025 
+Total publications: 19198 
+Publication growth factor: 1342.7 x increase
+
+KEY FINDINGS:
+1. Publication volume has dramatically increased over time
+2. Molecular methods adoption: 46.9 % in recent period
+3. Geographic research balance: North 76.7 % vs South 28.8 %
+4. Information completeness has improved over time
+
+DETAILED TRENDS:
+Publication counts by period:
+# A tibble: 21 × 3
+   period_label five_year_period publications
+   <chr>                   <dbl>        <int>
+ 1 1925-1929                1925            3
+ 2 1930-1934                1930            3
+ 3 1935-1939                1935            4
+ 4 1940-1944                1940            1
+ 5 1945-1949                1945            6
+ 6 1950-1954                1950           15
+ 7 1955-1959                1955           11
+ 8 1960-1964                1960           12
+ 9 1965-1969                1965           35
+10 1970-1974                1970           54
+# ℹ 11 more rows
+# ℹ Use `print(n = ...)` to see more rows
+
+Research method evolution:
+# A tibble: 21 × 4
+   period_label molecular_pct culture_pct microscopy_pct
+   <chr>                <dbl>       <dbl>          <dbl>
+ 1 1925-1929              0          33.3           33.3
+ 2 1930-1934              0          66.7           66.7
+ 3 1935-1939              0          50              0  
+ 4 1940-1944              0         100              0  
+ 5 1945-1949              0          66.7           16.7
+ 6 1950-1954              6.7        66.7            6.7
+ 7 1955-1959              0          63.6           27.3
+ 8 1960-1964              0          75              0  
+ 9 1965-1969              0          57.1            0  
+10 1970-1974              7.4        88.9            5.6
+# ℹ 11 more rows
+# ℹ Use `print(n = ...)` to see more rows
+
+Geographic research patterns:
+# A tibble: 21 × 3
+   period_label north_pct south_pct
+   <chr>            <dbl>     <dbl>
+ 1 1925-1929        100         0  
+ 2 1930-1934          0       100  
+ 3 1935-1939        100         0  
+ 4 1940-1944        100       100  
+ 5 1945-1949        100        33.3
+ 6 1950-1954        100         0  
+ 7 1955-1959        100        20  
+ 8 1960-1964        100         0  
+ 9 1965-1969         76.5      23.5
+10 1970-1974         96.2      15.4
+# ℹ 11 more rows
+# ℹ Use `print(n = ...)` to see more rows
+
+Species detection trends:
+# A tibble: 21 × 3
+   period_label species_detection_pct unique_species
+   <chr>                        <dbl>          <int>
+ 1 1925-1929                     33.3              1
+ 2 1930-1934                    100                3
+ 3 1935-1939                     75                1
+ 4 1940-1944                    100                1
+ 5 1945-1949                     66.7              4
+ 6 1950-1954                     86.7              8
+ 7 1955-1959                     72.7              2
+ 8 1960-1964                     33.3              2
+ 9 1965-1969                     48.6              7
+10 1970-1974                     59.3             10
+# ℹ 11 more rows
+# ℹ Use `print(n = ...)` to see more rows
+
+IMPLICATIONS:
+1. Field maturation: Increasing methodological sophistication
+2. Global expansion: Research extending beyond traditional centers
+3. Taxonomic diversity: Growing recognition of endophyte diversity
+4. Technical advancement: Molecular tools becoming standard
+
+RECOMMENDATIONS:
+1. Continue monitoring geographic research equity
+2. Assess quality vs quantity in publication growth
+3. Track methodological standardization efforts
+4. Monitor emerging research trends and gaps

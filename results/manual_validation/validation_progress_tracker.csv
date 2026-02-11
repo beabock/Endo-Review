@@ -1,0 +1,9 @@
+sample_type,validation_status,count,percentage
+Absence,Not Started,102,100
+Absence,In Progress,0,0
+Absence,Completed,102,100
+Absence,Reviewed,102,100
+Presence,Not Started,77,100
+Presence,In Progress,0,0
+Presence,Completed,0,0
+Presence,Reviewed,0,0

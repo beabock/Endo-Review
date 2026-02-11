@@ -21,11 +21,11 @@ This script merges the outputs from all individual extraction components into a 
 
 ### Input Requirements
 - **Component Results**: Individual CSV files from extraction components
-  - `results/species_detection_results.csv`
-  - `results/methods_detection_results.csv`
-  - `results/plant_parts_detection_results.csv`
-  - `results/geography_detection_results.csv`
-- **Base Data**: `results/prepared_abstracts_for_extraction.csv`
+  - `results/species/species_detection_results.csv`
+  - `results/methods_detect/methods_detection_results.csv`
+  - `results/plant_parts/plant_parts_detection_results.csv`
+  - `results/geographic/geography_detection_results.csv`
+- **Base Data**: `results/datasets/prepared_abstracts_for_extraction.csv`
 
 ### Output Specifications
 - **Output File**: `results/comprehensive_extraction_results.csv`

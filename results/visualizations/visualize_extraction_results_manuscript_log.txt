@@ -1,0 +1,53 @@
+=== VISUALIZE_EXTRACTION_RESULTS.R MANUSCRIPT STATISTICS ===
+Generated: 2025-11-21 09:53:20 
+
+DATASET OVERVIEW:
+================
+- Total abstracts analyzed: 15,816
+- Abstracts with species detected: 15,816 (100.0%)
+- Abstracts with geographic information: 12,218 (77.3%)
+- Abstracts with research methods: 14,367 (90.8%)
+
+GEOGRAPHIC DISTRIBUTION:
+=======================
+Top 5 countries by number of abstracts:
+1. United States: 7,352 abstracts
+2. China: 830 abstracts
+3. South Africa: 773 abstracts
+4. India: 338 abstracts
+5. Brazil: 257 abstracts
+
+RESEARCH METHODS:
+================
+Most common method combinations:
+1. Culture only: 5,991 abstracts (37.9%)
+2. Molecular + Culture: 4,115 abstracts (26.0%)
+3. Culture + Microscopy: 1,568 abstracts (9.9%)
+4. No methods detected: 1,449 abstracts (9.2%)
+5. All three methods: 1,045 abstracts (6.6%)
+
+VISUALIZATION FEATURES:
+======================
+- World maps with Robinson projection (more accurate than Mercator)
+- Standard log scales (1, 10, 100, 1000) for data clarity
+- Geographic regions (North vs South classification)
+- Research method distributions (3 core + 9 expanded methods)
+- Plant part frequency analysis
+- Confidence level distributions
+- Dual analysis modes (main/supplementary for mycorrhizal filtering)
+
+TECHNICAL IMPROVEMENTS:
+=======================
+- Map projection: Changed from Mercator to Robinson for better area representation
+- Legend clarity: Explicitly states 'Gray = 0 studies' for data interpretation
+- Scale standardization: Log scale ticks use standard breaks (1, 10, 100, 1000)
+- Enhanced readability: Larger fonts, better legend positioning
+- Geographic completeness: Shows countries, continents, regions, coordinates
+
+KEY FINDINGS FOR MANUSCRIPT:
+===========================
+- Geographic coverage shows 12,218 abstracts with location data
+- Research methods detected in 14,367 abstracts
+- Most studied country: United States (7,352 abstracts)
+- Most common method approach: Culture only
+- Analysis reveals global research patterns in endophyte studies

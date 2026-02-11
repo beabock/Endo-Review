@@ -1,0 +1,51 @@
+=== ENDOPHYTE SYSTEMATIC REVIEW: CLASSIFICATION SUMMARY ===
+
+Dataset Summary:
+- Total abstracts processed: 21429 
+- Training abstracts excluded: 462 
+
+Relevance Classification (Loose Threshold):
+
+Irrelevant   Relevant 
+      1982      19447 
+
+Relevance Classification (Strict Threshold):
+
+Irrelevant   Relevant  Uncertain 
+       963      16882       3584 
+
+P/A Classification - Weighted Ensemble (Relevant abstracts only):
+
+ Absence Presence     <NA> 
+      89    19358     1982 
+
+P/A Classification - Threshold Ensemble (Relevant abstracts only):
+
+ Absence Presence     <NA> 
+     331    19116     1982 
+
+Final Classification (Relevance → P/A Pipeline):
+
+   Absence Irrelevant   Presence 
+        89       1982      19358 
+
+Conservative Classification (Strict Thresholds):
+
+            Absence          Irrelevant            Presence           Uncertain 
+                 93                 963               14577                2212 
+Uncertain_Relevance 
+               3584 
+
+=== RECOMMENDATIONS ===
+1. WEIGHTED ENSEMBLE: Best overall performance (89.8% accuracy)
+   - Use 'final_classification' column for primary results
+   - Manually review 'Uncertain' classifications
+
+2. CONSERVATIVE APPROACH: High-confidence classifications only
+   - Use 'conservative_classification' column for minimal false positives
+   - Larger proportion will need manual review
+
+3. REVIEW PRIORITIES:
+   - Manually review all 'Absence' classifications (avoid missing relevant studies)
+   - Spot-check 'Presence' classifications for quality
+   - Review 'Uncertain' cases based on available time
