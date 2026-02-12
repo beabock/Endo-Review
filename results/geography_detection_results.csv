@@ -1,0 +1,1001 @@
+id,countries_detected,global_north_countries,global_south_countries,continents_detected,regions_detected,has_coordinates,geographic_summary
+5608,South Africa,NA,South Africa,africa,NA,FALSE,South Africa; africa
+5707,NA,NA,NA,NA,NA,FALSE,NA
+14091,Israel,Israel,NA,NA,NA,FALSE,Israel
+13685,NA,NA,NA,NA,NA,FALSE,NA
+13453,Brazil,NA,Brazil,asia,NA,FALSE,Brazil; asia
+19178,NA,NA,NA,NA,NA,TRUE,NA
+9788,NA,NA,NA,NA,NA,FALSE,NA
+5997,NA,NA,NA,NA,reservoir,TRUE,reservoir
+1004,NA,NA,NA,NA,NA,TRUE,NA
+11124,NA,NA,NA,NA,NA,FALSE,NA
+104,NA,NA,NA,NA,mangrove,FALSE,mangrove
+9892,NA,NA,NA,NA,NA,FALSE,NA
+11164,Germany; Switzerland; Austria; Slovakia; Slovenia,Germany; Switzerland; Austria; Slovakia; Slovenia,NA,europe,NA,FALSE,Germany; Switzerland; Austria; Slovakia; Slovenia; europe
+14750,South Korea,South Korea,NA,NA,coastal,FALSE,South Korea; coastal
+1914,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+18433,NA,NA,NA,NA,marine,FALSE,marine
+6546,Iran,NA,Iran,NA,NA,FALSE,Iran
+5567,England,England,NA,NA,NA,FALSE,England
+18575,NA,NA,NA,NA,NA,FALSE,NA
+11236,NA,NA,NA,NA,temperate,FALSE,temperate
+21368,NA,NA,NA,NA,NA,FALSE,NA
+9139,Taiwan,Taiwan,NA,NA,coastal,FALSE,Taiwan; coastal
+6481,NA,NA,NA,NA,NA,FALSE,NA
+21009,NA,NA,NA,NA,NA,FALSE,NA
+11981,NA,NA,NA,NA,delta,TRUE,delta
+8895,NA,NA,NA,NA,NA,TRUE,NA
+13390,NA,NA,NA,NA,NA,TRUE,NA
+8935,Japan,Japan,NA,NA,japan,FALSE,Japan; japan
+10993,NA,NA,NA,NA,NA,FALSE,NA
+10805,NA,NA,NA,NA,pasture,FALSE,pasture
+5813,Canada,Canada,NA,north america,pacific northwest; coastal; reservoir,FALSE,Canada; north america; pacific northwest; coastal; reservoir
+17378,South Korea; Israel; China; India; Iran; Iraq; Lebanon; United States,South Korea; Israel; United States,China; India; Iran; Iraq; Lebanon,asia,NA,FALSE,South Korea; Israel; China; India; Iran; Iraq; Lebanon; United States; asia
+992,NA,NA,NA,NA,NA,FALSE,NA
+21049,NA,NA,NA,NA,NA,FALSE,NA
+10207,NA,NA,NA,NA,NA,FALSE,NA
+9832,NA,NA,NA,NA,NA,FALSE,NA
+1063,Antarctica,NA,Antarctica,antarctica; antarctic,volcanic; temperate,FALSE,Antarctica; antarctica; antarctic; volcanic; temperate
+19508,NA,NA,NA,NA,NA,FALSE,NA
+19684,NA,NA,NA,NA,NA,FALSE,NA
+12380,NA,NA,NA,NA,coastal,FALSE,coastal
+16201,NA,NA,NA,NA,NA,FALSE,NA
+19744,NA,NA,NA,NA,NA,FALSE,NA
+14006,India,NA,India,NA,temperate,FALSE,India; temperate
+5450,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean
+9942,NA,NA,NA,NA,NA,FALSE,NA
+3105,NA,NA,NA,NA,NA,FALSE,NA
+20355,NA,NA,NA,NA,tropical; rainforest,FALSE,tropical; rainforest
+2535,Australia,Australia,NA,australia,bay,FALSE,Australia; australia; bay
+15925,India; Malaysia,NA,India; Malaysia,NA,NA,FALSE,India; Malaysia
+16980,NA,NA,NA,NA,NA,FALSE,NA
+13386,NA,NA,NA,NA,NA,FALSE,NA
+19779,India,NA,India,NA,plateau,FALSE,India; plateau
+7305,NA,NA,NA,NA,NA,FALSE,NA
+633,NA,NA,NA,NA,NA,FALSE,NA
+12844,NA,NA,NA,NA,xeric; mesic,FALSE,xeric; mesic
+12291,US,US,NA,NA,NA,FALSE,US
+8767,NA,NA,NA,NA,NA,TRUE,NA
+6517,NA,NA,NA,NA,NA,TRUE,NA
+628,NA,NA,NA,NA,NA,FALSE,NA
+5938,NA,NA,NA,NA,NA,FALSE,NA
+15666,Zimbabwe,NA,Zimbabwe,NA,NA,FALSE,Zimbabwe
+4356,NA,NA,NA,NA,NA,FALSE,NA
+7044,NA,NA,NA,NA,NA,FALSE,NA
+4568,NA,NA,NA,NA,NA,FALSE,NA
+18285,NA,NA,NA,NA,NA,FALSE,NA
+7861,NA,NA,NA,NA,subtropical,FALSE,subtropical
+4786,NA,NA,NA,NA,semi-arid,FALSE,semi-arid
+13901,NA,NA,NA,NA,NA,FALSE,NA
+15719,US; India,US,India,NA,western ghats,FALSE,US; India; western ghats
+5725,NA,NA,NA,NA,NA,TRUE,NA
+8843,China,NA,China,NA,NA,FALSE,China
+16296,NA,NA,NA,NA,NA,FALSE,NA
+15322,India,NA,India,NA,NA,FALSE,India
+5070,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+9830,NA,NA,NA,NA,NA,FALSE,NA
+4213,Oman,NA,Oman,NA,NA,FALSE,Oman
+6578,NA,NA,NA,NA,NA,FALSE,NA
+5039,NA,NA,NA,NA,NA,FALSE,NA
+20087,Portugal,Portugal,NA,NA,NA,FALSE,Portugal
+8644,Indonesia,NA,Indonesia,NA,tropical,TRUE,Indonesia; tropical
+9808,NA,NA,NA,NA,NA,FALSE,NA
+3538,NA,NA,NA,NA,NA,FALSE,NA
+2046,USA,USA,NA,NA,subalpine; rocky mountains; marsh,FALSE,USA; subalpine; rocky mountains; marsh
+16480,NA,NA,NA,NA,NA,FALSE,NA
+11343,NA,NA,NA,NA,NA,FALSE,NA
+9511,NA,NA,NA,NA,NA,FALSE,NA
+14989,NA,NA,NA,NA,NA,FALSE,NA
+19258,NA,NA,NA,NA,NA,FALSE,NA
+6228,NA,NA,NA,NA,NA,FALSE,NA
+15403,Indonesia,NA,Indonesia,NA,indonesian,FALSE,Indonesia; indonesian
+8298,South Korea,South Korea,NA,NA,NA,FALSE,South Korea
+192,NA,NA,NA,NA,NA,FALSE,NA
+3553,Spain,Spain,NA,NA,NA,FALSE,Spain
+16539,NA,NA,NA,NA,NA,FALSE,NA
+6050,NA,NA,NA,NA,NA,FALSE,NA
+20021,NA,NA,NA,NA,NA,FALSE,NA
+10062,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,tropical; subtropical; mediterranean,TRUE,Spain; Italy; Greece; Turkey; France; tropical; subtropical; mediterranean
+7464,NA,NA,NA,NA,NA,FALSE,NA
+10064,NA,NA,NA,NA,NA,FALSE,NA
+11093,NA,NA,NA,NA,NA,TRUE,NA
+10518,NA,NA,NA,NA,NA,FALSE,NA
+19405,US,US,NA,NA,NA,FALSE,US
+12848,Poland,Poland,NA,europe,central europe,FALSE,Poland; europe; central europe
+7612,NA,NA,NA,NA,NA,FALSE,NA
+10000,NA,NA,NA,NA,NA,TRUE,NA
+13751,NA,NA,NA,NA,NA,FALSE,NA
+10677,NA,NA,NA,NA,NA,TRUE,NA
+17261,NA,NA,NA,NA,NA,FALSE,NA
+11383,NA,NA,NA,NA,salt marsh; sand dune,FALSE,salt marsh; sand dune
+672,NA,NA,NA,NA,NA,FALSE,NA
+18203,China,NA,China,NA,NA,FALSE,China
+17607,NA,NA,NA,NA,mangrove,FALSE,mangrove
+11935,NA,NA,NA,NA,NA,TRUE,NA
+6701,NA,NA,NA,NA,NA,FALSE,NA
+3542,Sweden,Sweden,NA,NA,boreal; temperate,FALSE,Sweden; boreal; temperate
+20169,NA,NA,NA,NA,NA,TRUE,NA
+7469,NA,NA,NA,NA,marine,TRUE,marine
+12088,NA,NA,NA,NA,NA,FALSE,NA
+20474,Thailand,NA,Thailand,NA,NA,FALSE,Thailand
+11787,NA,NA,NA,NA,NA,FALSE,NA
+14065,South Korea,South Korea,NA,NA,NA,FALSE,South Korea
+12287,Switzerland,Switzerland,NA,NA,NA,FALSE,Switzerland
+2618,Denmark,Denmark,NA,NA,NA,FALSE,Denmark
+14990,NA,NA,NA,NA,NA,FALSE,NA
+10928,NA,NA,NA,NA,NA,FALSE,NA
+9912,NA,NA,NA,NA,NA,FALSE,NA
+8140,NA,NA,NA,NA,NA,FALSE,NA
+19861,Turkey,NA,Turkey,NA,NA,TRUE,Turkey
+9275,NA,NA,NA,NA,NA,FALSE,NA
+11600,China,NA,China,NA,NA,FALSE,China
+13828,NA,NA,NA,NA,NA,TRUE,NA
+16108,India,NA,India,NA,NA,FALSE,India
+10569,NA,NA,NA,europe,NA,FALSE,europe
+4544,China,NA,China,NA,NA,FALSE,China
+6215,NA,NA,NA,NA,NA,TRUE,NA
+2223,Poland; Iran; Spain; Italy; Greece; Turkey; France,Poland; Spain; Italy; Greece; France,Iran; Turkey,NA,mediterranean,FALSE,Poland; Iran; Spain; Italy; Greece; Turkey; France; mediterranean
+9525,NA,NA,NA,NA,NA,FALSE,NA
+5624,NA,NA,NA,NA,NA,FALSE,NA
+4246,Germany,Germany,NA,NA,NA,FALSE,Germany
+14909,NA,NA,NA,NA,NA,FALSE,NA
+8401,Germany,Germany,NA,NA,NA,FALSE,Germany
+11055,NA,NA,NA,NA,NA,FALSE,NA
+656,NA,NA,NA,NA,marine; mangrove; acidic,FALSE,marine; mangrove; acidic
+2035,NA,NA,NA,NA,marine,FALSE,marine
+15731,NA,NA,NA,NA,acidic,FALSE,acidic
+215,NA,NA,NA,NA,mangrove,FALSE,mangrove
+3261,China,NA,China,NA,NA,TRUE,China
+5935,NA,NA,NA,NA,NA,FALSE,NA
+18251,NA,NA,NA,NA,NA,FALSE,NA
+17561,NA,NA,NA,NA,marine,FALSE,marine
+4275,NA,NA,NA,NA,NA,FALSE,NA
+2662,NA,NA,NA,NA,NA,FALSE,NA
+19672,China,NA,China,NA,NA,FALSE,China
+6398,NA,NA,NA,NA,NA,FALSE,NA
+2743,NA,NA,NA,NA,strand,FALSE,strand
+3436,NA,NA,NA,NA,NA,FALSE,NA
+4180,UK,UK,NA,south america; africa; asia; europe; oceania,NA,FALSE,UK; south america; africa; asia; europe; oceania
+8709,NA,NA,NA,NA,NA,TRUE,NA
+15095,India,NA,India,NA,NA,TRUE,India
+12661,NA,NA,NA,NA,NA,FALSE,NA
+2305,NA,NA,NA,NA,NA,FALSE,NA
+8882,NA,NA,NA,NA,NA,FALSE,NA
+4065,NA,NA,NA,NA,tropical; temperate,FALSE,tropical; temperate
+17548,NA,NA,NA,NA,NA,FALSE,NA
+2698,NA,NA,NA,NA,NA,FALSE,NA
+16092,India,NA,India,NA,NA,FALSE,India
+802,US,US,NA,NA,NA,FALSE,US
+5498,NA,NA,NA,NA,NA,FALSE,NA
+19878,NA,NA,NA,NA,tropical,FALSE,tropical
+11579,Malaysia,NA,Malaysia,NA,NA,FALSE,Malaysia
+18234,India,NA,India,NA,delta,FALSE,India; delta
+11895,NA,NA,NA,NA,NA,TRUE,NA
+14831,NA,NA,NA,NA,NA,FALSE,NA
+2546,NA,NA,NA,NA,NA,FALSE,NA
+14899,NA,NA,NA,NA,NA,FALSE,NA
+8145,NA,NA,NA,NA,NA,FALSE,NA
+15387,NA,NA,NA,NA,NA,TRUE,NA
+19717,NA,NA,NA,NA,acidic,TRUE,acidic
+12391,China,NA,China,NA,temperate,FALSE,China; temperate
+2586,NA,NA,NA,NA,NA,FALSE,NA
+13677,NA,NA,NA,NA,pasture,FALSE,pasture
+5290,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean; temperate; tropical,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean; temperate; tropical
+7633,NA,NA,NA,NA,NA,FALSE,NA
+18058,NA,NA,NA,NA,NA,TRUE,NA
+15567,United States; Canada,United States; Canada,NA,NA,NA,FALSE,United States; Canada
+17664,NA,NA,NA,NA,coastal,FALSE,coastal
+6757,Brazil,NA,Brazil,NA,tropical; dry forest; caatinga,FALSE,Brazil; tropical; dry forest; caatinga
+15821,China,NA,China,NA,NA,FALSE,China
+1631,Costa Rica,NA,Costa Rica,NA,neotropical; montane; cloud forest; tropical,FALSE,Costa Rica; neotropical; montane; cloud forest; tropical
+9512,NA,NA,NA,NA,NA,TRUE,NA
+17722,Spain,Spain,NA,NA,NA,TRUE,Spain
+16283,NA,NA,NA,NA,NA,FALSE,NA
+521,India,NA,India,NA,NA,FALSE,India
+21092,NA,NA,NA,NA,NA,TRUE,NA
+7752,China,NA,China,NA,temperate,FALSE,China; temperate
+5381,NA,NA,NA,NA,NA,TRUE,NA
+12562,NA,NA,NA,NA,arid; shrubland; xeric; desert; delta,FALSE,arid; shrubland; xeric; desert; delta
+1550,NA,NA,NA,NA,NA,FALSE,NA
+587,NA,NA,NA,NA,NA,FALSE,NA
+17564,NA,NA,NA,NA,NA,FALSE,NA
+15039,NA,NA,NA,NA,NA,TRUE,NA
+19041,NA,NA,NA,NA,NA,FALSE,NA
+15225,NA,NA,NA,NA,NA,TRUE,NA
+12424,United States,United States,NA,NA,upland,TRUE,United States; upland
+20292,NA,NA,NA,NA,NA,FALSE,NA
+8304,NA,NA,NA,NA,NA,FALSE,NA
+13728,NA,NA,NA,NA,NA,FALSE,NA
+13529,NA,NA,NA,NA,NA,FALSE,NA
+12512,NA,NA,NA,NA,NA,TRUE,NA
+14856,Oman,NA,Oman,NA,arabian peninsula,FALSE,Oman; arabian peninsula
+7929,China,NA,China,NA,tropical; subtropical; mangrove,FALSE,China; tropical; subtropical; mangrove
+11238,NA,NA,NA,NA,NA,TRUE,NA
+8224,NA,NA,NA,NA,NA,FALSE,NA
+10202,India,NA,India,NA,NA,FALSE,India
+4069,US,US,NA,NA,brazilian cerrado,FALSE,US; brazilian cerrado
+19410,NA,NA,NA,NA,NA,FALSE,NA
+19722,NA,NA,NA,NA,NA,FALSE,NA
+6618,NA,NA,NA,NA,NA,TRUE,NA
+17736,NA,NA,NA,NA,NA,FALSE,NA
+13022,NA,NA,NA,NA,NA,FALSE,NA
+3531,NA,NA,NA,NA,NA,FALSE,NA
+18539,NA,NA,NA,NA,acidic,FALSE,acidic
+6185,NA,NA,NA,NA,NA,FALSE,NA
+15583,Mexico,NA,Mexico,NA,NA,FALSE,Mexico
+3081,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+10182,NA,NA,NA,NA,NA,FALSE,NA
+6181,NA,NA,NA,NA,NA,TRUE,NA
+12856,NA,NA,NA,NA,NA,TRUE,NA
+10214,NA,NA,NA,NA,NA,FALSE,NA
+19312,NA,NA,NA,NA,NA,FALSE,NA
+13132,Argentina; Chile,NA,Argentina; Chile,NA,patagonian,FALSE,Argentina; Chile; patagonian
+10339,India,NA,India,NA,NA,FALSE,India
+4243,NA,NA,NA,NA,NA,FALSE,NA
+17272,Portugal; Brazil,Portugal,Brazil,NA,NA,FALSE,Portugal; Brazil
+18726,NA,NA,NA,NA,NA,TRUE,NA
+20742,NA,NA,NA,NA,NA,FALSE,NA
+3509,South Korea,South Korea,NA,NA,marine; coastal,FALSE,South Korea; marine; coastal
+14411,NA,NA,NA,NA,NA,FALSE,NA
+12139,NA,NA,NA,NA,NA,FALSE,NA
+3682,Australia; Antarctica,Australia,Antarctica,australia; antarctica,NA,FALSE,Australia; Antarctica; australia; antarctica
+13549,New Zealand,New Zealand,NA,NA,NA,FALSE,New Zealand
+20692,NA,NA,NA,NA,arid,FALSE,arid
+3273,NA,NA,NA,NA,NA,FALSE,NA
+8157,NA,NA,NA,NA,NA,FALSE,NA
+1672,NA,NA,NA,NA,NA,TRUE,NA
+11843,NA,NA,NA,NA,NA,FALSE,NA
+6356,USA,USA,NA,NA,calcareous; fen; wetland,FALSE,USA; calcareous; fen; wetland
+16636,NA,NA,NA,NA,NA,TRUE,NA
+3415,Japan,Japan,NA,asia,japan,FALSE,Japan; asia; japan
+16543,NA,NA,NA,NA,NA,TRUE,NA
+2548,NA,NA,NA,NA,valley,FALSE,valley
+436,NA,NA,NA,NA,NA,FALSE,NA
+15736,USA; China,USA,China,NA,NA,FALSE,USA; China
+11588,NA,NA,NA,NA,NA,FALSE,NA
+552,NA,NA,NA,NA,NA,TRUE,NA
+11285,NA,NA,NA,NA,NA,FALSE,NA
+15608,NA,NA,NA,NA,NA,FALSE,NA
+13791,France,France,NA,NA,southwest,FALSE,France; southwest
+2007,China,NA,China,NA,southwest,FALSE,China; southwest
+7310,Costa Rica,NA,Costa Rica,NA,tropical; rainforest,FALSE,Costa Rica; tropical; rainforest
+13116,China,NA,China,NA,mangrove,FALSE,China; mangrove
+18788,NA,NA,NA,NA,reservoir,FALSE,reservoir
+15446,New Zealand,New Zealand,NA,NA,pasture,TRUE,New Zealand; pasture
+10826,NA,NA,NA,NA,NA,FALSE,NA
+10641,NA,NA,NA,NA,steppe,TRUE,steppe
+13931,China,NA,China,NA,NA,FALSE,China
+7747,NA,NA,NA,NA,NA,FALSE,NA
+4827,NA,NA,NA,NA,NA,FALSE,NA
+7689,Brazil; Peru; Colombia; Ecuador; Bolivia; Venezuela,NA,Brazil; Peru; Colombia; Ecuador; Bolivia; Venezuela,NA,amazonian,FALSE,Brazil; Peru; Colombia; Ecuador; Bolivia; Venezuela; amazonian
+12980,China,NA,China,NA,NA,FALSE,China
+2949,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+16174,NA,NA,NA,NA,NA,FALSE,NA
+16665,NA,NA,NA,NA,NA,FALSE,NA
+6258,NA,NA,NA,NA,NA,FALSE,NA
+15551,NA,NA,NA,NA,NA,FALSE,NA
+17629,UK; Italy; Croatia; Serbia; United Kingdom,UK; Italy; Croatia; United Kingdom,Serbia,NA,NA,TRUE,UK; Italy; Croatia; Serbia; United Kingdom
+9391,NA,NA,NA,NA,NA,FALSE,NA
+4483,China,NA,China,NA,NA,FALSE,China
+11425,Portugal,Portugal,NA,NA,NA,FALSE,Portugal
+20017,NA,NA,NA,NA,NA,FALSE,NA
+16150,NA,NA,NA,NA,NA,FALSE,NA
+20741,NA,NA,NA,NA,NA,TRUE,NA
+10561,NA,NA,NA,NA,NA,FALSE,NA
+12292,China,NA,China,NA,NA,FALSE,China
+5080,NA,NA,NA,NA,NA,FALSE,NA
+9628,NA,NA,NA,NA,NA,FALSE,NA
+9807,NA,NA,NA,NA,NA,TRUE,NA
+20322,NA,NA,NA,NA,NA,FALSE,NA
+17684,NA,NA,NA,NA,NA,FALSE,NA
+1812,NA,NA,NA,NA,NA,FALSE,NA
+7147,Madagascar,NA,Madagascar,NA,madagascar,FALSE,Madagascar; madagascar
+9710,NA,NA,NA,NA,NA,TRUE,NA
+5291,NA,NA,NA,NA,orchard,FALSE,orchard
+1975,NA,NA,NA,NA,NA,FALSE,NA
+15394,NA,NA,NA,NA,NA,FALSE,NA
+8356,NA,NA,NA,NA,NA,FALSE,NA
+2018,Mexico,NA,Mexico,NA,marine,FALSE,Mexico; marine
+13587,NA,NA,NA,NA,arctic; alpine; tundra,FALSE,arctic; alpine; tundra
+13804,NA,NA,NA,NA,NA,FALSE,NA
+12851,US,US,NA,NA,NA,FALSE,US
+3000,NA,NA,NA,NA,subalpine; grassland,FALSE,subalpine; grassland
+6737,NA,NA,NA,NA,NA,FALSE,NA
+10902,NA,NA,NA,NA,NA,FALSE,NA
+11626,NA,NA,NA,NA,NA,FALSE,NA
+14220,NA,NA,NA,NA,NA,TRUE,NA
+3896,NA,NA,NA,NA,NA,FALSE,NA
+19206,NA,NA,NA,NA,NA,FALSE,NA
+9414,NA,NA,NA,NA,NA,FALSE,NA
+11163,NA,NA,NA,NA,NA,FALSE,NA
+8792,Democratic Republic of the Congo,NA,Democratic Republic of the Congo,NA,NA,TRUE,Democratic Republic of the Congo
+3744,US,US,NA,NA,NA,FALSE,US
+554,NA,NA,NA,NA,NA,FALSE,NA
+13209,NA,NA,NA,NA,NA,FALSE,NA
+1365,NA,NA,NA,NA,NA,FALSE,NA
+12230,NA,NA,NA,NA,NA,FALSE,NA
+3924,New Zealand,New Zealand,NA,NA,NA,FALSE,New Zealand
+19646,Thailand,NA,Thailand,NA,NA,FALSE,Thailand
+15377,Germany,Germany,NA,NA,NA,TRUE,Germany
+6613,NA,NA,NA,NA,NA,TRUE,NA
+8156,China,NA,China,NA,NA,TRUE,China
+19112,NA,NA,NA,NA,NA,FALSE,NA
+1340,NA,NA,NA,NA,NA,FALSE,NA
+8495,Kenya,NA,Kenya,NA,mangrove; indo-pacific; bay,FALSE,Kenya; mangrove; indo-pacific; bay
+11552,NA,NA,NA,NA,NA,FALSE,NA
+7348,India,NA,India,NA,northeast,FALSE,India; northeast
+1469,Argentina; Chile,NA,Argentina; Chile,NA,patagonian; steppe,FALSE,Argentina; Chile; patagonian; steppe
+12671,NA,NA,NA,NA,NA,FALSE,NA
+17984,NA,NA,NA,NA,NA,FALSE,NA
+18483,NA,NA,NA,NA,NA,FALSE,NA
+17080,NA,NA,NA,NA,NA,FALSE,NA
+12226,NA,NA,NA,NA,NA,FALSE,NA
+6108,US,US,NA,NA,alpine,FALSE,US; alpine
+11815,South Africa,NA,South Africa,africa,NA,FALSE,South Africa; africa
+19048,NA,NA,NA,NA,NA,FALSE,NA
+16878,South Korea,South Korea,NA,NA,NA,FALSE,South Korea
+18253,NA,NA,NA,NA,aquatic,FALSE,aquatic
+6304,NA,NA,NA,NA,NA,FALSE,NA
+8210,NA,NA,NA,NA,delta; grassland,FALSE,delta; grassland
+9825,NA,NA,NA,NA,NA,FALSE,NA
+10442,India,NA,India,NA,western ghats,FALSE,India; western ghats
+4860,Japan,Japan,NA,NA,japan,FALSE,Japan; japan
+12261,NA,NA,NA,NA,NA,TRUE,NA
+13946,India,NA,India,NA,NA,FALSE,India
+5814,NA,NA,NA,NA,meadow,FALSE,meadow
+13642,NA,NA,NA,NA,prairie; southwest,FALSE,prairie; southwest
+4771,Bulgaria,NA,Bulgaria,NA,aquatic; stream,FALSE,Bulgaria; aquatic; stream
+5328,NA,NA,NA,NA,NA,FALSE,NA
+3675,NA,NA,NA,NA,NA,FALSE,NA
+13533,NA,NA,NA,NA,NA,FALSE,NA
+12694,NA,NA,NA,NA,NA,FALSE,NA
+5836,NA,NA,NA,NA,NA,FALSE,NA
+70,NA,NA,NA,NA,NA,FALSE,NA
+6765,China,NA,China,NA,reservoir,FALSE,China; reservoir
+923,NA,NA,NA,NA,desert,FALSE,desert
+9885,NA,NA,NA,NA,boreal; subarctic; coastal,FALSE,boreal; subarctic; coastal
+18490,NA,NA,NA,NA,NA,FALSE,NA
+1761,NA,NA,NA,NA,NA,FALSE,NA
+6726,China,NA,China,NA,NA,FALSE,China
+2967,NA,NA,NA,NA,NA,FALSE,NA
+10575,NA,NA,NA,NA,NA,TRUE,NA
+6279,NA,NA,NA,NA,mangrove,FALSE,mangrove
+1219,NA,NA,NA,NA,NA,FALSE,NA
+20730,NA,NA,NA,NA,NA,FALSE,NA
+9623,China,NA,China,NA,NA,FALSE,China
+8137,NA,NA,NA,NA,NA,FALSE,NA
+15540,China,NA,China,NA,NA,TRUE,China
+14291,Antarctica,NA,Antarctica,antarctic,tropical,FALSE,Antarctica; antarctic; tropical
+13704,Guinea; Papua New Guinea,NA,Guinea; Papua New Guinea,NA,NA,FALSE,Guinea; Papua New Guinea
+925,China,NA,China,NA,NA,FALSE,China
+5598,NA,NA,NA,NA,NA,FALSE,NA
+336,NA,NA,NA,NA,NA,FALSE,NA
+7816,NA,NA,NA,NA,NA,FALSE,NA
+12826,NA,NA,NA,NA,NA,FALSE,NA
+1609,Argentina,NA,Argentina,NA,NA,FALSE,Argentina
+1955,NA,NA,NA,NA,NA,FALSE,NA
+3124,NA,NA,NA,NA,grassland,FALSE,grassland
+239,NA,NA,NA,NA,NA,FALSE,NA
+19704,NA,NA,NA,NA,NA,FALSE,NA
+13913,NA,NA,NA,NA,NA,FALSE,NA
+15747,NA,NA,NA,NA,NA,FALSE,NA
+16686,NA,NA,NA,NA,NA,FALSE,NA
+17419,NA,NA,NA,NA,NA,FALSE,NA
+1751,Argentina,NA,Argentina,NA,NA,FALSE,Argentina
+16579,NA,NA,NA,NA,NA,FALSE,NA
+9571,France,France,NA,NA,NA,FALSE,France
+15207,NA,NA,NA,NA,NA,FALSE,NA
+8837,NA,NA,NA,NA,NA,FALSE,NA
+19705,NA,NA,NA,NA,NA,FALSE,NA
+6033,NA,NA,NA,NA,NA,FALSE,NA
+15579,NA,NA,NA,NA,NA,FALSE,NA
+2047,NA,NA,NA,NA,NA,FALSE,NA
+18353,NA,NA,NA,NA,NA,FALSE,NA
+13148,NA,NA,NA,NA,NA,FALSE,NA
+1822,China,NA,China,NA,southwest,FALSE,China; southwest
+15535,NA,NA,NA,NA,NA,FALSE,NA
+18399,NA,NA,NA,NA,NA,FALSE,NA
+18074,NA,NA,NA,NA,NA,FALSE,NA
+17605,NA,NA,NA,NA,NA,FALSE,NA
+7384,Japan,Japan,NA,NA,japan,TRUE,Japan; japan
+13481,Zimbabwe,NA,Zimbabwe,NA,NA,FALSE,Zimbabwe
+15351,NA,NA,NA,NA,NA,FALSE,NA
+18512,NA,NA,NA,NA,NA,FALSE,NA
+13576,NA,NA,NA,NA,NA,FALSE,NA
+15762,Germany,Germany,NA,NA,reservoir,FALSE,Germany; reservoir
+15188,NA,NA,NA,NA,NA,TRUE,NA
+14921,NA,NA,NA,NA,alpine; grassland,FALSE,alpine; grassland
+1935,NA,NA,NA,NA,arctic,FALSE,arctic
+4884,NA,NA,NA,NA,NA,FALSE,NA
+16821,NA,NA,NA,NA,NA,FALSE,NA
+3182,NA,NA,NA,NA,NA,FALSE,NA
+18945,NA,NA,NA,NA,NA,FALSE,NA
+6937,China,NA,China,NA,aquatic; southwest,FALSE,China; aquatic; southwest
+12808,NA,NA,NA,NA,NA,FALSE,NA
+8568,NA,NA,NA,NA,NA,TRUE,NA
+9472,NA,NA,NA,NA,NA,TRUE,NA
+21031,Democratic Republic of the Congo,NA,Democratic Republic of the Congo,NA,NA,FALSE,Democratic Republic of the Congo
+3774,Puerto Rico,NA,Puerto Rico,NA,NA,FALSE,Puerto Rico
+11836,Turkey; Spain; Italy; Greece; France,Spain; Italy; Greece; France,Turkey,europe,anatolia; mediterranean,FALSE,Turkey; Spain; Italy; Greece; France; europe; anatolia; mediterranean
+5026,Morocco,NA,Morocco,NA,NA,FALSE,Morocco
+18375,NA,NA,NA,NA,NA,FALSE,NA
+18866,NA,NA,NA,NA,NA,FALSE,NA
+6037,Germany,Germany,NA,NA,NA,FALSE,Germany
+11629,Sri Lanka,NA,Sri Lanka,NA,mangrove; lagoon; sri lanka,FALSE,Sri Lanka; mangrove; lagoon; sri lanka
+8770,NA,NA,NA,NA,mangrove,TRUE,mangrove
+8612,NA,NA,NA,NA,NA,TRUE,NA
+18189,NA,NA,NA,NA,NA,FALSE,NA
+19010,NA,NA,NA,NA,NA,FALSE,NA
+9432,NA,NA,NA,NA,marine,TRUE,marine
+19773,NA,NA,NA,NA,NA,FALSE,NA
+1460,NA,NA,NA,NA,NA,FALSE,NA
+5606,China,NA,China,NA,NA,FALSE,China
+9232,NA,NA,NA,NA,NA,FALSE,NA
+1731,NA,NA,NA,NA,NA,FALSE,NA
+6749,NA,NA,NA,NA,NA,FALSE,NA
+8956,NA,NA,NA,NA,NA,FALSE,NA
+7394,Thailand,NA,Thailand,NA,NA,FALSE,Thailand
+17219,NA,NA,NA,NA,NA,TRUE,NA
+2992,NA,NA,NA,NA,coastal; tropical,FALSE,coastal; tropical
+12783,US,US,NA,NA,NA,FALSE,US
+3492,NA,NA,NA,NA,grassland,FALSE,grassland
+10348,NA,NA,NA,NA,NA,FALSE,NA
+19824,NA,NA,NA,NA,NA,FALSE,NA
+6738,NA,NA,NA,NA,stepping stone,FALSE,stepping stone
+11672,NA,NA,NA,NA,NA,FALSE,NA
+20025,NA,NA,NA,NA,river,FALSE,river
+8891,NA,NA,NA,NA,NA,FALSE,NA
+5790,NA,NA,NA,NA,NA,FALSE,NA
+7647,NA,NA,NA,NA,NA,TRUE,NA
+9422,NA,NA,NA,NA,NA,FALSE,NA
+7692,NA,NA,NA,NA,NA,TRUE,NA
+5650,Spain,Spain,NA,NA,NA,FALSE,Spain
+2761,China,NA,China,NA,subtropical; old growth,FALSE,China; subtropical; old growth
+7431,NA,NA,NA,NA,NA,FALSE,NA
+9094,NA,NA,NA,NA,NA,FALSE,NA
+1762,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,pasture; mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; pasture; mediterranean
+15486,NA,NA,NA,NA,NA,FALSE,NA
+15624,NA,NA,NA,NA,NA,FALSE,NA
+7354,NA,NA,NA,NA,NA,FALSE,NA
+5979,India,NA,India,NA,NA,FALSE,India
+11315,NA,NA,NA,NA,marine,FALSE,marine
+18292,NA,NA,NA,NA,NA,FALSE,NA
+7765,NA,NA,NA,NA,mangrove; lagoon,FALSE,mangrove; lagoon
+12185,NA,NA,NA,NA,NA,FALSE,NA
+8340,NA,NA,NA,NA,NA,FALSE,NA
+14216,NA,NA,NA,NA,plantation,FALSE,plantation
+746,NA,NA,NA,NA,prairie,FALSE,prairie
+319,NA,NA,NA,NA,NA,TRUE,NA
+2980,US,US,NA,NA,NA,FALSE,US
+21310,NA,NA,NA,NA,NA,FALSE,NA
+11553,NA,NA,NA,NA,NA,FALSE,NA
+7440,China,NA,China,NA,NA,FALSE,China
+12617,United States,United States,NA,NA,temperate,FALSE,United States; temperate
+13285,NA,NA,NA,NA,NA,TRUE,NA
+19491,India,NA,India,NA,NA,FALSE,India
+5098,NA,NA,NA,NA,lowland; subalpine,FALSE,lowland; subalpine
+21180,NA,NA,NA,NA,NA,FALSE,NA
+20510,NA,NA,NA,NA,NA,FALSE,NA
+1275,Poland,Poland,NA,NA,NA,FALSE,Poland
+19257,NA,NA,NA,NA,NA,FALSE,NA
+17011,Uganda,NA,Uganda,africa,NA,FALSE,Uganda; africa
+2602,Germany,Germany,NA,NA,NA,FALSE,Germany
+7879,Spain,Spain,NA,NA,NA,FALSE,Spain
+11594,NA,NA,NA,NA,NA,FALSE,NA
+16627,United States; China,United States,China,NA,northeast,TRUE,United States; China; northeast
+17214,Netherlands; Hungary; China,Netherlands; Hungary,China,NA,NA,TRUE,Netherlands; Hungary; China
+19728,NA,NA,NA,NA,NA,FALSE,NA
+5894,NA,NA,NA,NA,NA,TRUE,NA
+1942,NA,NA,NA,NA,NA,FALSE,NA
+12689,Panama,NA,Panama,NA,lowland; tropical,FALSE,Panama; lowland; tropical
+5015,China,NA,China,NA,NA,FALSE,China
+11806,NA,NA,NA,NA,NA,TRUE,NA
+5719,NA,NA,NA,NA,NA,FALSE,NA
+9965,Brazil,NA,Brazil,NA,caatinga; dry forest; northeast,FALSE,Brazil; caatinga; dry forest; northeast
+16617,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean
+12585,NA,NA,NA,NA,NA,FALSE,NA
+12162,NA,NA,NA,NA,NA,TRUE,NA
+19628,Antarctica,NA,Antarctica,antarctica; antarctic,NA,FALSE,Antarctica; antarctica; antarctic
+19136,NA,NA,NA,NA,NA,FALSE,NA
+12182,NA,NA,NA,NA,NA,FALSE,NA
+17497,NA,NA,NA,NA,NA,FALSE,NA
+19426,NA,NA,NA,NA,NA,FALSE,NA
+19224,NA,NA,NA,NA,NA,TRUE,NA
+20299,NA,NA,NA,NA,tropical,TRUE,tropical
+9313,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+12046,NA,NA,NA,NA,NA,FALSE,NA
+19726,NA,NA,NA,NA,NA,FALSE,NA
+20005,NA,NA,NA,NA,NA,FALSE,NA
+20898,NA,NA,NA,NA,arid,FALSE,arid
+13254,NA,NA,NA,NA,NA,TRUE,NA
+5361,New Zealand,New Zealand,NA,NA,NA,FALSE,New Zealand
+11080,NA,NA,NA,NA,boreal,FALSE,boreal
+16064,NA,NA,NA,NA,NA,FALSE,NA
+15090,NA,NA,NA,NA,NA,FALSE,NA
+20621,India,NA,India,NA,NA,FALSE,India
+3598,NA,NA,NA,NA,agroecosystem,FALSE,agroecosystem
+15150,NA,NA,NA,NA,amazon; neotropical,FALSE,amazon; neotropical
+20529,NA,NA,NA,NA,NA,FALSE,NA
+17090,USA,USA,NA,NA,NA,FALSE,USA
+8387,Germany,Germany,NA,NA,NA,FALSE,Germany
+18935,NA,NA,NA,NA,NA,TRUE,NA
+14331,NA,NA,NA,NA,NA,TRUE,NA
+19347,NA,NA,NA,NA,NA,FALSE,NA
+6915,NA,NA,NA,NA,NA,FALSE,NA
+7340,NA,NA,NA,NA,desert,FALSE,desert
+14372,Brazil,NA,Brazil,NA,mangrove,FALSE,Brazil; mangrove
+9719,NA,NA,NA,NA,NA,FALSE,NA
+14081,India,NA,India,NA,western ghats,FALSE,India; western ghats
+14352,NA,NA,NA,NA,NA,TRUE,NA
+17153,United States; India,United States,India,NA,NA,FALSE,United States; India
+10862,NA,NA,NA,NA,NA,FALSE,NA
+8583,NA,NA,NA,NA,NA,FALSE,NA
+12974,NA,NA,NA,NA,NA,FALSE,NA
+2659,NA,NA,NA,NA,NA,FALSE,NA
+20117,NA,NA,NA,NA,NA,FALSE,NA
+18880,NA,NA,NA,NA,NA,FALSE,NA
+18056,Madagascar,NA,Madagascar,NA,madagascar,FALSE,Madagascar; madagascar
+2239,NA,NA,NA,NA,agroecosystem,FALSE,agroecosystem
+11899,NA,NA,NA,NA,NA,FALSE,NA
+17104,NA,NA,NA,NA,NA,FALSE,NA
+12635,NA,NA,NA,NA,NA,FALSE,NA
+6057,NA,NA,NA,NA,savanna,FALSE,savanna
+9819,NA,NA,NA,NA,NA,FALSE,NA
+2655,China,NA,China,NA,NA,FALSE,China
+7145,NA,NA,NA,NA,NA,TRUE,NA
+7259,NA,NA,NA,NA,NA,FALSE,NA
+16011,NA,NA,NA,NA,NA,FALSE,NA
+18688,NA,NA,NA,NA,NA,FALSE,NA
+1776,NA,NA,NA,NA,NA,FALSE,NA
+14212,NA,NA,NA,NA,NA,FALSE,NA
+5612,Panama,NA,Panama,NA,tropical,FALSE,Panama; tropical
+13731,NA,NA,NA,NA,NA,FALSE,NA
+7988,NA,NA,NA,NA,NA,FALSE,NA
+19880,NA,NA,NA,NA,NA,FALSE,NA
+20357,NA,NA,NA,NA,NA,FALSE,NA
+7360,NA,NA,NA,NA,NA,FALSE,NA
+9895,NA,NA,NA,NA,NA,FALSE,NA
+17843,Ireland,Ireland,NA,NA,NA,FALSE,Ireland
+7646,Australia; Brunei,Australia,Brunei,australia,NA,FALSE,Australia; Brunei; australia
+17598,NA,NA,NA,NA,NA,FALSE,NA
+4503,NA,NA,NA,NA,NA,FALSE,NA
+4750,NA,NA,NA,NA,NA,FALSE,NA
+11040,Antarctica,NA,Antarctica,antarctica,arctic,FALSE,Antarctica; antarctica; arctic
+13358,NA,NA,NA,NA,NA,FALSE,NA
+10509,Ecuador,NA,Ecuador,NA,tropical; montane,FALSE,Ecuador; tropical; montane
+15294,NA,NA,NA,NA,NA,FALSE,NA
+20884,NA,NA,NA,NA,NA,TRUE,NA
+5485,NA,NA,NA,NA,pasture; valley,FALSE,pasture; valley
+16353,NA,NA,NA,NA,NA,TRUE,NA
+5533,NA,NA,NA,NA,NA,FALSE,NA
+16006,Brazil; Brasil,NA,Brazil; Brasil,NA,NA,FALSE,Brazil; Brasil
+9238,NA,NA,NA,NA,NA,FALSE,NA
+1824,Argentina,NA,Argentina,south america,NA,FALSE,Argentina; south america
+18825,NA,NA,NA,NA,NA,FALSE,NA
+833,NA,NA,NA,NA,NA,FALSE,NA
+5006,NA,NA,NA,NA,NA,FALSE,NA
+1665,China,NA,China,NA,beach,FALSE,China; beach
+14917,NA,NA,NA,NA,NA,FALSE,NA
+7374,NA,NA,NA,NA,NA,FALSE,NA
+9982,NA,NA,NA,NA,NA,FALSE,NA
+19953,NA,NA,NA,NA,temperate,FALSE,temperate
+12996,NA,NA,NA,NA,NA,FALSE,NA
+17659,NA,NA,NA,NA,NA,FALSE,NA
+16873,NA,NA,NA,NA,NA,FALSE,NA
+10836,NA,NA,NA,NA,NA,FALSE,NA
+14869,NA,NA,NA,NA,NA,FALSE,NA
+1248,NA,NA,NA,NA,river; amazon,FALSE,river; amazon
+14313,NA,NA,NA,NA,acidic,FALSE,acidic
+2130,USA,USA,NA,NA,NA,FALSE,USA
+9254,NA,NA,NA,NA,NA,FALSE,NA
+890,NA,NA,NA,NA,NA,FALSE,NA
+1851,NA,NA,NA,NA,NA,FALSE,NA
+8278,Norway,Norway,NA,NA,boreal,FALSE,Norway; boreal
+19281,NA,NA,NA,NA,NA,FALSE,NA
+6600,Argentina,NA,Argentina,NA,NA,FALSE,Argentina
+5871,NA,NA,NA,NA,NA,FALSE,NA
+4647,NA,NA,NA,NA,NA,FALSE,NA
+7887,NA,NA,NA,NA,NA,TRUE,NA
+13009,NA,NA,NA,NA,NA,TRUE,NA
+705,NA,NA,NA,NA,NA,FALSE,NA
+395,NA,NA,NA,NA,NA,FALSE,NA
+6859,NA,NA,NA,NA,NA,FALSE,NA
+13403,NA,NA,NA,NA,NA,FALSE,NA
+438,NA,NA,NA,NA,NA,TRUE,NA
+16759,United States,United States,NA,NA,pasture,FALSE,United States; pasture
+13284,NA,NA,NA,NA,NA,FALSE,NA
+4975,NA,NA,NA,NA,NA,TRUE,NA
+4103,NA,NA,NA,NA,NA,FALSE,NA
+19492,NA,NA,NA,NA,NA,FALSE,NA
+18586,NA,NA,NA,NA,marine,FALSE,marine
+18482,NA,NA,NA,NA,NA,FALSE,NA
+17554,NA,NA,NA,NA,mangrove,FALSE,mangrove
+3551,NA,NA,NA,NA,NA,FALSE,NA
+13566,Georgia,NA,Georgia,NA,pasture,TRUE,Georgia; pasture
+14956,NA,NA,NA,NA,NA,FALSE,NA
+6469,China,NA,China,NA,NA,TRUE,China
+11368,NA,NA,NA,NA,NA,FALSE,NA
+15956,NA,NA,NA,NA,NA,TRUE,NA
+3373,NA,NA,NA,NA,NA,FALSE,NA
+1208,Finland,Finland,NA,NA,tundra,FALSE,Finland; tundra
+18522,NA,NA,NA,NA,NA,FALSE,NA
+2392,Georgia,NA,Georgia,NA,coastal; plain; pasture; upland,FALSE,Georgia; coastal; plain; pasture; upland
+16740,NA,NA,NA,NA,temperate,FALSE,temperate
+13349,NA,NA,NA,NA,NA,TRUE,NA
+11804,NA,NA,NA,NA,NA,FALSE,NA
+11049,NA,NA,NA,NA,NA,FALSE,NA
+9368,NA,NA,NA,NA,NA,FALSE,NA
+172,NA,NA,NA,NA,tropical,FALSE,tropical
+7742,NA,NA,NA,NA,NA,FALSE,NA
+13603,NA,NA,NA,NA,NA,TRUE,NA
+11908,NA,NA,NA,NA,NA,FALSE,NA
+4976,NA,NA,NA,NA,NA,FALSE,NA
+7697,Nepal; India; Bhutan; China; Pakistan,NA,Nepal; India; Bhutan; China; Pakistan,NA,tree line; himalayan,FALSE,Nepal; India; Bhutan; China; Pakistan; tree line; himalayan
+18870,NA,NA,NA,NA,semi-arid,FALSE,semi-arid
+3324,NA,NA,NA,NA,NA,FALSE,NA
+15553,Indonesia,NA,Indonesia,NA,indonesian,FALSE,Indonesia; indonesian
+13072,NA,NA,NA,NA,NA,FALSE,NA
+12823,NA,NA,NA,NA,NA,FALSE,NA
+3738,NA,NA,NA,NA,NA,FALSE,NA
+3268,NA,NA,NA,NA,NA,FALSE,NA
+20101,NA,NA,NA,NA,subtropical; lake,FALSE,subtropical; lake
+14669,NA,NA,NA,NA,NA,FALSE,NA
+8929,NA,NA,NA,NA,NA,FALSE,NA
+20558,NA,NA,NA,NA,NA,FALSE,NA
+5408,Taiwan,Taiwan,NA,NA,NA,FALSE,Taiwan
+2645,Antarctica,NA,Antarctica,antarctic; antarctica,plateau,TRUE,Antarctica; antarctic; antarctica; plateau
+11034,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+2446,India,NA,India,NA,NA,FALSE,India
+13268,NA,NA,NA,NA,NA,FALSE,NA
+7658,NA,NA,NA,NA,NA,FALSE,NA
+5189,NA,NA,NA,NA,orchard,FALSE,orchard
+13943,China,NA,China,NA,river; nature reserve,TRUE,China; river; nature reserve
+4396,NA,NA,NA,NA,NA,FALSE,NA
+19526,Algeria,NA,Algeria,NA,NA,FALSE,Algeria
+2052,NA,NA,NA,NA,NA,FALSE,NA
+13900,NA,NA,NA,NA,NA,FALSE,NA
+5252,NA,NA,NA,NA,NA,TRUE,NA
+19868,NA,NA,NA,NA,NA,FALSE,NA
+11859,NA,NA,NA,NA,mangrove,FALSE,mangrove
+17166,NA,NA,NA,NA,NA,FALSE,NA
+16141,Indonesia,NA,Indonesia,NA,indonesian,TRUE,Indonesia; indonesian
+17575,NA,NA,NA,NA,siberian,FALSE,siberian
+3318,United States,United States,NA,NA,NA,FALSE,United States
+5113,NA,NA,NA,NA,marine,FALSE,marine
+2400,NA,NA,NA,NA,NA,FALSE,NA
+1086,NA,NA,NA,NA,NA,FALSE,NA
+94,NA,NA,NA,NA,savanna,FALSE,savanna
+8805,NA,NA,NA,NA,amazonia,TRUE,amazonia
+13221,NA,NA,NA,NA,marine,TRUE,marine
+5194,Italy,Italy,NA,NA,NA,FALSE,Italy
+9011,NA,NA,NA,NA,NA,FALSE,NA
+11875,NA,NA,NA,NA,middle east,FALSE,middle east
+2948,U.A.E.,NA,U.A.E.,NA,NA,FALSE,U.A.E.
+7751,NA,NA,NA,NA,NA,FALSE,NA
+14344,NA,NA,NA,NA,NA,TRUE,NA
+18716,NA,NA,NA,NA,NA,FALSE,NA
+12414,NA,NA,NA,NA,NA,TRUE,NA
+3571,Australia,Australia,NA,australia,NA,FALSE,Australia; australia
+20323,NA,NA,NA,NA,NA,TRUE,NA
+12889,NA,NA,NA,NA,NA,FALSE,NA
+4874,NA,NA,NA,NA,NA,FALSE,NA
+1919,China,NA,China,NA,NA,FALSE,China
+17714,NA,NA,NA,NA,mangrove,FALSE,mangrove
+15040,NA,NA,NA,NA,NA,FALSE,NA
+15248,NA,NA,NA,NA,NA,FALSE,NA
+14447,Indonesia,NA,Indonesia,asia,indonesian,FALSE,Indonesia; asia; indonesian
+13613,NA,NA,NA,NA,NA,FALSE,NA
+3279,NA,NA,NA,NA,NA,FALSE,NA
+12171,Germany,Germany,NA,NA,NA,FALSE,Germany
+20862,China; Mongolia,NA,China; Mongolia,NA,agricultural ecosystem; steppe; grassland,FALSE,China; Mongolia; agricultural ecosystem; steppe; grassland
+15239,Indonesia,NA,Indonesia,NA,sumatra; indonesian,FALSE,Indonesia; sumatra; indonesian
+19781,NA,NA,NA,NA,NA,FALSE,NA
+12358,NA,NA,NA,NA,NA,FALSE,NA
+5151,NA,NA,NA,NA,NA,FALSE,NA
+8864,USA; Jersey,USA; Jersey,NA,NA,NA,FALSE,USA; Jersey
+5403,NA,NA,NA,NA,NA,FALSE,NA
+1145,NA,NA,NA,NA,brazilian cerrado,FALSE,brazilian cerrado
+3086,NA,NA,NA,NA,rain forest; neotropical,FALSE,rain forest; neotropical
+13890,NA,NA,NA,NA,temperate; tropical,FALSE,temperate; tropical
+21256,Philippines; Thailand; Vietnam; Malaysia; Indonesia; Myanmar; Cambodia; Laos,NA,Philippines; Thailand; Vietnam; Malaysia; Indonesia; Myanmar; Cambodia; Laos,NA,philippines; southeast,FALSE,Philippines; Thailand; Vietnam; Malaysia; Indonesia; Myanmar; Cambodia; Laos; philippines; southeast
+18414,NA,NA,NA,NA,NA,FALSE,NA
+18545,P.R.C.,NA,P.R.C.,NA,NA,FALSE,P.R.C.
+15078,NA,NA,NA,NA,NA,FALSE,NA
+5587,NA,NA,NA,NA,marine,FALSE,marine
+9879,China,NA,China,NA,NA,FALSE,China
+8306,NA,NA,NA,NA,tropical,TRUE,tropical
+9869,NA,NA,NA,NA,NA,FALSE,NA
+4948,US,US,NA,NA,NA,FALSE,US
+16022,NA,NA,NA,NA,mangrove; coastal,FALSE,mangrove; coastal
+1190,NA,NA,NA,NA,NA,FALSE,NA
+13364,Canada; Japan,Canada; Japan,NA,NA,japan,FALSE,Canada; Japan; japan
+20262,NA,NA,NA,NA,NA,TRUE,NA
+11919,Colombia,NA,Colombia,NA,tropical,FALSE,Colombia; tropical
+15897,India,NA,India,NA,NA,TRUE,India
+20034,Thailand,NA,Thailand,NA,NA,FALSE,Thailand
+14910,US,US,NA,NA,NA,FALSE,US
+9592,NA,NA,NA,NA,NA,FALSE,NA
+2145,NA,NA,NA,NA,NA,FALSE,NA
+7118,NA,NA,NA,NA,NA,FALSE,NA
+2206,China,NA,China,NA,NA,FALSE,China
+14972,India,NA,India,NA,NA,FALSE,India
+12210,NA,NA,NA,NA,boreal,FALSE,boreal
+14040,NA,NA,NA,NA,NA,FALSE,NA
+13224,NA,NA,NA,NA,NA,TRUE,NA
+1162,NA,NA,NA,NA,NA,FALSE,NA
+20044,NA,NA,NA,NA,NA,FALSE,NA
+6229,NA,NA,NA,NA,mangrove,TRUE,mangrove
+14445,Canada,Canada,NA,NA,canadian,FALSE,Canada; canadian
+4372,NA,NA,NA,NA,NA,FALSE,NA
+18883,NA,NA,NA,NA,NA,FALSE,NA
+12731,China; Nepal,NA,China; Nepal,NA,himalayas,FALSE,China; Nepal; himalayas
+20424,NA,NA,NA,NA,NA,FALSE,NA
+12777,NA,NA,NA,NA,NA,FALSE,NA
+11711,NA,NA,NA,NA,NA,FALSE,NA
+5002,NA,NA,NA,NA,NA,FALSE,NA
+3517,NA,NA,NA,NA,NA,FALSE,NA
+3837,NA,NA,NA,NA,NA,FALSE,NA
+4887,NA,NA,NA,NA,NA,FALSE,NA
+9535,NA,NA,NA,NA,marsh; boreal,FALSE,marsh; boreal
+11370,NA,NA,NA,NA,NA,TRUE,NA
+5442,NA,NA,NA,NA,NA,FALSE,NA
+15683,Switzerland,Switzerland,NA,NA,mangrove,TRUE,Switzerland; mangrove
+3645,NA,NA,NA,NA,NA,FALSE,NA
+8826,South Africa,NA,South Africa,africa,southern africa,FALSE,South Africa; africa; southern africa
+5072,New Zealand,New Zealand,NA,NA,NA,FALSE,New Zealand
+9709,NA,NA,NA,NA,temperate,FALSE,temperate
+3476,NA,NA,NA,NA,delta,FALSE,delta
+3920,NA,NA,NA,NA,NA,FALSE,NA
+10750,NA,NA,NA,NA,NA,FALSE,NA
+3714,NA,NA,NA,NA,tropical,FALSE,tropical
+6379,NA,NA,NA,NA,NA,FALSE,NA
+2186,NA,NA,NA,NA,NA,FALSE,NA
+18458,NA,NA,NA,NA,NA,FALSE,NA
+3711,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean
+10486,Spain; Sweden,Spain; Sweden,NA,europe,lowland; river,FALSE,Spain; Sweden; europe; lowland; river
+13597,France,France,NA,europe,NA,FALSE,France; europe
+14614,Sri Lanka,NA,Sri Lanka,NA,sri lanka,FALSE,Sri Lanka; sri lanka
+17983,NA,NA,NA,NA,NA,FALSE,NA
+8660,NA,NA,NA,NA,NA,FALSE,NA
+12918,NA,NA,NA,NA,NA,TRUE,NA
+76,NA,NA,NA,NA,NA,FALSE,NA
+18728,NA,NA,NA,NA,NA,TRUE,NA
+9748,NA,NA,NA,NA,NA,TRUE,NA
+16884,United States; Italy; Portugal; Japan; Taiwan,United States; Italy; Portugal; Japan; Taiwan,NA,NA,japan,FALSE,United States; Italy; Portugal; Japan; Taiwan; japan
+3220,Canada,Canada,NA,NA,fluvial; coastal; bay,FALSE,Canada; fluvial; coastal; bay
+9658,NA,NA,NA,NA,orchard,FALSE,orchard
+12997,Costa Rica,NA,Costa Rica,NA,rainforest,FALSE,Costa Rica; rainforest
+4745,NA,NA,NA,NA,NA,FALSE,NA
+14900,Egypt,NA,Egypt,NA,NA,FALSE,Egypt
+15320,South Africa,NA,South Africa,africa,NA,FALSE,South Africa; africa
+212,NA,NA,NA,NA,NA,TRUE,NA
+17692,NA,NA,NA,NA,NA,FALSE,NA
+19817,NA,NA,NA,NA,NA,FALSE,NA
+14792,Egypt,NA,Egypt,NA,NA,FALSE,Egypt
+739,NA,NA,NA,NA,NA,FALSE,NA
+11803,United States,United States,NA,NA,coastal,FALSE,United States; coastal
+16406,Panama,NA,Panama,NA,NA,FALSE,Panama
+6912,Poland,Poland,NA,NA,NA,FALSE,Poland
+15559,NA,NA,NA,NA,NA,TRUE,NA
+3240,NA,NA,NA,NA,NA,FALSE,NA
+17725,NA,NA,NA,NA,NA,FALSE,NA
+11325,Antarctica,NA,Antarctica,antarctic; antarctica,NA,FALSE,Antarctica; antarctic; antarctica
+10516,Norway,Norway,NA,NA,temperate; subtropical,FALSE,Norway; temperate; subtropical
+9809,USA,USA,NA,europe,NA,FALSE,USA; europe
+20984,NA,NA,NA,NA,NA,FALSE,NA
+8336,NA,NA,NA,NA,NA,FALSE,NA
+7473,NA,NA,NA,NA,NA,FALSE,NA
+7880,NA,NA,NA,NA,NA,FALSE,NA
+21365,NA,NA,NA,NA,calcareous,FALSE,calcareous
+18220,NA,NA,NA,NA,NA,TRUE,NA
+11798,Brazil,NA,Brazil,NA,NA,FALSE,Brazil
+3713,Mexico,NA,Mexico,NA,NA,FALSE,Mexico
+20071,NA,NA,NA,NA,acidic,FALSE,acidic
+3938,Australia; Spain; Italy; Greece; Turkey; France,Australia; Spain; Italy; Greece; France,Turkey,australia,mediterranean,FALSE,Australia; Spain; Italy; Greece; Turkey; France; australia; mediterranean
+3167,NA,NA,NA,NA,NA,FALSE,NA
+17536,NA,NA,NA,NA,NA,TRUE,NA
+400,NA,NA,NA,NA,desert,FALSE,desert
+20429,Saudi Arabia,NA,Saudi Arabia,NA,NA,FALSE,Saudi Arabia
+20010,USSR; U.S.,U.S.,USSR,NA,NA,FALSE,USSR; U.S.
+17045,U.A.E.,NA,U.A.E.,NA,NA,FALSE,U.A.E.
+5931,NA,NA,NA,NA,NA,TRUE,NA
+127,NA,NA,NA,NA,NA,FALSE,NA
+20834,NA,NA,NA,NA,NA,FALSE,NA
+20782,Iran; Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Iran; Turkey,NA,mediterranean,FALSE,Iran; Spain; Italy; Greece; Turkey; France; mediterranean
+17720,NA,NA,NA,NA,NA,FALSE,NA
+11793,U.A.E.,NA,U.A.E.,NA,NA,FALSE,U.A.E.
+7901,NA,NA,NA,NA,NA,FALSE,NA
+17538,Bangladesh,NA,Bangladesh,NA,NA,FALSE,Bangladesh
+18161,NA,NA,NA,NA,NA,FALSE,NA
+6130,NA,NA,NA,NA,NA,TRUE,NA
+15161,NA,NA,NA,NA,NA,TRUE,NA
+12657,NA,NA,NA,NA,NA,FALSE,NA
+17409,NA,NA,NA,NA,NA,FALSE,NA
+10009,NA,NA,NA,NA,NA,FALSE,NA
+7493,NA,NA,NA,NA,tropical,TRUE,tropical
+6827,NA,NA,NA,NA,NA,FALSE,NA
+13972,China,NA,China,NA,NA,TRUE,China
+5948,USA; Austria,USA; Austria,NA,NA,NA,FALSE,USA; Austria
+9153,NA,NA,NA,NA,NA,FALSE,NA
+4589,NA,NA,NA,NA,NA,FALSE,NA
+6319,NA,NA,NA,NA,mangrove,FALSE,mangrove
+5720,NA,NA,NA,south america,NA,FALSE,south america
+13934,NA,NA,NA,NA,pasture,TRUE,pasture
+9509,United States,United States,NA,NA,NA,FALSE,United States
+9176,NA,NA,NA,NA,NA,FALSE,NA
+536,NA,NA,NA,NA,subarctic; alpine; tundra,FALSE,subarctic; alpine; tundra
+13470,Egypt,NA,Egypt,NA,NA,FALSE,Egypt
+1624,NA,NA,NA,europe; south america,central europe; patagonia; temperate; rainforest,FALSE,europe; south america; central europe; patagonia; temperate; rainforest
+6699,Vietnam,NA,Vietnam,NA,cropland,TRUE,Vietnam; cropland
+20468,NA,NA,NA,NA,NA,FALSE,NA
+1781,NA,NA,NA,NA,NA,FALSE,NA
+2230,China,NA,China,north america,NA,FALSE,China; north america
+20410,NA,NA,NA,NA,NA,FALSE,NA
+6717,NA,NA,NA,NA,NA,FALSE,NA
+7426,NA,NA,NA,NA,marine,TRUE,marine
+1461,NA,NA,NA,NA,NA,FALSE,NA
+16883,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,tropical; mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; tropical; mediterranean
+19472,China; Mongolia,NA,China; Mongolia,NA,NA,FALSE,China; Mongolia
+8745,NA,NA,NA,NA,NA,FALSE,NA
+7848,Ukraine,NA,Ukraine,NA,NA,TRUE,Ukraine
+2679,Sweden,Sweden,NA,NA,karst,FALSE,Sweden; karst
+11101,NA,NA,NA,NA,NA,TRUE,NA
+9817,NA,NA,NA,NA,NA,FALSE,NA
+10776,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean
+3495,China,NA,China,NA,NA,FALSE,China
+17582,NA,NA,NA,NA,NA,FALSE,NA
+689,Egypt,NA,Egypt,NA,NA,TRUE,Egypt
+16106,NA,NA,NA,NA,NA,FALSE,NA
+4916,South Africa,NA,South Africa,africa,NA,FALSE,South Africa; africa
+254,NA,NA,NA,NA,reservoir,FALSE,reservoir
+20919,Pakistan,NA,Pakistan,NA,NA,TRUE,Pakistan
+1009,NA,NA,NA,NA,great lakes,FALSE,great lakes
+20829,Niger,NA,Niger,NA,NA,FALSE,Niger
+15245,NA,NA,NA,NA,NA,FALSE,NA
+10899,Thailand,NA,Thailand,NA,tropical,FALSE,Thailand; tropical
+18942,NA,NA,NA,NA,NA,FALSE,NA
+15571,NA,NA,NA,NA,NA,FALSE,NA
+14353,NA,NA,NA,NA,NA,FALSE,NA
+18907,NA,NA,NA,NA,NA,FALSE,NA
+11756,NA,NA,NA,NA,NA,FALSE,NA
+294,NA,NA,NA,NA,NA,FALSE,NA
+347,NA,NA,NA,NA,NA,FALSE,NA
+19529,NA,NA,NA,NA,NA,FALSE,NA
+16366,Brazil,NA,Brazil,NA,NA,FALSE,Brazil
+3976,NA,NA,NA,NA,NA,FALSE,NA
+8234,NA,NA,NA,NA,marine,FALSE,marine
+7295,Spain,Spain,NA,NA,NA,FALSE,Spain
+7471,Egypt,NA,Egypt,NA,NA,TRUE,Egypt
+1448,USA,USA,NA,NA,great lakes,FALSE,USA; great lakes
+19979,Germany,Germany,NA,NA,NA,FALSE,Germany
+12791,Mexico; Colombia; Puerto Rico,NA,Mexico; Colombia; Puerto Rico,NA,reservoir,FALSE,Mexico; Colombia; Puerto Rico; reservoir
+12259,NA,NA,NA,NA,NA,FALSE,NA
+2822,NA,NA,NA,NA,NA,FALSE,NA
+11768,NA,NA,NA,NA,NA,TRUE,NA
+17964,Spain,Spain,NA,NA,NA,FALSE,Spain
+4554,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean
+4412,NA,NA,NA,NA,NA,FALSE,NA
+994,Spain,Spain,NA,NA,NA,FALSE,Spain
+7225,NA,NA,NA,NA,mangrove,FALSE,mangrove
+3993,Australia,Australia,NA,australia,pasture,FALSE,Australia; australia; pasture
+19975,NA,NA,NA,NA,NA,FALSE,NA
+19385,Germany; Sweden,Germany; Sweden,NA,NA,NA,FALSE,Germany; Sweden
+775,Guinea; Papua New Guinea,NA,Guinea; Papua New Guinea,NA,lowland,FALSE,Guinea; Papua New Guinea; lowland
+18787,NA,NA,NA,NA,NA,TRUE,NA
+16244,NA,NA,NA,NA,NA,FALSE,NA
+19359,NA,NA,NA,NA,NA,FALSE,NA
+20830,NA,NA,NA,NA,NA,FALSE,NA
+10640,NA,NA,NA,NA,NA,TRUE,NA
+9307,US,US,NA,NA,NA,FALSE,US
+6926,NA,NA,NA,NA,NA,FALSE,NA
+2406,Switzerland; Norway,Switzerland; Norway,NA,NA,NA,FALSE,Switzerland; Norway
+264,NA,NA,NA,europe,NA,TRUE,europe
+10460,China,NA,China,NA,desert,FALSE,China; desert
+1839,NA,NA,NA,NA,temperate,FALSE,temperate
+20147,NA,NA,NA,NA,tropical; biosphere reserve,FALSE,tropical; biosphere reserve
+6742,NA,NA,NA,NA,NA,FALSE,NA
+872,USA,USA,NA,NA,mangrove; marsh; salt marsh,FALSE,USA; mangrove; marsh; salt marsh
+3371,NA,NA,NA,NA,NA,FALSE,NA
+21071,NA,NA,NA,NA,plantation,TRUE,plantation
+6675,NA,NA,NA,NA,NA,FALSE,NA
+7396,NA,NA,NA,NA,NA,FALSE,NA
+17028,NA,NA,NA,NA,NA,FALSE,NA
+21046,NA,NA,NA,NA,NA,FALSE,NA
+10337,NA,NA,NA,NA,NA,FALSE,NA
+4492,NA,NA,NA,NA,NA,FALSE,NA
+12527,Canada; Israel,Canada; Israel,NA,NA,NA,FALSE,Canada; Israel
+16737,NA,NA,NA,NA,NA,FALSE,NA
+13131,NA,NA,NA,NA,NA,TRUE,NA
+2589,NA,NA,NA,NA,NA,FALSE,NA
+20316,NA,NA,NA,NA,NA,FALSE,NA
+18068,Spain; Italy; Greece; Turkey; France,Spain; Italy; Greece; France,Turkey,NA,mediterranean; calcareous,FALSE,Spain; Italy; Greece; Turkey; France; mediterranean; calcareous
+5059,NA,NA,NA,NA,NA,FALSE,NA
+2642,NA,NA,NA,NA,NA,FALSE,NA
+11543,NA,NA,NA,europe,central europe; aquatic,FALSE,europe; central europe; aquatic
+3311,NA,NA,NA,NA,NA,FALSE,NA
+12488,NA,NA,NA,NA,NA,TRUE,NA
+9678,NA,NA,NA,NA,NA,FALSE,NA
+5854,NA,NA,NA,NA,NA,TRUE,NA
+13405,Colombia,NA,Colombia,NA,NA,TRUE,Colombia
+21258,NA,NA,NA,NA,NA,FALSE,NA
+4885,NA,NA,NA,NA,NA,TRUE,NA
+3621,NA,NA,NA,NA,NA,FALSE,NA
+20318,NA,NA,NA,NA,NA,FALSE,NA
+7767,NA,NA,NA,NA,NA,FALSE,NA
+12078,Brazil,NA,Brazil,NA,NA,FALSE,Brazil
+10551,NA,NA,NA,NA,NA,FALSE,NA
+10246,NA,NA,NA,NA,NA,FALSE,NA
+18061,NA,NA,NA,NA,marine,FALSE,marine
+5278,NA,NA,NA,NA,NA,FALSE,NA
+17904,NA,NA,NA,NA,NA,FALSE,NA
+6076,Sudan,NA,Sudan,NA,NA,FALSE,Sudan
+10625,Spain; Czech Republic,Spain; Czech Republic,NA,NA,NA,FALSE,Spain; Czech Republic
+15638,NA,NA,NA,NA,NA,FALSE,NA
+4370,NA,NA,NA,NA,NA,FALSE,NA
+17784,NA,NA,NA,NA,NA,FALSE,NA
+14681,NA,NA,NA,NA,NA,TRUE,NA
+8131,Panama,NA,Panama,NA,temperate; tropical,FALSE,Panama; temperate; tropical
+11779,NA,NA,NA,NA,NA,FALSE,NA
+13860,China,NA,China,NA,NA,FALSE,China
+18381,NA,NA,NA,NA,NA,FALSE,NA
+5877,NA,NA,NA,NA,NA,TRUE,NA
+6034,NA,NA,NA,NA,NA,FALSE,NA
+17868,NA,NA,NA,europe,boreal,FALSE,europe; boreal
+13898,NA,NA,NA,NA,NA,FALSE,NA
+16182,China,NA,China,NA,NA,FALSE,China
+12765,NA,NA,NA,NA,NA,FALSE,NA
+9375,NA,NA,NA,NA,NA,TRUE,NA
+6380,NA,NA,NA,NA,NA,FALSE,NA
+18750,NA,NA,NA,NA,NA,FALSE,NA
+6552,Antarctica,NA,Antarctica,antarctica; antarctic,bay; reservoir,FALSE,Antarctica; antarctica; antarctic; bay; reservoir
+14941,NA,NA,NA,NA,NA,TRUE,NA
+13063,New Zealand,New Zealand,NA,NA,NA,FALSE,New Zealand
+16630,NA,NA,NA,NA,NA,FALSE,NA
+20149,NA,NA,NA,NA,NA,TRUE,NA
+17972,NA,NA,NA,NA,NA,FALSE,NA
+7755,NA,NA,NA,NA,NA,FALSE,NA
+7544,NA,NA,NA,NA,NA,FALSE,NA
+6051,NA,NA,NA,NA,NA,FALSE,NA
+5131,South Africa,NA,South Africa,africa,NA,FALSE,South Africa; africa
+14981,NA,NA,NA,NA,NA,FALSE,NA
+4489,Thailand,NA,Thailand,NA,tropical,FALSE,Thailand; tropical
+17454,NA,NA,NA,NA,NA,FALSE,NA
+9585,Ecuador,NA,Ecuador,NA,tropical; subtropical; coastal; mangrove,FALSE,Ecuador; tropical; subtropical; coastal; mangrove
+894,NA,NA,NA,NA,NA,FALSE,NA
+3190,NA,NA,NA,NA,neotropical,FALSE,neotropical
+9082,NA,NA,NA,NA,NA,FALSE,NA
+10853,NA,NA,NA,NA,NA,FALSE,NA
+15512,Iran,NA,Iran,NA,NA,TRUE,Iran
+17168,United States; Canada,United States; Canada,NA,europe,NA,TRUE,United States; Canada; europe
+10859,NA,NA,NA,NA,estuarine; wetland,FALSE,estuarine; wetland
+15156,UK,UK,NA,NA,marine; mangrove,FALSE,UK; marine; mangrove
+5517,South Korea,South Korea,NA,asia,NA,FALSE,South Korea; asia
+11488,NA,NA,NA,NA,NA,FALSE,NA
+8296,NA,NA,NA,NA,NA,TRUE,NA
+16241,Switzerland,Switzerland,NA,NA,NA,FALSE,Switzerland
+9119,NA,NA,NA,NA,marine,TRUE,marine
+20896,Australia; India; Chile; Uganda; Congo,Australia,India; Chile; Uganda; Congo,africa; australia; south america; asia,southeast asia,FALSE,Australia; India; Chile; Uganda; Congo; africa; australia; south america; asia; southeast asia
+20279,NA,NA,NA,NA,NA,FALSE,NA
+5117,NA,NA,NA,NA,NA,FALSE,NA
+21110,NA,NA,NA,NA,NA,FALSE,NA
+21204,China,NA,China,NA,NA,FALSE,China
+7089,NA,NA,NA,NA,NA,FALSE,NA
+14870,NA,NA,NA,NA,tropical,TRUE,tropical
+15854,Switzerland,Switzerland,NA,NA,NA,FALSE,Switzerland
+6821,India,NA,India,NA,NA,FALSE,India
+2803,Brazil,NA,Brazil,NA,rain forest; neotropical,FALSE,Brazil; rain forest; neotropical
+8491,NA,NA,NA,NA,NA,FALSE,NA
+6853,NA,NA,NA,NA,NA,FALSE,NA
+7022,NA,NA,NA,NA,NA,FALSE,NA
+15775,NA,NA,NA,NA,NA,FALSE,NA
+15916,Ecuador; Peru; Colombia; Bolivia; Chile; Argentina,NA,Ecuador; Peru; Colombia; Bolivia; Chile; Argentina,NA,montane; andean,FALSE,Ecuador; Peru; Colombia; Bolivia; Chile; Argentina; montane; andean
+1906,NA,NA,NA,NA,subalpine; grassland,FALSE,subalpine; grassland
+2014,NA,NA,NA,NA,NA,FALSE,NA
+9883,Iran,NA,Iran,NA,NA,FALSE,Iran
+14643,New Zealand,New Zealand,NA,NA,NA,FALSE,New Zealand
+1351,NA,NA,NA,NA,NA,FALSE,NA
+6893,NA,NA,NA,NA,NA,FALSE,NA
+37,NA,NA,NA,NA,NA,FALSE,NA
+6138,NA,NA,NA,NA,marine,TRUE,marine
+5372,NA,NA,NA,NA,NA,FALSE,NA
+3843,NA,NA,NA,NA,NA,FALSE,NA

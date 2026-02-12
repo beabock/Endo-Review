@@ -1,23 +1,23 @@
 === EXTRACTION RESULTS VISUALIZATION SUMMARY ( MAIN  VERSION) ===
-Generated: 1770762602 
+Generated: 1770841796 
 Source: comprehensive_extraction_results.csv
 
 FILES GENERATED:
-1.  plots/main/ species_detection_rate.png - Overall species detection rate
-2.  plots/main/ methods_individual_core.png - Core research methods (3 traditional types)
-3.  plots/main/ methods_individual_expanded.png - Expanded research methods (all 9 types)
-4.  plots/main/ methods_combined_core.png - Combined core method frequencies
-5.  plots/main/ methods_combined_expanded.png - Combined expanded method frequencies
-6.  plots/main/ plant_parts_frequency.png - Most studied plant parts (enhanced)
-7.  plots/main/ plant_parts_distribution.png - Plant parts count distribution
-9.  plots/main/ geographic_regions.png - Geographic distribution by region
-10.  plots/main/ top_countries.png - Most studied countries
-11.  plots/main/ bottom_countries.png - Least represented countries
-12.  plots/main/ geographic_completeness.png - Geographic information completeness
-13.  plots/main/ world_map_countries.png - World choropleth map of countries
-13b.  plots/main/ world_map_countries_log.png - World choropleth map of countries (log scale)
-13.  plots/main/ summary_text.png - Overall summary statistics
-14.  plots/main/ info_summary.png - Information detection overview
+1.  plots/main/species/ species_detection_rate.png - Overall species detection rate
+2.  plots/main/methods/ methods_individual_core.png - Core research methods (3 traditional types)
+3.  plots/main/methods/ methods_individual_expanded.png - Expanded research methods (all 9 types)
+4.  plots/main/methods/ methods_combined_core.png - Combined core method frequencies
+5.  plots/main/methods/ methods_combined_expanded.png - Combined expanded method frequencies
+6.  plots/main/plant_parts/ plant_parts_frequency.png - Most studied plant parts (enhanced)
+7.  plots/main/plant_parts/ plant_parts_distribution.png - Plant parts count distribution
+9.  plots/main/geographic/ geographic_regions.png - Geographic distribution by region
+10.  plots/main/geographic/ top_countries.png - Most studied countries
+11.  plots/main/geographic/ bottom_countries.png - Least represented countries
+12.  plots/main/geographic/ geographic_completeness.png - Geographic information completeness
+13.  plots/main/geographic/ world_map_countries.png - World choropleth map of countries
+13b.  plots/main/geographic/ world_map_countries_log.png - World choropleth map of countries (log scale)
+13.  plots/main/summary/ summary_text.png - Overall summary statistics
+14.  plots/main/summary/ info_summary.png - Information detection overview
 
 KEY FINDINGS:
 - Species detection rate: 82.1 %

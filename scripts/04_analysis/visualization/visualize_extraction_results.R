@@ -52,8 +52,12 @@ custom_theme <- endo_theme(base_size = 12) +
 
 
 # Function to save plots with consistent format
-save_plot <- function(plot, filename, width = 12, height = 8, dpi = 300) {
-  dir_path <- "plots/main/"
+# subdirectory parameter allows organizing plots into categories (e.g., "species", "geographic")
+save_plot <- function(plot, filename, width = 12, height = 8, dpi = 300, subdirectory = "") {
+  if (subdirectory != "" && !endsWith(subdirectory, "/")) {
+    subdirectory <- paste0(subdirectory, "/")
+  }
+  dir_path <- paste0("plots/main/", subdirectory)
   full_path <- paste0(dir_path, filename)
   dir.create(dirname(full_path), showWarnings = FALSE, recursive = TRUE)
   ggsave(full_path, plot, width = width, height = height, dpi = dpi, units = "in")
@@ -290,7 +294,7 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     theme(legend.position = "bottom")
 
   # Save species detection plot
-  save_plot(p1_species_detection, "species_detection_rate.png", height = 6)
+  save_plot(p1_species_detection, "species_detection_rate.png", height = 6, subdirectory = "species")
 
   # 2. RESEARCH METHODS ANALYSIS -------------------------------------------
 
@@ -441,10 +445,10 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     theme(legend.position = "none")
 
   # Save methods plots individually
-  save_plot(p3_methods_individual, "methods_individual_core.png", height = 6)
-  save_plot(p3b_methods_expanded, "methods_individual_expanded.png", height = 8)
-  save_plot(p4_methods_combined, "methods_combined_core.png", height = 6)
-  save_plot(p4b_methods_expanded_combined, "methods_combined_expanded.png", height = 8)
+  save_plot(p3_methods_individual, "methods_individual_core.png", height = 6, subdirectory = "methods")
+  save_plot(p3b_methods_expanded, "methods_individual_expanded.png", height = 8, subdirectory = "methods")
+  save_plot(p4_methods_combined, "methods_combined_core.png", height = 6, subdirectory = "methods")
+  save_plot(p4b_methods_expanded_combined, "methods_combined_expanded.png", height = 8, subdirectory = "methods")
 
   # 3. PLANT PARTS ANALYSIS ------------------------------------------------
 
@@ -514,8 +518,8 @@ cat("- With methods:", sum(abstract_summary$has_methods),
       theme(legend.position = "none")
 
     # Save plant parts plots individually
-    save_plot(p6_plant_parts_freq, "plant_parts_frequency.png", height = 8)
-    save_plot(p6b_plant_parts_distribution, "plant_parts_distribution.png", height = 6)
+    save_plot(p6_plant_parts_freq, "plant_parts_frequency.png", height = 8, subdirectory = "plant_parts")
+    save_plot(p6b_plant_parts_distribution, "plant_parts_distribution.png", height = 6, subdirectory = "plant_parts")
 
   } else {
     cat("No plant parts data available for visualization.\n")
@@ -860,14 +864,14 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     cat("✓ Saved lowest represented tropical countries to results/geographic/lowest_represented_tropical_countries_", version_prefix, ".csv\n")
 
     # Save geography plots individually
-    save_plot(p7_geo_regions, "geographic_regions.png", height = 6)
-    save_plot(p8_countries, "top_countries.png", height = 8)
-    save_plot(p8_bottom_countries, "bottom_countries.png", height = 8)
-    save_plot(p8c_geo_completeness, "geographic_completeness.png", height = 6)
+    save_plot(p7_geo_regions, "geographic_regions.png", height = 6, subdirectory = "geographic")
+    save_plot(p8_countries, "top_countries.png", height = 8, subdirectory = "geographic")
+    save_plot(p8_bottom_countries, "bottom_countries.png", height = 8, subdirectory = "geographic")
+    save_plot(p8c_geo_completeness, "geographic_completeness.png", height = 6, subdirectory = "geographic")
     if (!is.null(world)) {
-      save_plot(p_world_map, "world_map_countries.png", width = 12, height = 8)
+      save_plot(p_world_map, "world_map_countries.png", width = 12, height = 8, subdirectory = "geographic")
       if (version_prefix == "main") {
-        save_plot(p_world_map_log, "world_map_countries_log.png", width = 12, height = 8)
+        save_plot(p_world_map_log, "world_map_countries_log.png", width = 12, height = 8, subdirectory = "geographic")
       }
     }
 
@@ -948,8 +952,8 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     theme(legend.position = "none")
 
   # Save summary dashboard plots individually
-  save_plot(p_summary_text, "summary_text.png", width = 8, height = 8)
-  save_plot(p_info_summary, "info_summary.png", width = 8, height = 8)
+  save_plot(p_summary_text, "summary_text.png", width = 8, height = 8, subdirectory = "summary")
+  save_plot(p_info_summary, "info_summary.png", width = 8, height = 8, subdirectory = "summary")
 
   # 7. SAVE VISUALIZATION SUMMARY ------------------------------------------
 
@@ -961,28 +965,28 @@ cat("- With methods:", sum(abstract_summary$has_methods),
     cat("Source: comprehensive_extraction_results.csv\n\n")
 
     cat("FILES GENERATED:\n")
-    cat("1. ", "plots/main/", "species_detection_rate.png - Overall species detection rate\n")
-    cat("2. ", "plots/main/", "methods_individual_core.png - Core research methods (3 traditional types)\n")
-    cat("3. ", "plots/main/", "methods_individual_expanded.png - Expanded research methods (all 9 types)\n")
-    cat("4. ", "plots/main/", "methods_combined_core.png - Combined core method frequencies\n")
-    cat("5. ", "plots/main/", "methods_combined_expanded.png - Combined expanded method frequencies\n")
+    cat("1. ", "plots/main/species/", "species_detection_rate.png - Overall species detection rate\n")
+    cat("2. ", "plots/main/methods/", "methods_individual_core.png - Core research methods (3 traditional types)\n")
+    cat("3. ", "plots/main/methods/", "methods_individual_expanded.png - Expanded research methods (all 9 types)\n")
+    cat("4. ", "plots/main/methods/", "methods_combined_core.png - Combined core method frequencies\n")
+    cat("5. ", "plots/main/methods/", "methods_combined_expanded.png - Combined expanded method frequencies\n")
     if (sum(abstract_summary$has_plant_parts) > 0) {
-      cat("6. ", "plots/main/", "plant_parts_frequency.png - Most studied plant parts (enhanced)\n")
-      cat("7. ", "plots/main/", "plant_parts_distribution.png - Plant parts count distribution\n")
+      cat("6. ", "plots/main/plant_parts/", "plant_parts_frequency.png - Most studied plant parts (enhanced)\n")
+      cat("7. ", "plots/main/plant_parts/", "plant_parts_distribution.png - Plant parts count distribution\n")
       
     }
     if (sum(abstract_summary$has_geography) > 0) {
-      cat("9. ", "plots/main/", "geographic_regions.png - Geographic distribution by region\n")
-      cat("10. ", "plots/main/", "top_countries.png - Most studied countries\n")
-      cat("11. ", "plots/main/", "bottom_countries.png - Least represented countries\n")
-      cat("12. ", "plots/main/", "geographic_completeness.png - Geographic information completeness\n")
-      cat("13. ", "plots/main/", "world_map_countries.png - World choropleth map of countries\n")
+      cat("9. ", "plots/main/geographic/", "geographic_regions.png - Geographic distribution by region\n")
+      cat("10. ", "plots/main/geographic/", "top_countries.png - Most studied countries\n")
+      cat("11. ", "plots/main/geographic/", "bottom_countries.png - Least represented countries\n")
+      cat("12. ", "plots/main/geographic/", "geographic_completeness.png - Geographic information completeness\n")
+      cat("13. ", "plots/main/geographic/", "world_map_countries.png - World choropleth map of countries\n")
       if (version_prefix == "main") {
-        cat("13b. ", "plots/main/", "world_map_countries_log.png - World choropleth map of countries (log scale)\n")
+        cat("13b. ", "plots/main/geographic/", "world_map_countries_log.png - World choropleth map of countries (log scale)\n")
       }
     }
-    cat("13. ", "plots/main/", "summary_text.png - Overall summary statistics\n")
-    cat("14. ", "plots/main/", "info_summary.png - Information detection overview\n\n")
+    cat("13. ", "plots/main/summary/", "summary_text.png - Overall summary statistics\n")
+    cat("14. ", "plots/main/summary/", "info_summary.png - Information detection overview\n\n")
 
     cat("KEY FINDINGS:\n")
     cat("- Species detection rate:", round(species_rate, 1), "%\n")

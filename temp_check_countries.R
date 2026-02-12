@@ -10,26 +10,47 @@ if (!file.exists("results/geographic/geography_detection_results.csv")) {
 
 geo <- read_csv("results/geographic/geography_detection_results.csv", show_col_types = FALSE)
 
-# Get detected countries
+# Get detected countries (standardize them to canonical forms)
 detected_countries <- geo %>%
   filter(!is.na(countries_detected), countries_detected != "") %>%
   select(id, countries_detected) %>%
   distinct(id, countries_detected) %>%
   separate_rows(countries_detected, sep = "; ") %>%
   filter(!is.na(countries_detected), countries_detected != "") %>%
-  mutate(country_std = stringr::str_to_title(countries_detected)) %>%
-  distinct(country_std) %>%
-  pull(country_std)
+  mutate(
+    # Standardize to canonical form
+    country_canonical = map_chr(countries_detected, standardize_country_name)
+  ) %>%
+  distinct(country_canonical) %>%
+  pull(country_canonical)
 
-# Get all countries from our reference data
-all_countries <- get_all_countries() %>%
-  stringr::str_to_title()
+# Get canonical countries from our reference data (not all variations)
+canonical_countries <- get_canonical_countries()
 
 # Find countries not detected
-undetected_countries <- setdiff(all_countries, detected_countries)
+undetected_countries <- setdiff(canonical_countries, detected_countries)
 
-cat("Total world countries:", length(all_countries), "\n")
+cat("=== CANONICAL COUNTRY DETECTION SUMMARY ===\n")
+cat("Total canonical countries:", length(canonical_countries), "\n")
 cat("Detected countries:", length(detected_countries), "\n")
-cat("Undetected countries:", length(undetected_countries), "\n\n")
-cat("List of undetected countries:\n")
-cat(paste(sort(undetected_countries), collapse = "\n"), "\n")
+cat("Undetected countries:", length(undetected_countries), "\n")
+cat("Detection rate:", round(100 * length(detected_countries) / length(canonical_countries), 1), "%\n\n")
+
+if (length(undetected_countries) > 0) {
+  cat("List of undetected canonical countries:\n")
+  cat(paste(sort(undetected_countries), collapse = "\n"), "\n")
+} else {
+  cat("All canonical countries detected!\n")
+}
+
+# Optional: Show which variations were actually found in the data
+cat("\n=== VARIATIONS FOUND IN DATA ===\n")
+cat("(Shows the actual text forms detected, before standardization)\n\n")
+geo %>%
+  filter(!is.na(countries_detected), countries_detected != "") %>%
+  select(countries_detected) %>%
+  separate_rows(countries_detected, sep = "; ") %>%
+  filter(!is.na(countries_detected), countries_detected != "") %>%
+  count(countries_detected, sort = TRUE) %>%
+  head(20) %>%
+  print()

@@ -482,16 +482,25 @@ get_country_classifications <- function() {
     "Wallis And Futuna", "Global South",
     "Yemen", "Global South",
     # Additional variations for better detection
+    "D.R.C.", "Global South",
+    "D.r.c.", "Global South",
+    "d.r.c.", "Global South",
+    "D.R. Congo", "Global South",
     "D.r. Congo", "Global South",
     "Drc", "Global South",
     "Federative Republic Of Brazil", "Global South",
     "Islamic Republic Of Iran", "Global South",
+    "P.R.C.", "Global South",
+    "P.r.c.", "Global South",
     "P.r. China", "Global South",
     "Republic Of India", "Global South",
     "Republic Of South Africa", "Global South",
     "São Tomé And Príncipe", "Global South",
+    "U.S.A.", "Global North",
     "U.s.a.", "Global North",
-    "Uae", "Global South"
+    "U.s.", "Global North",
+    "Uae", "Global South",
+    "U.a.e.", "Global South"
   )
   
   # Combine main classifications with abbreviations
@@ -516,10 +525,81 @@ get_global_south_countries <- function() {
     dplyr::pull(country)
 }
 
-# Function to get all countries as vector
+# Function to get all countries as vector (includes all variations)
 get_all_countries <- function() {
   get_country_classifications() %>%
     dplyr::pull(country)
+}
+
+# Function to get canonical country names only (standardized forms)
+get_canonical_countries <- function() {
+  # Define the canonical/standard country names
+  # These are the target names that all variations should map to
+  canonical <- c(
+    # Major countries
+    "United States", "Canada", "United Kingdom", "Germany", "France", "Italy", "Spain",
+    "Netherlands", "Belgium", "Switzerland", "Austria", "Sweden", "Norway", "Denmark",
+    "Finland", "Ireland", "Portugal", "Greece", "Luxembourg", "Iceland",
+    "Australia", "New Zealand", "Japan", "South Korea", "Singapore", "Taiwan", "Hong Kong",
+    "Israel", "Czech Republic", "Slovakia", "Slovenia", "Estonia", "Latvia", "Lithuania",
+    "Poland", "Hungary", "Croatia", "Cyprus", "Malta", "Mauritania",
+    
+    # Asia
+    "China", "India", "Russia", "North Korea", "Myanmar", "Vietnam", "Sri Lanka",
+    "Iran", "Saudi Arabia", "Kuwait", "Bahrain", "Qatar", "United Arab Emirates",
+    "Oman", "Yemen", "Jordan", "Lebanon", "Syria", "Mongolia",
+    "Kazakhstan", "Uzbekistan", "Turkmenistan", "Kyrgyzstan", "Tajikistan",
+    "Afghanistan", "Pakistan", "Bangladesh", "Maldives", "Nepal", "Bhutan",
+    "Thailand", "Laos", "Cambodia", "Malaysia", "Indonesia", "Philippines",
+    "Brunei", "Timor-Leste", "Iraq",
+    
+    # Africa
+    "Nigeria", "South Africa", "Kenya", "Ethiopia", "Ghana", "Guinea", "Guinea-Bissau",
+    "Morocco", "Egypt", "Tunisia", "Algeria", "Libya", "Sudan", "Angola",
+    "Tanzania", "Uganda", "Rwanda", "Burundi", "Cameroon", "Côte d'Ivoire",
+    "Senegal", "Mali", "Burkina Faso", "Niger", "Chad", "Central African Republic",
+    "Democratic Republic of the Congo", "Republic of the Congo", "Gabon",
+    "Equatorial Guinea", "Madagascar", "Mauritius", "Seychelles", "Mozambique",
+    "Zambia", "Zimbabwe", "Botswana", "Namibia", "Lesotho", "Eswatini",
+    "Malawi", "Benin", "Togo", "Sierra Leone", "Liberia", "Gambia",
+    "Eritrea", "Djibouti", "Somalia", "Somaliland", "South Sudan",
+    
+    # Americas
+    "Brazil", "Mexico", "Guatemala", "Belize", "Honduras", "El Salvador",
+    "Nicaragua", "Costa Rica", "Panama", "Argentina", "Chile", "Colombia",
+    "Peru", "Venezuela", "Ecuador", "Bolivia", "Uruguay", "Paraguay",
+    "Guyana", "Suriname", "French Guiana", "Cuba", "Jamaica", "Haiti",
+    "Dominican Republic", "Trinidad and Tobago", "Barbados", "Bahamas",
+    "Grenada", "Dominica", "Saint Lucia", "Saint Vincent and the Grenadines",
+    "Saint Kitts and Nevis", "Antigua and Barbuda",
+    
+    # Europe
+    "Turkey", "Ukraine", "Belarus", "Moldova", "Romania", "Bulgaria",
+    "Serbia", "Montenegro", "Bosnia and Herzegovina", "North Macedonia",
+    "Albania", "Kosovo", "Georgia", "Armenia", "Azerbaijan",
+    
+    # Oceania
+    "Papua New Guinea", "Fiji", "Vanuatu", "Solomon Islands", "Samoa",
+    "Tonga", "Kiribati", "Micronesia", "Marshall Islands", "Palau", "Nauru",
+    
+    # Territories and smaller entities
+    "Aruba", "Anguilla", "Åland Islands", "Andorra", "American Samoa",
+    "Ashmore and Cartier Islands", "French Southern and Antarctic Lands",
+    "Bermuda", "Saint Barthélemy", "Cook Islands", "Cabo Verde", "Curaçao",
+    "Cayman Islands", "Northern Cyprus", "Falkland Islands", "Faroe Islands",
+    "Guernsey", "Greenland", "Guam", "Heard Island and McDonald Islands",
+    "Isle of Man", "British Indian Ocean Territory", "Jersey", "Siachen Glacier",
+    "Macao", "Saint Martin", "Monaco", "Montserrat", "New Caledonia",
+    "Norfolk Island", "Niue", "Northern Mariana Islands", "Pitcairn Islands",
+    "Puerto Rico", "Palestine", "French Polynesia", "Western Sahara",
+    "South Georgia and the South Sandwich Islands", "Saint Helena",
+    "San Marino", "São Tomé and Príncipe", "Sint Maarten", "Turks and Caicos Islands",
+    "Vatican City", "British Virgin Islands", "United States Virgin Islands",
+    "Wallis and Futuna", "Saint Pierre and Miquelon", "Liechtenstein",
+    "Comoros", "Antarctica"
+  )
+  
+  return(sort(unique(canonical)))
 }
 
 # Function to get plant parts keywords
@@ -939,7 +1019,9 @@ standardize_country_name <- function(country_text) {
     "Usa" = "United States",
     "Us" = "United States",
     "U.S.A." = "United States",
+    "U.s.a." = "United States",  # Title-cased version
     "U.S." = "United States",
+    "U.s." = "United States",  # Title-cased version
     "United States Of America" = "United States",
     "The United States" = "United States",
 
@@ -957,17 +1039,30 @@ standardize_country_name <- function(country_text) {
     "Soviet Union" = "Russia",  # Historical
     "Ussr" = "Russia",  # Historical
     "People'S Republic Of China" = "China",
+    "People's Republic Of China" = "China",
     "Prc" = "China",
+    "P.R.C." = "China",
+    "P.r.c." = "China",  # Title-cased version
+    "P.R. China" = "China",
+    "P.r. China" = "China",  # Title-cased version
     "Republic Of China" = "Taiwan",  # Note: Taiwan claims this name
     "Republic Of Korea" = "South Korea",
     "Korea" = "South Korea",  # Ambiguous - defaults to South Korea
     "Dprk" = "North Korea",  # Democratic People's Republic of Korea
+    "D.P.R.K." = "North Korea",
+    "D.p.r.k." = "North Korea",  # Title-cased version
     "Burma" = "Myanmar",
     "Viet Nam" = "Vietnam",
+    "Republic Of India" = "India",
+    "Bharat" = "India",  # Hindi name
     "Sri Lanka" = "Sri Lanka",  # No change needed but included for completeness
 
     # Middle East and Gulf countries
     "Uae" = "United Arab Emirates",
+    "U.A.E." = "United Arab Emirates",
+    "U.a.e." = "United Arab Emirates",  # Title-cased version
+    "UAE" = "United Arab Emirates",
+    "Emirates" = "United Arab Emirates",
     "Islamic Republic Of Iran" = "Iran",
     "Persia" = "Iran",  # Historical/traditional name
     "Saudi Arabia" = "Saudi Arabia",  # No change but included
@@ -975,17 +1070,28 @@ standardize_country_name <- function(country_text) {
 
     # African countries
     "Drc" = "Democratic Republic of the Congo",
+    "DRC" = "Democratic Republic of the Congo",
+    "D.R.C." = "Democratic Republic of the Congo",
+    "d.r.c." = "Democratic Republic of the Congo",
+    "D.r.c." = "Democratic Republic of the Congo",  # Title-cased version
+    "D.R. Congo" = "Democratic Republic of the Congo",
+    "D.r. Congo" = "Democratic Republic of the Congo",  # Title-cased version
     "Democratic Republic Of Congo" = "Democratic Republic of the Congo",
     "Republic Of The Congo" = "Republic of the Congo",
     "Congo" = "Republic of the Congo",  # Ambiguous - defaults to Republic of the Congo
     "Za" = "South Africa",  # Internet country code
     "Rsa" = "South Africa",  # Republic of South Africa
+    "Republic Of South Africa" = "South Africa",
     "Ivory Coast" = "Côte d'Ivoire",
     "Cote D'Ivoire" = "Côte d'Ivoire",
     "Cote D’Ivoire" = "Côte d'Ivoire",
+    "Cote DIvoire" = "Côte d'Ivoire",
+    "Cote D Ivoire" = "Côte d'Ivoire",
     "Swaziland" = "Eswatini",  # Name change in 2018
     "The Gambia" = "Gambia",
     "Cape Verde" = "Cabo Verde",
+    "Libyan Arab Jamahiriya" = "Libya",
+    "Libyan Jamahiriya" = "Libya",
 
     # European countries
     "Czechia" = "Czech Republic",
@@ -996,15 +1102,24 @@ standardize_country_name <- function(country_text) {
 
     # Latin American countries
     "Brasil" = "Brazil",
+    "Federative Republic Of Brazil" = "Brazil",
+    "República Federativa Do Brasil" = "Brazil",
     "México" = "Mexico",
     "Méjico" = "Mexico",  # Alternative spelling
+    "Mejico" = "Mexico",  # Alternative spelling
+    "United Mexican States" = "Mexico",
+    "Estados Unidos Mexicanos" = "Mexico",
     "Argentine Republic" = "Argentina",
+    "Argentinian Republic" = "Argentina",
     "Republic Of Argentina" = "Argentina",
 
     # Oceania and Pacific
     "East Timor" = "Timor-Leste",
     "Timor Leste" = "Timor-Leste",
     "Png" = "Papua New Guinea",
+    "P.n.g." = "Papua New Guinea",
+    "P.N.G." = "Papua New Guinea",
+    "p.n.g." = "Papua New Guinea",
 
     # Additional historical and alternative names
     "Zaire" = "Democratic Republic of the Congo",  # Historical name
@@ -1022,11 +1137,20 @@ standardize_country_name <- function(country_text) {
     "Wales" = "United Kingdom",
     "Northern Ireland" = "United Kingdom",
     "Catalonia" = "Spain",  # Autonomous region
+    "Catalunya" = "Spain",  # Alternative name for Catalonia
+    "Cataluña" = "Spain",  # Alternative name for Catalonia
+    "Catalonha" = "Spain",  # Alternative name for Catalonia
     "Basque Country" = "Spain",
     "Quebec" = "Canada",  # Province
+    
     "Texas" = "United States",  # State
     "California" = "United States",
     "Florida" = "United States",
+    "Alaska" = "United States",
+    "Hawaii" = "United States", 
+    "Arizona" = "United States",
+    "Colorado" = "United States",
+    "Oregon" = "United States",
 
     # Alternative spellings and transliterations
     "Moldova" = "Moldova",
@@ -1063,6 +1187,7 @@ standardize_country_name <- function(country_text) {
     "Antigua And Barbuda" = "Antigua and Barbuda",
     "Benin" = "Benin",
     "Bahamas" = "Bahamas",
+    "The Bahamas" = "Bahamas",
     "Bosnia And Herz." = "Bosnia and Herzegovina",
     "St-Barthélemy" = "Saint Barthélemy",
     "Saint Barthélemy" = "Saint Barthélemy",
@@ -1070,6 +1195,8 @@ standardize_country_name <- function(country_text) {
     "Bermuda" = "Bermuda",
     "Barbados" = "Barbados",
     "Central African Rep." = "Central African Republic",
+    "C.A.R." = "Central African Republic",
+    "CAR" = "Central African Republic",
     "Côte D'ivoire" = "Côte d'Ivoire",
     "Dem. Rep. Congo" = "Democratic Republic of the Congo",
     "Cook Is." = "Cook Islands",
@@ -1139,9 +1266,12 @@ standardize_country_name <- function(country_text) {
     "Pitcairn Is." = "Pitcairn Islands",
     "Pitcairn Islands" = "Pitcairn Islands",
     "Palau" = "Palau",
+    "Republic Of Palau" = "Palau",
     "Puerto Rico" = "Puerto Rico",
     "Dem. Rep. Korea" = "North Korea",
+    "Democratic People's Republic Of Korea" = "North Korea",
     "Palestine" = "Palestine",
+    "State Of Palestine" = "Palestine",
     "Fr. Polynesia" = "French Polynesia",
     "French Polynesia" = "French Polynesia",
     "W. Sahara" = "Western Sahara",
@@ -1155,12 +1285,25 @@ standardize_country_name <- function(country_text) {
     "Solomon Islands" = "Solomon Islands",
     "San Marino" = "San Marino",
     "Somaliland" = "Somaliland",
+    "Somalia" = "Somalia",
+    "Saint Pierre And Miquelon" = "Saint Pierre and Miquelon",
+    "St. Pierre And Miquelon" = "Saint Pierre and Miquelon",
     "São Tomé And Principe" = "São Tomé and Príncipe",
+    "Suriname" = "Suriname",
+    "Swaziland" = "Eswatini",
     "Sint Maarten" = "Sint Maarten",
     "Seychelles" = "Seychelles",
     "Turks And Caicos Is." = "Turks and Caicos Islands",
     "Turks And Caicos Islands" = "Turks and Caicos Islands",
     "Togo" = "Togo",
+    "Tajikistan" = "Tajikistan",
+    "Tadjikistan" = "Tajikistan",
+    "Tadzhikistan" = "Tajikistan",
+    "Turkmenistan" = "Turkmenistan",
+    "Turkmenia" = "Turkmenistan",
+    "Timor-Leste" = "Timor-Leste",
+    "Timor Leste" = "Timor-Leste",
+    "Tonga" = "Tonga",
     "Trinidad And Tobago" = "Trinidad and Tobago",
     "Vatican" = "Vatican City",
     "Vatican City" = "Vatican City",
@@ -1171,18 +1314,27 @@ standardize_country_name <- function(country_text) {
     "U.s. Virgin Is." = "United States Virgin Islands",
     "United States Virgin Islands" = "United States Virgin Islands",
     "Wallis And Futuna Is." = "Wallis and Futuna",
-    "Wallis And Futuna" = "Wallis and Futuna"
+    "Wallis And Futuna" = "Wallis and Futuna",
+    "Yemen" = "Yemen",
+    "Republic Of Yemen" = "Yemen",
+    "Kosovo" = "Kosovo",
+    "Republic Of Kosovo" = "Kosovo",
+    "Gabon" = "Gabon",
+    "Gabonese Republic" = "Gabon",
+    "Aruba" = "Aruba",
+    "Libya" = "Libya",
+    "State Of Libya" = "Libya"
   )
 
   # Apply mappings using regex patterns for better matching
   out <- vapply(country_title, function(ct) {
-    # Check if this is already a valid country name - if so, don't apply mappings
-    all_countries <- get_all_countries()
-    if (ct %in% all_countries) {
+    # Check if this is already a canonical country name - if so, return it unchanged
+    canonical_countries <- get_canonical_countries()
+    if (ct %in% canonical_countries) {
       return(ct)
     }
 
-    # First try exact matches
+    # First try exact matches in the mapping table
     if (ct %in% names(country_mappings)) {
       return(unname(country_mappings[ct]))
     }

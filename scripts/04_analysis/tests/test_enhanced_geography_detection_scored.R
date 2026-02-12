@@ -323,19 +323,19 @@ edge_tests <- tribble(
   "Rome, Georgia hosts agricultural research", "Georgia",
   "Rome, Italy has ancient olive tree endophytes", "Italy",
   "London, Kentucky forests show diverse mycobiota", "NONE",
-  "London, England research on fungal pathogens", "England",
+  "London, England research on fungal pathogens", "United Kingdom",
   "Athens, Georgia climate affects fungal growth", "Georgia",
   "Athens, Greece studies Mediterranean fungi", "Greece",
   "Manchester, New Hampshire weather patterns", "NONE",
-  "Manchester, England industrial revolution impacts", "England",
+  "Manchester, England industrial revolution impacts", "United Kingdom",
   "Berlin, Wisconsin local ecology studies", "NONE",
   "Berlin, Germany mycological congress", "Germany",
   "Vienna, Virginia historical collections", "NONE",
   "Vienna, Austria fungal taxonomy work", "Austria",
   "Oxford, Mississippi university research", "NONE",
-  "Oxford, England academic publications", "England",
+  "Oxford, England academic publications", "United Kingdom",
   "Cambridge, Massachusetts biotechnology research", "NONE",
-  "Cambridge, England university studies", "England"
+  "Cambridge, England university studies", "United Kingdom"
 )
 
 edge_results <- detect_geographic_locations_batch(edge_tests$text)
@@ -439,7 +439,46 @@ undetected_tests <- tibble(
     "Endophyte research in Saint Vincent and the Grenadines reveals diverse fungal communities",
     "Endophyte research in British Virgin Islands reveals diverse fungal communities",
     "Endophyte research in United States Virgin Islands reveals diverse fungal communities",
-    "Endophyte research in Wallis and Futuna reveals diverse fungal communities"
+    "Endophyte research in Wallis and Futuna reveals diverse fungal communities",
+    "Endophyte research in Yemen reveals diverse fungal communities",
+    "Endophyte research in Tonga reveals diverse fungal communities",
+    "Endophyte research in Kosovo reveals diverse fungal communities",
+    "Endophyte research in Gabon reveals diverse fungal communities",
+    "Endophyte research in Aruba reveals diverse fungal communities",
+    "Endophyte research in Andorra reveals diverse fungal communities",
+    "Endophyte research in Anguilla reveals diverse fungal communities",
+    "Endophyte research in Curaçao reveals diverse fungal communities",
+    "Endophyte research in Djibouti reveals diverse fungal communities",
+    "Endophyte research in Eritrea reveals diverse fungal communities",
+    "Endophyte research in Eswatini reveals diverse fungal communities",
+    "Endophyte research in Grenada reveals diverse fungal communities",
+    "Endophyte research in Guernsey reveals diverse fungal communities",
+    "Endophyte research in Isle of Man reveals diverse fungal communities",
+    "Endophyte research in Kiribati reveals diverse fungal communities",
+    "Endophyte research in Kuwait reveals diverse fungal communities",
+    "Endophyte research in Lesotho reveals diverse fungal communities",
+    "Endophyte research in Liberia reveals diverse fungal communities",
+    "Endophyte research in Libya reveals diverse fungal communities",
+    "Endophyte research in Liechtenstein reveals diverse fungal communities",
+    "Endophyte research in Macao reveals diverse fungal communities",
+    "Endophyte research in Maldives reveals diverse fungal communities",
+    "Endophyte research in Moldova reveals diverse fungal communities",
+    "Endophyte research in Monaco reveals diverse fungal communities",
+    "Endophyte research in Montserrat reveals diverse fungal communities",
+    "Endophyte research in Nauru reveals diverse fungal communities",
+    "Endophyte research in Niue reveals diverse fungal communities",
+    "Endophyte research in Norfolk Island reveals diverse fungal communities",
+    "Endophyte research in Palau reveals diverse fungal communities",
+    "Endophyte research in Palestine reveals diverse fungal communities",
+    "Endophyte research in San Marino reveals diverse fungal communities",
+    "Endophyte research in Seychelles reveals diverse fungal communities",
+    "Endophyte research in Siachen Glacier reveals diverse fungal communities",
+    "Endophyte research in Sint Maarten reveals diverse fungal communities",
+    "Endophyte research in Somaliland reveals diverse fungal communities",
+    "Endophyte research in Suriname reveals diverse fungal communities",
+    "Endophyte research in Tajikistan reveals diverse fungal communities",
+    "Endophyte research in Timor-Leste reveals diverse fungal communities",
+    "Endophyte research in Turkmenistan reveals diverse fungal communities"
   ),
   expected_country = c(
     "Angola",
@@ -495,7 +534,46 @@ undetected_tests <- tibble(
     "Saint Vincent and the Grenadines",
     "British Virgin Islands",
     "United States Virgin Islands",
-    "Wallis and Futuna"
+    "Wallis and Futuna",
+    "Yemen",
+    "Tonga",
+    "Kosovo",
+    "Gabon",
+    "Aruba",
+    "Andorra",
+    "Anguilla",
+    "Curaçao",
+    "Djibouti",
+    "Eritrea",
+    "Eswatini",
+    "Grenada",
+    "Guernsey",
+    "Isle of Man",
+    "Kiribati",
+    "Kuwait",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Macao",
+    "Maldives",
+    "Moldova",
+    "Monaco",
+    "Montserrat",
+    "Nauru",
+    "Niue",
+    "Norfolk Island",
+    "Palau",
+    "Palestine",
+    "San Marino",
+    "Seychelles",
+    "Siachen Glacier",
+    "Sint Maarten",
+    "Somaliland",
+    "Suriname",
+    "Tajikistan",
+    "Timor-Leste",
+    "Turkmenistan"
   )
 )
 
@@ -511,6 +589,223 @@ for (i in 1:nrow(undetected_tests)) {
               if(passed) "✓" else "✗"))
   if (!passed) {
     cat(sprintf("  Expected: %s | Got: %s\n", expected, actual))
+  }
+}
+
+# Test 8: Abbreviation Standardization
+cat("\n8. TESTING ABBREVIATION STANDARDIZATION:\n")
+cat("=", rep("=", 70), "\n", sep = "")
+
+abbreviation_tests <- tribble(
+  ~text, ~expected_country,
+  "Research in Antigua And Barb. on fungal diversity", "Antigua and Barbuda",
+  "Studies from Cook Is. reveal new species", "Cook Islands",
+  "Czech Rep. scientists discovered endophytes", "Czech Republic",
+  "Dominican Rep. has high fungal diversity", "Dominican Republic",
+  "Samples from Falkland Is. analyzed", "Falkland Islands",
+  "Marshall Is. biodiversity assessment", "Marshall Islands",
+  "Work in N. Mariana Is. ongoing", "Northern Mariana Islands",
+  "Pitcairn Is. endemic fungi", "Pitcairn Islands",
+  "Solomon Is. rainforest studies", "Solomon Islands",
+  "Research from Turks And Caicos Is.", "Turks and Caicos Islands",
+  "U.s. Virgin Is. fungal communities", "United States Virgin Islands",
+  "Wallis And Futuna Is. biodiversity", "Wallis and Futuna",
+  "Studies from Br. Indian Ocean Ter.", "British Indian Ocean Territory",
+  "British Virgin Is. ecosystem analysis", "British Virgin Islands",
+  "Cayman Is. coral-associated fungi", "Cayman Islands",
+  "Central African Rep. tropical fungi", "Central African Republic",
+  "Bosnia And Herz. temperate endophytes", "Bosnia and Herzegovina",
+  "S. Geo. And S. Sandw. Is. polar fungi", "South Georgia and the South Sandwich Islands",
+  "St. Vin. And Gren. island fungi", "Saint Vincent and the Grenadines",
+  "Research conducted in U.s.a.", "United States",
+  "Samples from U.S.A. analyzed", "United States",
+  "UAE desert fungi studied", "United Arab Emirates",
+  "U.A.E. mangrove endophytes", "United Arab Emirates",
+  "DRC rainforest biodiversity", "Democratic Republic of the Congo",
+  "D.R.C. fungal diversity", "Democratic Republic of the Congo",
+  "P.R.C. agricultural research", "China",
+  "P.r. China rice endophytes", "China"
+)
+
+abbreviation_results <- detect_geographic_locations_batch(abbreviation_tests$text)
+
+for (i in 1:nrow(abbreviation_tests)) {
+  actual <- ifelse(is.na(abbreviation_results$countries_detected[i]), "NONE", abbreviation_results$countries_detected[i])
+  expected <- abbreviation_tests$expected_country[i]
+  
+  passed <- check_detection(actual, expected, abbreviation_tests$text[i], "Abbreviation Standardization")
+  
+  cat(sprintf("%-60s %s\n", substr(abbreviation_tests$text[i], 1, 60), 
+              if(passed) "✓" else "✗"))
+  if (!passed) {
+    cat(sprintf("  Expected: %s | Got: %s\n", expected, actual))
+  }
+}
+
+# Test 9: Historical and Synonym Names
+cat("\n9. TESTING HISTORICAL AND SYNONYM COUNTRY NAMES:\n")
+cat("=", rep("=", 70), "\n", sep = "")
+
+synonym_tests <- tribble(
+  ~text, ~expected_country,
+  "Historical samples from Ceylon", "Sri Lanka",
+  "Persia has diverse endophyte communities", "Iran",
+  "Research from Siam in the 1950s", "Thailand",
+  "Burma teak forests studied", "Myanmar",
+  "Zaire rainforest collections", "Democratic Republic of the Congo",
+  "Rhodesia historical specimens", "Zimbabwe",
+  "Bechuanaland early surveys", "Botswana",
+  "Basutoland mountain fungi", "Lesotho",
+  "Gold Coast colonial records", "Ghana",
+  "Tanganyika biodiversity assessment", "Tanzania",
+  "Swaziland renamed to Eswatini", "Eswatini",
+  "Formosa endemic species", "Taiwan",
+  "Ivory Coast cocoa endophytes", "Côte d'Ivoire",
+  "Cote D'Ivoire agricultural fungi", "Côte d'Ivoire",
+  "Moldavia historical collections", "Moldova",
+  "Belorussia forest fungi", "Belarus",
+  "Byelorussia temperate species", "Belarus",
+  "Kirghizia mountain ecosystems", "Kyrgyzstan",
+  "Kirgizstan alpine fungi", "Kyrgyzstan",
+  "Tadjikistan high-altitude endophytes", "Tajikistan",
+  "Tadzhikistan biodiversity", "Tajikistan",
+  "Turkmenia desert species", "Turkmenistan",
+  "Azerbaidjan Caucasus fungi", "Azerbaijan",
+  "The Gambia mangrove studies", "Gambia",
+  "Cabo Verde island biodiversity", "Cabo Verde",
+  "Cape Verde endemic fungi", "Cabo Verde",
+  "East Timor independence studies", "Timor-Leste",
+  "Timor Leste biodiversity", "Timor-Leste",
+  "Viet Nam rice endophytes", "Vietnam",
+  "México biodiversity hotspot", "Mexico",
+  "Méjico traditional knowledge", "Mexico",
+  "United Mexican States research", "Mexico",
+  "Brasil Amazon fungi", "Brazil",
+  "Federative Republic Of Brazil studies", "Brazil",
+  "Islamic Republic Of Iran diversity", "Iran",
+  "Republic Of India collections", "India",
+  "Republic Of South Africa surveys", "South Africa"
+)
+
+synonym_results <- detect_geographic_locations_batch(synonym_tests$text)
+
+for (i in 1:nrow(synonym_tests)) {
+  actual <- ifelse(is.na(synonym_results$countries_detected[i]), "NONE", synonym_results$countries_detected[i])
+  expected <- synonym_tests$expected_country[i]
+  
+  passed <- check_detection(actual, expected, synonym_tests$text[i], "Historical/Synonym Names")
+  
+  cat(sprintf("%-60s %s\n", substr(synonym_tests$text[i], 1, 60), 
+              if(passed) "✓" else "✗"))
+  if (!passed) {
+    cat(sprintf("  Expected: %s | Got: %s\n", expected, actual))
+  }
+}
+
+# Test 10: Case Variation Handling
+cat("\n10. TESTING CASE VARIATION HANDLING:\n")
+cat("=", rep("=", 70), "\n", sep = "")
+
+case_tests <- tribble(
+  ~text, ~expected_country,
+  "Research in UNITED STATES of America", "United States",
+  "Studies from united states analyzed", "United States",
+  "Samples from United States collected", "United States",
+  "GREAT BRITAIN biodiversity surveys", "United Kingdom",
+  "great britain fungal diversity", "United Kingdom",
+  "Great Britain endophyte studies", "United Kingdom",
+  "NEW ZEALAND unique fungi", "New Zealand",
+  "new zealand endemic species", "New Zealand",
+  "New Zealand biodiversity hotspot", "New Zealand",
+  "COSTA RICA rainforest endophytes", "Costa Rica",
+  "costa rica cloud forests", "Costa Rica",
+  "Costa Rica tropical diversity", "Costa Rica",
+  "SOUTH AFRICA diverse ecosystems", "South Africa",
+  "south africa fynbos fungi", "South Africa",
+  "South Africa biodiversity", "South Africa",
+  "SAUDI ARABIA desert endophytes", "Saudi Arabia",
+  "saudi arabia arid fungi", "Saudi Arabia",
+  "Saudi Arabia extreme environments", "Saudi Arabia"
+)
+
+case_results <- detect_geographic_locations_batch(case_tests$text)
+
+for (i in 1:nrow(case_tests)) {
+  actual <- ifelse(is.na(case_results$countries_detected[i]), "NONE", case_results$countries_detected[i])
+  expected <- case_tests$expected_country[i]
+  
+  passed <- check_detection(actual, expected, case_tests$text[i], "Case Variation Handling")
+  
+  cat(sprintf("%-60s %s\n", substr(case_tests$text[i], 1, 60), 
+              if(passed) "✓" else "✗"))
+  if (!passed) {
+    cat(sprintf("  Expected: %s | Got: %s\n", expected, actual))
+  }
+}
+
+# Test 11: Standardize Country Name Function
+cat("\n11. TESTING standardize_country_name() FUNCTION:\n")
+cat("=", rep("=", 70), "\n", sep = "")
+
+standardization_tests <- tribble(
+  ~input, ~expected,
+  "USA", "United States",
+  "U.S.A.", "United States",
+  "u.s.a.", "United States",
+  "United States", "United States",
+  "UK", "United Kingdom",
+  "Britain", "United Kingdom",
+  "Great Britain", "United Kingdom",
+  "United Kingdom", "United Kingdom",
+  "PRC", "China",
+  "P.R.C.", "China",
+  "People's Republic of China", "China",
+  "China", "China",
+  "DRC", "Democratic Republic of the Congo",
+  "D.R.C.", "Democratic Republic of the Congo",
+  "Zaire", "Democratic Republic of the Congo",
+  "UAE", "United Arab Emirates",
+  "U.A.E.", "United Arab Emirates",
+  "Cook Is.", "Cook Islands",
+  "Czech Rep.", "Czech Republic",
+  "Dominican Rep.", "Dominican Republic"
+)
+
+cat(sprintf("%-30s %-30s %s\n", "Input", "Expected", "Status"))
+cat(strrep("=", 70), "\n")
+
+for (i in 1:nrow(standardization_tests)) {
+  standardized <- standardize_country_name(standardization_tests$input[i])
+  expected <- standardization_tests$expected[i]
+  
+  # Case-insensitive comparison
+  passed <- tolower(standardized) == tolower(expected)
+  
+  if (passed) {
+    passed_tests <- passed_tests + 1
+    status <- "✓"
+  } else {
+    failed_tests <- failed_tests + 1
+    status <- "✗"
+  }
+  
+  total_tests <- total_tests + 1
+  
+  test_results[[length(test_results) + 1]] <- list(
+    category = "Standardize Function",
+    test = standardization_tests$input[i],
+    expected = expected,
+    actual = standardized,
+    status = if(passed) "✓ PASS" else "✗ FAIL"
+  )
+  
+  cat(sprintf("%-30s %-30s %s\n", 
+              standardization_tests$input[i], 
+              standardized,
+              status))
+  
+  if (!passed) {
+    cat(sprintf("  Expected: %s\n", expected))
   }
 }
 

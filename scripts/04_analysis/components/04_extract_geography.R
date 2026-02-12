@@ -31,9 +31,20 @@ cat("Extracting geographic location information\n\n")
 # Enhanced geographic detection with comprehensive synonym handling and context-aware disambiguation
 detect_geographic_locations_batch <- function(text_vector) {
   # Get comprehensive reference data
-  all_countries <- get_all_countries()
-  global_north <- get_global_north_countries()
-  global_south <- get_global_south_countries()
+  all_countries_raw <- get_all_countries()
+  
+  # Sort countries by length (longest first) to avoid partial matches
+  # e.g., "Democratic Republic of the Congo" should be checked before "Republic of the Congo"
+  all_countries <- all_countries_raw[order(-nchar(all_countries_raw))]
+  
+  # Standardize global north/south lists to canonical forms for proper matching
+  global_north <- get_global_north_countries() %>%
+    purrr::map_chr(standardize_country_name) %>%
+    unique()
+  global_south <- get_global_south_countries() %>%
+    purrr::map_chr(standardize_country_name) %>%
+    unique()
+  
   continents <- get_continent_keywords()
   regions <- get_region_keywords()
   institutions <- get_research_institution_mappings()
@@ -167,6 +178,19 @@ detect_geographic_locations_batch <- function(text_vector) {
             if (country == "South Korea") found <- c(found, country)
           }
         }
+      } else if (country == "Republic of the Congo") {
+        # Don't match "Republic of the Congo" if it's part of "Democratic Republic of the Congo"
+        # Also skip if we already found "Democratic Republic of the Congo"
+        if (!("Democratic Republic of the Congo" %in% found) &&
+            grepl("\\bRepublic\\s+of\\s+the\\s+Congo\\b", text, ignore.case = TRUE) &&
+            !grepl("\\bDemocratic\\s+Republic\\s+of\\s+the\\s+Congo\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
+      } else if (country == "Democratic Republic of the Congo") {
+        # Always check for the full name first
+        if (grepl("\\bDemocratic\\s+Republic\\s+of\\s+the\\s+Congo\\b", text, ignore.case = TRUE)) {
+          found <- c(found, country)
+        }
       } else {
         # Standard pattern matching for other countries - but skip if context suggests homonym
         should_skip <- FALSE
@@ -185,13 +209,20 @@ detect_geographic_locations_batch <- function(text_vector) {
         }
         
         if (!should_skip) {
-          country_pattern <- paste0("\\b", str_replace_all(country, "\\s+", "\\\\s+"), "\\b")
-          if (grepl(country_pattern, text, ignore.case = TRUE)) {
+          # Create flexible pattern that handles periods, spaces, and special characters
+          # Escape special regex characters but preserve spaces and periods
+          country_escaped <- str_replace_all(country, "([.()])", "\\\\\\1")
+          country_pattern <- str_replace_all(country_escaped, "\\s+", "\\\\s+")
+          
+          # Use lookahead/lookbehind for better word boundary detection with periods
+          pattern <- paste0("(?<!\\w)", country_pattern, "(?!\\w)")
+          
+          if (grepl(pattern, text, ignore.case = TRUE, perl = TRUE)) {
             found <- c(found, country)
           }
 
           # Also try matching against title case version
-          if (str_detect(text_title, country_pattern)) {
+          if (str_detect(text_title, pattern)) {
             found <- c(found, country)
           }
         }
@@ -418,22 +449,35 @@ detect_geographic_locations_batch <- function(text_vector) {
     return(any(valid_coords))
   })
 
+  # Standardize all detected countries to canonical forms
+  # This ensures that variations like "USA", "U.S.A.", "US" all become "United States"
+  # and historical names like "Ceylon" become "Sri Lanka"
+  country_matches_standardized <- purrr::map(country_matches, function(countries) {
+    if (length(countries) == 0) return(character(0))
+    
+    # Standardize each country name to its canonical form
+    canonical <- purrr::map_chr(countries, standardize_country_name)
+    
+    # Remove duplicates (multiple variations may map to same canonical name)
+    return(unique(canonical))
+  })
+  
   # Build results with enhanced categorization and ensure unique countries per abstract
   # Note: unique() calls ensure each geographical entity is counted only once per abstract
   results <- tibble(
-    countries_detected = purrr::map_chr(country_matches, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
-    global_north_countries = purrr::map_chr(country_matches, ~{
+    countries_detected = purrr::map_chr(country_matches_standardized, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
+    global_north_countries = purrr::map_chr(country_matches_standardized, ~{
       found <- intersect(unique(.), global_north)
       if(length(found) > 0) paste(unique(found), collapse = "; ") else NA_character_
     }),
-    global_south_countries = purrr::map_chr(country_matches, ~{
+    global_south_countries = purrr::map_chr(country_matches_standardized, ~{
       found <- intersect(unique(.), global_south)
       if(length(found) > 0) paste(unique(found), collapse = "; ") else NA_character_
     }),
     continents_detected = map_chr(continents_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     regions_detected = map_chr(regions_found, ~if(length(.) > 0) paste(unique(.), collapse = "; ") else NA_character_),
     has_coordinates = has_coordinates,
-    geographic_summary = pmap_chr(list(country_matches, continents_found, regions_found),
+    geographic_summary = pmap_chr(list(country_matches_standardized, continents_found, regions_found),
                                   function(countries, continents, regions) {
                                     all_geo <- c(unique(countries), unique(continents), unique(regions))
                                     if(length(all_geo) > 0) paste(unique(all_geo), collapse = "; ") else NA_character_
@@ -555,7 +599,7 @@ extract_geography_data <- function(
 if (!interactive() || (interactive() && basename(sys.frame(1)$ofile) == "04_extract_geography.R")) {
 
   # Load consolidated dataset
-  consolidated_file <- "results/consolidated_dataset.csv"
+  consolidated_file <- "results/datasets/consolidated_dataset.csv"
   if (!file.exists(consolidated_file)) {
     stop("❌ Consolidated dataset not found. Run the consolidation script first.")
   }
