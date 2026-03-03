@@ -79,7 +79,7 @@ if (file.exists("models/accepted_species.rds")) {
 message("Reference data loaded: ", nrow(reference_species), " species")
 
 # Load comprehensive taxa results with enhanced species and mycorrhizal data
-taxa_results <- read_csv("results/comprehensive_extraction_results.csv", show_col_types = FALSE)
+taxa_results <- read_csv("results/datasets/comprehensive_extraction_results.csv", show_col_types = FALSE)
 
 message("Comprehensive taxa results loaded: ", nrow(taxa_results), " entries")
 message("Available columns: ", length(names(taxa_results)))
@@ -390,16 +390,17 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
       y = paste("Number of", level_name_plural)
     ) +
     scale_fill_manual(values = c(Found = "#76B7B2", `Not Found` = "#E07A5F"),
+    scale_y_continuous(labels = scales::label_comma()),
     labels = c(
     "Found" = "Studied",
     "Not Found" = "Not Studied"
   ),
                      name = "Status") +
     endo_theme() +
-    theme(axis.text.y = element_text(size = 10),
+    theme(axis.text.y = element_text(size = 12),
           legend.position = "bottom",
-          legend.text = element_text(size = 10),
-          legend.title = element_text(size = 11))
+          legend.text = element_text(size = 12),
+          legend.title = element_text(size = 14))
 
   # Create percentage plot
   percent_data <- phylum_data %>%
@@ -456,10 +457,10 @@ create_phylum_taxa_plot <- function(kingdom_filter, level_name, column_name, out
     "Not Found" = "Not Studied"
   ), name = "Status") +
     endo_theme() +
-    theme(axis.text.y = element_text(size = 10),
+    theme(axis.text.y = element_text(size = 12),
           legend.position = "bottom",
-          legend.text = element_text(size = 10),
-          legend.title = element_text(size = 11))
+          legend.text = element_text(size = 12),
+          legend.title = element_text(size = 14))
 
   # Save both plots with subfolder organization
   ggsave(paste0("plots/", subfolder, "/", output_name, "_by_phylum_count.png"), count_plot, width = 12, height = 8)

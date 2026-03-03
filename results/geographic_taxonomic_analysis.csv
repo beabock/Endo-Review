@@ -1,0 +1,730 @@
+kingdom,phylum,country_clean,unique_species
+Fungi,Ascomycota,Thailand,1102
+Fungi,Ascomycota,China,986
+Fungi,Ascomycota,Brazil,941
+Fungi,Ascomycota,Spain,903
+Fungi,Ascomycota,India,869
+Fungi,Ascomycota,Australia,833
+Fungi,Ascomycota,USA,828
+Fungi,Ascomycota,Italy,808
+Fungi,Ascomycota,South Africa,784
+Fungi,Ascomycota,France,717
+Fungi,Ascomycota,Iran,652
+Fungi,Ascomycota,Russia,625
+Fungi,Ascomycota,Vietnam,591
+Fungi,Ascomycota,New Zealand,565
+Fungi,Ascomycota,Malaysia,560
+Fungi,Ascomycota,Chile,526
+Fungi,Ascomycota,Pakistan,459
+Fungi,Ascomycota,Poland,426
+Fungi,Ascomycota,Mexico,414
+Fungi,Ascomycota,Ecuador,410
+Fungi,Ascomycota,UK,398
+Fungi,Ascomycota,Czech Republic,377
+Fungi,Ascomycota,Croatia,375
+Fungi,Ascomycota,South Korea,362
+Fungi,Ascomycota,Portugal,333
+Fungi,Ascomycota,Netherlands,331
+Fungi,Ascomycota,Germany,325
+Fungi,Ascomycota,Canada,322
+Fungi,Ascomycota,Antarctica,306
+Fungi,Ascomycota,Hungary,304
+Fungi,Ascomycota,Ukraine,304
+Fungi,Ascomycota,United States,304
+Fungi,Ascomycota,Sweden,298
+Fungi,Ascomycota,Indonesia,297
+Fungi,Ascomycota,Norway,292
+Fungi,Ascomycota,Argentina,281
+Fungi,Ascomycota,Japan,269
+Fungi,Ascomycota,Namibia,242
+Fungi,Ascomycota,Costa Rica,238
+Fungi,Ascomycota,US,230
+Fungi,Ascomycota,Bulgaria,204
+Fungi,Ascomycota,Taiwan,200
+Fungi,Ascomycota,Panama,198
+Fungi,Ascomycota,Slovenia,191
+Fungi,Ascomycota,Greece,189
+Fungi,Ascomycota,Colombia,179
+Fungi,Ascomycota,Switzerland,174
+Fungi,Ascomycota,Turkey,170
+Fungi,Ascomycota,Nepal,166
+Fungi,Ascomycota,Formosa,162
+Fungi,Ascomycota,Algeria,155
+Fungi,Ascomycota,Estonia,146
+Fungi,Ascomycota,Tanzania,146
+Fungi,Ascomycota,Uruguay,145
+Fungi,Ascomycota,Austria,136
+Fungi,Ascomycota,Slovakia,128
+Fungi,Ascomycota,Nigeria,123
+Fungi,Ascomycota,Uzbekistan,122
+Fungi,Ascomycota,Ghana,119
+Fungi,Ascomycota,Puerto Rico,114
+Fungi,Ascomycota,Mozambique,111
+Fungi,Ascomycota,Laos,108
+Fungi,Ascomycota,Macedonia,105
+Fungi,Ascomycota,Angola,103
+Fungi,Ascomycota,Cyprus,89
+Fungi,Ascomycota,United Arab Emirates,89
+Fungi,Ascomycota,Egypt,87
+Fungi,Ascomycota,Finland,87
+Fungi,Ascomycota,Sri Lanka,86
+Fungi,Ascomycota,Britain,84
+Fungi,Ascomycota,French Guiana,84
+Fungi,Ascomycota,Philippines,80
+Fungi,Ascomycota,Great Britain,79
+Fungi,Ascomycota,Dominican Republic,76
+Fungi,Ascomycota,Saudi Arabia,73
+Fungi,Ascomycota,Siam,72
+Fungi,Ascomycota,Peru,65
+Fungi,Ascomycota,Bhutan,64
+Fungi,Ascomycota,Venezuela,64
+Fungi,Ascomycota,U.A.E.,63
+Fungi,Ascomycota,Bolivia,62
+Fungi,Ascomycota,Bangladesh,55
+Fungi,Ascomycota,Belgium,48
+Fungi,Ascomycota,U.S.,47
+Fungi,Ascomycota,Belize,45
+Fungi,Ascomycota,Trinidad And Tobago,42
+Fungi,Ascomycota,Trinidad and Tobago,42
+Fungi,Ascomycota,Iceland,41
+Fungi,Ascomycota,Mongolia,39
+Fungi,Ascomycota,United Kingdom,39
+Fungi,Ascomycota,New Caledonia,38
+Fungi,Ascomycota,Romania,37
+Fungi,Ascomycota,Ireland,35
+Fungi,Ascomycota,Iraq,34
+Fungi,Ascomycota,Morocco,33
+Fungi,Ascomycota,Lithuania,32
+Fungi,Ascomycota,Ethiopia,31
+Fungi,Ascomycota,England,30
+Fungi,Ascomycota,Georgia,28
+Fungi,Ascomycota,Israel,28
+Fungi,Ascomycota,Oman,26
+Fungi,Ascomycota,Tunisia,26
+Fungi,Ascomycota,Cameroon,25
+Fungi,Ascomycota,Jersey,25
+Fungi,Ascomycota,Serbia,25
+Fungi,Ascomycota,Congo,20
+Fungi,Ascomycota,North Korea,20
+Fungi,Ascomycota,Uganda,19
+Fungi,Ascomycota,Zimbabwe,19
+Fungi,Ascomycota,RSA,18
+Fungi,Ascomycota,Burkina Faso,17
+Fungi,Ascomycota,Kenya,17
+Fungi,Ascomycota,Myanmar,17
+Fungi,Ascomycota,Scotland,17
+Fungi,Ascomycota,Singapore,17
+Fungi,Ascomycota,Zambia,16
+Fungi,Ascomycota,Kazakhstan,15
+Fungi,Ascomycota,Latvia,15
+Fungi,Ascomycota,Guinea,14
+Fungi,Ascomycota,Denmark,13
+Fungi,Ascomycota,Jordan,13
+Fungi,Ascomycota,Luxembourg,13
+Fungi,Ascomycota,Niger,13
+Fungi,Ascomycota,Afghanistan,12
+Fungi,Ascomycota,Honduras,12
+Fungi,Ascomycota,Hong Kong,12
+Fungi,Ascomycota,Azerbaijan,11
+Fungi,Ascomycota,Sudan,11
+Fungi,Ascomycota,Syria,11
+Fungi,Ascomycota,Wales,11
+Fungi,Ascomycota,Botswana,10
+Fungi,Ascomycota,Jamaica,10
+Fungi,Ascomycota,Qatar,8
+Fungi,Ascomycota,Cuba,7
+Fungi,Ascomycota,Fiji,7
+Fungi,Ascomycota,Madagascar,7
+Fungi,Ascomycota,Montenegro,7
+Fungi,Ascomycota,USSR,7
+Fungi,Ascomycota,Cambodia,6
+Fungi,Ascomycota,Guatemala,6
+Fungi,Ascomycota,Malta,6
+Fungi,Ascomycota,Mauritius,6
+Fungi,Ascomycota,Barbados,5
+Fungi,Ascomycota,Benin,5
+Fungi,Ascomycota,Brunei,5
+Fungi,Ascomycota,Papua New Guinea,5
+Fungi,Ascomycota,Bermuda,4
+Fungi,Ascomycota,Brasil,4
+Fungi,Ascomycota,Burundi,4
+Fungi,Ascomycota,Lebanon,4
+Fungi,Ascomycota,Northern Ireland,4
+Fungi,Ascomycota,P.R.C.,4
+Fungi,Ascomycota,Russian Federation,4
+Fungi,Ascomycota,Rwanda,4
+Fungi,Ascomycota,Soviet Union,4
+Fungi,Ascomycota,Armenia,3
+Fungi,Ascomycota,Cote D'Ivoire,3
+Fungi,Ascomycota,Dominica,3
+Fungi,Ascomycota,Guinea-Bissau,3
+Fungi,Ascomycota,Guyana,3
+Fungi,Ascomycota,Holland,3
+Fungi,Ascomycota,PRC,3
+Fungi,Ascomycota,Aland,2
+Fungi,Ascomycota,Aland Islands,2
+Fungi,Ascomycota,Albania,2
+Fungi,Ascomycota,American Samoa,2
+Fungi,Ascomycota,Belarus,2
+Fungi,Ascomycota,Bosnia and Herzegovina,2
+Fungi,Ascomycota,Faroe Islands,2
+Fungi,Ascomycota,French Polynesia,2
+Fungi,Ascomycota,Greenland,2
+Fungi,Ascomycota,Kyrgyzstan,2
+Fungi,Ascomycota,Mauritania,2
+Fungi,Ascomycota,Micronesia,2
+Fungi,Ascomycota,Samoa,2
+Fungi,Ascomycota,Bahrain,1
+Fungi,Ascomycota,Cook Islands,1
+Fungi,Ascomycota,Malawi,1
+Fungi,Ascomycota,México,1
+Fungi,Ascomycota,People's Republic of China,1
+Fungi,Ascomycota,Togo,1
+Fungi,Basidiomycota,Brazil,141
+Fungi,Basidiomycota,USA,141
+Fungi,Basidiomycota,Thailand,138
+Fungi,Basidiomycota,Spain,135
+Fungi,Basidiomycota,Australia,127
+Fungi,Basidiomycota,India,126
+Fungi,Basidiomycota,South Africa,121
+Fungi,Basidiomycota,France,113
+Fungi,Basidiomycota,Italy,110
+Fungi,Basidiomycota,China,107
+Fungi,Basidiomycota,Vietnam,105
+Fungi,Basidiomycota,Russia,99
+Fungi,Basidiomycota,New Zealand,90
+Fungi,Basidiomycota,Chile,86
+Fungi,Basidiomycota,Malaysia,86
+Fungi,Basidiomycota,Iran,78
+Fungi,Basidiomycota,Ecuador,74
+Fungi,Basidiomycota,Pakistan,69
+Fungi,Basidiomycota,Croatia,68
+Fungi,Basidiomycota,Poland,63
+Fungi,Basidiomycota,Antarctica,61
+Fungi,Basidiomycota,Mexico,60
+Fungi,Basidiomycota,Czech Republic,58
+Fungi,Basidiomycota,Portugal,56
+Fungi,Basidiomycota,Ukraine,55
+Fungi,Basidiomycota,Argentina,53
+Fungi,Basidiomycota,Canada,53
+Fungi,Basidiomycota,Netherlands,52
+Fungi,Basidiomycota,Japan,51
+Fungi,Basidiomycota,Norway,51
+Fungi,Basidiomycota,Hungary,50
+Fungi,Basidiomycota,Sweden,48
+Fungi,Basidiomycota,Indonesia,45
+Fungi,Basidiomycota,UK,45
+Fungi,Basidiomycota,Germany,42
+Fungi,Basidiomycota,Namibia,37
+Fungi,Basidiomycota,Slovenia,37
+Fungi,Basidiomycota,Costa Rica,36
+Fungi,Basidiomycota,United States,34
+Fungi,Basidiomycota,Bulgaria,33
+Fungi,Basidiomycota,Estonia,30
+Fungi,Basidiomycota,Nepal,29
+Fungi,Basidiomycota,Panama,29
+Fungi,Basidiomycota,Greece,27
+Fungi,Basidiomycota,South Korea,27
+Fungi,Basidiomycota,Algeria,23
+Fungi,Basidiomycota,Colombia,23
+Fungi,Basidiomycota,Ghana,21
+Fungi,Basidiomycota,Macedonia,20
+Fungi,Basidiomycota,Mozambique,20
+Fungi,Basidiomycota,Angola,18
+Fungi,Basidiomycota,Laos,18
+Fungi,Basidiomycota,Nigeria,18
+Fungi,Basidiomycota,Puerto Rico,18
+Fungi,Basidiomycota,Slovakia,17
+Fungi,Basidiomycota,Tanzania,17
+Fungi,Basidiomycota,Turkey,17
+Fungi,Basidiomycota,Belgium,16
+Fungi,Basidiomycota,US,16
+Fungi,Basidiomycota,French Guiana,15
+Fungi,Basidiomycota,Switzerland,15
+Fungi,Basidiomycota,Cyprus,14
+Fungi,Basidiomycota,Formosa,14
+Fungi,Basidiomycota,United Arab Emirates,14
+Fungi,Basidiomycota,Austria,13
+Fungi,Basidiomycota,Britain,13
+Fungi,Basidiomycota,Dominican Republic,13
+Fungi,Basidiomycota,Great Britain,13
+Fungi,Basidiomycota,Uruguay,13
+Fungi,Basidiomycota,Philippines,12
+Fungi,Basidiomycota,Belize,11
+Fungi,Basidiomycota,Bhutan,10
+Fungi,Basidiomycota,Ethiopia,10
+Fungi,Basidiomycota,Finland,10
+Fungi,Basidiomycota,Taiwan,10
+Fungi,Basidiomycota,Serbia,9
+Fungi,Basidiomycota,Egypt,8
+Fungi,Basidiomycota,Peru,8
+Fungi,Basidiomycota,Syria,7
+Fungi,Basidiomycota,U.A.E.,6
+Fungi,Basidiomycota,Bolivia,5
+Fungi,Basidiomycota,Cameroon,5
+Fungi,Basidiomycota,Denmark,5
+Fungi,Basidiomycota,Iceland,5
+Fungi,Basidiomycota,Lithuania,5
+Fungi,Basidiomycota,New Caledonia,5
+Fungi,Basidiomycota,Trinidad And Tobago,5
+Fungi,Basidiomycota,Trinidad and Tobago,5
+Fungi,Basidiomycota,Uzbekistan,5
+Fungi,Basidiomycota,Congo,4
+Fungi,Basidiomycota,Latvia,4
+Fungi,Basidiomycota,Benin,3
+Fungi,Basidiomycota,Ireland,3
+Fungi,Basidiomycota,Israel,3
+Fungi,Basidiomycota,Romania,3
+Fungi,Basidiomycota,Togo,3
+Fungi,Basidiomycota,Afghanistan,2
+Fungi,Basidiomycota,Azerbaijan,2
+Fungi,Basidiomycota,Bangladesh,2
+Fungi,Basidiomycota,Chad,2
+Fungi,Basidiomycota,Jersey,2
+Fungi,Basidiomycota,Montenegro,2
+Fungi,Basidiomycota,North Korea,2
+Fungi,Basidiomycota,Northern Ireland,2
+Fungi,Basidiomycota,Venezuela,2
+Fungi,Basidiomycota,Botswana,1
+Fungi,Basidiomycota,Cuba,1
+Fungi,Basidiomycota,Democratic Republic of the Congo,1
+Fungi,Basidiomycota,Guinea,1
+Fungi,Basidiomycota,Hong Kong,1
+Fungi,Basidiomycota,Luxembourg,1
+Fungi,Basidiomycota,Madagascar,1
+Fungi,Basidiomycota,Myanmar,1
+Fungi,Basidiomycota,México,1
+Fungi,Basidiomycota,Oman,1
+Fungi,Basidiomycota,P.R.C.,1
+Fungi,Basidiomycota,PRC,1
+Fungi,Basidiomycota,Papua New Guinea,1
+Fungi,Basidiomycota,Republic of the Congo,1
+Fungi,Basidiomycota,Saudi Arabia,1
+Fungi,Basidiomycota,Scotland,1
+Fungi,Basidiomycota,Sri Lanka,1
+Fungi,Basidiomycota,Sudan,1
+Fungi,Basidiomycota,U.S.,1
+Fungi,Basidiomycota,Wales,1
+Fungi,Basidiomycota,Zambia,1
+Fungi,Basidiomycota,Zimbabwe,1
+Fungi,Blastocladiomycota,Germany,1
+Fungi,Chytridiomycota,Chile,2
+Fungi,Chytridiomycota,China,2
+Fungi,Chytridiomycota,United States,2
+Fungi,Chytridiomycota,Antarctica,1
+Fungi,Chytridiomycota,Argentina,1
+Fungi,Chytridiomycota,Bolivia,1
+Fungi,Chytridiomycota,Canada,1
+Fungi,Chytridiomycota,Colombia,1
+Fungi,Chytridiomycota,Denmark,1
+Fungi,Chytridiomycota,Ecuador,1
+Fungi,Chytridiomycota,Peru,1
+Fungi,Chytridiomycota,Poland,1
+Fungi,Chytridiomycota,UK,1
+Fungi,Entomophthoromycota,China,1
+Fungi,Entomophthoromycota,United States,1
+Fungi,Mucoromycota,India,20
+Fungi,Mucoromycota,China,16
+Fungi,Mucoromycota,Brazil,14
+Fungi,Mucoromycota,USA,14
+Fungi,Mucoromycota,Malaysia,13
+Fungi,Mucoromycota,Russia,13
+Fungi,Mucoromycota,Spain,13
+Fungi,Mucoromycota,Australia,12
+Fungi,Mucoromycota,France,12
+Fungi,Mucoromycota,South Africa,12
+Fungi,Mucoromycota,Thailand,12
+Fungi,Mucoromycota,Ecuador,10
+Fungi,Mucoromycota,Italy,10
+Fungi,Mucoromycota,New Zealand,10
+Fungi,Mucoromycota,Vietnam,10
+Fungi,Mucoromycota,Chile,9
+Fungi,Mucoromycota,Iran,9
+Fungi,Mucoromycota,Pakistan,9
+Fungi,Mucoromycota,Poland,9
+Fungi,Mucoromycota,UK,9
+Fungi,Mucoromycota,Canada,8
+Fungi,Mucoromycota,Croatia,8
+Fungi,Mucoromycota,Mexico,8
+Fungi,Mucoromycota,Portugal,8
+Fungi,Mucoromycota,Antarctica,7
+Fungi,Mucoromycota,Argentina,7
+Fungi,Mucoromycota,Czech Republic,7
+Fungi,Mucoromycota,Indonesia,7
+Fungi,Mucoromycota,Japan,7
+Fungi,Mucoromycota,Ukraine,7
+Fungi,Mucoromycota,Germany,6
+Fungi,Mucoromycota,Hungary,6
+Fungi,Mucoromycota,Norway,6
+Fungi,Mucoromycota,Slovenia,6
+Fungi,Mucoromycota,Tanzania,6
+Fungi,Mucoromycota,Egypt,5
+Fungi,Mucoromycota,Nigeria,5
+Fungi,Mucoromycota,Panama,5
+Fungi,Mucoromycota,South Korea,5
+Fungi,Mucoromycota,Colombia,4
+Fungi,Mucoromycota,Estonia,4
+Fungi,Mucoromycota,Netherlands,4
+Fungi,Mucoromycota,Oman,4
+Fungi,Mucoromycota,Saudi Arabia,4
+Fungi,Mucoromycota,US,4
+Fungi,Mucoromycota,United States,4
+Fungi,Mucoromycota,Algeria,3
+Fungi,Mucoromycota,Austria,3
+Fungi,Mucoromycota,Costa Rica,3
+Fungi,Mucoromycota,Ghana,3
+Fungi,Mucoromycota,Nepal,3
+Fungi,Mucoromycota,Sri Lanka,3
+Fungi,Mucoromycota,Sweden,3
+Fungi,Mucoromycota,Turkey,3
+Fungi,Mucoromycota,Afghanistan,2
+Fungi,Mucoromycota,Angola,2
+Fungi,Mucoromycota,Bulgaria,2
+Fungi,Mucoromycota,Cameroon,2
+Fungi,Mucoromycota,Cyprus,2
+Fungi,Mucoromycota,Finland,2
+Fungi,Mucoromycota,Formosa,2
+Fungi,Mucoromycota,Georgia,2
+Fungi,Mucoromycota,Greece,2
+Fungi,Mucoromycota,Iraq,2
+Fungi,Mucoromycota,Jersey,2
+Fungi,Mucoromycota,Laos,2
+Fungi,Mucoromycota,Macedonia,2
+Fungi,Mucoromycota,Mozambique,2
+Fungi,Mucoromycota,Namibia,2
+Fungi,Mucoromycota,Niger,2
+Fungi,Mucoromycota,Philippines,2
+Fungi,Mucoromycota,Puerto Rico,2
+Fungi,Mucoromycota,Slovakia,2
+Fungi,Mucoromycota,Taiwan,2
+Fungi,Mucoromycota,United Arab Emirates,2
+Fungi,Mucoromycota,Uruguay,2
+Fungi,Mucoromycota,Zimbabwe,2
+Fungi,Mucoromycota,Bangladesh,1
+Fungi,Mucoromycota,Belgium,1
+Fungi,Mucoromycota,Belize,1
+Fungi,Mucoromycota,Bhutan,1
+Fungi,Mucoromycota,Bolivia,1
+Fungi,Mucoromycota,Burkina Faso,1
+Fungi,Mucoromycota,Guinea,1
+Fungi,Mucoromycota,Iceland,1
+Fungi,Mucoromycota,Ireland,1
+Fungi,Mucoromycota,Mongolia,1
+Fungi,Mucoromycota,Morocco,1
+Fungi,Mucoromycota,New Caledonia,1
+Fungi,Mucoromycota,Peru,1
+Fungi,Mucoromycota,Scotland,1
+Fungi,Mucoromycota,Serbia,1
+Fungi,Mucoromycota,Sudan,1
+Fungi,Mucoromycota,Switzerland,1
+Fungi,Mucoromycota,Trinidad And Tobago,1
+Fungi,Mucoromycota,Trinidad and Tobago,1
+Fungi,Zoopagomycota,Algeria,1
+Fungi,Zoopagomycota,China,1
+Fungi,Zygomycota,India,1
+Plantae,Bryophyta,Norway,18
+Plantae,Bryophyta,Finland,17
+Plantae,Bryophyta,Denmark,15
+Plantae,Bryophyta,Iceland,15
+Plantae,Bryophyta,Sweden,15
+Plantae,Bryophyta,Antarctica,9
+Plantae,Bryophyta,Argentina,5
+Plantae,Bryophyta,China,5
+Plantae,Bryophyta,US,5
+Plantae,Bryophyta,Russia,3
+Plantae,Bryophyta,Germany,2
+Plantae,Bryophyta,Japan,2
+Plantae,Bryophyta,South Korea,2
+Plantae,Bryophyta,France,1
+Plantae,Bryophyta,Italy,1
+Plantae,Bryophyta,Mexico,1
+Plantae,Bryophyta,Spain,1
+Plantae,Bryophyta,United States,1
+Plantae,Charophyta,Iraq,1
+Plantae,Charophyta,South Korea,1
+Plantae,Charophyta,Spain,1
+Plantae,Chlorophyta,Greece,6
+Plantae,Chlorophyta,France,5
+Plantae,Chlorophyta,Italy,5
+Plantae,Chlorophyta,Spain,5
+Plantae,Chlorophyta,Turkey,5
+Plantae,Chlorophyta,China,4
+Plantae,Chlorophyta,Egypt,4
+Plantae,Chlorophyta,United States,4
+Plantae,Chlorophyta,Brazil,3
+Plantae,Chlorophyta,Canada,3
+Plantae,Chlorophyta,India,3
+Plantae,Chlorophyta,UK,3
+Plantae,Chlorophyta,US,3
+Plantae,Chlorophyta,Bangladesh,2
+Plantae,Chlorophyta,Germany,2
+Plantae,Chlorophyta,Iraq,2
+Plantae,Chlorophyta,Malaysia,2
+Plantae,Chlorophyta,Sri Lanka,2
+Plantae,Chlorophyta,Sweden,2
+Plantae,Chlorophyta,U.S.,2
+Plantae,Chlorophyta,Australia,1
+Plantae,Chlorophyta,Austria,1
+Plantae,Chlorophyta,Bhutan,1
+Plantae,Chlorophyta,Bolivia,1
+Plantae,Chlorophyta,Bosnia and Herzegovina,1
+Plantae,Chlorophyta,Colombia,1
+Plantae,Chlorophyta,Ecuador,1
+Plantae,Chlorophyta,Estonia,1
+Plantae,Chlorophyta,Finland,1
+Plantae,Chlorophyta,Formosa,1
+Plantae,Chlorophyta,French Polynesia,1
+Plantae,Chlorophyta,Honduras,1
+Plantae,Chlorophyta,Iran,1
+Plantae,Chlorophyta,Kazakhstan,1
+Plantae,Chlorophyta,Montenegro,1
+Plantae,Chlorophyta,Nepal,1
+Plantae,Chlorophyta,Netherlands,1
+Plantae,Chlorophyta,New Zealand,1
+Plantae,Chlorophyta,Norway,1
+Plantae,Chlorophyta,Pakistan,1
+Plantae,Chlorophyta,Panama,1
+Plantae,Chlorophyta,Peru,1
+Plantae,Chlorophyta,Poland,1
+Plantae,Chlorophyta,Portugal,1
+Plantae,Chlorophyta,Russia,1
+Plantae,Chlorophyta,Siam,1
+Plantae,Chlorophyta,South Africa,1
+Plantae,Chlorophyta,Switzerland,1
+Plantae,Chlorophyta,Taiwan,1
+Plantae,Chlorophyta,Thailand,1
+Plantae,Chlorophyta,USA,1
+Plantae,Chlorophyta,Venezuela,1
+Plantae,Langiophytophyta,Scotland,2
+Plantae,Langiophytophyta,UK,2
+Plantae,Marchantiophyta,New Zealand,10
+Plantae,Marchantiophyta,Sweden,8
+Plantae,Marchantiophyta,Antarctica,6
+Plantae,Marchantiophyta,Australia,6
+Plantae,Marchantiophyta,Denmark,6
+Plantae,Marchantiophyta,Finland,6
+Plantae,Marchantiophyta,Iceland,6
+Plantae,Marchantiophyta,Norway,6
+Plantae,Marchantiophyta,Malaysia,5
+Plantae,Marchantiophyta,Argentina,4
+Plantae,Marchantiophyta,Ireland,3
+Plantae,Marchantiophyta,Spain,3
+Plantae,Marchantiophyta,USA,3
+Plantae,Marchantiophyta,Belgium,2
+Plantae,Marchantiophyta,Belize,2
+Plantae,Marchantiophyta,Brazil,2
+Plantae,Marchantiophyta,China,2
+Plantae,Marchantiophyta,Estonia,2
+Plantae,Marchantiophyta,Greece,2
+Plantae,Marchantiophyta,India,2
+Plantae,Marchantiophyta,Iran,2
+Plantae,Marchantiophyta,Italy,2
+Plantae,Marchantiophyta,Netherlands,2
+Plantae,Marchantiophyta,Pakistan,2
+Plantae,Marchantiophyta,Panama,2
+Plantae,Marchantiophyta,Portugal,2
+Plantae,Marchantiophyta,South Africa,2
+Plantae,Marchantiophyta,Ukraine,2
+Plantae,Marchantiophyta,Vietnam,2
+Plantae,Rhodophyta,China,5
+Plantae,Rhodophyta,India,5
+Plantae,Rhodophyta,Brazil,3
+Plantae,Rhodophyta,Spain,3
+Plantae,Rhodophyta,US,3
+Plantae,Rhodophyta,Canada,2
+Plantae,Rhodophyta,France,2
+Plantae,Rhodophyta,Greece,2
+Plantae,Rhodophyta,Italy,2
+Plantae,Rhodophyta,New Zealand,2
+Plantae,Rhodophyta,Taiwan,2
+Plantae,Rhodophyta,Turkey,2
+Plantae,Rhodophyta,Antarctica,1
+Plantae,Rhodophyta,Bangladesh,1
+Plantae,Rhodophyta,Germany,1
+Plantae,Rhodophyta,Guinea,1
+Plantae,Rhodophyta,Indonesia,1
+Plantae,Rhodophyta,Panama,1
+Plantae,Rhodophyta,Sri Lanka,1
+Plantae,Rhodophyta,U.A.E.,1
+Plantae,Tracheophyta,China,850
+Plantae,Tracheophyta,India,785
+Plantae,Tracheophyta,Spain,688
+Plantae,Tracheophyta,Australia,675
+Plantae,Tracheophyta,Brazil,668
+Plantae,Tracheophyta,USA,621
+Plantae,Tracheophyta,Italy,586
+Plantae,Tracheophyta,France,565
+Plantae,Tracheophyta,South Africa,555
+Plantae,Tracheophyta,Thailand,544
+Plantae,Tracheophyta,Iran,439
+Plantae,Tracheophyta,New Zealand,428
+Plantae,Tracheophyta,Vietnam,406
+Plantae,Tracheophyta,Argentina,402
+Plantae,Tracheophyta,Chile,400
+Plantae,Tracheophyta,Pakistan,391
+Plantae,Tracheophyta,Mexico,381
+Plantae,Tracheophyta,United States,362
+Plantae,Tracheophyta,Malaysia,343
+Plantae,Tracheophyta,UK,328
+Plantae,Tracheophyta,Russia,325
+Plantae,Tracheophyta,Poland,318
+Plantae,Tracheophyta,Ecuador,308
+Plantae,Tracheophyta,Portugal,294
+Plantae,Tracheophyta,Germany,291
+Plantae,Tracheophyta,Japan,280
+Plantae,Tracheophyta,Ukraine,272
+Plantae,Tracheophyta,Greece,266
+Plantae,Tracheophyta,Indonesia,264
+Plantae,Tracheophyta,Netherlands,259
+Plantae,Tracheophyta,Sweden,249
+Plantae,Tracheophyta,US,249
+Plantae,Tracheophyta,Canada,242
+Plantae,Tracheophyta,South Korea,225
+Plantae,Tracheophyta,Czech Republic,222
+Plantae,Tracheophyta,Turkey,216
+Plantae,Tracheophyta,Antarctica,206
+Plantae,Tracheophyta,Croatia,202
+Plantae,Tracheophyta,Colombia,192
+Plantae,Tracheophyta,Panama,185
+Plantae,Tracheophyta,Namibia,172
+Plantae,Tracheophyta,Hungary,171
+Plantae,Tracheophyta,Switzerland,169
+Plantae,Tracheophyta,Norway,168
+Plantae,Tracheophyta,Costa Rica,166
+Plantae,Tracheophyta,Nepal,142
+Plantae,Tracheophyta,Algeria,124
+Plantae,Tracheophyta,Bulgaria,124
+Plantae,Tracheophyta,Estonia,118
+Plantae,Tracheophyta,Taiwan,115
+Plantae,Tracheophyta,Slovenia,114
+Plantae,Tracheophyta,Egypt,107
+Plantae,Tracheophyta,Formosa,105
+Plantae,Tracheophyta,Finland,104
+Plantae,Tracheophyta,Peru,104
+Plantae,Tracheophyta,Bolivia,103
+Plantae,Tracheophyta,Slovakia,92
+Plantae,Tracheophyta,Saudi Arabia,91
+Plantae,Tracheophyta,Tanzania,91
+Plantae,Tracheophyta,Uruguay,91
+Plantae,Tracheophyta,U.S.,82
+Plantae,Tracheophyta,Belgium,81
+Plantae,Tracheophyta,Nigeria,81
+Plantae,Tracheophyta,Bhutan,77
+Plantae,Tracheophyta,New Caledonia,76
+Plantae,Tracheophyta,Iceland,73
+Plantae,Tracheophyta,Austria,72
+Plantae,Tracheophyta,Trinidad And Tobago,70
+Plantae,Tracheophyta,Trinidad and Tobago,70
+Plantae,Tracheophyta,Britain,67
+Plantae,Tracheophyta,Ghana,66
+Plantae,Tracheophyta,United Kingdom,66
+Plantae,Tracheophyta,Puerto Rico,65
+Plantae,Tracheophyta,Belize,64
+Plantae,Tracheophyta,Cyprus,64
+Plantae,Tracheophyta,Mozambique,64
+Plantae,Tracheophyta,Macedonia,63
+Plantae,Tracheophyta,Dominican Republic,61
+Plantae,Tracheophyta,Great Britain,61
+Plantae,Tracheophyta,U.A.E.,60
+Plantae,Tracheophyta,French Guiana,58
+Plantae,Tracheophyta,Sri Lanka,58
+Plantae,Tracheophyta,Mongolia,57
+Plantae,Tracheophyta,Laos,55
+Plantae,Tracheophyta,United Arab Emirates,55
+Plantae,Tracheophyta,Angola,49
+Plantae,Tracheophyta,Wales,49
+Plantae,Tracheophyta,Romania,47
+Plantae,Tracheophyta,Georgia,46
+Plantae,Tracheophyta,Venezuela,45
+Plantae,Tracheophyta,North Korea,44
+Plantae,Tracheophyta,Morocco,40
+Plantae,Tracheophyta,Philippines,40
+Plantae,Tracheophyta,Bangladesh,38
+Plantae,Tracheophyta,England,35
+Plantae,Tracheophyta,Cuba,33
+Plantae,Tracheophyta,Guinea,33
+Plantae,Tracheophyta,Iraq,28
+Plantae,Tracheophyta,Scotland,26
+Plantae,Tracheophyta,Israel,25
+Plantae,Tracheophyta,Honduras,24
+Plantae,Tracheophyta,Kenya,24
+Plantae,Tracheophyta,Jersey,23
+Plantae,Tracheophyta,Congo,22
+Plantae,Tracheophyta,Hong Kong,21
+Plantae,Tracheophyta,Kazakhstan,21
+Plantae,Tracheophyta,Tunisia,21
+Plantae,Tracheophyta,Ethiopia,20
+Plantae,Tracheophyta,Montenegro,20
+Plantae,Tracheophyta,Ireland,19
+Plantae,Tracheophyta,Oman,19
+Plantae,Tracheophyta,Myanmar,18
+Plantae,Tracheophyta,Uzbekistan,18
+Plantae,Tracheophyta,Lithuania,17
+Plantae,Tracheophyta,RSA,16
+Plantae,Tracheophyta,Cameroon,15
+Plantae,Tracheophyta,Bosnia and Herzegovina,14
+Plantae,Tracheophyta,Serbia,14
+Plantae,Tracheophyta,Burkina Faso,13
+Plantae,Tracheophyta,Madagascar,13
+Plantae,Tracheophyta,Bermuda,12
+Plantae,Tracheophyta,Sudan,11
+Plantae,Tracheophyta,Papua New Guinea,10
+Plantae,Tracheophyta,Soviet Union,10
+Plantae,Tracheophyta,Syria,10
+Plantae,Tracheophyta,Azerbaijan,9
+Plantae,Tracheophyta,Burma,9
+Plantae,Tracheophyta,Belarus,8
+Plantae,Tracheophyta,Haiti,8
+Plantae,Tracheophyta,Latvia,8
+Plantae,Tracheophyta,Siam,8
+Plantae,Tracheophyta,Uganda,8
+Plantae,Tracheophyta,Benin,7
+Plantae,Tracheophyta,Brasil,7
+Plantae,Tracheophyta,Zimbabwe,7
+Plantae,Tracheophyta,Armenia,6
+Plantae,Tracheophyta,Cambodia,6
+Plantae,Tracheophyta,Fiji,6
+Plantae,Tracheophyta,Mauritania,6
+Plantae,Tracheophyta,PRC,6
+Plantae,Tracheophyta,USSR,6
+Plantae,Tracheophyta,Bahrain,5
+Plantae,Tracheophyta,Brunei,5
+Plantae,Tracheophyta,Denmark,5
+Plantae,Tracheophyta,Guatemala,5
+Plantae,Tracheophyta,Jordan,5
+Plantae,Tracheophyta,Lebanon,5
+Plantae,Tracheophyta,Niger,5
+Plantae,Tracheophyta,P.R.C.,5
+Plantae,Tracheophyta,Singapore,5
+Plantae,Tracheophyta,Togo,5
+Plantae,Tracheophyta,Greenland,4
+Plantae,Tracheophyta,Guam,4
+Plantae,Tracheophyta,Jamaica,4
+Plantae,Tracheophyta,Kyrgyzstan,4
+Plantae,Tracheophyta,Senegal,4
+Plantae,Tracheophyta,Zambia,4
+Plantae,Tracheophyta,Albania,3
+Plantae,Tracheophyta,Cook Islands,3
+Plantae,Tracheophyta,Russian Federation,3
+Plantae,Tracheophyta,Afghanistan,2
+Plantae,Tracheophyta,American Samoa,2
+Plantae,Tracheophyta,Botswana,2
+Plantae,Tracheophyta,Burundi,2
+Plantae,Tracheophyta,Cote D'Ivoire,2
+Plantae,Tracheophyta,Faroe Islands,2
+Plantae,Tracheophyta,French Polynesia,2
+Plantae,Tracheophyta,Holland,2
+Plantae,Tracheophyta,Luxembourg,2
+Plantae,Tracheophyta,Malawi,2
+Plantae,Tracheophyta,Malta,2
+Plantae,Tracheophyta,Micronesia,2
+Plantae,Tracheophyta,Rwanda,2
+Plantae,Tracheophyta,Samoa,2
+Plantae,Tracheophyta,Aland,1
+Plantae,Tracheophyta,Aland Islands,1
+Plantae,Tracheophyta,Democratic Republic of the Congo,1
+Plantae,Tracheophyta,Dominica,1
+Plantae,Tracheophyta,Ivory Coast,1
+Plantae,Tracheophyta,Mauritius,1
+Plantae,Tracheophyta,People's Republic of China,1
+Plantae,Tracheophyta,Republic of the Congo,1

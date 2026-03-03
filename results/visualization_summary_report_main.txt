@@ -1,0 +1,61 @@
+PLANT PHYLUM REPRESENTATION SUMMARY (Main Analysis - Excluding Mycorrhizal-Only Papers)
+==============================================================================
+
+Overall Plant Kingdom:
+- Total species in reference database: 390101
+- Species Studied in literature: 3286 (0.8%)
+- Mycorrhizal-only abstracts excluded: 0
+
+Phylum: Anthocerotophyta
+- Species: 2/251 represented (0.8%)
+- Genera: 4/20 represented (20.0%)
+- Families: 0/4 represented (0.0%)
+
+Phylum: Bryophyta
+- Species: 23/10508 represented (0.2%)
+- Genera: 27/905 represented (3.0%)
+- Families: 0/124 represented (0.0%)
+
+Phylum: Charophyta
+- Species: 0/2012 represented (0.0%)
+- Genera: 4/152 represented (2.6%)
+- Families: 0/20 represented (0.0%)
+
+Phylum: Chlorophyta
+- Species: 10/2754 represented (0.4%)
+- Genera: 27/716 represented (3.8%)
+- Families: 0/103 represented (0.0%)
+
+Phylum: Glaucophyta
+- Species: 0/5 represented (0.0%)
+- Genera: 0/3 represented (0.0%)
+- Families: 0/1 represented (0.0%)
+
+Phylum: Langiophytophyta
+- Species: 2/9 represented (22.2%)
+- Genera: 2/8 represented (25.0%)
+- Families: 0/2 represented (0.0%)
+
+Phylum: Marchantiophyta
+- Species: 22/6216 represented (0.4%)
+- Genera: 30/378 represented (7.9%)
+- Families: 0/74 represented (0.0%)
+
+Phylum: Rhodophyta
+- Species: 22/3642 represented (0.6%)
+- Genera: 30/713 represented (4.2%)
+- Families: 0/127 represented (0.0%)
+
+Phylum: Tracheophyta
+- Species: 3205/363445 represented (0.9%)
+- Genera: 1839/16776 represented (11.0%)
+- Families: 0/581 represented (0.0%)
+
+Most studied plant phylum by species representation:
+Langiophytophyta (22.2% of species represented)
+
+Least studied plant phylum by species representation:
+Charophyta (0.0% of species represented)
+
+ Glaucophyta (0.0% of species represented)
+
