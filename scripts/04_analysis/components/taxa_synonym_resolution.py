@@ -33,6 +33,75 @@ NA_TOKENS = {
     "unknown",
     "not applicable",
     "null",
+    "unspecified",
+    "not mentioned",
+    "not explicitly mentioned",
+    "woody hosts",  # non-specific
+    "host plants",  # non-specific
+}
+
+# Map common names and clade terms to their standardized taxa
+COMMON_TAXA_SYNONYMS = {
+    "grasses": "poaceae",
+    "pteridophytes": "pteridophyta",
+    "ferns": "polypodiaceae",
+    "mosses": "bryophyta",
+    "legumes": "fabaceae",
+    "composites": "asteraceae",
+    "umbellifers": "apiaceae",
+    "crucifers": "brassicaceae",
+    "solanaceae family": "solanaceae",
+    "grass": "poaceae",
+    "fern": "polypodiaceae",
+    "moss": "bryophyta",
+    "legume": "fabaceae",
+}
+
+FIELD_SPECIFIC_SYNONYMS = {
+    "plant_host": COMMON_TAXA_SYNONYMS,
+    "fungal_taxon": {
+        "epichlo": "epichloe",
+        "name fusarium": "fusarium",
+        "name aspergillus": "aspergillus",
+        "ascomycetes": "ascomycota",
+    },
+}
+
+FIELD_SPECIFIC_NON_TAXON = {
+    "fungal_taxon": {
+        "arbuscular mycorrhizal",
+        "endophytic fungi",
+        "endophytic fungus",
+        "endophytes",
+        "endophyte",
+        "fungal endophytes",
+        "ectomycorrhizal fungi",
+        "mycorrhizal fungi",
+        "vesicular-arbuscular mycorrhizal",
+        "dark septate",
+        "scientific name",
+        "latin name",
+        "common name",
+        "primary guild",
+        "multiple",
+        "multiple endophytic",
+        "multiple fungal",
+        "various",
+        "tissue not",
+        "not fungi",
+    }
+}
+
+RANK_CONFIDENCE = {
+    "SPECIES": 1.0,
+    "SUBSPECIES": 0.95,
+    "VARIETY": 0.9,
+    "FORM": 0.9,
+    "GENUS": 0.7,
+    "FAMILY": 0.5,
+    "ORDER": 0.45,
+    "CLASS": 0.4,
+    "PHYLUM": 0.35,
 }
 
 FIELD_COLUMNS = ("fungal_taxon", "plant_host")
@@ -84,6 +153,10 @@ def canonicalize_taxon_token(token: str) -> str:
     text = re.sub(r"\[[^\]]*\]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
 
+    # Strip authority authors (botanist initials/names) like "schreb.", "L.", "Pers.", "Mill."
+    # Match patterns like " schreb.", " L.", " Mill." at end of string
+    text = re.sub(r"\s+(?:[A-Z][a-z]{2,}\.?|[A-Z]\.)\s*$", "", text)
+    
     # Keep only biological name pieces and separators.
     text = re.sub(r"[^A-Za-z\-\. xX]", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -112,6 +185,15 @@ def canonicalize_taxon_token(token: str) -> str:
         return f"{genus} {epithet}"
 
     return parts[0].lower()
+
+
+def apply_field_specific_synonyms(cleaned_token: str, field_name: str) -> str:
+    synonyms = FIELD_SPECIFIC_SYNONYMS.get(field_name, {})
+    return synonyms.get(cleaned_token, cleaned_token)
+
+
+def is_field_specific_non_taxon(cleaned_token: str, field_name: str) -> bool:
+    return cleaned_token in FIELD_SPECIFIC_NON_TAXON.get(field_name, set())
 
 
 def split_taxa_cell(cell: str) -> List[str]:
@@ -159,12 +241,14 @@ def load_taxonomy_index(
     Dict[str, List[str]],
     Dict[str, str],
     Dict[str, str],
+    Dict[str, TaxonRecord],
 ]:
     accepted_by_canonical: Dict[str, TaxonRecord] = {}
     accepted_by_id: Dict[str, TaxonRecord] = {}
     synonym_to_accepted_id: Dict[str, str] = {}
     genus_by_letter: Dict[str, List[str]] = defaultdict(list)
     genus_name_to_taxon_id: Dict[str, str] = {}
+    family_by_name: Dict[str, TaxonRecord] = {}  # New: family-level look-up
 
     with open(taxon_tsv, "r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
@@ -174,7 +258,8 @@ def load_taxonomy_index(
                 continue
 
             rank = normalize_text(row.get("taxonRank", "")).upper()
-            if rank not in {"SPECIES", "GENUS", "SUBSPECIES", "VARIETY", "FORM"}:
+            # Support higher-rank fallback when species-level names are unavailable.
+            if rank not in {"SPECIES", "GENUS", "SUBSPECIES", "VARIETY", "FORM", "FAMILY", "ORDER", "CLASS", "PHYLUM"}:
                 continue
 
             canonical = normalize_key(row.get("canonicalName", ""))
@@ -205,6 +290,8 @@ def load_taxonomy_index(
                     genus_name_to_taxon_id[canonical] = taxon_id
                     if canonical:
                         genus_by_letter[canonical[0]].append(canonical)
+                elif rank == "FAMILY":
+                    family_by_name[canonical] = record
 
             elif status == "synonym":
                 accepted_id = normalize_text(row.get("acceptedNameUsageID", ""))
@@ -220,6 +307,7 @@ def load_taxonomy_index(
         genus_by_letter,
         genus_name_to_taxon_id,
         accepted_by_id,
+        family_by_name,
     )
 
 
@@ -232,13 +320,32 @@ def detect_abbreviation(cleaned_token: str) -> Optional[Tuple[str, str]]:
 
 def resolve_token(
     raw_token: str,
+    field_name: str,
     accepted_by_canonical: Dict[str, TaxonRecord],
     synonym_to_accepted_id: Dict[str, str],
     accepted_by_id: Dict[str, TaxonRecord],
     genus_by_letter: Dict[str, List[str]],
     context_genera: Set[str],
+    family_by_name: Dict[str, TaxonRecord],
 ) -> ResolveResult:
     cleaned = canonicalize_taxon_token(raw_token)
+    cleaned = apply_field_specific_synonyms(cleaned, field_name)
+
+    if is_field_specific_non_taxon(cleaned, field_name):
+        return ResolveResult(
+            raw_token=raw_token,
+            cleaned_token=cleaned,
+            resolved_name="",
+            taxonomic_status="UNRESOLVED",
+            resolution_method="descriptor_non_taxon",
+            confidence=0.0,
+            is_ambiguous=False,
+            ambiguity_count=0,
+            taxon_rank="",
+            accepted_taxon_id="",
+            kingdom="",
+        )
+
     if not normalize_key(cleaned):
         return ResolveResult(
             raw_token=raw_token,
@@ -256,13 +363,16 @@ def resolve_token(
 
     accepted = accepted_by_canonical.get(cleaned)
     if accepted:
+        rank = accepted.taxon_rank.upper()
+        confidence = RANK_CONFIDENCE.get(rank, 0.5)
+        method = "exact_accepted" if rank in {"SPECIES", "SUBSPECIES", "VARIETY", "FORM"} else f"{rank.lower()}_exact"
         return ResolveResult(
             raw_token=raw_token,
             cleaned_token=cleaned,
             resolved_name=accepted.canonical_name,
             taxonomic_status="ACCEPTED",
-            resolution_method="exact_accepted",
-            confidence=1.0,
+            resolution_method=method,
+            confidence=confidence,
             is_ambiguous=False,
             ambiguity_count=0,
             taxon_rank=accepted.taxon_rank,
@@ -338,6 +448,23 @@ def resolve_token(
             taxon_rank=genus_hit.taxon_rank,
             accepted_taxon_id=genus_hit.taxon_id,
             kingdom=genus_hit.kingdom,
+        )
+
+    # Family-level fallback: try to match against known families
+    family_hit = family_by_name.get(cleaned)
+    if family_hit:
+        return ResolveResult(
+            raw_token=raw_token,
+            cleaned_token=cleaned,
+            resolved_name=family_hit.canonical_name,
+            taxonomic_status="ACCEPTED",
+            resolution_method="family_exact",
+            confidence=0.5,  # Lower confidence for family-level matches
+            is_ambiguous=False,
+            ambiguity_count=0,
+            taxon_rank=family_hit.taxon_rank,
+            accepted_taxon_id=family_hit.taxon_id,
+            kingdom=family_hit.kingdom,
         )
 
     return ResolveResult(
@@ -430,6 +557,7 @@ def run_resolution(args: argparse.Namespace) -> None:
         genus_by_letter,
         _genus_name_to_taxon_id,
         accepted_by_id,
+        family_by_name,
     ) = load_taxonomy_index(args.taxon_tsv)
 
     input_fieldnames = get_input_fieldnames(args.input_csv)
@@ -516,11 +644,13 @@ def run_resolution(args: argparse.Namespace) -> None:
                 token_results = [
                     resolve_token(
                         raw_token=token,
+                        field_name=field,
                         accepted_by_canonical=accepted_by_canonical,
                         synonym_to_accepted_id=synonym_to_accepted_id,
                         accepted_by_id=accepted_by_id,
                         genus_by_letter=genus_by_letter,
                         context_genera=context_genera,
+                        family_by_name=family_by_name,
                     )
                     for token in tokens
                 ]

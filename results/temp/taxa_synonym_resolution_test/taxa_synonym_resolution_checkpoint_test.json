@@ -1,0 +1,7 @@
+{
+  "processed_rows": "12",
+  "total_rows": "12",
+  "output_csv": "C:\\Users\\beabo\\OneDrive - Northern Arizona University\\NAU\\Endo-Review\\results\\temp\\taxa_synonym_resolution_test\\Ollama_cleaned_synresolved_test.csv",
+  "unresolved_csv": "C:\\Users\\beabo\\OneDrive - Northern Arizona University\\NAU\\Endo-Review\\results\\temp\\taxa_synonym_resolution_test\\taxa_unresolved_review_test.csv",
+  "status": "complete"
+}
