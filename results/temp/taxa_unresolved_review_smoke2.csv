@@ -1,0 +1,4 @@
+row_index,paper_id,interaction_id,field_name,raw_token,cleaned_token,resolution_method,is_ambiguous,ambiguity_count,confidence
+3,doi:10.1007/bf02980298,int_ba782b2f5333cf94,plant_host,cv. tioga),cv. tioga,no_match,False,0,0.00
+4,doi:10.1080/09670877709412477,int_9120ffc00c840803,fungal_taxon,not mentioned (nematode,not mentioned,no_match,False,0,0.00
+5,doi:10.1080/09670877709412477,int_1788e46412e08fe9,fungal_taxon,ditylenchus angustus is not a fungus),ditylenchus angustus,no_match,False,0,0.00
