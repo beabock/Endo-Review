@@ -36,6 +36,8 @@ NA_TOKENS = {
     "unspecified",
     "not mentioned",
     "not explicitly mentioned",
+    "not explicitly",
+    "not explicitly named",
     "woody hosts",  # non-specific
     "host plants",  # non-specific
 }
@@ -55,6 +57,23 @@ COMMON_TAXA_SYNONYMS = {
     "fern": "polypodiaceae",
     "moss": "bryophyta",
     "legume": "fabaceae",
+    "tall fescue": "festuca arundinacea",
+    "perennial ryegrass": "lolium perenne",
+    "wheat": "triticum aestivum",
+    "maize": "zea mays",
+    "lettuce": "lactuca sativa",
+    "cotton": "gossypium",
+    "sugarcane": "saccharum",
+    "broad bean": "vicia faba",
+    "human": "",
+    "schedonorus arundinaceus": "festuca arundinacea",
+    "lycopersicon esculentum": "solanum lycopersicum",
+    "tomato": "solanum lycopersicum",
+    "rice": "oryza sativa",
+    "scots pine": "pinus sylvestris",
+    "mangrove": "rhizophoraceae",
+    "pearl millet": "pennisetum glaucum",
+
 }
 
 FIELD_SPECIFIC_SYNONYMS = {
@@ -64,13 +83,29 @@ FIELD_SPECIFIC_SYNONYMS = {
         "name fusarium": "fusarium",
         "name aspergillus": "aspergillus",
         "ascomycetes": "ascomycota",
+        "endophyta": "",
+        "neotyphodium coenophialum": "epichloe coenophiala",
+        "acremonium coenophialum": "epichloe coenophiala",
+        "fusarium moniliforme": "fusarium verticillioides",
+        "glomus intraradices": "rhizophagus irregularis",
     },
 }
 
 FIELD_SPECIFIC_NON_TAXON = {
+    "plant_host": {
+        "medicinal plants",
+        "unspecified plant",
+        "unspecified plants",
+        "various plants",
+        "multiple plants",
+        "human",
+    },
     "fungal_taxon": {
         "arbuscular mycorrhizal",
+        "arbuscular",
+        "ectomycorrhizal",
         "endophytic fungi",
+        "endophytic",
         "endophytic fungus",
         "endophytes",
         "endophyte",
@@ -83,10 +118,10 @@ FIELD_SPECIFIC_NON_TAXON = {
         "latin name",
         "common name",
         "primary guild",
-        "multiple",
+        "species",
         "multiple endophytic",
         "multiple fungal",
-        "various",
+        "fungal",
         "tissue not",
         "not fungi",
     }
@@ -120,6 +155,8 @@ class ResolveResult:
     taxon_rank: str
     accepted_taxon_id: str
     kingdom: str
+    phylum: str
+    class_name: str
 
 
 @dataclass
@@ -194,6 +231,38 @@ def apply_field_specific_synonyms(cleaned_token: str, field_name: str) -> str:
 
 def is_field_specific_non_taxon(cleaned_token: str, field_name: str) -> bool:
     return cleaned_token in FIELD_SPECIFIC_NON_TAXON.get(field_name, set())
+
+
+def preprocess_cleaned_token(cleaned_token: str, field_name: str) -> str:
+    token = cleaned_token
+
+    # Remove leading punctuation/markers produced by extraction artifacts.
+    token = re.sub(r"^[\W_]+", "", token)
+    token = re.sub(r"^\b(?:various|multiple|several)\s+", "", token)
+    token = re.sub(r"^(?:name|named)\s+", "", token)
+
+    # Normalize legacy/alternative clade endings (e.g., pteridophytes -> pteridophyta).
+    if token.endswith("phytes") and len(token) > len("phytes"):
+        token = f"{token[:-len('phytes')]}phyta"
+
+    if field_name == "fungal_taxon":
+        # Convert legacy class-like labels to phylum form when appropriate.
+        if token.endswith("mycetes") and len(token) > len("mycetes"):
+            token = f"{token[:-len('mycetes')]}mycota"
+
+        # Strip wrapper words so e.g. "various aspergillus species" -> "aspergillus".
+        token = re.sub(r"\s+(?:species|spp\.?|sp\.?|fungi|fungus)$", "", token)
+        token = normalize_text(token).lower()
+
+    elif field_name == "plant_host":
+        # Remove trailing generic plant wrappers.
+        token = re.sub(r"\s+(?:species|spp\.?|sp\.?|plant|plants)$", "", token)
+        token = normalize_text(token).lower()
+
+    else:
+        token = normalize_text(token).lower()
+
+    return token
 
 
 def split_taxa_cell(cell: str) -> List[str]:
@@ -329,6 +398,7 @@ def resolve_token(
     family_by_name: Dict[str, TaxonRecord],
 ) -> ResolveResult:
     cleaned = canonicalize_taxon_token(raw_token)
+    cleaned = preprocess_cleaned_token(cleaned, field_name)
     cleaned = apply_field_specific_synonyms(cleaned, field_name)
 
     if is_field_specific_non_taxon(cleaned, field_name):
@@ -344,6 +414,8 @@ def resolve_token(
             taxon_rank="",
             accepted_taxon_id="",
             kingdom="",
+            phylum="",
+            class_name="",
         )
 
     if not normalize_key(cleaned):
@@ -359,6 +431,8 @@ def resolve_token(
             taxon_rank="",
             accepted_taxon_id="",
             kingdom="",
+            phylum="",
+            class_name="",
         )
 
     accepted = accepted_by_canonical.get(cleaned)
@@ -378,6 +452,8 @@ def resolve_token(
             taxon_rank=accepted.taxon_rank,
             accepted_taxon_id=accepted.taxon_id,
             kingdom=accepted.kingdom,
+            phylum=accepted.phylum,
+            class_name=accepted.class_name,
         )
 
     syn_id = synonym_to_accepted_id.get(cleaned)
@@ -395,6 +471,8 @@ def resolve_token(
             taxon_rank=accepted.taxon_rank,
             accepted_taxon_id=accepted.taxon_id,
             kingdom=accepted.kingdom,
+            phylum=accepted.phylum,
+            class_name=accepted.class_name,
         )
 
     abbr = detect_abbreviation(cleaned)
@@ -430,6 +508,8 @@ def resolve_token(
                 taxon_rank=chosen.taxon_rank,
                 accepted_taxon_id=chosen.taxon_id,
                 kingdom=chosen.kingdom,
+                phylum=chosen.phylum,
+                class_name=chosen.class_name,
             )
 
     # Genus-level fallback.
@@ -448,6 +528,8 @@ def resolve_token(
             taxon_rank=genus_hit.taxon_rank,
             accepted_taxon_id=genus_hit.taxon_id,
             kingdom=genus_hit.kingdom,
+            phylum=genus_hit.phylum,
+            class_name=genus_hit.class_name,
         )
 
     # Family-level fallback: try to match against known families
@@ -465,6 +547,8 @@ def resolve_token(
             taxon_rank=family_hit.taxon_rank,
             accepted_taxon_id=family_hit.taxon_id,
             kingdom=family_hit.kingdom,
+            phylum=family_hit.phylum,
+            class_name=family_hit.class_name,
         )
 
     return ResolveResult(
@@ -479,12 +563,14 @@ def resolve_token(
         taxon_rank="",
         accepted_taxon_id="",
         kingdom="",
+        phylum="",
+        class_name="",
     )
 
 
-def aggregate_results(results: Sequence[ResolveResult]) -> Tuple[str, str, str, str, str]:
+def aggregate_results(results: Sequence[ResolveResult]) -> Tuple[str, str, str, str, str, str, str, str]:
     if not results:
-        return "", "Unresolved", "none", "0.00", ""
+        return "", "Unresolved", "none", "0.00", "", "", "", ""
 
     resolved = sorted(set([r.resolved_name for r in results if r.resolved_name]))
     methods = sorted(set([r.resolution_method for r in results if r.resolution_method]))
@@ -500,6 +586,9 @@ def aggregate_results(results: Sequence[ResolveResult]) -> Tuple[str, str, str, 
     avg_conf = sum(r.confidence for r in results) / float(len(results))
 
     accepted_ids = sorted(set([r.accepted_taxon_id for r in results if r.accepted_taxon_id]))
+    kingdoms = sorted(set([r.kingdom for r in results if r.resolved_name and r.kingdom]))
+    phyla = sorted(set([r.phylum for r in results if r.resolved_name and r.phylum]))
+    classes = sorted(set([r.class_name for r in results if r.resolved_name and r.class_name]))
 
     return (
         "; ".join(resolved),
@@ -507,6 +596,9 @@ def aggregate_results(results: Sequence[ResolveResult]) -> Tuple[str, str, str, 
         "; ".join(methods),
         f"{avg_conf:.2f}",
         "; ".join(accepted_ids),
+        "; ".join(kingdoms),
+        "; ".join(phyla),
+        "; ".join(classes),
     )
 
 
@@ -597,12 +689,18 @@ def run_resolution(args: argparse.Namespace) -> None:
         "fungal_taxon_resolution_method",
         "fungal_taxon_confidence",
         "fungal_taxon_accepted_ids",
+        "fungal_taxon_kingdom",
+        "fungal_taxon_phylum",
+        "fungal_taxon_class",
         "plant_host_raw",
         "plant_host_resolved",
         "plant_host_status",
         "plant_host_resolution_method",
         "plant_host_confidence",
         "plant_host_accepted_ids",
+        "plant_host_kingdom",
+        "plant_host_phylum",
+        "plant_host_class",
     ]
 
     unresolved_fields = [
@@ -687,12 +785,18 @@ def run_resolution(args: argparse.Namespace) -> None:
                     "fungal_taxon_resolution_method": fungal_agg[2],
                     "fungal_taxon_confidence": fungal_agg[3],
                     "fungal_taxon_accepted_ids": fungal_agg[4],
+                    "fungal_taxon_kingdom": fungal_agg[5],
+                    "fungal_taxon_phylum": fungal_agg[6],
+                    "fungal_taxon_class": fungal_agg[7],
                     "plant_host_raw": row.get("plant_host", ""),
                     "plant_host_resolved": plant_agg[0],
                     "plant_host_status": plant_agg[1],
                     "plant_host_resolution_method": plant_agg[2],
                     "plant_host_confidence": plant_agg[3],
                     "plant_host_accepted_ids": plant_agg[4],
+                    "plant_host_kingdom": plant_agg[5],
+                    "plant_host_phylum": plant_agg[6],
+                    "plant_host_class": plant_agg[7],
                 }
             )
             out_writer.writerow(out_row)
