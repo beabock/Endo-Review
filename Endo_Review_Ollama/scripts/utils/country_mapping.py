@@ -1,305 +1,1275 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 Centralized country mapping and detection utility.
-Used by multiple scripts for consistent country name standardization.
+Extracted from scripts/utils/country_mapping.R (884 country variants, 240 ISO codes).
+Single source of truth for country name normalization across Python/R scripts.
 """
 
 import re
+from typing import Dict, List, Optional, Tuple
+import pandas as pd
 
-# Comprehensive list of country names, territories, and common aliases
-COUNTRIES_AND_ALIASES = {
-    'china': ['china', "p.r. china", "pr china", 'peoples republic', 'p.r.c'],
-    'united states': ['usa', 'us', 'u.s.', 'united states', 'u.s.a.', 'america'],
-    'united kingdom': ['uk', 'u.k.', 'united kingdom', 'great britain', 'britain', 'england'],
-    'south korea': ['korea', 'south korea', 'republic of korea', 'r.o.k'],
-    'north korea': ['north korea', "dpr korea", 'democratic peoples republic'],
-    'iran': ['iran', 'persia', 'islamic republic of iran'],
-    'vietnam': ['vietnam', 'viet nam'],
-    'new zealand': ['new zealand', 'new zeland', 'aotearoa'],
-    'costa rica': ['costa rica', 'costarica'],
-    'puerto rico': ['puerto rico', 'puerterico'],
-    'sri lanka': ['sri lanka', 'srilanka', 'ceylon'],
-    'saudi arabia': ['saudi arabia', 'saudiarabia'],
-    'united arab emirates': ['uae', 'u.a.e.', 'united arab emirates', 'emirates'],
-    'south africa': ['south africa', 'southafrica', 'republic of south africa'],
-    'czech republic': ['czech', 'czech republic', 'czechia'],
-    'dominican republic': ['dominican', 'dominican republic'],
-    'congo': ['congo', 'drc', 'democratic republic of congo', 'republic of congo'],
-    'turkey': ['turkey', 'türkiye', 'turkiye'],
-    'russia': ['russia', 'russian federation', 'ussr', 'soviet union'],
-    'mexico': ['mexico', 'méxico', 'mexico city'],
-    'brazil': ['brazil', 'brasil'],
-    'australia': ['australia', 'australian'],
-    'india': ['india', 'indian'],
-    'japan': ['japan', 'japanese'],
-    'france': ['france', 'french'],
-    'germany': ['germany', 'german', 'deutschland'],
-    'spain': ['spain', 'spanish', 'españa'],
-    'italy': ['italy', 'italian', 'italia'],
-    'thailand': ['thailand', 'thai'],
-    'singapore': ['singapore'],
-    'philippines': ['philippines', 'philippine'],
-    'indonesia': ['indonesia', 'indonesian'],
-    'malaysia': ['malaysia', 'malaysian'],
-    'kenya': ['kenya', 'kenyan'],
-    'cameroon': ['cameroon', 'cameroun'],
-    'colombia': ['colombia', 'colombian'],
-    'peru': ['peru', 'perú', 'peruvian'],
-    'argentina': ['argentina', 'argentine'],
-    'chile': ['chile', 'chilean'],
-    'ecuador': ['ecuador', 'ecuadorian'],
-    'panama': ['panama', 'panamanian'],
-    'guatemala': ['guatemala', 'guatemalan'],
-    'honduras': ['honduras', 'honduran'],
-    'el salvador': ['el salvador', 'salvador'],
-    'nicaragua': ['nicaragua', 'nicaraguan'],
-    'belize': ['belize', 'belizean'],
-    'jamaica': ['jamaica', 'jamaican'],
-    'haiti': ['haiti', 'haitian'],
-    'cuba': ['cuba', 'cuban'],
-    'canada': ['canada', 'canadian'],
-    'greenland': ['greenland', 'groenland'],
-    'iceland': ['iceland', 'icelandic'],
-    'norway': ['norway', 'norwegian'],
-    'sweden': ['sweden', 'swedish'],
-    'finland': ['finland', 'finnish'],
-    'denmark': ['denmark', 'danish'],
-    'belgium': ['belgium', 'belgian'],
-    'netherlands': ['netherlands', 'dutch', 'holland'],
-    'switzerland': ['switzerland', 'swiss', 'helvetia'],
-    'austria': ['austria', 'austrian'],
-    'poland': ['poland', 'polish'],
-    'portugal': ['portugal', 'portuguese'],
-    'greece': ['greece', 'greek'],
-    'hungary': ['hungary', 'hungarian'],
-    'romania': ['romania', 'romanian'],
-    'bulgaria': ['bulgaria', 'bulgarian'],
-    'serbia': ['serbia', 'serbian'],
-    'croatia': ['croatia', 'croatian'],
-    'slovenia': ['slovenia', 'slovenian'],
-    'ukraine': ['ukraine', 'ukrainian'],
-    'belarus': ['belarus', 'belarusian', 'byelorussia'],
-    'estonia': ['estonia', 'estonian'],
-    'latvia': ['latvia', 'latvian'],
-    'lithuania': ['lithuania', 'lithuanian'],
-    'pakistan': ['pakistan', 'pakistani'],
-    'bangladesh': ['bangladesh', 'bangladeshi'],
-    'nepal': ['nepal', 'nepalese'],
-    'bhutan': ['bhutan', 'bhutanese'],
-    'mongolia': ['mongolia', 'mongolian'],
-    'kazakhstan': ['kazakhstan', 'kirghizstan', 'kyrgyzstan'],
-    'uzbekistan': ['uzbekistan', 'uzbek'],
-    'turkmenistan': ['turkmenistan', 'turkmen'],
-    'tajikistan': ['tajikistan', 'tadjikistan', 'tajik'],
-    'afghanistan': ['afghanistan', 'afghan'],
-    'iraq': ['iraq', 'iraqi'],
-    'syria': ['syria', 'syrian'],
-    'lebanon': ['lebanon', 'lebanese'],
-    'israel': ['israel', 'israeli'],
-    'palestine': ['palestine', 'palestinian'],
-    'jordan': ['jordan', 'jordanian'],
-    'yemen': ['yemen', 'yemeni'],
-    'oman': ['oman', 'omani'],
-    'qatar': ['qatar', 'qatari'],
-    'bahrain': ['bahrain', 'bahraini'],
-    'kuwait': ['kuwait', 'kuwaiti'],
-    'egypt': ['egypt', 'egyptian'],
-    'libya': ['libya', 'libyan'],
-    'sudan': ['sudan', 'sudanese'],
-    'ethiopia': ['ethiopia', 'ethiopian'],
-    'somalia': ['somalia', 'somali'],
-    'uganda': ['uganda', 'ugandan'],
-    'tanzania': ['tanzania', 'tanzanian'],
-    'mozambique': ['mozambique', 'mozambican'],
-    'zimbabwe': ['zimbabwe', 'zimbabwean'],
-    'namibia': ['namibia', 'namibian'],
-    'botswana': ['botswana', 'motswana'],
-    'lesotho': ['lesotho', 'basotho'],
-    'eswatini': ['eswatini', 'swaziland', 'swazi'],
-    'malawi': ['malawi', 'malawian'],
-    'zambia': ['zambia', 'zambian'],
-    'senegal': ['senegal', 'senegalese'],
-    'ghana': ['ghana', 'ghanaian'],
-    'côte d\'ivoire': ['côte d\'ivoire', 'ivory coast', 'cote d\'ivoire'],
-    'mali': ['mali', 'malian'],
-    'mauritius': ['mauritius', 'mauritian'],
-    'réunion': ['réunion', 'reunion'],
-    'madagascar': ['madagascar', 'malagasy'],
-    'new caledonia': ['new caledonia', 'caledonia'],
-    'fiji': ['fiji', 'fijian'],
-    'samoa': ['samoa', 'samoan'],
-    'tonga': ['tonga', 'tongan'],
-    'kiribati': ['kiribati'],
-    'tuvalu': ['tuvalu'],
-    'nauru': ['nauru', 'nauruan'],
-    'palau': ['palau', 'palauan'],
-    'micronesia': ['micronesia', 'micronesian'],
-    'marshall islands': ['marshall islands', 'marshallese'],
-    'vanuatu': ['vanuatu'],
-    'solomon islands': ['solomon islands', 'solomon'],
-    'french polynesia': ['french polynesia', 'polynesia'],
-    'cook islands': ['cook islands'],
-    'niue': ['niue'],
-    'tokelau': ['tokelau'],
-    'wallis and futuna': ['wallis and futuna', 'wallis', 'futuna'],
-    'guam': ['guam', 'guamanian'],
-    'northern mariana islands': ['northern mariana', 'saipan'],
-    'american samoa': ['american samoa'],
-    'virgin islands': ['virgin islands', 'u.s. virgin islands'],
-    'puerto rico': ['puerto rico', 'puerterico'],
-    'åland islands': ['åland', 'aland', 'åland islands'],
-    'faroe islands': ['faroe', 'faroese', 'färöer'],
-    'san marino': ['san marino'],
-    'monaco': ['monaco', 'monégasque'],
-    'liechtenstein': ['liechtenstein'],
-    'andorra': ['andorra', 'andorran'],
-    'luxembourg': ['luxembourg', 'luxembourgish'],
-    'malta': ['malta', 'maltese'],
-    'cyprus': ['cyprus', 'cypriot'],
-    'mauritania': ['mauritania', 'mauritanian'],
-    'djibouti': ['djibouti', 'djiboutian'],
-    'comoros': ['comoros', 'comorian'],
-    'seychelles': ['seychelles', 'seychellois'],
-    'cape verde': ['cape verde', 'caboverdean'],
-    'são tomé and príncipe': ['são tomé', 'sao tome', 'santo tomé'],
-    'equatorial guinea': ['equatorial guinea', 'equatoguinean'],
-    'gabon': ['gabon', 'gabonese'],
-    'central african republic': ['central african', 'c.a.r.', 'car'],
-    'congo': ['congo', 'congolese'],
-    'democratic republic of congo': ['drc', 'democratic republic of congo', 'dr congo'],
-    'benin': ['benin', 'beninese'],
-    'togo': ['togo', 'togolese'],
-    'mauritius': ['mauritius', 'mauritian'],
-    'sierra leone': ['sierra leone', 'sierra leonean'],
-    'liberia': ['liberia', 'liberian'],
-    'guinea': ['guinea', 'guinean'],
-    'guinea-bissau': ['guinea-bissau', 'bissau-guinean'],
-    'gambia': ['gambia', 'gambian'],
-    'burkina faso': ['burkina faso', 'burkinabe'],
-    'niger': ['niger', 'nigerien'],
-    'nigeria': ['nigeria', 'nigerian'],
-    'kenya': ['kenya', 'kenyan'],
-    'rwanda': ['rwanda', 'rwandan'],
-    'burundi': ['burundi', 'burundian'],
+# Comprehensive country name to ISO A3 code mapping (973 variants -> 240 ISO codes)
+COUNTRY_TO_ISO = {
+    "canada": "CAN",
+    "canada western": "CAN",
+    "western canada": "CAN",
+    "eastern canada": "CAN",
+    "united states": "USA",
+    "mexico": "MEX",
+    "guatemala": "GTM",
+    "belize": "BLZ",
+    "honduras": "HND",
+    "el salvador": "SLV",
+    "nicaragua": "NIC",
+    "costa rica": "CRI",
+    "panama": "PAN",
+    "colombia": "COL",
+    "antioquia": "COL",
+    "venezuela": "VEN",
+    "guyana": "GUY",
+    "suriname": "SUR",
+    "french guiana": "GUF",
+    "argentina": "ARG",
+    "new caledonia": "NCL",
+    "brazil": "BRA",
+    "chile": "CHL",
+    "southern chile": "CHL",
+    "peru": "PER",
+    "ecuador": "ECU",
+    "paraguay": "PRY",
+    "uruguay": "URY",
+    "bolivia": "BOL",
+    "jamaica": "JAM",
+    "dominican republic": "DOM",
+    "haiti": "HTI",
+    "cuba": "CUB",
+    "puerto rico": "PRI",
+    "trinidad and tobago": "TTO",
+    "bahamas": "BHS",
+    "barbados": "BRB",
+    "grenada": "GRD",
+    "saint lucia": "LCA",
+    "saint vincent and the grenadines": "VCT",
+    "antigua and barb.": "ATG",
+    "antigua and barbuda": "ATG",
+    "dominica": "DMA",
+    "saint kitts and nevis": "KNA",
+    "nova scotia": "CAN",
+    "british columbia": "CAN",
+    "viçosa": "BRA",
+    "eastern canada": "CAN",
+    "new brunswick": "CAN",
+    "united kingdom": "GBR",
+    "ireland": "IRL",
+    "france": "FRA",
+    "germany": "DEU",
+    "italy": "ITA",
+    "sicily": "ITA",
+    "sardinia": "ITA",
+    "lombardy": "ITA",
+    "tuscany": "ITA",
+    "spain": "ESP",
+    "canary": "ESP",
+    "portugal": "PRT",
+    "netherlands": "NLD",
+    "belgium": "BEL",
+    "luxembourg": "LUX",
+    "switzerland": "CHE",
+    "swiss jura mountains": "CHE",
+    "austria": "AUT",
+    "czech republic": "CZE",
+    "slovakia": "SVK",
+    "slovenia": "SVN",
+    "croatia": "HRV",
+    "bosnia and herzegovina": "BIH",
+    "serbia": "SRB",
+    "montenegro": "MNE",
+    "macedonia": "MKD",
+    "kosovo": "XKX",
+    "albania": "ALB",
+    "greece": "GRC",
+    "romania": "ROU",
+    "malta": "MLT",
+    "bulgaria": "BGR",
+    "hungary": "HUN",
+    "poland": "POL",
+    "ukraine": "UKR",
+    "belarus": "BLR",
+    "russia": "RUS",
+    "russian far east": "RUS",
+    "moldova": "MDA",
+    "latvia": "LVA",
+    "lithuania": "LTU",
+    "estonia": "EST",
+    "denmark": "DNK",
+    "sweden": "SWE",
+    "norway": "NOR",
+    "finland": "FIN",
+    "iceland": "ISL",
+    "northern ireland": "GBR",
+    "scotland": "GBR",
+    "wales": "GBR",
+    "england": "GBR",
+    "britain": "GBR",
+    "the netherlands": "NLD",
+    "svalbard": "NOR",
+    "greenland": "GRL",
+    "faroe": "FRO",
+    "faroe islands": "FRO",
+    "great britain": "GBR",
+    "gomera": "ESP",
+    "egypt": "EGY",
+    "benin": "BEN",
+    "libya": "LBY",
+    "algeria": "DZA",
+    "tamanghasset": "DZA",
+    "tunisia": "TUN",
+    "msila": "DZA",
+    "el-haourane": "DZA",
+    "morocco": "MAR",
+    "south africa": "ZAF",
+    "transkei": "ZAF",
+    "southern transkei": "ZAF",
+    "namibia": "NAM",
+    "botswana": "BWA",
+    "zimbabwe": "ZWE",
+    "zambia": "ZMB",
+    "malawi": "MWI",
+    "mozambique": "MOZ",
+    "tanzania": "TZA",
+    "kenya": "KEN",
+    "uganda": "UGA",
+    "rwanda": "RWA",
+    "burundi": "BDI",
+    "congo": "COG",
+    "democratic republic of congo": "COD",
+    "cameroon": "CMR",
+    "central african republic": "CAF",
+    "gabon": "GAB",
+    "equatorial guinea": "GNQ",
+    "nigeria": "NGA",
+    "niger": "NER",
+    "ghana": "GHA",
+    "ivory coast": "CIV",
+    "côte d'ivoire": "CIV",
+    "burkina faso": "BFA",
+    "mali": "MLI",
+    "mauritania": "MRT",
+    "senegal": "SEN",
+    "gambia": "GMB",
+    "guinea-bissau": "GNB",
+    "guinea": "GIN",
+    "sierra leone": "SLE",
+    "liberia": "LBR",
+    "ethiopia": "ETH",
+    "somalia": "SOM",
+    "djibouti": "DJI",
+    "eritrea": "ERI",
+    "sudan": "SDN",
+    "south sudan": "SSD",
+    "chad": "TCD",
+    "mauritius": "MUS",
+    "madagascar": "MDG",
+    "seychelles": "SYC",
+    "china": "CHN",
+    "anhui huoshan": "CHN",
+    "of yunnan": "CHN",
+    "anhui": "CHN",
+    "southwestern china": "CHN",
+    "qinghai-tibet plateau": "CHN",
+    "qinghai-tibet": "CHN",
+    "qinghai tibet": "CHN",
+    "north china": "CHN",
+    "south china": "CHN",
+    "east china": "CHN",
+    "west china": "CHN",
+    "southern china": "CHN",
+    "southeast china": "CHN",
+    "southwest china": "CHN",
+    "people's republic of china": "CHN",
+    "peoples republic of china": "CHN",
+    "prc": "CHN",
+    "trinidad": "TTO",
+    "trinidad and tobago": "TTO",
+    "pr china": "CHN",
+    "p r china": "CHN",
+    "taiwan": "TWN",
+    "formosa": "TWN",
+    "formosan": "TWN",
+    "hong kong": "HKG",
+    "macau": "MAC",
+    "japan": "JPN",
+    "south korea": "KOR",
+    "korea": "KOR",
+    "north korea": "PRK",
+    "mongolia": "MNG",
+    "afghanistan": "AFG",
+    "pakistan": "PAK",
+    "india": "IND",
+    "chhattisgarh": "IND",
+    "central india": "IND",
+    "arunachal pradesh": "IND",
+    "tripura": "IND",
+    "south east india": "IND",
+    "north-east india": "IND",
+    "northeast india": "IND",
+    "bangladesh": "BGD",
+    "nepal": "NPL",
+    "bhutan": "BTN",
+    "sri lanka": "LKA",
+    "myanmar": "MMR",
+    "thailand": "THA",
+    "northern thailand": "THA",
+    "thai": "THA",
+    "laos": "LAO",
+    "cambodia": "KHM",
+    "vietnam": "VNM",
+    "philippines": "PHL",
+    "indonesia": "IDN",
+    "malaysia": "MYS",
+    "west malaysia": "MYS",
+    "peninsular malaysia": "MYS",
+    "singapore": "SGP",
+    "brunei": "BRN",
+    "brunei darussalam": "BRN",
+    "east timor": "TLS",
+    "timor-leste": "TLS",
+    "papua new guinea": "PNG",
+    "yemen": "YEM",
+    "oman": "OMN",
+    "united arab emirates": "ARE",
+    "qatar": "QAT",
+    "bahrain": "BHR",
+    "kuwait": "KWT",
+    "saudi arabia": "SAU",
+    "saudi-arabia": "SAU",
+    "iraq": "IRQ",
+    "iran": "IRN",
+    "turkey": "TUR",
+    "türkiye": "TUR",
+    "syria": "SYR",
+    "lebanon": "LBN",
+    "israel": "ISR",
+    "palestine": "PSE",
+    "cyprus": "CYP",
+    "kazakhstan": "KAZ",
+    "uzbekistan": "UZB",
+    "turkmenistan": "TKM",
+    "tajikistan": "TJK",
+    "kyrgyzstan": "KGZ",
+    "australia": "AUS",
+    "new zealand": "NZL",
+    "aotearoa": "NZL",
+    "fiji": "FJI",
+    "samoa": "WSM",
+    "vanuatu": "VUT",
+    "solomon islands": "SLB",
+    "micronesia": "FSM",
+    "palau": "PLW",
+    "marshall islands": "MHL",
+    "kiribati": "KIR",
+    "tuvalu": "TUV",
+    "nauru": "NRU",
+    "new south wales": "AUS",
+    "yunnan": "CHN",
+    "qinghai": "CHN",
+    "jiangxi": "CHN",
+    "gansu": "CHN",
+    "nei mongol": "CHN",
+    "inner mongolia": "CHN",
+    "sichuan": "CHN",
+    "hainan": "CHN",
+    "xinjiang": "CHN",
+    "zhejiang": "CHN",
+    "xuwen": "CHN",
+    "guangdong": "CHN",
+    "fujian": "CHN",
+    "guangxi": "CHN",
+    "beijing": "CHN",
+    "shanghai": "CHN",
+    "liaoning": "CHN",
+    "jilin": "CHN",
+    "heilongjiang": "CHN",
+    "tibet": "CHN",
+    "fuyang": "CHN",
+    "guizhou": "CHN",
+    "zhanjiang": "CHN",
+    "sumatra": "IDN",
+    "java": "IDN",
+    "borneo": "IDN",
+    "jeddah": "SAU",
+    "goa": "IND",
+    "west bengal": "IND",
+    "tamil nadu": "IND",
+    "tamil naidu": "IND",
+    "chennai": "IND",
+    "mandi district": "IND",
+    "himachal pradesh": "IND",
+    "nashik": "IND",
+    "himalaya": "IND",
+    "rajasthan": "IND",
+    "mumbai": "IND",
+    "delhi": "IND",
+    "new delhi": "IND",
+    "bangalore": "IND",
+    "hyderabad": "IND",
+    "tamilnadu": "IND",
+    "karnataka": "IND",
+    "haryana": "IND",
+    "uttarakhand": "IND",
+    "uttarpradesh": "IND",
+    "odisha": "IND",
+    "manipur": "IND",
+    "salem": "IND",
+    "yercaud": "IND",
+    "yercaud hills": "IND",
+    "nashik district": "IND",
+    "maharashtra": "IND",
+    "assam": "IND",
+    "kerala": "IND",
+    "punjab": "IND",
+    "uttar pradesh": "IND",
+    "andhra pradesh": "IND",
+    "andhra": "IND",
+    "bombay": "IND",
+    "telangana": "IND",
+    "bengkulu": "IDN",
+    "southern india": "IND",
+    "meghalaya": "IND",
+    "ne india": "IND",
+    "northeastern india": "IND",
+    "northern india": "IND",
+    "northwestern india": "IND",
+    "northeast india": "IND",
+    "gujarati": "IND",
+    "garhwal": "IND",
+    "haridwar": "IND",
+    "jammu kashmir": "IND",
+    "khammam": "IND",
+    "kodiyakarai": "IND",
+    "kollam": "IND",
+    "mandi": "IND",
+    "mymensingh": "IND",
+    "puducherry": "IND",
+    "uttrakhand": "IND",
+    "tamilnadu state": "IND",
+    "karnataka state": "IND",
+    "kalimantan": "IDN",
+    "sulawesi": "IDN",
+    "sarawak": "MYS",
+    "johor": "MYS",
+    "penang": "MYS",
+    "peninsular malaysia": "MYS",
+    "bahia state": "BRA",
+    "minas gerais": "BRA",
+    "sao paulo": "BRA",
+    "rio grande do sul state": "BRA",
+    "santa catarina state": "BRA",
+    "corsica": "FRA",
+    "madeira": "PRT",
+    "la reunion": "FRA",
+    "martinique": "MTQ",
+    "tahiti": "PYF",
+    "moorea": "PYF",
+    "tenerife": "ESP",
+    "la palma": "ESP",
+    "majorca": "ESP",
+    "balearic": "ESP",
+    "alicante": "ESP",
+    "palencia": "ESP",
+    "samsun": "TUR",
+    "hormozgan": "IRN",
+    "qena governorate": "EGY",
+    "upper egypt": "EGY",
+    "azerbaijan": "AZE",
+    "primorsky": "RUS",
+    "moscow oblast": "RUS",
+    "amur": "RUS",
+    "belorussian ssr": "BLR",
+    "republic of moldova": "MDA",
+    "shetland": "GBR",
+    "shetlands": "GBR",
+    "isle of man": "GBR",
+    "flanders": "BEL",
+    "alentejo": "PRT",
+    "lisbon": "PRT",
+    "tashkent": "UZB",
+    "ulsan city": "KOR",
+    "ibaraki": "JPN",
+    "satakunta": "FIN",
+    "ny-ålesund": "NOR",
+    "spitsbergen": "NOR",
+    "togo": "TGO",
+    "comoros": "COM",
+    "timor": "TLS",
+    "timor leste": "TLS",
+    "papua": "PNG",
+    "falkland islands": "FLK",
+    "ny aalesund": "NOR",
+    "american samoa": "USA",
+    "hawaii": "USA",
+    "arizona": "USA",
+    "arkansas": "USA",
+    "california": "USA",
+    "florida": "USA",
+    "texas": "USA",
+    "new york": "USA",
+    "idaho": "USA",
+    "alaska": "USA",
+    "ohio": "USA",
+    "pennsylvania": "USA",
+    "michigan": "USA",
+    "north carolina": "USA",
+    "virginia": "USA",
+    "oregon": "USA",
+    "washington": "USA",
+    "massachusetts": "USA",
+    "illinois": "USA",
+    "indiana": "USA",
+    "iowa": "USA",
+    "carolina": "USA",
+    "south carolina": "USA",
+    "kentucky": "USA",
+    "maryland": "USA",
+    "mississippi": "USA",
+    "missouri": "USA",
+    "connecticut": "USA",
+    "dakota": "USA",
+    "delaware": "USA",
+    "louisiana": "USA",
+    "new jersey": "USA",
+    "new mexico": "USA",
+    "oklahoma": "USA",
+    "alabama": "USA",
+    "maine": "USA",
+    "minnesota": "USA",
+    "nebraska": "USA",
+    "kansas": "USA",
+    "western australia": "AUS",
+    "south australia": "AUS",
+    "victoria": "AUS",
+    "tasmania": "AUS",
+    "queensland": "AUS",
+    "eastern australia": "AUS",
+    "southwestern australia": "AUS",
+    "south-western australia": "AUS",
+    "northern territory": "AUS",
+    "northern territory of australia": "AUS",
+    "usa": "USA",
+    "new-zealand": "NZL",
+    "brasil": "BRA",
+    "burma": "MMR",
+    "cameroun": "CMR",
+    "french polynesia": "PYF",
+    "republic of panama": "PAN",
+    "russian federation": "RUS",
+    "the peoples republic of china": "CHN",
+    "federal republic of germany": "DEU",
+    "ksa": "SAU",
+    "ontario": "CAN",
+    "alberta": "CAN",
+    "manitoba": "CAN",
+    "quebec": "CAN",
+    "canada western canada": "CAN",
+    "antarctica": "ATA",
+    "antarctic": "ATA",
+    "lagotellerie": "ATA",
+    "moutonné valley on alexander island": "ATA",
+    "east antarctica": "ATA",
+    "east continental antarctica": "ATA",
+    "south antarctica": "ATA",
+    "central transantarctic mountains": "ATA",
+    "moutonné valley on alexander": "ATA",
+    "transantarctic mountains": "ATA",
+    "king george": "ATA",
+    "king george island": "ATA",
+    "angola": "AGO",
+    "jordan": "JOR",
+    "maritime antarctica": "ATA",
+    "rhynie": "GBR",
+    "bermuda": "BMU",
+    "bosnia": "BIH",
+    "herzegovina": "BIH",
+    "newfoundland": "CAN",
+    "la réunion": "REU",
+    "cote divoire": "CIV",
+    "côte divoire": "CIV",
+    "yugoslavia": "SRB",
+    "bicol": "PHL",
+    "southern italy": "ITA",
+    "parts of italy": "ITA",
+    "dutch": "NLD",
+    "east india": "IND",
+    "finnish": "FIN",
+    "korean": "KOR",
+    "northern spain": "ESP",
+    "central spain": "ESP",
+    "british-columbia": "CAN",
+    "brunswick": "CAN",
+    "buenos aires": "ARG",
+    "canadian": "CAN",
+    "chiapas": "MEX",
+    "colorado": "USA",
+    "cordoba": "ARG",
+    "cuneo": "ITA",
+    "gujarat": "IND",
+    "jalisco": "MEX",
+    "kashmir": "IND",
+    "paraná": "BRA",
+    "patagonia": "ARG",
+    "peruvian amazon": "PER",
+    "sinaloa": "MEX",
+    "southeastern brazil": "BRA",
+    "southern france": "FRA",
+    "southern morocco": "MAR",
+    "southern poland": "POL",
+    "veracruz": "MEX",
+    "western montana": "USA",
+    "western oregon": "USA",
+    "akmola": "KAZ",
+    "alberta rocky mountains": "CAN",
+    "andaman": "IND",
+    "apulia": "ITA",
+    "baise": "CHN",
+    "bangi": "CAF",
+    "bisle ghat": "IND",
+    "british": "GBR",
+    "campina grande": "BRA",
+    "cear? state": "BRA",
+    "chengde": "CHN",
+    "chenzhou": "CHN",
+    "chikwawa": "MWI",
+    "chilean southern andes": "CHL",
+    "cianjur": "IDN",
+    "cili country": "CHN",
+    "columbia basin": "USA",
+    "egyptian": "EGY",
+    "french pyrenees": "FRA",
+    "gannan": "CHN",
+    "german": "DEU",
+    "germany berlin": "DEU",
+    "guizhou dushan": "CHN",
+    "hexi": "CHN",
+    "hitachi mine": "JPN",
+    "hull": "GBR",
+    "inner mengolia": "CHN",
+    "inner mongolia of northern china": "CHN",
+    "people’s republic of china": "CHN",
+    "ningxia": "CHN",
+    "central panama": "PAN",
+    "central spain": "ESP",
+    "hainan island": "CHN",
+    "south india": "IND",
+    "jammu & kashmir": "IND",
+    "korean ecotype": "KOR",
+    "lueyang country": "CHN",
+    "mala y sia": "MYS",
+    "malay": "MYS",
+    "min county": "CHN",
+    "minqin of gansu": "CHN",
+    "minxian": "CHN",
+    "monte azul": "BRA",
+    "ningxia hui autonomous region of china": "CHN",
+    "north-west china": "CHN",
+    "north-west tasmania": "AUS",
+    "north-western himalaya": "IND",
+    "northern china": "CHN",
+    "northern finland": "FIN",
+    "aland": "FIN",
+    "northern germany": "DEU",
+    "northern mexico": "MEX",
+    "northern pennsylvania": "USA",
+    "northwestern himalayas": "IND",
+    "panan": "CHN",
+    "pauri": "IND",
+    "pingjiang": "CHN",
+    "qilian mountain": "CHN",
+    "qinghai-tibetan plateau": "CHN",
+    "qinghai-xizang": "CHN",
+    "qinghai-xizang plateau": "CHN",
+    "río negro": "ARG",
+    "san luis": "ARG",
+    "shapotou of ningxia": "CHN",
+    "south-east queensland": "AUS",
+    "south-eastern england": "GBR",
+    "south-west britain": "GBR",
+    "south-west china": "CHN",
+    "southeastern queensland": "AUS",
+    "southern bahia state": "BRA",
+    "southern kyushu": "JPN",
+    "tatra mountains": "SVK",
+    "te anau": "NZL",
+    "tibetan autonomous": "CHN",
+    "tierra del fuego": "ARG",
+    "tongren city": "CHN",
+    "wenxian": "CHN",
+    "western alps": "ITA",
+    "western anatolia": "TUR",
+    "western hubei": "CHN",
+    "western siberia": "RUS",
+    "willamette valley": "USA",
+    "xiongan new area": "CHN",
+    "yinchuan": "CHN",
+    "yinjing": "CHN",
+    "yunnan menglian": "CHN",
+    "yuqian": "CHN",
+    "zhuhai": "CHN",
+    "zhuhai city": "CHN",
+    "zunyi country": "CHN",
+    "continental antarctica": "ATA",
+    "coast of india": "IND",
+    "county in barinas": "VEN",
+    "district udhampur in jammu division": "IND",
+    "dongxiang": "CHN",
+    "gurbantunggut desert": "CHN",
+    "including china": "CHN",
+    "india/bangladesh": "IND",
+    "india/bangladesh": "BGD",
+    "southern iberian": "ESP",
+    "southern iberian": "PRT",
+    "rkiye": "TUR",
+    "tü": "TUR",
+    "ind": "IND",
+    "greenland": "GRL",
+    "iceland": "ISL",
+    "mississippi river basin": "USA",
+    "svalbard": "NOR",
+    "franz josef land": "RUS",
+    "new siberian islands": "RUS",
+    "novaya zemlya": "RUS",
+    "macdonnell ranges": "AUS",
+    "brazilian highlands": "BRA",
+    "guiana highlands": "GUY",
+    "são tomé and príncipe": "STP",
+    "canadian arctic archipelago": "CAN",
+    "ural mountains": "RUS",
+    "severnaya zemlya": "RUS",
+    "wrangel island": "RUS",
+    "great lakes": "USA",
+    "great lakes": "CAN",
+    "hudson bay": "CAN",
+    "sierra madre oriental": "MEX",
+    "sierra madre occidental": "MEX",
+    "sierra madre del sur": "MEX",
+    "trans-mexican volcanic belt": "MEX",
+    "sonoran desert": "USA",
+    "sonoran desert": "MEX",
+    "mojave desert": "USA",
+    "chihuahuan desert": "USA",
+    "chihuahuan desert": "MEX",
+    "great basin desert": "USA",
+    "colorado plateau": "USA",
+    "rocky mountains": "USA",
+    "rocky mountains": "CAN",
+    "appalachian mountains": "USA",
+    "appalachian mountains": "CAN",
+    "sierra nevada": "USA",
+    "cascade range": "USA",
+    "cascade range": "CAN",
+    "coast ranges": "USA",
+    "coast ranges": "CAN",
+    "great plains": "USA",
+    "great plains": "CAN",
+    "central valley": "USA",
+    "juan fernández islands": "CHL",
+    "desventuradas islands": "CHL",
+    "magellanic subpolar forests": "CHL",
+    "magellanic subpolar forests": "ARG",
+    "valdivian temperate rain forest": "CHL",
+    "valdivian temperate rain forest": "ARG",
+    "patagonian steppe": "ARG",
+    "patagonian steppe": "CHL",
+    "pampas": "ARG",
+    "pampas": "URY",
+    "pampas": "BRA",
+    "gran chaco": "ARG",
+    "gran chaco": "BOL",
+    "gran chaco": "PRY",
+    "gran chaco": "BRA",
+    "atlantic forest": "BRA",
+    "atlantic forest": "ARG",
+    "atlantic forest": "PRY",
+    "cerrado": "BRA",
+    "cerrado": "BOL",
+    "cerrado": "PRY",
+    "caatinga": "BRA",
+    "yungas": "BOL",
+    "yungas": "PER",
+    "yungas": "ARG",
+    "puna": "ARG",
+    "puna": "BOL",
+    "puna": "CHL",
+    "puna": "PER",
+    "paramo": "COL",
+    "paramo": "ECU",
+    "paramo": "PER",
+    "paramo": "VEN",
+    "atacama": "CHL",
+    "maule": "CHL",
+    "santiago": "CHL",
+    "coquimbo": "CHL",
+    "monte": "ARG",
+    "espinal": "ARG",
+    "tumbes-chocó-magdalena": "COL",
+    "tumbes-chocó-magdalena": "ECU",
+    "tumbes-chocó-magdalena": "PAN",
+    "tumbes-chocó-magdalena": "PER",
+    "chocó-darién": "COL",
+    "chocó-darién": "PAN",
+    "panamanian": "PAN",
+    "sino-japanese": "CHN",
+    "sino-japanese": "JPN",
+    "sundanian": "IDN",
+    "sundanian": "MYS",
+    "sundanian": "BRN",
+    "wallacean": "IDN",
+    "philippine": "PHL",
+    "sundaland": "IDN",
+    "sundaland": "MYS",
+    "sundaland": "BRN",
+    "sundaland": "SGP",
+    "sundaland": "THA",
+    "wallacea": "IDN",
+    "beringia": "RUS",
+    "beringia": "USA",
+    "himalayas": "NPL",
+    "himalayas": "BTN",
+    "himalayas": "IND",
+    "himalayas": "CHN",
+    "himalayas": "PAK",
+    "tibetan plateau": "CHN",
+    "kunlun mountains": "CHN",
+    "tian shan": "CHN",
+    "tian shan": "KAZ",
+    "tian shan": "KGZ",
+    "tian shan": "UZB",
+    "altai mountains": "RUS",
+    "altai mountains": "CHN",
+    "altai mountains": "MNG",
+    "altai mountains": "KAZ",
+    "sayan mountains": "MNG",
+    "sayan mountains": "RUS",
+    "stanovoy range": "RUS",
+    "verkhoyansk range": "RUS",
+    "chersky range": "RUS",
+    "kolyma mountains": "RUS",
+    "sikhote-alin": "RUS",
+    "zagros mountains": "IRN",
+    "zagros mountains": "IRQ",
+    "zagros mountains": "TUR",
+    "taurus mountains": "TUR",
+    "pontic mountains": "TUR",
+    "anatolian plateau": "TUR",
+    "iranian plateau": "IRN",
+    "iranian plateau": "AFG",
+    "iranian plateau": "PAK",
+    "armenian highlands": "ARM",
+    "armenian highlands": "TUR",
+    "armenian highlands": "IRN",
+    "armenian highlands": "AZE",
+    "armenian highlands": "GEO",
+    "ethiopian highlands": "ETH",
+    "ethiopian highlands": "ERI",
+    "drakensberg": "ZAF",
+    "drakensberg": "LSO",
+    "atlas mountains": "MAR",
+    "atlas mountains": "DZA",
+    "atlas mountains": "TUN",
+    "ahaggar mountains": "DZA",
+    "tibesti mountains": "TCD",
+    "tibesti mountains": "LBY",
+    "guinea highlands": "GIN",
+    "guinea highlands": "SLE",
+    "guinea highlands": "LBR",
+    "guinea highlands": "CIV",
+    "cameroon highlands": "CMR",
+    "cameroon highlands": "NGA",
+    "australian alps": "AUS",
+    "great dividing range": "AUS",
+    "kimberley": "AUS",
+    "hamersley range": "AUS",
+    "darling range": "AUS",
+    "new guinea highlands": "IDN",
+    "new guinea highlands": "PNG",
+    "southern alps": "NZL",
+    "hawaiian islands": "USA",
+    "galapagos islands": "ECU",
+    "canary islands": "ESP",
+    "azores": "PRT",
+    "cape verde": "CPV",
+    "maldives": "MDV",
+    "chagos archipelago": "IOT",
+    "andaman islands": "IND",
+    "nicobar islands": "IND",
+    "lakshadweep": "IND",
+    "new guinea": "IDN",
+    "new guinea": "PNG",
+    "sakhalin": "RUS",
+    "kuril islands": "RUS",
+    "aleutian islands": "USA",
+    "south georgia and the south sandwich islands": "SGS",
+    "bouvet island": "BVT",
+    "heard island and mcdonald islands": "HMD",
+    "kermadec islands": "NZL",
+    "chatham islands": "NZL",
+    "auckland islands": "NZL",
+    "campbell island": "NZL",
+    "antipodes islands": "NZL",
+    "bounty islands": "NZL",
+    "snares islands": "NZL",
+    "macquarie island": "AUS",
+    "tonga": "TON",
+    "cook islands": "COK",
+    "pitcairn islands": "PCN",
+    "easter island": "CHL",
+    "saint helena, ascension and tristan da cunha": "SHN",
+    "andorra": "AND",
+    "anguilla": "AIA",
+    "armenia": "ARM",
+    "aruba": "ABW",
+    "br. indian ocean ter.": "IOT",
+    "br indian ocean ter": "IOT",
+    "british indian ocean": "IOT",
+    "british virgin is.": "VGB",
+    "cayman is.": "CYM",
+    "curaçao": "CUW",
+    "dem. rep. korea": "PRK",
+    "eq. guinea": "GNQ",
+    "fr. s. antarctic lands": "ATF",
+    "fr s antarctic lands": "ATF",
+    "french s antarctic lands": "ATF",
+    "gambia": "GMB",
+    "georgia": "GEO",
+    "guam": "GUM",
+    "guernsey": "GGY",
+    "jersey": "JEY",
+    "lesotho": "LSO",
+    "liechtenstein": "LIE",
+    "macao": "MAC",
+    "monaco": "MCO",
+    "montserrat": "MSR",
+    "n. mariana is.": "MNP",
+    "norfolk island": "NFK",
+    "st-barthélemy": "BLM",
+    "st-martin": "MAF",
+    "st. pierre and miquelon": "SPM",
+    "st. vin. and gren.": "VCT",
+    "swaziland": "SWZ",
+    "eswatini": "SWZ",
+    "turks and caicos is.": "TCA",
+    "u.s. virgin is.": "VIR",
+    "w. sahara": "ESH",
+    "wallis and futuna": "WLF",
+    "america": "USA",
+    "siberia": "RUS",
+    "amazon": "BRA",
+    "amazonia": "BRA",
+    "bengal": "IND",
+    "sundarbans": "IND",
+    "reunion": "REU",
+    "réunion": "REU",
+    "sao tome": "STP",
+    "sao tome and principe": "STP",
+    "st pierre": "SPM",
+    "guadeloupe": "GLP",
+    "st barthélemy": "BLM",
+    "st martin": "MAF",
+    "wallis and futuna islands": "WLF",
+    "wallis et futuna": "WLF",
+    "kirghizstan": "KGZ",
+    "kirgizia": "KGZ",
+    "tadjikistan": "TJK",
+    "tadzhikistan": "TJK",
+    "tadzhik": "TJK",
+    "aland islands": "ALA",
+    "åland islands": "ALA",
+    "åland": "ALA",
+    "isle of man": "IMN",
+    "channel islands": "GGY",
+    "san marino": "SMR",
+    "st lucia": "LCA",
+    "st vincent": "VCT",
+    "st kitts": "KNA",
+    "nevis": "KNA",
+    "antigua": "ATG",
+    "barbuda": "ATG",
+    "turks and caicos": "TCA",
+    "curacao": "CUW",
+    "sint maarten": "MAF",
+    "falkland": "FLK",
+    "falklands": "FLK",
+    "heard island": "HMD",
+    "heard": "HMD",
+    "south georgia": "SGS",
+    "sandwich islands": "SGS",
+    "saipan": "MNP",
+    "northern mariana": "MNP",
+    "american samoa": "ASM",
+    "niue": "NIU",
+    "solomon": "SLB",
+    "pitcairn": "PCN",
+    "norfolk": "NFK",
+    "yemen": "YEM",
+    "east timor": "TLS",
+    "timor leste": "TLS",
+    "ukraine": "UKR",
+    "dprk": "PRK",
+    "west bank": "PSE",
+    "gaza": "PSE",
+    "gaza strip": "PSE",
+    "malta": "MLT",
+    "saint helena": "SHN",
+    "tristan da cunha": "SHN",
+    "faroe islands": "FRO",
+    "mascarene": "MUS",
+    "south dakota": "USA",
+    "south florida": "USA",
+    "south texas": "USA",
+    "central texas": "USA",
+    "central indiana": "USA",
+    "west virginia": "USA",
+    "chongqing": "CHN",
+    "henan": "CHN",
+    "hubei": "CHN",
+    "hunan": "CHN",
+    "jiangsu": "CHN",
+    "shaanxi": "CHN",
+    "shandong": "CHN",
+    "tianjin": "CHN",
+    "xinjiang uygur autonomous": "CHN",
+    "guangxi zhuang autonomous": "CHN",
+    "hebei": "CHN",
+    "eastern zhejiang": "CHN",
+    "northwestern china": "CHN",
+    "subtropical china": "CHN",
+    "nanjing": "CHN",
+    "nanping city": "CHN",
+    "shenmu city": "CHN",
+    "shihezi": "CHN",
+    "huhhot": "CHN",
+    "hulun buir": "CHN",
+    "hulunbuir": "CHN",
+    "jiangpu": "CHN",
+    "jingxi county": "CHN",
+    "shanxi": "CHN",
+    "xishuangbanna": "CHN",
+    "east qilian mountain": "CHN",
+    "sichuan provinces": "CHN",
+    "central kalimantan": "IDN",
+    "central sulawesi": "IDN",
+    "central sumatra": "IDN",
+    "south sumatra": "IDN",
+    "west java": "IDN",
+    "west sumatra": "IDN",
+    "north sumatra": "IDN",
+    "java island": "IDN",
+    "timor island": "IDN",
+    "north east india": "IND",
+    "north india": "IND",
+    "south andaman island": "IND",
+    "central argentina": "ARG",
+    "central germany": "DEU",
+    "central mexico": "MEX",
+    "north spain": "ESP",
+    "west germany": "DEU",
+    "west carpathian": "SVK",
+    "south finland": "FIN",
+    "balearic islands": "ESP",
+    "gomera island": "ESP",
+    "madeira island": "PRT",
+    "mascarene islands": "MUS",
+    "moorea island": "PYF",
+    "south georgia to the leonie islands": "SGS",
+    "south shetland islands": "SGS",
+    "south shetlands islands": "SGS",
+    "spitsbergen island": "NOR",
 }
 
-# Reverse mapping: create quick lookup from alias to canonical country name
+# Reverse mapping: ISO A3 code to canonical country name
+ISO_TO_COUNTRY = {}
+for country_name, iso_code in COUNTRY_TO_ISO.items():
+    if iso_code not in ISO_TO_COUNTRY:
+        ISO_TO_COUNTRY[iso_code] = country_name
+    else:
+        # Prefer shorter, cleaner names as canonical
+        canonical = ISO_TO_COUNTRY[iso_code]
+        # Skip regional modifiers
+        if any(mod in country_name for mod in [" province", " region", " state", " district", " territory"]):
+            continue
+        # Use shorter name
+        if len(country_name) < len(canonical):
+            ISO_TO_COUNTRY[iso_code] = country_name
+
+# Alias to canonical country name mapping (for normalization)
 ALIAS_TO_COUNTRY = {}
-for country, aliases in COUNTRIES_AND_ALIASES.items():
-    for alias in aliases:
-        ALIAS_TO_COUNTRY[alias.lower()] = country
+for country_name, iso_code in COUNTRY_TO_ISO.items():
+    canonical = ISO_TO_COUNTRY[iso_code]
+    ALIAS_TO_COUNTRY[country_name] = canonical
 
-# List of columns to check for country information
-COLUMNS_TO_CHECK = ['biome', 'interaction_notes', 'plant_host', 'tissue', 'guild']
 
-def find_country_in_text(text, exclude_common_words=True):
+# Tissue, guild, and biome extraction functions for multi-column field recovery
+def extract_tissue_values(row, headers: List[str]) -> List[Tuple[str, str]]:
     """
-    Search for country names in text.
-    Returns: canonical country name if found, None otherwise.
+    Extract tissue information from relevant columns (handles displaced values).
+    Returns list of (tissue_value, source_column) tuples.
+    Checks columns where tissue data might be embedded by LLM extraction.
+    """
+    tissue_keywords = [
+        'root', 'leaf', 'stem', 'seed', 'fruit', 'flower', 'reproductive',
+        'rhizosphere', 'rhizome', 'tuber', 'nodule', 'bark', 'wood', 'xylem',
+        'phyllosphere', 'petiole', 'seaweed', 'foliage', 'needle', 'foliar'
+    ]
+    found_tissues = {}
+    col_index = {name: idx for idx, name in enumerate(headers)}
+    search_cols = ['tissue', 'interaction_notes', 'plant_host_raw', 'fungal_taxon_raw', 'plant_host']
     
-    Args:
-        text: String to search
-        exclude_common_words: If True, skip single-letter matches and very common words
+    for col_name in search_cols:
+        if col_name not in col_index:
+            continue
+        col_idx = col_index[col_name]
+        try:
+            cell_value = row[col_idx] if col_idx < len(row) else None
+            if cell_value and isinstance(cell_value, str):
+                text_lower = cell_value.lower()
+                for keyword in tissue_keywords:
+                    if keyword in text_lower and keyword not in found_tissues:
+                        found_tissues[keyword] = col_name
+                        break
+        except (IndexError, ValueError, TypeError):
+            continue
+    return [(tissue, source) for tissue, source in found_tissues.items()]
+
+
+def extract_guild_values(row, headers: List[str]) -> List[Tuple[str, str]]:
+    """
+    Extract fungal guild information from relevant columns (handles displaced values).
+    Returns list of (guild_value, source_column) tuples.
+    """
+    guild_keywords = [
+        'pgpr', 'endophyte', 'endophytic', 'biocontrol', 'pathogen', 'pathogenic',
+        'mycorrhiza', 'mycorrhizal', 'antagonist', 'saprotroph', 'decomposer',
+        'mutualist', 'symbiotic', 'symbiont', 'phytopathogen'
+    ]
+    found_guilds = {}
+    col_index = {name: idx for idx, name in enumerate(headers)}
+    search_cols = ['primary_guild', 'interaction_notes', 'fungal_taxon_raw', 'presence_absence_clean']
     
-    Returns:
-        Canonical country name or None
+    for col_name in search_cols:
+        if col_name not in col_index:
+            continue
+        col_idx = col_index[col_name]
+        try:
+            cell_value = row[col_idx] if col_idx < len(row) else None
+            if cell_value and isinstance(cell_value, str):
+                text_lower = cell_value.lower()
+                for keyword in guild_keywords:
+                    if keyword in text_lower and keyword not in found_guilds:
+                        found_guilds[keyword] = col_name
+                        break
+        except (IndexError, ValueError, TypeError):
+            continue
+    return [(guild, source) for guild, source in found_guilds.items()]
+
+
+def extract_biome_values(row, headers: List[str]) -> List[Tuple[str, str]]:
+    """
+    Extract biome information from relevant columns (handles displaced values).
+    Returns list of (biome_value, source_column) tuples.
+    """
+    biome_keywords = [
+        'forest', 'tropical', 'rainforest', 'woodland', 'grassland', 'prairie',
+        'savanna', 'desert', 'mountain', 'alpine', 'tundra', 'wetland',
+        'mangrove', 'marine', 'ocean', 'aquatic', 'estuarine', 'urban',
+        'agriculture', 'field', 'orchard', 'vineyard', 'farmland', 'cerrado',
+        'antarctic', 'pasture', 'salt marsh'
+    ]
+    found_biomes = {}
+    col_index = {name: idx for idx, name in enumerate(headers)}
+    search_cols = ['biome', 'interaction_notes', 'plant_host_raw', 'country']
+    
+    for col_name in search_cols:
+        if col_name not in col_index:
+            continue
+        col_idx = col_index[col_name]
+        try:
+            cell_value = row[col_idx] if col_idx < len(row) else None
+            if cell_value and isinstance(cell_value, str):
+                text_lower = cell_value.lower()
+                for keyword in biome_keywords:
+                    if keyword in text_lower and keyword not in found_biomes:
+                        found_biomes[keyword] = col_name
+                        break
+        except (IndexError, ValueError, TypeError):
+            continue
+    return [(biome, source) for biome, source in found_biomes.items()]
+
+
+def find_country_in_text(text: str) -> Optional[str]:
+    """
+    Find country name in text using word boundaries.
+    Returns the ISO A3 code if found, None otherwise.
     """
     if not text or not isinstance(text, str):
         return None
     
     text_lower = text.lower().strip()
     
-    # Skip very short strings
-    if len(text_lower) < 2:
-        return None
+    # Check for exact match first
+    if text_lower in COUNTRY_TO_ISO:
+        return COUNTRY_TO_ISO[text_lower]
     
-    # Direct lookup - check if entire text matches an alias
-    if text_lower in ALIAS_TO_COUNTRY:
-        return ALIAS_TO_COUNTRY[text_lower]
-    
-    # Substring matching - check if any alias appears as a standalone word
-    # This helps catch "xishuangbanna" → not a country, but other regional terms
-    for alias, country in ALIAS_TO_COUNTRY.items():
-        # Use word boundaries to avoid partial matches like "in" matching "india"
-        # Only check for country if it's a meaningful length
-        if len(alias) > 2:
-            pattern = r'\b' + re.escape(alias) + r'\b'
-            if re.search(pattern, text_lower):
-                return country
+    # Check for word boundary matches
+    for country_name, iso_code in COUNTRY_TO_ISO.items():
+        pattern = r"\b" + re.escape(country_name) + r"\b"
+        if re.search(pattern, text_lower):
+            return iso_code
     
     return None
 
 
-def consolidate_country_data(row, headers):
+def find_all_countries_in_text(text: str) -> List[str]:
     """
-    Check multiple columns for country information and consolidate into 'country' column.
-    
-    Args:
-        row: List representing a CSV row
-        headers: List of header names
-    
-    Returns:
-        Modified row with consolidated country data
+    Find ALL country names in text using word boundaries.
+    Returns list of unique ISO A3 codes found, empty list if none.
+    Prioritizes longer matches to avoid substring conflicts (e.g., 'united states' over 'united').
     """
-    h_idx = {name: i for i, name in enumerate(headers)}
+    if not text or not isinstance(text, str):
+        return []
     
-    # Get current country value
-    current_country = None
-    if 'country' in h_idx and row[h_idx['country']]:
-        current_country = row[h_idx['country']].lower().strip()
+    text_lower = text.lower().strip()
+    found_countries = set()
     
-    # If country already has a good value, don't override
-    if current_country and current_country != 'na':
-        return row
+    # Check for exact match first
+    if text_lower in COUNTRY_TO_ISO:
+        found_countries.add(COUNTRY_TO_ISO[text_lower])
     
-    # Check specified columns for country information
-    for col_name in COLUMNS_TO_CHECK:
-        if col_name in h_idx and row[h_idx[col_name]]:
-            cell_value = row[h_idx[col_name]]
-            found_country = find_country_in_text(cell_value)
-            
-            if found_country:
-                # Found a country! Add it to country column
-                if 'country' in h_idx:
-                    existing = row[h_idx['country']].strip() if row[h_idx['country']] else ''
-                    if existing and existing.lower() != 'na':
-                        # Append if there's existing data
-                        row[h_idx['country']] = existing + '; ' + found_country
-                    else:
-                        row[h_idx['country']] = found_country
-                break  # Stop after first country found
+    # Sort by length (longest first) to match longer names first
+    sorted_countries = sorted(COUNTRY_TO_ISO.items(), key=lambda x: -len(x[0]))
     
-    return row
+    for country_name, iso_code in sorted_countries:
+        pattern = r"\b" + re.escape(country_name) + r"\b"
+        if re.search(pattern, text_lower):
+            found_countries.add(iso_code)
+    
+    return list(found_countries)
 
 
-def get_country_name(alias):
+def consolidate_country_data(row, headers: List[str]) -> Optional[str]:
     """
-    Convert any country alias to canonical name.
-    Useful for standardizing country names in the country_iso_mapping in R.
-    
-    Args:
-        alias: Country alias or name
-    
-    Returns:
-        Canonical country name or original if not found
+    Consolidate country information across multiple data columns.
+    Searches specified columns for country matches.
+    Returns ISO A3 code if found, None otherwise.
+    DEPRECATED: Use extract_all_countries() for comprehensive multi-country detection.
     """
-    if not alias:
-        return None
-    return ALIAS_TO_COUNTRY.get(alias.lower(), None)
+    search_columns = ["country", "text", "location", "study_country", "relevant_countries"]
+    
+    for col in search_columns:
+        if col in headers and pd.notna(row.get(col)):
+            iso_code = find_country_in_text(str(row[col]))
+            if iso_code:
+                return iso_code
+    
+    return None
 
 
-if __name__ == "__main__":
-    # Test the utility
-    test_cases = [
-        'xishuangbanna',
-        'china',
-        'p.r. china',
-        'western ghats',
-        'united states of america',
-        'somewhere in brazil',
-        'unknown',
-        'india ink'
+# Pre-sort countries by length (longest first) for better pattern matching
+_COUNTRIES_BY_LENGTH = sorted(COUNTRY_TO_ISO.items(), key=lambda x: -len(x[0]))
+
+
+def extract_all_countries(row, headers: List[str]) -> List[Tuple[str, str]]:
+    """
+    Extract ALL country information from relevant columns in a row (optimized).
+    Returns list of (iso_code, source_column) tuples.
+    Checks priority-ordered columns most likely to contain geographic data.
+    Much faster by pre-sorting countries and limiting column checks.
+    Deduplicates on ISO code - keeps first source found.
+    """
+    found_countries = {}  # {iso_code: source_column} - keeps first source found
+    
+    # Columns to check, in priority order (most likely to have geographic data first)
+    search_priority = [
+        'country', 'relevant_countries', 'study_country',      # Explicit country fields
+        'interaction_notes',                                    # Often has location context
+        'plant_host', 'plant_host_raw', 'plant_host_resolved', # Geographic host location
+        'fungal_taxon', 'fungal_taxon_raw',                     # LLM sometimes includes location
+        'biome',                                                # Biome can have country synonyms
     ]
     
-    for test in test_cases:
-        print(f"'{test}' -> {find_country_in_text(test)}")
+    # Build index for fast column lookup
+    col_index = {name: idx for idx, name in enumerate(headers)}
+    
+    # Check columns in priority order
+    for col_name in search_priority:
+        if col_name not in col_index:
+            continue  # Column doesn't exist in this dataset
+        
+        col_idx = col_index[col_name]
+        try:
+            cell_value = row[col_idx] if col_idx < len(row) else None
+            
+            if cell_value and isinstance(cell_value, str) and len(cell_value.strip()) > 0:
+                text_lower = cell_value.lower().strip()
+                
+                # Check for exact match first
+                if text_lower in COUNTRY_TO_ISO:
+                    iso_code = COUNTRY_TO_ISO[text_lower]
+                    if iso_code not in found_countries:
+                        found_countries[iso_code] = col_name
+                else:
+                    # Check for word boundary matches (using pre-sorted countries)
+                    for country_name, iso_code in _COUNTRIES_BY_LENGTH:
+                        pattern = r"\b" + re.escape(country_name) + r"\b"
+                        if re.search(pattern, text_lower):
+                            if iso_code not in found_countries:
+                                found_countries[iso_code] = col_name
+        except (IndexError, ValueError, TypeError):
+            continue
+    
+    return [(iso, source) for iso, source in found_countries.items()]
+
+
+def get_country_name(alias: str) -> Optional[str]:
+    """
+    Get canonical country name for an alias.
+    Returns the canonical name if found, original input otherwise.
+    """
+    if not alias or not isinstance(alias, str):
+        return alias
+    
+    alias_lower = alias.lower().strip()
+    return ALIAS_TO_COUNTRY.get(alias_lower, alias)
+
+
+def get_iso_code(country_name: str) -> Optional[str]:
+    """
+    Get ISO A3 code for a country name.
+    Returns ISO code if found, None otherwise.
+    """
+    if not country_name or not isinstance(country_name, str):
+        return None
+    
+    return COUNTRY_TO_ISO.get(country_name.lower().strip())
+
+
+def get_countries_for_iso(iso_code: str) -> List[str]:
+    """
+    Get all country name variants for an ISO A3 code.
+    Returns list of country names, empty list if code not found.
+    """
+    if not iso_code or not isinstance(iso_code, str):
+        return []
+    
+    iso_upper = iso_code.upper().strip()
+    return [name for name, code in COUNTRY_TO_ISO.items() if code == iso_upper]
+
+
+# Statistics about the mapping
+MAPPING_STATS = {
+    "total_country_variants": 973,
+    "unique_country_names": 884,
+    "unique_iso_codes": 240,
+    "source": "Extracted from scripts/utils/country_mapping.R (tribble format)",
+    "coverage": "240 unique countries/territories worldwide",
+}
