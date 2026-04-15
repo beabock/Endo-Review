@@ -91,7 +91,7 @@ exclude_list <- c(
   "east africa", "south east asia", "west africa", "west asia",
   "lagotellerie island", "mediterranean island",
   "north of the pennines", "north temperate zone", "south of the alps",
-  "north temperate", "temperate zone"
+  "north temperate", "temperate zone", "devon", "nordic countries", "northern fennoscandia"
 )
 
 # Function to extract and clean country strings
