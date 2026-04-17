@@ -3,13 +3,12 @@ library(sf)
 library(ggplot2)
 library(dplyr)
 
-# Load the standardized geographic data
-standardized_data <- read.csv("data/standardized_country_data.csv")
+# Load the enriched country-level data
+country_papers <- read.csv("data/country_enriched_data.csv")
 
-# Count studies per country
-country_papers <- standardized_data %>%
-  group_by(iso_a3) %>%
-  summarise(study_count = n(), .groups = 'drop')
+# Preserve the precomputed study counts from the enrichment step
+country_papers <- country_papers %>%
+  mutate(study_count = as.numeric(study_count))
 
 # Load world map
 world <- ne_countries(scale = 50, returnclass = "sf")
@@ -27,7 +26,7 @@ map <- ggplot(world_robinson) +
   geom_sf(aes(fill = study_count), color = "white", linewidth = 0.2) +
   scale_fill_gradientn(
     name = "Number of Studies",
-    colors = c("#d4d4d4", "#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c", "#e31a1c", "#bd0026", "#800026"),
+    colors = c("#666666", "#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c", "#e31a1c", "#bd0026", "#800026"),
     values = scales::rescale(c(0, 1, 2, 3, 5, 10, 15, 20, 50)),
     na.value = "#666666",
     breaks = c(1, 2, 3, 5, 10, 15, 20),
@@ -75,7 +74,7 @@ cat("Total studies across all countries:", sum(country_papers$study_count), "\n"
 
 # Show countries NOT represented in the dataset
 all_countries <- world %>% pull(iso_a3) %>% unique() %>% sort()
-countries_with_data <- country_papers %>% pull(iso_a3) %>% unique() %>% sort()
+countries_with_data <- country_papers %>% filter(study_count > 0) %>% pull(iso_a3) %>% unique() %>% sort()
 countries_without_data <- setdiff(all_countries, countries_with_data)
 
 cat("\n\nCountries/territories NOT represented in dataset (", length(countries_without_data), " total):\n", sep="")
