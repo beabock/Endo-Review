@@ -1,0 +1,7 @@
+{
+  "processed_rows": "40277",
+  "total_rows": "40277",
+  "output_csv": "data/Ollama_cleaned_synresolved.csv",
+  "unresolved_csv": "results/manual_validation/taxa_unresolved_review.csv",
+  "status": "complete"
+}

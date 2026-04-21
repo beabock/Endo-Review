@@ -4,6 +4,8 @@ library(sf)
 library(tidyr)
 library(stringr)
 
+source("scripts/utils/disputed_territory_parent_iso.R")
+
 # Optional JSON parser for World Bank API responses
 if (!requireNamespace("jsonlite", quietly = TRUE)) {
   stop("Package 'jsonlite' is required for World Bank GDP lookup. Install it before running this script.")
@@ -61,6 +63,8 @@ if (!file.exists(INPUT_FILE)) {
 }
 
 standardized_country_data <- read.csv(INPUT_FILE, stringsAsFactors = FALSE)
+standardized_country_data <- standardized_country_data %>%
+  mutate(iso_a3 = normalize_parent_iso(iso_a3))
 
 if (!all(c("paper_id", "iso_a3") %in% names(standardized_country_data))) {
   stop("Input file must contain paper_id and iso_a3 columns.")
@@ -77,6 +81,7 @@ country_counts <- standardized_country_data %>%
 
 # Load country geometry and compute centroid latitude/longitude
 world <- ne_countries(scale = 50, returnclass = "sf") %>%
+  apply_disputed_parent_iso_world() %>%
   filter(!is.na(iso_a3), iso_a3 != "-99")
 
 world_valid <- suppressWarnings(st_make_valid(world))

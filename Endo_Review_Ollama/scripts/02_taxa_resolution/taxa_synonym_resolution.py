@@ -165,6 +165,8 @@ def load_taxonomy_index(
     synonym_to_accepted_id: Dict[str, str] = {}
     genus_by_letter: Dict[str, List[str]] = defaultdict(list)
     genus_name_to_taxon_id: Dict[str, str] = {}
+    parent_by_taxon_id: Dict[str, str] = {}
+    phylum_by_taxon_id: Dict[str, str] = {}
 
     with open(taxon_tsv, "r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
@@ -185,6 +187,10 @@ def load_taxonomy_index(
             taxon_id = normalize_text(row.get("taxonID", ""))
             if not taxon_id:
                 continue
+
+            if status == "accepted":
+                parent_by_taxon_id[taxon_id] = normalize_text(row.get("parentNameUsageID", ""))
+                phylum_by_taxon_id[taxon_id] = normalize_text(row.get("phylum", ""))
 
             if status == "accepted":
                 record = TaxonRecord(
@@ -210,6 +216,25 @@ def load_taxonomy_index(
                 accepted_id = normalize_text(row.get("acceptedNameUsageID", ""))
                 if accepted_id:
                     synonym_to_accepted_id[canonical] = accepted_id
+
+    def resolve_phylum_from_lineage(start_taxon_id: str, max_steps: int = 40) -> str:
+        current = start_taxon_id
+        steps = 0
+        while current and steps < max_steps:
+            phylum = phylum_by_taxon_id.get(current, "")
+            if phylum:
+                return phylum
+            parent = parent_by_taxon_id.get(current, "")
+            if not parent or parent == current:
+                break
+            current = parent
+            steps += 1
+        return ""
+
+    # Backfill missing phylum values from accepted GBIF lineage.
+    for record in accepted_by_id.values():
+        if not record.phylum:
+            record.phylum = resolve_phylum_from_lineage(record.taxon_id)
 
     for key in list(genus_by_letter.keys()):
         genus_by_letter[key] = sorted(set(genus_by_letter[key]))
@@ -601,17 +626,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--input-csv",
-        default="data/processed/Ollama_cleaned.csv",
+        default="data/Ollama_cleaned.csv",
         help="Input CSV path",
     )
     parser.add_argument(
         "--taxon-tsv",
-        default="data/gbif_backbone/Taxon.tsv",
+        default="data/Reference_datasets/gbif_backbone/Taxon.tsv",
         help="GBIF Taxon TSV path",
     )
     parser.add_argument(
         "--output-csv",
-        default="data/processed/Ollama_cleaned_synresolved.csv",
+        default="data/Ollama_cleaned_synresolved.csv",
         help="Output CSV path",
     )
     parser.add_argument(

@@ -29,6 +29,17 @@ country_data <- read_csv(INPUT_FILE, show_col_types = FALSE) %>%
 analysis_data <- country_data %>%
   filter(!is.na(study_count), !is.na(centroid_lat))
 
+
+mod <- lm(study_count ~ centroid_lat, data = analysis_data)
+summary(mod)
+
+
+mod <- lm(study_count ~ gdp_log10, data = analysis_data)
+summary(mod)
+
+#Pretty strong relationship with GDP.
+
+
 corr_pairs <- list(
   list(
     x = "gdp_log10",

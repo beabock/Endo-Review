@@ -10,6 +10,7 @@ ds <- read.csv("data/Ollama_cleaned_synresolved_filtered.csv")
 
 # Source country mapping from utils
 source("scripts/utils/country_mapping.R")
+source("scripts/utils/disputed_territory_parent_iso.R")
 
 # Define a list of terms to exclude
 exclude_list <- c(
@@ -174,6 +175,7 @@ if (nrow(unmatched) > 0) {
 # Create the final standardized dataset
 standardized_country_data <- paper_countries %>%
   left_join(country_iso_mapping, by = "country_clean", relationship = "many-to-one") %>%
+  mutate(iso_a3 = normalize_parent_iso(iso_a3)) %>%
   filter(!is.na(iso_a3)) %>%
   select(paper_id, iso_a3) %>%
   distinct()

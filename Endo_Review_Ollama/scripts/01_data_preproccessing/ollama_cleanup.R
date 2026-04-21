@@ -2,7 +2,7 @@
 
 library(tidyverse)
 
-ds <- read.csv("data/processed/Ollama_extraction_all.csv")
+ds <- read.csv("data/Ollama_extraction_all.csv")
 
 missing_tokens <- c(
 	"",
@@ -105,4 +105,4 @@ ds_clean %>% count(doc_type_ai_clean, sort = TRUE)
 ds_clean %>% count(presence_absence_clean, sort = TRUE)
 qa_report
 
-write.csv(ds_clean, "data/processed/Ollama_cleaned.csv", row.names = FALSE)
+write.csv(ds_clean, "data/Ollama_cleaned.csv", row.names = FALSE)
