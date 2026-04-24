@@ -12,19 +12,12 @@ from utils.country_mapping import (
     extract_all_countries, extract_tissue_values, extract_guild_values,
     extract_biome_values, ALIAS_TO_COUNTRY
 )
+from utils.na_mapping import NA_PHRASES
 
-INPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized.csv'
+INPUT_FILE = 'data/Ollama_cleaned_synresolved.csv'
 OUTPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_final.csv'
 
-# Aggressive NA detection for extraction noise and technical journal artifacts
-NA_PHRASES = [
-    'not specified', 'not provided', 'unknown', 'unkown', 'n/a', 
-    'uncertain', 'vulnerability disclosure', 'hhs', 'empty',
-    'not applicable', 'not_provided', 'not_specified', 'plant tissues',
-    'aerial parts', 'not mentioned', 'not stated', 'not explicitly',
-    'unspecified', 'terrestrial', 'not-provided', 'not provided in text',
-    'text extract', 'brief message'
-]
+# Shared NA phrases are sourced from utils.na_mapping.
 
 TISSUE_MAP = {
     'inner tissue': 'NA',
@@ -32,7 +25,6 @@ TISSUE_MAP = {
     'aerial tissue': 'stem',
     'thallus': 'leaf',
     'gametophyte': 'leaf',
-    'petiole': 'leaf',
     'healthy tissue': 'NA',
     'grape berries': 'fruit',
     'bulb': 'root',
@@ -412,8 +404,9 @@ def run_standardization():
                 row[h_idx['biome']] = standardize_value(row[h_idx['biome']], BIOME_MAP)
             if 'country' in h_idx:
                 row[h_idx['country']] = standardize_value(row[h_idx['country']], COUNTRY_MAP)
-            if 'doc_type_ai' in h_idx:
-                row[h_idx['doc_type_ai']] = standardize_value(row[h_idx['doc_type_ai']], DOC_TYPE_MAP)
+            doc_type_col = 'doc_type_ai_clean' if 'doc_type_ai_clean' in h_idx else ('doc_type_ai' if 'doc_type_ai' in h_idx else None)
+            if doc_type_col:
+                row[h_idx[doc_type_col]] = standardize_value(row[h_idx[doc_type_col]], DOC_TYPE_MAP)
 
             # Taxonomy cleaning: Force literal "EMPTY" or artifacts to "NA"
             tax_cols = ['fungal_taxon_phylum', 'fungal_taxon_class', 'plant_host_phylum', 'plant_host_class']

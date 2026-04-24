@@ -8,7 +8,7 @@ This script runs the resolver on a capped sample and validates:
 - checkpoint file creation
 
 Usage:
-    python scripts/04_analysis/components/test_taxa_synonym_resolution.py
+    python Endo_Review_Ollama/scripts/02_taxa_resolution/test_taxa_synonym_resolution.py
 """
 
 from __future__ import annotations
@@ -22,10 +22,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-RESOLVER = ROOT / "scripts" / "04_analysis" / "components" / "taxa_synonym_resolution.py"
-INPUT_CSV = ROOT / "data" / "processed" / "Ollama_cleaned.csv"
-TAXON_TSV = ROOT / "data" / "gbif_backbone" / "Taxon.tsv"
-TEMP_DIR = ROOT / "results" / "temp" / "taxa_synonym_resolution_test"
+PROJECT_DIR = ROOT / "Endo_Review_Ollama"
+RESOLVER = PROJECT_DIR / "scripts" / "02_taxa_resolution" / "taxa_synonym_resolution.py"
+INPUT_CSV = PROJECT_DIR / "data" / "Ollama_cleaned.csv"
+TAXON_TSV = PROJECT_DIR / "data" / "Reference_datasets" / "gbif_backbone" / "Taxon.tsv"
+TEMP_DIR = PROJECT_DIR / "results" / "temp" / "taxa_synonym_resolution_test"
 TAXON_FIXTURE = TEMP_DIR / "Taxon_fixture.tsv"
 OUTPUT_CSV = TEMP_DIR / "Ollama_cleaned_synresolved_test.csv"
 UNRESOLVED_CSV = TEMP_DIR / "taxa_unresolved_review_test.csv"
@@ -79,7 +80,7 @@ def ensure(condition: bool, message: str) -> None:
 
 
 def load_resolver_module():
-    components_dir = ROOT / "scripts" / "04_analysis" / "components"
+    components_dir = PROJECT_DIR / "scripts" / "02_taxa_resolution"
     sys.path.insert(0, str(components_dir))
     import taxa_synonym_resolution as resolver  # type: ignore
 
@@ -176,7 +177,7 @@ def run_resolver(sample_rows: int) -> None:
     ]
 
     print("Running resolver test command:\n", " ".join(command), sep="")
-    subprocess.run(command, check=True, cwd=ROOT)
+    subprocess.run(command, check=True, cwd=PROJECT_DIR)
 
 
 def validate_outputs(sample_rows: int) -> None:

@@ -55,13 +55,6 @@ def summarize_data():
     except Exception as e:
         print(f"An error occurred: {e}")
 
-if __name__ == "__main__":
-    summarize_data()
-
-
-import csv
-from collections import Counter
-
 # Columns to audit for geographic and environmental trends
 ENV_COLUMNS = [
     'country',
@@ -100,5 +93,8 @@ def summarize_environment():
     except FileNotFoundError:
         print(f"Error: Could not find '{FILE_PATH}'.")
 
+
 if __name__ == "__main__":
+    summarize_data()
     summarize_environment()
+

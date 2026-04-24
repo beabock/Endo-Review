@@ -15,6 +15,7 @@ scripts/plotting for compatibility with older layouts.
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,7 +23,12 @@ from typing import Iterable, List
 
 
 def find_r_executable() -> str:
-	"""Find Rscript.exe (preferred) or fail with a clear message."""
+	"""Find Rscript in PATH first, then Windows install locations."""
+	for candidate in ("Rscript", "Rscript.exe"):
+		resolved = shutil.which(candidate)
+		if resolved:
+			return resolved
+
 	candidates = [
 		Path("C:/Program Files/R"),
 		Path("C:/Program Files (x86)/R"),
@@ -35,7 +41,7 @@ def find_r_executable() -> str:
 			return str(discovered[0])
 
 	raise FileNotFoundError(
-		"Could not find Rscript.exe. Please install R or add Rscript to PATH."
+		"Could not find Rscript. Install R and/or add Rscript to PATH."
 	)
 
 

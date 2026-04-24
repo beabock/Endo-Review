@@ -19,6 +19,18 @@ from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 
+SCRIPTS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if SCRIPTS_ROOT not in sys.path:
+    sys.path.insert(0, SCRIPTS_ROOT)
+
+from utils.taxa_mapping import (
+    TAXA_NA_TOKENS,
+    apply_taxa_synonym,
+    is_field_specific_non_target_taxon,
+    is_field_specific_non_taxon,
+)
+
+
 # GBIF backbone rows can contain fields larger than Python's default CSV limit.
 csv.field_size_limit(min(sys.maxsize, 10**9))
 
@@ -34,6 +46,7 @@ NA_TOKENS = {
     "not applicable",
     "null",
 }
+NA_TOKENS.update(TAXA_NA_TOKENS)
 
 FIELD_COLUMNS = ("fungal_taxon", "plant_host")
 
@@ -114,6 +127,13 @@ def canonicalize_taxon_token(token: str) -> str:
     return parts[0].lower()
 
 
+def preprocess_cleaned_token(cleaned_token: str, field_name: str) -> str:
+    token = cleaned_token
+    token = re.sub(r"^\b(?:name|named)\s+", "", token)
+    token = normalize_text(token).lower()
+    return apply_taxa_synonym(token, field_name)
+
+
 def split_taxa_cell(cell: str) -> List[str]:
     text = normalize_text(cell)
     if not text:
@@ -176,7 +196,7 @@ def load_taxonomy_index(
                 continue
 
             rank = normalize_text(row.get("taxonRank", "")).upper()
-            if rank not in {"SPECIES", "GENUS", "SUBSPECIES", "VARIETY", "FORM"}:
+            if rank not in {"SPECIES", "GENUS", "SUBSPECIES", "VARIETY", "FORM", "FAMILY", "PHYLUM", "CLASS"}:
                 continue
 
             canonical = normalize_key(row.get("canonicalName", ""))
@@ -212,7 +232,7 @@ def load_taxonomy_index(
                     if canonical:
                         genus_by_letter[canonical[0]].append(canonical)
 
-            elif status == "synonym":
+            elif "synonym" in status:
                 accepted_id = normalize_text(row.get("acceptedNameUsageID", ""))
                 if accepted_id:
                     synonym_to_accepted_id[canonical] = accepted_id
@@ -257,6 +277,7 @@ def detect_abbreviation(cleaned_token: str) -> Optional[Tuple[str, str]]:
 
 def resolve_token(
     raw_token: str,
+    field_name: str,
     accepted_by_canonical: Dict[str, TaxonRecord],
     synonym_to_accepted_id: Dict[str, str],
     accepted_by_id: Dict[str, TaxonRecord],
@@ -264,6 +285,38 @@ def resolve_token(
     context_genera: Set[str],
 ) -> ResolveResult:
     cleaned = canonicalize_taxon_token(raw_token)
+    cleaned = preprocess_cleaned_token(cleaned, field_name)
+
+    if is_field_specific_non_target_taxon(cleaned, field_name):
+        return ResolveResult(
+            raw_token=raw_token,
+            cleaned_token=cleaned,
+            resolved_name="",
+            taxonomic_status="UNRESOLVED",
+            resolution_method="non_target_kingdom",
+            confidence=0.0,
+            is_ambiguous=False,
+            ambiguity_count=0,
+            taxon_rank="",
+            accepted_taxon_id="",
+            kingdom="",
+        )
+
+    if is_field_specific_non_taxon(cleaned, field_name):
+        return ResolveResult(
+            raw_token=raw_token,
+            cleaned_token=cleaned,
+            resolved_name="",
+            taxonomic_status="UNRESOLVED",
+            resolution_method="descriptor_non_taxon",
+            confidence=0.0,
+            is_ambiguous=False,
+            ambiguity_count=0,
+            taxon_rank="",
+            accepted_taxon_id="",
+            kingdom="",
+        )
+
     if not normalize_key(cleaned):
         return ResolveResult(
             raw_token=raw_token,
@@ -541,6 +594,7 @@ def run_resolution(args: argparse.Namespace) -> None:
                 token_results = [
                     resolve_token(
                         raw_token=token,
+                        field_name=field,
                         accepted_by_canonical=accepted_by_canonical,
                         synonym_to_accepted_id=synonym_to_accepted_id,
                         accepted_by_id=accepted_by_id,
@@ -552,7 +606,12 @@ def run_resolution(args: argparse.Namespace) -> None:
                 field_results[field] = token_results
 
                 for res in token_results:
-                    if not res.resolved_name or res.is_ambiguous:
+                    should_review = (not res.resolved_name or res.is_ambiguous) and res.resolution_method not in {
+                        "empty",
+                        "descriptor_non_taxon",
+                        "non_target_kingdom",
+                    }
+                    if should_review:
                         unresolved_writer.writerow(
                             {
                                 "row_index": i,
