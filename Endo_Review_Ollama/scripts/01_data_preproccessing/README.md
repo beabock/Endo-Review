@@ -28,13 +28,13 @@ Data integration and quality assurance script that combines and cleans abstract 
 ### Stage 1: Data Acquisition
 ```r
 # Retrieve abstracts from all sources
-source("scripts/01_data_processing/api_pull_abstracts.R")
+source("scripts/01_data_preproccessing/api_pull_abstracts.R")
 ```
 
 ### Stage 2: Consolidation
 ```r
 # Combine and clean datasets
-source("scripts/01_data_processing/Combo_abstracts_pull2.R")
+source("scripts/01_data_preproccessing/Combo_abstracts_pull2.R")
 ```
 
 ## Output Files

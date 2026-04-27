@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
+import argparse
 import csv
 import os
 import re
-import sys
 import itertools
+from importlib import util
+from pathlib import Path
 from functools import lru_cache
 
-# Add parent directory to path to import utils
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from utils.country_mapping import (
-    extract_all_countries, extract_tissue_values, extract_guild_values,
-    extract_biome_values, ALIAS_TO_COUNTRY
-)
+COUNTRY_MAPPING_PATH = Path(__file__).resolve().parents[1] / 'utils' / 'country_mapping.py'
+COUNTRY_MAPPING_SPEC = util.spec_from_file_location('country_mapping', COUNTRY_MAPPING_PATH)
+if COUNTRY_MAPPING_SPEC is None or COUNTRY_MAPPING_SPEC.loader is None:
+    raise ImportError(f'Could not load country mapping module: {COUNTRY_MAPPING_PATH}')
 
-INPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized.csv'
-OUTPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_final.csv'
+country_mapping = util.module_from_spec(COUNTRY_MAPPING_SPEC)
+COUNTRY_MAPPING_SPEC.loader.exec_module(country_mapping)
+
+extract_all_countries = country_mapping.extract_all_countries
+extract_tissue_values = country_mapping.extract_tissue_values
+extract_guild_values = country_mapping.extract_guild_values
+extract_biome_values = country_mapping.extract_biome_values
+ALIAS_TO_COUNTRY = country_mapping.ALIAS_TO_COUNTRY
+
+DEFAULT_INPUT_FILE = 'data/Ollama_cleaned_synresolved.csv'
+DEFAULT_OUTPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_final.csv'
 
 # Aggressive NA detection for extraction noise and technical journal artifacts
 NA_PHRASES = [
@@ -385,20 +394,20 @@ def standardize_value(val, mapping=None):
         
     return clean_val
 
-def run_standardization():
-    if not os.path.exists(INPUT_FILE):
-        print(f"Error: {INPUT_FILE} not found.")
+def run_standardization(input_file=DEFAULT_INPUT_FILE, output_file=DEFAULT_OUTPUT_FILE):
+    if not os.path.exists(input_file):
+        print(f"Error: {input_file} not found.")
         return
 
     print("Starting standardization...")
-    with open(INPUT_FILE, 'r', encoding='utf-8') as f_in:
+    with open(input_file, 'r', encoding='utf-8') as f_in:
         reader = csv.reader(f_in)
         headers = next(reader)
         h_idx = {name: i for i, name in enumerate(headers)}
         
         # Load all rows first (needed for multi-country expansion)
         all_rows = []
-        print(f"Processing {INPUT_FILE}...")
+        print(f"Processing {input_file}...")
         
         for row_num, row in enumerate(reader):
             if row_num % 1000 == 0:
@@ -430,7 +439,7 @@ def run_standardization():
         expanded_rows = expand_multi_value_rows(taxonomy_recovered_rows, headers)
         
         # Write all rows (including expanded ones)
-        with open(OUTPUT_FILE, 'w', encoding='utf-8') as f_out:
+        with open(output_file, 'w', encoding='utf-8') as f_out:
             writer = csv.writer(f_out, quoting=csv.QUOTE_ALL)
             writer.writerow(headers)
             writer.writerows(expanded_rows)
@@ -445,8 +454,16 @@ def run_standardization():
     print(f"  Rows after taxonomy recovery: {taxonomy_count} (+{taxonomy_rows_added})")
     print(f"  Expanded rows: {expanded_count}")
     print(f"  New rows added (multi-value expansion): {new_rows_added}")
-    print(f"  Saved to: {OUTPUT_FILE}")
+    print(f"  Saved to: {output_file}")
     print(f"  Values searched: country, tissue, primary_guild, biome, taxonomy recovery")
 
+
+def build_parser():
+    parser = argparse.ArgumentParser(description='Standardize metadata fields after taxonomy resolution.')
+    parser.add_argument('--input-file', default=DEFAULT_INPUT_FILE, help='Input CSV path')
+    parser.add_argument('--output-file', default=DEFAULT_OUTPUT_FILE, help='Output CSV path')
+    return parser
+
 if __name__ == "__main__":
-    run_standardization()
+    args = build_parser().parse_args()
+    run_standardization(input_file=args.input_file, output_file=args.output_file)

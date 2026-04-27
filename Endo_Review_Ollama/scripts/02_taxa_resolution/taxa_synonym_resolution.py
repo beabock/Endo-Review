@@ -35,6 +35,38 @@ NA_TOKENS = {
     "null",
 }
 
+NON_TAXON_REVIEW_PHRASES = {
+    "arbuscular mycorrhizal",
+    "endophytic fungi",
+    "fungi",
+    "fungus",
+    "higher plants",
+    "legumes",
+    "multiple",
+    "not mentioned",
+    "not specified",
+    "scientific name",
+    "specified",
+    "unspecified",
+    "vesicular-arbuscular mycorrhizal",
+}
+
+TOKEN_ALIASES = {
+    "tall fescue": "festuca arundinacea",
+}
+
+ALLOWED_TAXON_RANKS = {
+    "CLASS",
+    "FAMILY",
+    "FORM",
+    "GENUS",
+    "ORDER",
+    "PHYLUM",
+    "SPECIES",
+    "SUBSPECIES",
+    "VARIETY",
+}
+
 FIELD_COLUMNS = ("fungal_taxon", "plant_host")
 
 
@@ -114,6 +146,23 @@ def canonicalize_taxon_token(token: str) -> str:
     return parts[0].lower()
 
 
+def should_skip_review(cleaned_token: str) -> bool:
+    key = normalize_key(cleaned_token)
+    if not key:
+        return True
+
+    if key in NON_TAXON_REVIEW_PHRASES:
+        return True
+
+    if key.startswith(("not ", "no ", "uncertain ", "specific ", "specifically ")):
+        return True
+
+    if re.fullmatch(r"(?:[a-z]+[- ]?)+m(ycorrhizal|ildew|fungi?|plants?)", key):
+        return True
+
+    return False
+
+
 def split_taxa_cell(cell: str) -> List[str]:
     text = normalize_text(cell)
     if not text:
@@ -176,7 +225,7 @@ def load_taxonomy_index(
                 continue
 
             rank = normalize_text(row.get("taxonRank", "")).upper()
-            if rank not in {"SPECIES", "GENUS", "SUBSPECIES", "VARIETY", "FORM"}:
+            if rank not in ALLOWED_TAXON_RANKS:
                 continue
 
             canonical = normalize_key(row.get("canonicalName", ""))
@@ -212,7 +261,7 @@ def load_taxonomy_index(
                     if canonical:
                         genus_by_letter[canonical[0]].append(canonical)
 
-            elif status == "synonym":
+            elif "synonym" in status:
                 accepted_id = normalize_text(row.get("acceptedNameUsageID", ""))
                 if accepted_id:
                     synonym_to_accepted_id[canonical] = accepted_id
@@ -278,6 +327,10 @@ def resolve_token(
             accepted_taxon_id="",
             kingdom="",
         )
+
+    aliased = TOKEN_ALIASES.get(cleaned)
+    if aliased:
+        cleaned = aliased
 
     accepted = accepted_by_canonical.get(cleaned)
     if accepted:
@@ -552,7 +605,9 @@ def run_resolution(args: argparse.Namespace) -> None:
                 field_results[field] = token_results
 
                 for res in token_results:
-                    if not res.resolved_name or res.is_ambiguous:
+                    if (not res.resolved_name or res.is_ambiguous) and not should_skip_review(
+                        res.cleaned_token
+                    ):
                         unresolved_writer.writerow(
                             {
                                 "row_index": i,

@@ -1,13 +1,13 @@
 # Taxa Synonym Resolution (Python CLI)
 
-This step resolves names in `fungal_taxon` and `plant_host` from `data/processed/Ollama_cleaned.csv` to modern accepted names using GBIF backbone data.
+This step resolves names in `fungal_taxon` and `plant_host` from `data/Ollama_cleaned.csv` to modern accepted names using GBIF backbone data.
 
 ## Inputs
-- `data/processed/Ollama_cleaned.csv`
-- `data/gbif_backbone/Taxon.tsv`
+- `data/Ollama_cleaned.csv`
+- `data/Reference_datasets/gbif_backbone/Taxon.tsv`
 
 ## Outputs
-- `data/processed/Ollama_cleaned_synresolved.csv`
+- `data/Ollama_cleaned_synresolved.csv`
 - `results/manual_validation/taxa_unresolved_review.csv`
 - `results/logs/taxa_synonym_resolution_checkpoint.json`
 
@@ -26,10 +26,10 @@ This step resolves names in `fungal_taxon` and `plant_host` from `data/processed
 
 ## Local run
 ```bash
-python scripts/04_analysis/components/taxa_synonym_resolution.py \
-  --input-csv data/processed/Ollama_cleaned.csv \
-  --taxon-tsv data/gbif_backbone/Taxon.tsv \
-  --output-csv data/processed/Ollama_cleaned_synresolved.csv \
+python scripts/02_taxa_resolution/taxa_synonym_resolution.py \
+  --input-csv data/Ollama_cleaned.csv \
+  --taxon-tsv data/Reference_datasets/gbif_backbone/Taxon.tsv \
+  --output-csv data/Ollama_cleaned_synresolved.csv \
   --unresolved-csv results/manual_validation/taxa_unresolved_review.csv \
   --checkpoint-json results/logs/taxa_synonym_resolution_checkpoint.json \
   --checkpoint-interval 1000 \
@@ -39,15 +39,15 @@ python scripts/04_analysis/components/taxa_synonym_resolution.py \
 
 ## Monsoon run (SLURM)
 Use:
-- `scripts/04_analysis/components/slurm/run_taxa_synonym_resolution.sbatch`
+- `scripts/02_taxa_resolution/slurm/run_taxa_synonym_resolution.sbatch`
 
 Submit from repo root:
 ```bash
-sbatch scripts/04_analysis/components/slurm/run_taxa_synonym_resolution.sbatch
+sbatch scripts/02_taxa_resolution/slurm/run_taxa_synonym_resolution.sbatch
 ```
 
 ## Smoke test option
 For quick validation before full run:
 ```bash
-python scripts/04_analysis/components/taxa_synonym_resolution.py --max-rows 200
+python scripts/02_taxa_resolution/taxa_synonym_resolution.py --max-rows 200
 ```

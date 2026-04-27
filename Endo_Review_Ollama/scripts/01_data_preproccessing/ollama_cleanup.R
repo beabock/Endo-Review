@@ -58,8 +58,8 @@ clean_all_columns <- function(df) {
 			),
 			presence_absence_clean = case_when(
 				is.na(presence_absence) ~ "Uncertain",
-				str_detect(presence_absence, "Present") ~ "Presence",
-				str_detect(presence_absence, "Absent") ~ "Absence",
+				str_detect(presence_absence, "present") ~ "Presence",
+				str_detect(presence_absence, "absent") ~ "Absence",
 				TRUE ~ "Uncertain"
 			),
 			doi_clean = doi %>%

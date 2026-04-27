@@ -1,6 +1,9 @@
 # =============================================================================
 # Combo_abstracts_pull2.R - Combined abstract dataset creation (Pull 2)
 # =============================================================================
+# MANUAL-ONLY STEP:
+# This script is for manual acquisition/consolidation workflows and is
+# intentionally excluded from scripts/central_run_everything.py.
 #
 # Purpose: Combine and deduplicate scientific abstracts from multiple bibliographic databases
 #

@@ -3,6 +3,9 @@
 # =============================================================================
 # api_pull_abstracts.R - Pull abstracts from PubMed, Scopus, and Web of Science
 # =============================================================================
+# MANUAL-ONLY STEP:
+# This script requires interactive/API-credentialed execution and is intentionally
+# excluded from scripts/central_run_everything.py.
 #
 # Purpose: Fetch and parse abstracts from multiple academic databases
 #

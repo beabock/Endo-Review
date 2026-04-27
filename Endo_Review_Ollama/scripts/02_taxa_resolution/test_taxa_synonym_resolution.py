@@ -8,7 +8,7 @@ This script runs the resolver on a capped sample and validates:
 - checkpoint file creation
 
 Usage:
-    python scripts/04_analysis/components/test_taxa_synonym_resolution.py
+    python scripts/02_taxa_resolution/test_taxa_synonym_resolution.py
 """
 
 from __future__ import annotations
@@ -18,13 +18,14 @@ import csv
 import os
 import subprocess
 import sys
+from importlib import util
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-RESOLVER = ROOT / "scripts" / "04_analysis" / "components" / "taxa_synonym_resolution.py"
-INPUT_CSV = ROOT / "data" / "processed" / "Ollama_cleaned.csv"
-TAXON_TSV = ROOT / "data" / "gbif_backbone" / "Taxon.tsv"
+RESOLVER = ROOT / "scripts" / "02_taxa_resolution" / "taxa_synonym_resolution.py"
+INPUT_CSV = ROOT / "data" / "Ollama_cleaned.csv"
+TAXON_TSV = ROOT / "data" / "Reference_datasets" / "gbif_backbone" / "Taxon.tsv"
 TEMP_DIR = ROOT / "results" / "temp" / "taxa_synonym_resolution_test"
 TAXON_FIXTURE = TEMP_DIR / "Taxon_fixture.tsv"
 OUTPUT_CSV = TEMP_DIR / "Ollama_cleaned_synresolved_test.csv"
@@ -79,10 +80,13 @@ def ensure(condition: bool, message: str) -> None:
 
 
 def load_resolver_module():
-    components_dir = ROOT / "scripts" / "04_analysis" / "components"
-    sys.path.insert(0, str(components_dir))
-    import taxa_synonym_resolution as resolver  # type: ignore
+    spec = util.spec_from_file_location("taxa_synonym_resolution", RESOLVER)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load resolver module from {RESOLVER}")
 
+    resolver = util.module_from_spec(spec)
+    sys.modules[spec.name] = resolver
+    spec.loader.exec_module(resolver)
     return resolver
 
 
@@ -121,7 +125,7 @@ def build_taxon_fixture(sample_rows: int) -> Path:
                 if taxon_id and taxon_id not in selected_taxon_ids:
                     selected_rows.append(row)
                     selected_taxon_ids.add(taxon_id)
-                if resolver.normalize_text(row.get("taxonomicStatus", "")).lower() == "synonym":
+                if "synonym" in resolver.normalize_text(row.get("taxonomicStatus", "")).lower():
                     accepted_id = resolver.normalize_text(row.get("acceptedNameUsageID", ""))
                     if accepted_id:
                         accepted_ids_to_include.add(accepted_id)

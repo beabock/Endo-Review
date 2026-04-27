@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Run the endophyte pipeline scripts sequentially.
 
+Manual-only scripts in scripts/01_data_preproccessing (api pull and combo
+consolidation) are intentionally excluded from this automated runner.
+
 Execution order:
 1) scripts/01_data_preproccessing/ollama_cleanup.R
 2) scripts/02_taxa_resolution/taxa_synonym_resolution.py
@@ -15,6 +18,7 @@ scripts/plotting for compatibility with older layouts.
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,7 +26,11 @@ from typing import Iterable, List
 
 
 def find_r_executable() -> str:
-	"""Find Rscript.exe (preferred) or fail with a clear message."""
+	"""Find Rscript on PATH first, then use common Windows install paths."""
+	in_path = shutil.which("Rscript")
+	if in_path:
+		return in_path
+
 	candidates = [
 		Path("C:/Program Files/R"),
 		Path("C:/Program Files (x86)/R"),
@@ -35,7 +43,7 @@ def find_r_executable() -> str:
 			return str(discovered[0])
 
 	raise FileNotFoundError(
-		"Could not find Rscript.exe. Please install R or add Rscript to PATH."
+		"Could not find Rscript. Please install R and add Rscript to PATH."
 	)
 
 
