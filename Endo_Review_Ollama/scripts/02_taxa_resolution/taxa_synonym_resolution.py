@@ -583,8 +583,8 @@ def run_resolution(args: argparse.Namespace) -> None:
         unresolved_writer = csv.DictWriter(unresolved_handle, fieldnames=unresolved_fields)
         output_buffer: List[Dict[str, str]] = []
         unresolved_buffer: List[Dict[str, str]] = []
-        unresolved_flush_threshold = max(args.checkpoint_interval, 1000)
-        output_flush_threshold = max(args.checkpoint_interval, 1000)
+        output_flush_threshold = max(args.checkpoint_interval * 10, 5000)
+        unresolved_flush_threshold = max(args.checkpoint_interval * 10, 5000)
 
         def flush_output_buffer() -> None:
             if not output_buffer:
