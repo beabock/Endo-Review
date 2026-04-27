@@ -67,6 +67,10 @@ ALLOWED_TAXON_RANKS = {
     "VARIETY",
 }
 
+NON_TAXON_PHRASE_PATTERN = re.compile(
+    r"(?:[a-z]+[- ]?)+m(ycorrhizal|ildew|fungi?|plants?)"
+)
+
 FIELD_COLUMNS = ("fungal_taxon", "plant_host")
 
 
@@ -157,7 +161,7 @@ def should_skip_review(cleaned_token: str) -> bool:
     if key.startswith(("not ", "no ", "uncertain ", "specific ", "specifically ")):
         return True
 
-    if re.fullmatch(r"(?:[a-z]+[- ]?)+m(ycorrhizal|ildew|fungi?|plants?)", key):
+    if NON_TAXON_PHRASE_PATTERN.fullmatch(key):
         return True
 
     return False
@@ -370,10 +374,11 @@ def resolve_token(
         initial, epithet = abbr
 
         context_candidates = sorted([g for g in context_genera if g.startswith(initial)])
+        context_candidate_set = set(context_candidates)
         global_candidates = genus_by_letter.get(initial, [])
 
         # Context-first deterministic order.
-        tested_genera = context_candidates + [g for g in global_candidates if g not in set(context_candidates)]
+        tested_genera = context_candidates + [g for g in global_candidates if g not in context_candidate_set]
 
         matches: List[TaxonRecord] = []
         for genus in tested_genera:
@@ -576,6 +581,22 @@ def run_resolution(args: argparse.Namespace) -> None:
     ) as unresolved_handle:
         out_writer = csv.DictWriter(out_handle, fieldnames=passthrough + output_extra)
         unresolved_writer = csv.DictWriter(unresolved_handle, fieldnames=unresolved_fields)
+        output_buffer: List[Dict[str, str]] = []
+        unresolved_buffer: List[Dict[str, str]] = []
+        unresolved_flush_threshold = max(args.checkpoint_interval, 1000)
+        output_flush_threshold = max(args.checkpoint_interval, 1000)
+
+        def flush_output_buffer() -> None:
+            if not output_buffer:
+                return
+            out_writer.writerows(output_buffer)
+            output_buffer.clear()
+
+        def flush_unresolved_buffer() -> None:
+            if not unresolved_buffer:
+                return
+            unresolved_writer.writerows(unresolved_buffer)
+            unresolved_buffer.clear()
 
         if write_mode == "w":
             out_writer.writeheader()
@@ -608,7 +629,7 @@ def run_resolution(args: argparse.Namespace) -> None:
                     if (not res.resolved_name or res.is_ambiguous) and not should_skip_review(
                         res.cleaned_token
                     ):
-                        unresolved_writer.writerow(
+                        unresolved_buffer.append(
                             {
                                 "row_index": i,
                                 "paper_id": row["paper_id"],
@@ -622,6 +643,9 @@ def run_resolution(args: argparse.Namespace) -> None:
                                 "confidence": f"{res.confidence:.2f}",
                             }
                         )
+
+                if len(unresolved_buffer) >= unresolved_flush_threshold:
+                    flush_unresolved_buffer()
 
             fungal_agg = aggregate_results(field_results["fungal_taxon"])
             plant_agg = aggregate_results(field_results["plant_host"])
@@ -645,10 +669,15 @@ def run_resolution(args: argparse.Namespace) -> None:
                     "plant_host_accepted_ids": plant_agg[4],
                 }
             )
-            out_writer.writerow(out_row)
+            output_buffer.append(out_row)
+
+            if len(output_buffer) >= output_flush_threshold:
+                flush_output_buffer()
 
             processed_now = i + 1
             if processed_now % args.checkpoint_interval == 0:
+                flush_output_buffer()
+                flush_unresolved_buffer()
                 write_checkpoint(
                     args.checkpoint_json,
                     {
@@ -661,6 +690,9 @@ def run_resolution(args: argparse.Namespace) -> None:
 
             if processed_now % args.log_interval == 0:
                 print(f"Processed {processed_now}/{len(rows)} rows", flush=True)
+
+        flush_output_buffer()
+        flush_unresolved_buffer()
 
     write_checkpoint(
         args.checkpoint_json,
