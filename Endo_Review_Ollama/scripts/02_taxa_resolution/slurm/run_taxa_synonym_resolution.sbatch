@@ -28,4 +28,3 @@ python scripts/02_taxa_resolution/taxa_synonym_resolution.py \
   --taxon-tsv /scratch/bmb646/Endo-Review/data/Reference_datasets/gbif_backbone/Taxon.tsv \
   --output-csv data/Ollama_cleaned_synresolved.csv \
   --log-interval 100 \
-  --resume
