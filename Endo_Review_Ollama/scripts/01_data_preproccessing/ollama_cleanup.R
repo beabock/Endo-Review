@@ -28,7 +28,14 @@ normalize_text <- function(x) {
     x_norm <- x %>%
         str_squish() %>%
         str_to_lower() %>%
-        str_replace_all("[\r\n]", " ") 
+        # NEW: Strip out JSON-style brackets and keys
+        str_remove_all("\\{\\'scientific_name\\'\\:\\s*\\'") %>%
+        str_remove_all("\\'\\}") %>%
+        str_remove_all("\\[") %>%
+        str_remove_all("\\]") %>%
+        str_replace_all("\\'tissue\\'\\:.*", "") %>% # Remove the 'tissue' parts
+        str_replace_all("\\'", "") %>%               # Remove remaining single quotes
+        str_squish()
     
     x_norm[x_norm %in% missing_tokens] <- NA_character_
     x_norm
