@@ -27,9 +27,4 @@ python scripts/02_taxa_resolution/taxa_synonym_resolution.py \
   --input-csv data/Ollama_cleaned.csv \
   --taxon-tsv /scratch/bmb646/Endo-Review/data/Reference_datasets/gbif_backbone/Taxon.tsv \
   --output-csv data/Ollama_cleaned_synresolved.csv \
-  --unresolved-csv results/manual_validation/taxa_unresolved_review.csv \
-  --checkpoint-json results/logs/taxa_synonym_resolution_checkpoint.json \
-  --taxonomy-cache results/logs/taxa_synonym_resolution_taxonomy_index.pkl \
-  --checkpoint-interval 1000 \
-  --log-interval 1000 \
   --resume

@@ -50,7 +50,9 @@ load_taxonomy_data <- function(filename, level_name, phylum_order = NULL) {
   }
   
   data <- read_csv(file_path, show_col_types = FALSE) %>%
-    mutate(level = level_name)
+    mutate(level = level_name) %>%
+    # Exclude unassigned phyla
+    filter(phylum != "Unassigned")
   
   # Identify the known/studied column pair for this level
   known_col <- colnames(data)[grepl("^known_", colnames(data))]
@@ -75,7 +77,8 @@ cat("Loading taxonomy coverage data...\n")
 species_data_raw <- read_csv(
   file.path(TAXONOMY_RESULTS_DIR, TAXONOMY_LEVELS$species), 
   show_col_types = FALSE
-)
+) %>%
+  filter(phylum != "Unassigned")
 
 # Create consistent phylum ordering based on total known species (most to least)
 phylum_order <- species_data_raw %>%
@@ -166,9 +169,24 @@ plot_relative_representation <- function(data, title, taxon_label) {
   
   plot_data <- data %>%
     select(phylum, all_of(coverage_cols)) %>%
-    rename(coverage_decimal = all_of(coverage_cols[1])) %>%
-    # Ensure coverage is capped at 100% and in percentage form (0-100)
-    mutate(coverage_percent = pmin(coverage_decimal * 100, 100))
+    rename(coverage_raw = all_of(coverage_cols[1]))
+  
+  # Detect if coverage is in 0-1 range (decimal) or 0-100 range (percentage)
+  max_coverage <- max(plot_data$coverage_raw, na.rm = TRUE)
+  
+  plot_data <- plot_data %>%
+    mutate(
+      coverage_percent = if (max_coverage < 2) {
+        pmin(coverage_raw * 100, 100)  # 0-1 range: multiply by 100
+      } else {
+        pmin(coverage_raw, 100)         # 0-100 range: use as-is, cap at 100
+      }
+    )
+
+  coverage_upper <- ceiling(max(plot_data$coverage_percent, na.rm = TRUE) / 5) * 5
+  if (coverage_upper <= 0 || is.na(coverage_upper)) {
+    coverage_upper <- 1
+  }
   
   plot <- ggplot(plot_data, aes(x = phylum, y = coverage_percent, fill = coverage_percent)) +
     geom_bar(stat = "identity", width = 0.7) +
@@ -176,10 +194,10 @@ plot_relative_representation <- function(data, title, taxon_label) {
       low = "#E69F00",
       high = "#009E73",
       name = "Coverage (%)",
-      limits = c(0, 100)
+      limits = c(0, coverage_upper)
     ) +
     scale_y_continuous(
-      limits = c(0, 100),
+      limits = c(0, coverage_upper),
       expand = expansion(mult = c(0, 0.05)),
       labels = function(x) paste0(x, "%")
     ) +
