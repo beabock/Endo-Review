@@ -25,20 +25,29 @@ missing_tokens <- c(
 # 3. NORMALIZATION
 normalize_text <- function(x) {
     if(!is.character(x)) return(x)
-    x_norm <- x %>%
-        str_squish() %>%
-        str_to_lower() %>%
-        # NEW: Strip out JSON-style brackets and keys
-        str_remove_all("\\{\\'scientific_name\\'\\:\\s*\\'") %>%
-        str_remove_all("\\'\\}") %>%
-        str_remove_all("\\[") %>%
-        str_remove_all("\\]") %>%
-        str_replace_all("\\'tissue\\'\\:.*", "") %>% # Remove the 'tissue' parts
-        str_replace_all("\\'", "") %>%               # Remove remaining single quotes
-        str_squish()
     
+    x_norm <- x %>%
+        # 1. Remove JSON/Dictionary artifacts
+        str_remove_all("\\{'scientific_name'\\: ?") %>%
+        str_remove_all("'tissue'\\: ?'.*?'") %>%
+        str_remove_all("[\\{\\}\\[\\]\\']|\\:\\s?") %>%
+        
+        # 2. Remove AI "Commentary" inside parentheses (e.g., '(bacteria')
+        # But keep it if it looks like a year/authority like (L.) or (1890)
+        str_remove_all("\\((none|unknown|no fungus|not a fungus|bacteria|see text).*?\\)") %>%
+        
+        # 3. Clean up ghost characters and standard symbols
+        str_replace_all("[\r\n\t]", " ") %>%
+        str_squish() %>%
+        str_to_lower()
+    
+    # 4. Final filter: If the "name" is still just a bunch of noise, NA it
     x_norm[x_norm %in% missing_tokens] <- NA_character_
-    x_norm
+    
+    # If the string is still ridiculously long, it's a hallucination
+    x_norm[str_length(x_norm) > 150] <- NA_character_
+    
+    return(x_norm)
 }
 
 clean_all_columns <- function(df) {
