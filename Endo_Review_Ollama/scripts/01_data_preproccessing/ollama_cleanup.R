@@ -1,32 +1,31 @@
 library(tidyverse)
 library(stringr)
 
-# --- PHASE 1: STRUCTURAL HEALING (Raw Text Level) ---
-message("Starting structural healing of raw CSV...")
+# --- STAGE 1: PERMANENT STRUCTURAL HEALING ---
+message("Stitching split rows and healing CSV structure...")
 
-raw_lines <- readLines("data/Ollama_extraction_all.csv", warn = FALSE)
+# Read the file as one giant string to handle newlines
+raw_text <- readChar("data/Ollama_extraction_all.csv", file.info("data/Ollama_extraction_all.csv")$size)
 
-clean_lines <- raw_lines %>%
-  # 1. Remove all double quotes to prevent unclosed-quote "line swallowing"
+# 1. Stitch: Find newlines followed by a lowercase letter and remove them
+healed_text <- str_replace_all(raw_text, "\\n([a-z])", "\\1")
+
+# 2. Heal structural artifacts
+healed_text <- healed_text %>%
   str_replace_all('"', '') %>%
-  # 2. Fix the specific unclosed parenthesis artifacts from Ollama
   str_replace_all("\\(none,", "none,") %>%
   str_replace_all("\\(not provided,", "not provided,") %>%
   str_replace_all("\\(n/a,", "n/a,") %>%
-  # 3. Strip backslashes that might try to escape characters
   str_replace_all("\\\\", "")
 
-# Write to a temporary file so read_csv can handle it cleanly
+# Write to the temp file
 temp_raw <- tempfile(fileext = ".csv")
-writeLines(clean_lines, temp_raw)
+writeLines(healed_text, temp_raw)
 
-
-# --- PHASE 2: DATA LOADING ---
-# Now we use read_csv on the "healed" text
+# --- STAGE 2: DATA LOADING ---
 ds <- readr::read_csv(temp_raw, show_col_types = FALSE)
 
-
-# --- PHASE 3: TAXONOMIC & CONTENT CLEANING ---
+# --- STAGE 3: THE BULLETPROOF CLEANER ---
 missing_tokens <- c(
     "", "na", "n/a", "none", "not provided", 
     "not specified", "unknown", "not applicable",
@@ -37,39 +36,41 @@ normalize_text <- function(x) {
     if(!is.character(x)) return(x)
     
     x_norm <- x %>%
-        # Remove JSON/Dictionary artifacts (the {scientific_name: ...} rows)
+        # Remove JSON artifacts: {scientific_name: 'xyz', 'tissue': '...'}
         str_remove_all("\\{'scientific_name'\\: ?") %>%
         str_remove_all("'tissue'\\: ?'.*?'") %>%
         str_remove_all("[\\{\\}\\[\\]\\']|\\:\\s?") %>%
         
-        # Remove AI "Commentary" inside parentheses (e.g., '(bacteria')
+        # Remove AI "Commentary" (e.g., '(bacteria', 'not a fungus)')
         str_remove_all("\\((none|unknown|no fungus|not a fungus|bacteria|see text).*?\\)") %>%
         
-        # Clean up ghost characters
+        # Clean up technical whitespace
         str_replace_all("[\r\n\t]", " ") %>%
         str_squish() %>%
         str_to_lower()
     
-    # Final cleanup of missing values and hallucinations
+    # KILLER LOGIC: If it's a fragment or a sentence, turn it to NA
+    # If it contains an unclosed parenthesis, it's garbage.
+    x_norm[str_detect(x_norm, "\\(|\\)|\\{|\\}") & !str_detect(x_norm, "\\(.*?\\)")] <- NA_character_
+    
+    # If it contains "not mentioned" or other low-info AI phrases, NA it.
+    x_norm[str_detect(x_norm, "not mentioned|no fungus|no specific|not specified|unknown")] <- NA_character_
+
+    # Final length and token check
     x_norm[x_norm %in% missing_tokens] <- NA_character_
     x_norm[str_length(x_norm) > 150] <- NA_character_
     
     return(x_norm)
 }
 
+# --- STAGE 4: CLEANING & SAVING ---
 clean_all_columns <- function(df) {
     char_cols <- names(df)[vapply(df, is.character, logical(1))]
-
     df %>%
-        mutate(
-            relevance_raw = relevance,
-            doc_type_ai_raw = doc_type_ai
-        ) %>%
         mutate(across(all_of(char_cols), normalize_text)) %>%
         mutate(
             relevance = case_when(
-                relevance %in% c("relevant", "releant", "relelevant") ~ "Relevant",
-                relevance %in% c("potentially relevant", "uncertain") ~ "Uncertain",
+                str_detect(relevance, "relev") & !str_detect(relevance, "not") ~ "Relevant",
                 str_detect(relevance, "not relevant|irrelevant") ~ "Irrelevant",
                 TRUE ~ "Uncertain"
             ),
@@ -77,22 +78,16 @@ clean_all_columns <- function(df) {
                 str_detect(doc_type_ai, "full-text|full text") ~ "Full-Text",
                 str_detect(doc_type_ai, "abstract") ~ "Abstract",
                 TRUE ~ "Other/Unknown"
-            ),
-            presence_absence_clean = case_when(
-                str_detect(presence_absence, "present") ~ "Presence",
-                str_detect(presence_absence, "absent") ~ "Absence",
-                TRUE ~ "Uncertain"
             )
         )
 }
 
-# --- PHASE 4: EXECUTION & SAVING ---
 ds_clean <- clean_all_columns(ds)
 
-# Final safety check: drop rows where the merger might have survived
+# Final safety filter to prevent merged-row 'poison pills'
 ds_clean <- ds_clean %>%
-  filter(str_length(plant_host) < 300) %>%
-  filter(str_length(fungal_taxon) < 300)
+  filter(str_length(plant_host) < 250) %>%
+  filter(str_length(fungal_taxon) < 250)
 
 write.csv(ds_clean, "data/Ollama_cleaned.csv", row.names = FALSE)
-message(paste("Cleanup complete.", nrow(ds_clean), "rows written to data/Ollama_cleaned.csv"))
+message(paste("Healed and cleaned.", nrow(ds_clean), "rows written to data/Ollama_cleaned.csv"))
