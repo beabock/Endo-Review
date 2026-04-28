@@ -2,9 +2,9 @@
 #SBATCH --job-name=taxa_syn_resolve
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
-#SBATCH --time=06:00:00
+#SBATCH --cpus-per-task=16    # Increase from 8 to 16 to speed up dictionary indexing
+#SBATCH --mem=128G            # Double the RAM to prevent swapping/freezing
+#SBATCH --time=12:00:00       # Extend time just in case it's slow
 #SBATCH --output=results/logs/taxa_synonym_resolution_%j.out
 #SBATCH --error=results/logs/taxa_synonym_resolution_%j.err
 
@@ -27,4 +27,5 @@ python scripts/02_taxa_resolution/taxa_synonym_resolution.py \
   --input-csv data/Ollama_cleaned.csv \
   --taxon-tsv /scratch/bmb646/Endo-Review/data/Reference_datasets/gbif_backbone/Taxon.tsv \
   --output-csv data/Ollama_cleaned_synresolved.csv \
+  --log-interval 100 \
   --resume
