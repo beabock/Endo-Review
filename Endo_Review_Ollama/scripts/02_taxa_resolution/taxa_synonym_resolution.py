@@ -12,8 +12,11 @@ import csv
 import hashlib
 import json
 import os
+import pickle
 import re
+import shutil
 import sys
+import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -100,6 +103,59 @@ class TaxonRecord:
     order: str
     family: str
     genus: str
+
+
+def load_taxonomy_index_cache(cache_path: str, source_path: str):
+    if not cache_path or not os.path.exists(cache_path):
+        return None
+    if not os.path.exists(source_path):
+        return None
+
+    try:
+        with open(cache_path, "rb") as handle:
+            payload = pickle.load(handle)
+    except Exception:
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("cache_version") != 1:
+        return None
+
+    try:
+        source_stat = os.stat(source_path)
+    except OSError:
+        return None
+
+    if payload.get("source_mtime_ns") != source_stat.st_mtime_ns:
+        return None
+    if payload.get("source_size") != source_stat.st_size:
+        return None
+
+    cached = payload.get("data")
+    if not isinstance(cached, tuple) or len(cached) != 5:
+        return None
+
+    return cached
+
+
+def write_taxonomy_index_cache(cache_path: str, source_path: str, data) -> None:
+    if not cache_path:
+        return
+
+    source_stat = os.stat(source_path)
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, "wb") as handle:
+        pickle.dump(
+            {
+                "cache_version": 1,
+                "source_mtime_ns": source_stat.st_mtime_ns,
+                "source_size": source_stat.st_size,
+                "data": data,
+            },
+            handle,
+            protocol=pickle.HIGHEST_PROTOCOL,
+        )
 
 
 def normalize_text(value: str) -> str:
@@ -206,6 +262,7 @@ def build_interaction_id(row: Dict[str, str], row_index: int) -> str:
 
 def load_taxonomy_index(
     taxon_tsv: str,
+    cache_path: Optional[str] = None,
 ) -> Tuple[
     Dict[str, TaxonRecord],
     Dict[str, str],
@@ -213,6 +270,10 @@ def load_taxonomy_index(
     Dict[str, str],
     Dict[str, str],
 ]:
+    cached_index = load_taxonomy_index_cache(cache_path or "", taxon_tsv)
+    if cached_index is not None:
+        return cached_index
+
     accepted_by_canonical: Dict[str, TaxonRecord] = {}
     accepted_by_id: Dict[str, TaxonRecord] = {}
     synonym_to_accepted_id: Dict[str, str] = {}
@@ -292,13 +353,20 @@ def load_taxonomy_index(
     for key in list(genus_by_letter.keys()):
         genus_by_letter[key] = sorted(set(genus_by_letter[key]))
 
-    return (
+    resolved_index = (
         accepted_by_canonical,
         synonym_to_accepted_id,
         genus_by_letter,
         genus_name_to_taxon_id,
         accepted_by_id,
     )
+    if cache_path:
+        try:
+            write_taxonomy_index_cache(cache_path, taxon_tsv, resolved_index)
+        except OSError:
+            pass
+
+    return resolved_index
 
 
 def detect_abbreviation(cleaned_token: str) -> Optional[Tuple[str, str]]:
@@ -506,6 +574,14 @@ def write_checkpoint(path: str, payload: Dict[str, str]) -> None:
         json.dump(payload, handle, indent=2)
 
 
+def copy_file_if_needed(source_path: str, destination_path: str) -> None:
+    if os.path.abspath(source_path) == os.path.abspath(destination_path):
+        return
+
+    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    shutil.copyfile(source_path, destination_path)
+
+
 def run_resolution(args: argparse.Namespace) -> None:
     (
         accepted_by_canonical,
@@ -513,7 +589,7 @@ def run_resolution(args: argparse.Namespace) -> None:
         genus_by_letter,
         _genus_name_to_taxon_id,
         accepted_by_id,
-    ) = load_taxonomy_index(args.taxon_tsv)
+    ) = load_taxonomy_index(args.taxon_tsv, args.taxonomy_cache)
 
     input_fieldnames = get_input_fieldnames(args.input_csv)
     rows = read_input_rows(args.input_csv)
@@ -536,6 +612,11 @@ def run_resolution(args: argparse.Namespace) -> None:
     if processed_already >= len(rows):
         print("Output already complete; nothing to process.")
         return
+
+    staging_dir = tempfile.mkdtemp(prefix="taxa_synonym_resolution_")
+    staged_output_csv = os.path.join(staging_dir, os.path.basename(args.output_csv))
+    staged_unresolved_csv = os.path.join(staging_dir, os.path.basename(args.unresolved_csv))
+    staged_checkpoint_json = os.path.join(staging_dir, os.path.basename(args.checkpoint_json))
 
     os.makedirs(os.path.dirname(args.output_csv), exist_ok=True)
     os.makedirs(os.path.dirname(args.unresolved_csv), exist_ok=True)
@@ -574,10 +655,10 @@ def run_resolution(args: argparse.Namespace) -> None:
     ]
 
     write_mode = "a" if processed_already > 0 else "w"
-    unresolved_mode = "a" if (processed_already > 0 and os.path.exists(args.unresolved_csv)) else "w"
+    unresolved_mode = "a" if (processed_already > 0 and os.path.exists(staged_unresolved_csv)) else "w"
 
-    with open(args.output_csv, write_mode, encoding="utf-8", newline="") as out_handle, open(
-        args.unresolved_csv, unresolved_mode, encoding="utf-8", newline=""
+    with open(staged_output_csv, write_mode, encoding="utf-8", newline="") as out_handle, open(
+        staged_unresolved_csv, unresolved_mode, encoding="utf-8", newline=""
     ) as unresolved_handle:
         out_writer = csv.DictWriter(out_handle, fieldnames=passthrough + output_extra)
         unresolved_writer = csv.DictWriter(unresolved_handle, fieldnames=unresolved_fields)
@@ -679,12 +760,12 @@ def run_resolution(args: argparse.Namespace) -> None:
                 flush_output_buffer()
                 flush_unresolved_buffer()
                 write_checkpoint(
-                    args.checkpoint_json,
+                    staged_checkpoint_json,
                     {
                         "processed_rows": str(processed_now),
                         "total_rows": str(len(rows)),
-                        "output_csv": args.output_csv,
-                        "unresolved_csv": args.unresolved_csv,
+                        "output_csv": staged_output_csv,
+                        "unresolved_csv": staged_unresolved_csv,
                     },
                 )
 
@@ -695,15 +776,18 @@ def run_resolution(args: argparse.Namespace) -> None:
         flush_unresolved_buffer()
 
     write_checkpoint(
-        args.checkpoint_json,
+        staged_checkpoint_json,
         {
             "processed_rows": str(len(rows)),
             "total_rows": str(len(rows)),
-            "output_csv": args.output_csv,
-            "unresolved_csv": args.unresolved_csv,
+            "output_csv": staged_output_csv,
+            "unresolved_csv": staged_unresolved_csv,
             "status": "complete",
         },
     )
+    copy_file_if_needed(staged_output_csv, args.output_csv)
+    copy_file_if_needed(staged_unresolved_csv, args.unresolved_csv)
+    copy_file_if_needed(staged_checkpoint_json, args.checkpoint_json)
     print(f"Done. Wrote {args.output_csv} and {args.unresolved_csv}")
 
 
@@ -720,6 +804,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--taxon-tsv",
         default="data/Reference_datasets/gbif_backbone/Taxon.tsv",
         help="GBIF Taxon TSV path",
+    )
+    parser.add_argument(
+        "--taxonomy-cache",
+        default="results/logs/taxa_synonym_resolution_taxonomy_index.pkl",
+        help="Optional cache for the parsed GBIF taxonomy index",
     )
     parser.add_argument(
         "--output-csv",
