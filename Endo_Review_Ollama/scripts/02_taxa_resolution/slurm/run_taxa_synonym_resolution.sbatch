@@ -10,8 +10,11 @@
 
 set -euo pipefail
 
-# Run from repository root before submitting:
-# sbatch scripts/04_analysis/components/slurm/run_taxa_synonym_resolution.sbatch
+# Submit from the repository root:
+# sbatch scripts/02_taxa_resolution/slurm/run_taxa_synonym_resolution.sbatch
+
+cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
+mkdir -p results/logs results/manual_validation
 
 module purge
 module load python/3.11
@@ -20,12 +23,13 @@ module load python/3.11
 # source ~/miniconda3/etc/profile.d/conda.sh
 # conda activate endo-review
 
-python scripts/04_analysis/components/taxa_synonym_resolution.py \
-  --input-csv data/processed/Ollama_cleaned.csv \
-  --taxon-tsv data/gbif_backbone/Taxon.tsv \
-  --output-csv data/processed/Ollama_cleaned_synresolved.csv \
+python scripts/02_taxa_resolution/taxa_synonym_resolution.py \
+  --input-csv data/Ollama_cleaned.csv \
+  --taxon-tsv data/Reference_datasets/gbif_backbone/Taxon.tsv \
+  --output-csv data/Ollama_cleaned_synresolved.csv \
   --unresolved-csv results/manual_validation/taxa_unresolved_review.csv \
   --checkpoint-json results/logs/taxa_synonym_resolution_checkpoint.json \
+  --taxonomy-cache results/logs/taxa_synonym_resolution_taxonomy_index.pkl \
   --checkpoint-interval 1000 \
   --log-interval 1000 \
   --resume
