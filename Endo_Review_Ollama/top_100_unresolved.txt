@@ -1,0 +1,100 @@
+    115 epichloe lolii
+    113 streptomyces
+     62 centella asiatica
+     61 pinus tabulaeformis
+     57 pteridophytes
+     54 phytophthora infestans
+     52 pseudomonas
+     50 epichlo
+     44 unspecified plant
+     40 bacillus
+     40 . pinus
+     39 mycelia sterilia
+     39 . sorbus
+     39 . rhododendron
+     39 . populus
+     39 . picea
+     37 mycorrhizal fungi
+     37 gams
+     36 bacon
+     36 ascomycetes
+     35 phomopsis liquidambari
+     35 multiple fungal
+     34 lettuce
+     34 actinobacteria
+     33 bacillus subtilis
+     32 xylella fastidiosa
+     30 unspecified fungal
+     30 atta sexdens
+     29 scots pine
+     29 bruguiera gymnorrhiza
+     28 trappe
+     28 pantoea
+     27 various fungal
+     27 unspecified endophytic
+     27 plants in
+     27 mortierellomycota
+     27 basidiomycetes
+     27 a. niger
+     26 woody plants
+     26 various endophytic
+     26 unspecified food
+     26 pantoea agglomerans
+     25 various host
+     25 pearl millet
+     25 peanut
+     25 oryza-sativa
+     25 kingdom fungi
+     25 fungal endophyte
+     24 various plants
+     24 various foliar
+     24 arbuscular mycorrhizae
+     24 andropogon gerardii
+     23 rhizobium
+     23 phytophthora capsici
+     23 multiple species
+     23 mucoromycotina
+     23 lentil
+     23 epichlo euml
+     23 enterobacter
+     23 burkholderia
+     22 sp. nov.
+     22 saprotrophs
+     22 phytophthora
+     22 mungbean
+     22 kidney bean
+     22 herbaspirillum seropedicae
+     22 chickpea
+     21 pythium
+     21 multiple unspecified
+     21 mangrove
+     21 endophytic fungal
+     21 endophyte species
+     20 woody hosts
+     20 pathogenic
+     20 grass species
+     20 cool-season grasses
+     20 but no
+     20 bradyrhizobium
+     20 a. flavus
+     19 lichens
+     19 fusarium species
+     19 diaporthe species
+     18 plasmopara viticola
+     18 plasmodiophora brassicae
+     18 oidiodendron maius
+     18 count
+     18 alternaria alternate
+     18 adhathoda vasica
+     17 unknown species
+     17 pestalotiopsis species
+     17 native pine
+     17 native apricot
+     17 ferns
+     17 families
+     17 endophytic microorganisms
+     17 claroideuglomus claroideum
+     17 azoarcus
+     17 and hanlin
+     16 pythium aphanidermatum
+     16 peach

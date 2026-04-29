@@ -17,18 +17,25 @@ import re
 import shutil
 import sys
 import tempfile
+from importlib import util
+from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
-# Import centralized taxon mappings (single source of truth)
-from scripts.utils.taxon_mapping import (
-    get_na_tokens,
-    get_non_taxon_phrases,
-    get_taxon_aliases,
-    get_allowed_taxon_ranks,
-    is_protected_higher_taxon,
-)
+TAXON_MAPPING_PATH = Path(__file__).resolve().parents[1] / 'utils' / 'taxon_mapping.py'
+TAXON_MAPPING_SPEC = util.spec_from_file_location('taxon_mapping', TAXON_MAPPING_PATH)
+if TAXON_MAPPING_SPEC is None or TAXON_MAPPING_SPEC.loader is None:
+    raise ImportError(f'Could not load taxon mapping module: {TAXON_MAPPING_PATH}')
+
+taxon_mapping = util.module_from_spec(TAXON_MAPPING_SPEC)
+TAXON_MAPPING_SPEC.loader.exec_module(taxon_mapping)
+
+get_na_tokens = taxon_mapping.get_na_tokens
+get_non_taxon_phrases = taxon_mapping.get_non_taxon_phrases
+get_taxon_aliases = taxon_mapping.get_taxon_aliases
+get_allowed_taxon_ranks = taxon_mapping.get_allowed_taxon_ranks
+is_protected_higher_taxon = taxon_mapping.is_protected_higher_taxon
 
 # GBIF backbone rows can contain fields larger than Python's default CSV limit.
 csv.field_size_limit(min(sys.maxsize, 10**9))
@@ -180,6 +187,12 @@ def should_skip_review(cleaned_token: str) -> bool:
     key = normalize_key(cleaned_token)
     if not key:
         return True
+
+    if is_protected_higher_taxon(key):
+        return False
+
+    if key in TOKEN_ALIASES:
+        return False
 
     if key in NON_TAXON_REVIEW_PHRASES:
         return True

@@ -37,6 +37,11 @@
     "cotton": "gossypium hirsutum",
     "potato": "solanum tuberosum",
     "tomato": "solanum lycopersicum",
+    "dark septate": "ascomycota",
+    "vesicular-arbuscular mycorrhizal": "glomeromycota",
+    "arbuscular mycorrhizal": "glomeromycota",
+    "legumes": "fabaceae",
+    "grasses": "poaceae",
     "epichlo coenophiala": "epichloe coenophiala",
     "epichlo festucae": "epichloe festucae",
     "epichlo typhina": "epichloe typhina",
@@ -49,7 +54,6 @@
     "endophyte",
     "intercellular fungal endophyte",
     "anaerobic microbes",
-    "dark septate",
     "endophytic fungus",
     "endophytes",
     "fungal endophytes",
@@ -66,14 +70,10 @@
     "not specified",
     "specified",
     "unspecified",
-    "vesicular-arbuscular mycorrhizal",
-    "arbuscular mycorrhizal",
     "endophytic fungi",
     "fungi",
     "fungus",
     "higher plants",
-    "legumes",
-    "grasses",
     "notes",
     "plant tissues",
     "aerial parts",
@@ -134,19 +134,8 @@
     "fungi",
     "plantae"
   ],
-  "excluded_phyla": [
-    "glomeromycota",
-    "proteobacteria",
-    "actinobacteriota",
-    "firmicutes",
-    "tracheophyta",
-    "chlorophyta"
-  ],
-  "excluded_classes": [
-    "magnoliopsida",
-    "liliopsida",
-    "pinopsida"
-  ],
+  "excluded_phyla": [],
+  "excluded_classes": [],
   "excluded_guilds": [
     "mycorrhiza",
     "pgpr"

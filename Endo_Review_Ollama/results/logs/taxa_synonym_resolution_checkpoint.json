@@ -1,6 +1,7 @@
 {
-  "processed_rows": "3000",
-  "total_rows": "40277",
-  "output_csv": "data/Ollama_cleaned_synresolved.csv",
-  "unresolved_csv": "results/manual_validation/taxa_unresolved_review.csv"
+  "processed_rows": "40122",
+  "total_rows": "40122",
+  "output_csv": "C:\\Users\\beabo\\AppData\\Local\\Temp\\taxa_synonym_resolution_kva63lym\\Ollama_cleaned_synresolved.csv",
+  "unresolved_csv": "C:\\Users\\beabo\\AppData\\Local\\Temp\\taxa_synonym_resolution_kva63lym\\taxa_unresolved_review.csv",
+  "status": "complete"
 }

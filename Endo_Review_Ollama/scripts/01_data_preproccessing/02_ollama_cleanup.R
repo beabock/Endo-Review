@@ -9,7 +9,7 @@ ds <- read_csv("data/Ollama_python_healed.csv", show_col_types = FALSE)
 null_words <- c("endophytic", "endophyte", "intercellular fungal endophyte", 
                 "anaerobic microbes", "unspecified", "not explicitly mentioned", 
                 "unknown", "none", "n/a", "fungus", "fungi", 
-                "dark septate", "endophytic fungus", "endophytes", "fungal endophytes", 
+                "endophytic fungus", "endophytes", "fungal endophytes", 
                 "various", "primary guild", "multiple endophytic", "medicinal plants", 
                 "latin name", "ectomycorrhizal fungi", "common name")
 

@@ -138,18 +138,20 @@ DEFAULT_PLANT_CLASS_TERMS = {
 @lru_cache(maxsize=1)
 def load_gbif_taxon_whitelists(taxon_tsv=GBIF_TAXON_TSV):
     """Load accepted GBIF fungal and plant phylum/class terms from Taxon.tsv."""
-    fungal_phyla = set(DEFAULT_FUNGAL_PHYLUM_TERMS)
-    plant_phyla = set(DEFAULT_PLANT_PHYLUM_TERMS)
-    fungal_classes = set(DEFAULT_FUNGAL_CLASS_TERMS)
-    plant_classes = set(DEFAULT_PLANT_CLASS_TERMS)
+    fallback = {
+        'fungal_phyla': frozenset(DEFAULT_FUNGAL_PHYLUM_TERMS),
+        'plant_phyla': frozenset(DEFAULT_PLANT_PHYLUM_TERMS),
+        'fungal_classes': frozenset(DEFAULT_FUNGAL_CLASS_TERMS),
+        'plant_classes': frozenset(DEFAULT_PLANT_CLASS_TERMS),
+    }
 
     if not os.path.exists(taxon_tsv):
-        return {
-            'fungal_phyla': frozenset(fungal_phyla),
-            'plant_phyla': frozenset(plant_phyla),
-            'fungal_classes': frozenset(fungal_classes),
-            'plant_classes': frozenset(plant_classes),
-        }
+        return fallback
+
+    fungal_phyla = set()
+    plant_phyla = set()
+    fungal_classes = set()
+    plant_classes = set()
 
     try:
         with open(taxon_tsv, 'r', encoding='utf-8', newline='') as handle:
@@ -176,12 +178,10 @@ def load_gbif_taxon_whitelists(taxon_tsv=GBIF_TAXON_TSV):
                     if class_name:
                         plant_classes.add(class_name)
     except (OSError, csv.Error):
-        return {
-            'fungal_phyla': frozenset(fungal_phyla),
-            'plant_phyla': frozenset(plant_phyla),
-            'fungal_classes': frozenset(fungal_classes),
-            'plant_classes': frozenset(plant_classes),
-        }
+        return fallback
+
+    if not (fungal_phyla or plant_phyla or fungal_classes or plant_classes):
+        return fallback
 
     return {
         'fungal_phyla': frozenset(fungal_phyla),

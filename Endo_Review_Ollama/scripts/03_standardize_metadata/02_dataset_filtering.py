@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
 import csv
 import os
+from importlib import util
+from pathlib import Path
+
+TAXON_MAPPING_PATH = Path(__file__).resolve().parents[1] / 'utils' / 'taxon_mapping.py'
+TAXON_MAPPING_SPEC = util.spec_from_file_location('taxon_mapping', TAXON_MAPPING_PATH)
+if TAXON_MAPPING_SPEC is None or TAXON_MAPPING_SPEC.loader is None:
+    raise ImportError(f'Could not load taxon mapping module: {TAXON_MAPPING_PATH}')
+
+taxon_mapping = util.module_from_spec(TAXON_MAPPING_SPEC)
+TAXON_MAPPING_SPEC.loader.exec_module(taxon_mapping)
+
+get_allowed_kingdoms = taxon_mapping.get_allowed_kingdoms
+get_excluded_phyla = taxon_mapping.get_excluded_phyla
+get_excluded_classes = taxon_mapping.get_excluded_classes
+get_excluded_guilds = taxon_mapping.get_excluded_guilds
 
 INPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_final.csv'
 OUTPUT_FILE = 'data/Ollama_cleaned_synresolved_filtered.csv'
 
-# 1. Study-Specific Constraints
-# We include Plantae to catch endophytes extracted with plant kingdom labels
-ALLOWED_KINGDOMS = {'fungi', 'plantae'}
-
-# Explicitly exclude the phyla that appeared as noise in your audit
-EXCLUDED_PHYLA = {'glomeromycota', 'proteobacteria', 'actinobacteriota', 'firmicutes', 'tracheophyta', 'chlorophyta'}
-EXCLUDED_CLASSES = {'magnoliopsida', 'liliopsida', 'pinopsida'}
-
-# Exclude mycorrhizae to focus on endophytes
-EXCLUDED_GUILDS = {'mycorrhiza', 'pgpr'}
+# 1. Study-Specific Constraints (centralized)
+ALLOWED_KINGDOMS = set(get_allowed_kingdoms())
+EXCLUDED_PHYLA = set(get_excluded_phyla())
+EXCLUDED_CLASSES = set(get_excluded_classes())
+EXCLUDED_GUILDS = set(get_excluded_guilds())
 
 def filter_dataset():
     if not os.path.exists(INPUT_FILE):

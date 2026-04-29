@@ -59,7 +59,7 @@ def get_non_target_taxa() -> FrozenSet[str]:
 
 @lru_cache(maxsize=1)
 def get_protected_higher_taxa() -> FrozenSet[str]:
-    """Get set of higher taxa (class/phylum level) to always keep."""
+    """Get set of higher taxa (class/phylum level) to protect from suppression."""
     config = _load_config()
     return frozenset(config.get('keep_higher_taxa', []))
 
@@ -141,6 +141,10 @@ def should_skip_token(token: str) -> bool:
     # Check NA tokens
     if token_lower in get_na_tokens():
         return True
+
+    # Protected higher taxa are never skipped (not an allowlist).
+    if token_lower in get_protected_higher_taxa():
+        return False
     
     # Check non-taxon phrases
     if token_lower in get_non_taxon_phrases():
@@ -168,7 +172,7 @@ def should_alias_token(token: str) -> Optional[str]:
 
 def is_protected_higher_taxon(token: str) -> bool:
     """
-    Check if token is a protected higher taxon (should not be suppressed).
+    Check if token is a protected higher taxon (override suppression only).
     Returns True if token is in keep_higher_taxa list.
     """
     if not token or not isinstance(token, str):
@@ -212,9 +216,9 @@ def is_excluded_guild(guild: str) -> bool:
 
 # Configuration statistics
 MAPPING_STATS = {
-    "total_na_tokens": 18,
-    "total_aliases": 22,
-    "total_suppress_non_taxon_phrases": 38,
+    "total_na_tokens": 17,
+    "total_aliases": 26,
+    "total_suppress_non_taxon_phrases": 33,
     "total_suppress_non_target_taxa": 17,
     "total_protected_higher_taxa": 14,
     "total_allowed_ranks": 9,
