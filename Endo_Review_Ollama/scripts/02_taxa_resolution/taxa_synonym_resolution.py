@@ -21,54 +21,24 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+# Import centralized taxon mappings (single source of truth)
+from scripts.utils.taxon_mapping import (
+    get_na_tokens,
+    get_non_taxon_phrases,
+    get_taxon_aliases,
+    get_allowed_taxon_ranks,
+    is_protected_higher_taxon,
+)
 
 # GBIF backbone rows can contain fields larger than Python's default CSV limit.
 csv.field_size_limit(min(sys.maxsize, 10**9))
 
 
-NA_TOKENS = {
-    "",
-    "na",
-    "n/a",
-    "none",
-    "not provided",
-    "not specified",
-    "unknown",
-    "not applicable",
-    "null",
-}
-
-NON_TAXON_REVIEW_PHRASES = {
-    "arbuscular mycorrhizal",
-    "endophytic fungi",
-    "fungi",
-    "fungus",
-    "higher plants",
-    "legumes",
-    "multiple",
-    "not mentioned",
-    "not specified",
-    "scientific name",
-    "specified",
-    "unspecified",
-    "vesicular-arbuscular mycorrhizal",
-}
-
-TOKEN_ALIASES = {
-    "tall fescue": "festuca arundinacea",
-}
-
-ALLOWED_TAXON_RANKS = {
-    "CLASS",
-    "FAMILY",
-    "FORM",
-    "GENUS",
-    "ORDER",
-    "PHYLUM",
-    "SPECIES",
-    "SUBSPECIES",
-    "VARIETY",
-}
+# Load centralized mappings (functions return frozensets for immutability)
+NA_TOKENS = get_na_tokens()
+NON_TAXON_REVIEW_PHRASES = get_non_taxon_phrases()
+TOKEN_ALIASES = get_taxon_aliases()
+ALLOWED_TAXON_RANKS = get_allowed_taxon_ranks()
 
 NON_TAXON_PHRASE_PATTERN = re.compile(
     r"^[\w\s\-]+m(ycorrhizal|ildew|fungi?|plants?)$"
