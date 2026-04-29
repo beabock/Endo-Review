@@ -71,7 +71,7 @@ ALLOWED_TAXON_RANKS = {
 }
 
 NON_TAXON_PHRASE_PATTERN = re.compile(
-    r"(?:[a-z]+[- ]?)+m(ycorrhizal|ildew|fungi?|plants?)"
+    r"^[\w\s\-]+m(ycorrhizal|ildew|fungi?|plants?)$"
 )
 
 FIELD_COLUMNS = ("fungal_taxon", "plant_host")
