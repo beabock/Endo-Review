@@ -3,6 +3,7 @@ import argparse
 import csv
 import os
 import re
+import pandas as pd
 import itertools
 from importlib import util
 from pathlib import Path
@@ -369,7 +370,7 @@ def clean_parentheticals(val):
     return re.sub(r'\(.*?\)', '', val).strip()
 
 
-def standardize_value(val, mapping=None):
+def standardize_value(val, mapping=None, match_mode='substring'):
     if not val:
         return 'NA'
     
@@ -383,12 +384,21 @@ def standardize_value(val, mapping=None):
         return 'NA'
     
     if mapping:
-        # 3. Keyword check (e.g., "twigs" matches "twig" in TISSUE_MAP)
-        for key, standardized in mapping.items():
-            if key in clean_val:
-                return standardized
+        # 3. Exact match first to avoid substring collisions
+        if clean_val in mapping:
+            return mapping[clean_val]
+
+        # 4. Keyword check (e.g., "twigs" matches "twig" in TISSUE_MAP)
+        keys = sorted(mapping.keys(), key=len, reverse=True)
+        for key in keys:
+            if match_mode == 'word':
+                if re.search(rf"(?<!\w){re.escape(key)}(?!\w)", clean_val):
+                    return mapping[key]
+            else:
+                if key in clean_val:
+                    return mapping[key]
     
-    # 4. Final safety for short strings
+    # 5. Final safety for short strings
     if len(clean_val) < 2 or clean_val in ['na', 'none']:
         return 'NA'
         
@@ -420,7 +430,9 @@ def run_standardization(input_file=DEFAULT_INPUT_FILE, output_file=DEFAULT_OUTPU
             if 'biome' in h_idx:
                 row[h_idx['biome']] = standardize_value(row[h_idx['biome']], BIOME_MAP)
             if 'country' in h_idx:
-                row[h_idx['country']] = standardize_value(row[h_idx['country']], COUNTRY_MAP)
+                row[h_idx['country']] = standardize_value(
+                    row[h_idx['country']], COUNTRY_MAP, match_mode='word'
+                )
             if 'doc_type_ai' in h_idx:
                 row[h_idx['doc_type_ai']] = standardize_value(row[h_idx['doc_type_ai']], DOC_TYPE_MAP)
 

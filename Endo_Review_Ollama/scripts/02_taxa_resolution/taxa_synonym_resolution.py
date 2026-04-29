@@ -17,6 +17,7 @@ import re
 import shutil
 import sys
 import tempfile
+import unicodedata
 from importlib import util
 from pathlib import Path
 from collections import defaultdict
@@ -143,6 +144,8 @@ def normalize_text(value: str) -> str:
 
 def normalize_key(value: str) -> str:
     text = normalize_text(value).lower()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
     return "" if text in NA_TOKENS else text
 
 
@@ -368,7 +371,8 @@ def resolve_token(
     context_genera: Set[str],
 ) -> ResolveResult:
     cleaned = canonicalize_taxon_token(raw_token)
-    if not normalize_key(cleaned):
+    normalized = normalize_key(cleaned)
+    if not normalized:
         return ResolveResult(
             raw_token=raw_token,
             cleaned_token=cleaned,
@@ -383,18 +387,21 @@ def resolve_token(
             kingdom="",
         )
 
-    aliased = TOKEN_ALIASES.get(cleaned)
+    alias_applied = False
+    aliased = TOKEN_ALIASES.get(normalized)
     if aliased:
         cleaned = aliased
+        normalized = normalize_key(cleaned)
+        alias_applied = True
 
-    accepted = accepted_by_canonical.get(cleaned)
+    accepted = accepted_by_canonical.get(normalized)
     if accepted:
         return ResolveResult(
             raw_token=raw_token,
             cleaned_token=cleaned,
             resolved_name=accepted.canonical_name,
             taxonomic_status="ACCEPTED",
-            resolution_method="exact_accepted",
+            resolution_method="alias_exact_accepted" if alias_applied else "exact_accepted",
             confidence=1.0,
             is_ambiguous=False,
             ambiguity_count=0,
@@ -403,7 +410,7 @@ def resolve_token(
             kingdom=accepted.kingdom,
         )
 
-    syn_id = synonym_to_accepted_id.get(cleaned)
+    syn_id = synonym_to_accepted_id.get(normalized)
     if syn_id and syn_id in accepted_by_id:
         accepted = accepted_by_id[syn_id]
         return ResolveResult(
@@ -411,7 +418,7 @@ def resolve_token(
             cleaned_token=cleaned,
             resolved_name=accepted.canonical_name,
             taxonomic_status="SYNONYM",
-            resolution_method="synonym_map",
+            resolution_method="alias_synonym_map" if alias_applied else "synonym_map",
             confidence=0.95,
             is_ambiguous=False,
             ambiguity_count=0,
@@ -458,14 +465,14 @@ def resolve_token(
 
     # Genus-level fallback.
     parts = cleaned.split(" ")
-    if len(parts) == 1 and cleaned in accepted_by_canonical:
-        genus_hit = accepted_by_canonical[cleaned]
+    if len(parts) == 1 and normalized in accepted_by_canonical:
+        genus_hit = accepted_by_canonical[normalized]
         return ResolveResult(
             raw_token=raw_token,
             cleaned_token=cleaned,
             resolved_name=genus_hit.canonical_name,
             taxonomic_status="ACCEPTED",
-            resolution_method="genus_exact",
+            resolution_method="alias_genus_exact" if alias_applied else "genus_exact",
             confidence=0.7,
             is_ambiguous=False,
             ambiguity_count=0,

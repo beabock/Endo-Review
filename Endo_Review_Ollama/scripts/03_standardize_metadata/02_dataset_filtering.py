@@ -19,6 +19,7 @@ get_excluded_guilds = taxon_mapping.get_excluded_guilds
 
 INPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_final.csv'
 OUTPUT_FILE = 'data/Ollama_cleaned_synresolved_filtered.csv'
+FILTERED_ROWS_FILE = 'results/logs/filtered_rows.csv'
 
 # 1. Study-Specific Constraints (centralized)
 ALLOWED_KINGDOMS = set(get_allowed_kingdoms())
@@ -40,13 +41,21 @@ def filter_dataset():
             if paper_id:
                 initial_papers.add(paper_id)
 
-    # Second pass: apply filters and track papers removed at each stage
-    with open(INPUT_FILE, 'r', encoding='utf-8') as f_in, \
-         open(OUTPUT_FILE, 'w', encoding='utf-8') as f_out:
+        # Second pass: apply filters and track papers removed at each stage
+        os.makedirs(os.path.dirname(FILTERED_ROWS_FILE), exist_ok=True)
+        with open(INPUT_FILE, 'r', encoding='utf-8') as f_in, \
+            open(OUTPUT_FILE, 'w', encoding='utf-8') as f_out, \
+            open(FILTERED_ROWS_FILE, 'w', encoding='utf-8') as f_filtered:
 
         reader = csv.DictReader(f_in)
         writer = csv.DictWriter(f_out, fieldnames=reader.fieldnames, quoting=csv.QUOTE_ALL)
         writer.writeheader()
+
+        filtered_fieldnames = list(reader.fieldnames or []) + ['filter_reason']
+        filtered_writer = csv.DictWriter(
+            f_filtered, fieldnames=filtered_fieldnames, quoting=csv.QUOTE_ALL
+        )
+        filtered_writer.writeheader()
 
         in_count = 0
         out_count = 0
@@ -77,24 +86,36 @@ def filter_dataset():
             if relevance != 'relevant':
                 if paper_id:
                     papers_by_filter['relevance'].add(paper_id)
+                filtered_row = dict(row)
+                filtered_row['filter_reason'] = 'relevance'
+                filtered_writer.writerow(filtered_row)
                 continue
 
             # Rule 2: Kingdom Check (keep NA/empty kingdoms)
             if kingdom and kingdom not in ALLOWED_KINGDOMS:
                 if paper_id:
                     papers_by_filter['kingdom'].add(paper_id)
+                filtered_row = dict(row)
+                filtered_row['filter_reason'] = 'kingdom'
+                filtered_writer.writerow(filtered_row)
                 continue
 
             # Rule 3: Explicit Phylum Exclusion (Removes AMF and Bacteria)
             if phylum in EXCLUDED_PHYLA or class_val in EXCLUDED_CLASSES:
                 if paper_id:
                     papers_by_filter['phylum_class'].add(paper_id)
+                filtered_row = dict(row)
+                filtered_row['filter_reason'] = 'phylum_class'
+                filtered_writer.writerow(filtered_row)
                 continue
 
             # Rule 4: Guild Exclusion (Removes Mycorrhizae)
             if guild in EXCLUDED_GUILDS:
                 if paper_id:
                     papers_by_filter['guild'].add(paper_id)
+                filtered_row = dict(row)
+                filtered_row['filter_reason'] = 'guild'
+                filtered_writer.writerow(filtered_row)
                 continue
 
             # If it passes all rules, write to new file
@@ -125,6 +146,7 @@ def filter_dataset():
     print(f"  Interactions: {out_count:,}  |  Unique Papers: {len(final_papers):,}")
     print(f"  Total Papers Lost: {len(initial_papers) - len(final_papers):,}")
     print(f"  Output File: {OUTPUT_FILE}")
+    print(f"  Filtered Rows File: {FILTERED_ROWS_FILE}")
     print("="*70)
 
 if __name__ == "__main__":

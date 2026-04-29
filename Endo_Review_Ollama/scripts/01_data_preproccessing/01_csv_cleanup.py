@@ -13,26 +13,71 @@ HEADERS = [
     "data_source", "source_file"
 ]
 
+ROW_START_PATTERN = re.compile(r"^(relev|irrelev|not|uncertain)", re.IGNORECASE)
+
+
+def sanitize_line(line: str):
+    # Drop backslashes to avoid JSON escape artifacts in CSV parsing.
+    sanitized = line.replace("\\", "")
+    # If quotes are unbalanced, remove them to avoid CSV parser issues.
+    has_unbalanced_quotes = sanitized.count('"') % 2 == 1
+    if has_unbalanced_quotes:
+        sanitized = sanitized.replace('"', '')
+    return sanitized, has_unbalanced_quotes
+
+
+def assemble_rows(lines):
+    data_lines = []
+    merged_line_count = 0
+    buffer = ""
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        is_new_row = bool(ROW_START_PATTERN.match(stripped))
+        if buffer and is_new_row:
+            data_lines.append(buffer)
+            buffer = stripped
+        else:
+            if buffer:
+                merged_line_count += 1
+                buffer = f"{buffer} {stripped}".strip()
+            else:
+                buffer = stripped
+
+    if buffer:
+        data_lines.append(buffer)
+
+    return data_lines, merged_line_count
+
 def heal_and_align():
     print(f"Reading raw data from {input_file}...")
     
     with open(input_file, 'r', encoding='utf-8', errors='replace') as f:
         raw_text = f.read()
 
-    # 1. PRE-PARSER HEALING
-    # Stitch newlines where the AI hit 'enter' mid-sentence (newline followed by lowercase letter)
-    healed_text = re.sub(r'\n([a-z])', r' \1', raw_text)
-    # Annihilate all double quotes and backslashes to prevent CSV parser explosions
-    healed_text = healed_text.replace('"', '').replace('\\', '')
-    
-    lines = healed_text.split('\n')
-    data_lines = [line for line in lines if line.strip()][1:] # Drop header and empty lines
+    lines = raw_text.split('\n')
+    data_lines, merged_line_count = assemble_rows(lines[1:])
+    raw_line_count = len([line for line in lines[1:] if line.strip()])
     
     clean_rows = []
     
     print("Aligning drifting columns...")
+    doi_anchor_hits = 0
+    doi_anchor_misses = 0
+    missing_data_source = 0
+    missing_source_file = 0
+    middle_exact = 0
+    middle_overflow = 0
+    middle_short = 0
+    overflow_extra_parts = 0
+    unbalanced_quote_lines = 0
     for line in data_lines:
-        parts = [p.strip() for p in line.split(',')]
+        sanitized, had_unbalanced_quotes = sanitize_line(line)
+        if had_unbalanced_quotes:
+            unbalanced_quote_lines += 1
+        parts = [p.strip() for p in sanitized.split(',')]
         
         # Initialize an empty 15-slot row
         row = ["NA"] * 15
@@ -47,12 +92,14 @@ def heal_and_align():
                 break
                 
         if doi_index != -1:
+            doi_anchor_hits += 1
             # Safely map whatever came before the DOI
             for i in range(min(doi_index, 4)):
                 row[i] = parts[i]
             row[4] = parts[doi_index] # Lock DOI
             parts = parts[doi_index+1:] # Remaining parts
         else:
+            doi_anchor_misses += 1
             # If no DOI found, just dump the first 5 parts
             for i in range(min(len(parts), 5)):
                 row[i] = parts[i]
@@ -72,12 +119,15 @@ def heal_and_align():
         # We now have the remaining parts that belong in Host, Taxon, Tissue, etc.
         # If there are exactly 8 parts left, perfect! 1-to-1 mapping.
         if len(parts) == 8:
+            middle_exact += 1
             for i in range(8):
                 row[5+i] = parts[i]
         
         # If there are MORE than 8 parts, the AI hallucinated commas.
         # We glue the "extra" parts into the interaction_notes (Col 10)
         elif len(parts) > 8:
+            middle_overflow += 1
+            overflow_extra_parts += len(parts) - 8
             row[5] = parts[0] # Host
             row[6] = parts[1] # Taxon
             row[7] = parts[2] # Tissue
@@ -96,8 +146,14 @@ def heal_and_align():
         # If there are FEWER than 8 parts, the AI skipped columns. 
         # Just map them left-to-right until we run out.
         else:
+            middle_short += 1
             for i in range(len(parts)):
                 row[5+i] = parts[i]
+
+        if row[13] == "NA":
+            missing_data_source += 1
+        if row[14] == "NA":
+            missing_source_file += 1
 
         clean_rows.append(row)
 
@@ -110,6 +166,17 @@ def heal_and_align():
         writer.writerows(clean_rows)
         
     print("Done! The dataset is structurally perfect.")
+    print("Repair report:")
+    print(f"  Raw lines (non-empty): {raw_line_count}")
+    print(f"  Assembled rows: {len(data_lines)}")
+    print(f"  Lines merged into previous rows: {merged_line_count}")
+    print(f"  Rows with unbalanced quotes fixed: {unbalanced_quote_lines}")
+    print(f"  DOI anchor hits: {doi_anchor_hits} | misses: {doi_anchor_misses}")
+    print(f"  Missing data_source: {missing_data_source} | missing source_file: {missing_source_file}")
+    print(
+        f"  Middle columns: exact={middle_exact} overflow={middle_overflow} short={middle_short}"
+    )
+    print(f"  Extra overflow parts merged into notes: {overflow_extra_parts}")
 
 if __name__ == "__main__":
     heal_and_align()

@@ -1,17 +1,26 @@
 library(tidyverse)
 library(stringr)
+library(jsonlite)
 
 message("Loading perfectly structured Python dataset...")
 # 1. Load the Python-healed file natively
 ds <- read_csv("data/Ollama_python_healed.csv", show_col_types = FALSE)
 
 # 2. Define the exact same biological rules for the taxon column
-null_words <- c("endophytic", "endophyte", "intercellular fungal endophyte", 
-                "anaerobic microbes", "unspecified", "not explicitly mentioned", 
-                "unknown", "none", "n/a", "fungus", "fungi", 
-                "endophytic fungus", "endophytes", "fungal endophytes", 
-                "various", "primary guild", "multiple endophytic", "medicinal plants", 
-                "latin name", "ectomycorrhizal fungi", "common name")
+config_path <- file.path("scripts", "utils", "taxon_mapping_config.json")
+fallback_null_words <- c("endophytic", "endophyte", "intercellular fungal endophyte", 
+                          "anaerobic microbes", "unspecified", "not explicitly mentioned", 
+                          "unknown", "none", "n/a", "fungus", "fungi", 
+                          "endophytic fungus", "endophytes", "fungal endophytes", 
+                          "various", "primary guild", "multiple endophytic", "medicinal plants", 
+                          "latin name", "ectomycorrhizal fungi", "common name")
+
+if (file.exists(config_path)) {
+    config <- jsonlite::fromJSON(config_path)
+    null_words <- unique(tolower(c(config$suppress_non_taxon_phrases, config$na_tokens)))
+} else {
+    null_words <- fallback_null_words
+}
 
                 
 clean_taxon <- function(x) {
@@ -47,7 +56,7 @@ ds_final <- ds %>%
     mutate(fungal_taxon = clean_taxon(fungal_taxon)) %>%
     
     # Filter out Clinical/Human hosts
-    filter(!str_detect(plant_host, "homo sapiens|human|carcinoma|patient|infant|clinical")) %>%
+    filter(is.na(plant_host) | !str_detect(plant_host, "homo sapiens|human|carcinoma|patient|infant|clinical")) %>%
     
     # Standardize categoricals
     mutate(
