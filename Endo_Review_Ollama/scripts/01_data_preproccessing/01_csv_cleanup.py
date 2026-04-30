@@ -72,12 +72,15 @@ def heal_and_align():
     middle_overflow = 0
     middle_short = 0
     overflow_extra_parts = 0
+    rows_gt_15_parts = 0
     unbalanced_quote_lines = 0
     for line in data_lines:
         sanitized, had_unbalanced_quotes = sanitize_line(line)
         if had_unbalanced_quotes:
             unbalanced_quote_lines += 1
         parts = [p.strip() for p in sanitized.split(',')]
+        if len(parts) > 15:
+            rows_gt_15_parts += 1
         
         # Initialize an empty 15-slot row
         row = ["NA"] * 15
@@ -173,6 +176,7 @@ def heal_and_align():
     print(f"  Rows with unbalanced quotes fixed: {unbalanced_quote_lines}")
     print(f"  DOI anchor hits: {doi_anchor_hits} | misses: {doi_anchor_misses}")
     print(f"  Missing data_source: {missing_data_source} | missing source_file: {missing_source_file}")
+    print(f"  Rows with >15 raw parts: {rows_gt_15_parts}")
     print(
         f"  Middle columns: exact={middle_exact} overflow={middle_overflow} short={middle_short}"
     )

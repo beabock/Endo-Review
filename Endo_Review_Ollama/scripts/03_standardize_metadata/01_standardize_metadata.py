@@ -428,7 +428,9 @@ def run_standardization(input_file=DEFAULT_INPUT_FILE, output_file=DEFAULT_OUTPU
             if 'primary_guild' in h_idx:
                 row[h_idx['primary_guild']] = standardize_value(row[h_idx['primary_guild']], GUILD_MAP)
             if 'biome' in h_idx:
-                row[h_idx['biome']] = standardize_value(row[h_idx['biome']], BIOME_MAP)
+                row[h_idx['biome']] = standardize_value(
+                    row[h_idx['biome']], BIOME_MAP, match_mode='word'
+                )
             if 'country' in h_idx:
                 row[h_idx['country']] = standardize_value(
                     row[h_idx['country']], COUNTRY_MAP, match_mode='word'
