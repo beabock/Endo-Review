@@ -15,6 +15,7 @@ cd "$PROJECT_ROOT"
 
 # Ensure log/output directory exists before writing job logs/artifacts
 mkdir -p results/logs
+mkdir -p .rlibs/R/library
 
 # Load necessary modules
 module purge
@@ -36,6 +37,9 @@ if ! "$PYTHON_BIN" -c "import pandas" >/dev/null 2>&1; then
     "$PYTHON_BIN" -m pip install --upgrade pip pandas
 fi
 
+# Keep R packages in a project-local library so Monsoon can write installs.
+export R_LIBS_USER="$PROJECT_ROOT/.rlibs/R/library"
+
 echo "--- Environment Preflight ---"
 "$PYTHON_BIN" - <<'PY'
 import sys
@@ -54,9 +58,9 @@ Rscript -e "if (!requireNamespace('stringr', quietly=TRUE)) stop('Missing R pack
 Rscript -e "if (!requireNamespace('jsonlite', quietly=TRUE)) stop('Missing R package: jsonlite')"
 # Ensure geographic/R spatial packages are available; attempt non-interactive install if missing.
 # Note: 'sf' may require system dependencies; installation will fail if system libs are missing.
-Rscript -e "if (!requireNamespace('sf', quietly=TRUE)) { try(install.packages('sf', repos='https://cloud.r-project.org'), silent=FALSE); if (!requireNamespace('sf', quietly=TRUE)) stop('Missing R package: sf (and automatic install failed)') }"
-Rscript -e "if (!requireNamespace('rnaturalearth', quietly=TRUE)) { install.packages('rnaturalearth', repos='https://cloud.r-project.org') }"
-Rscript -e "if (!requireNamespace('rnaturalearthdata', quietly=TRUE)) { install.packages('rnaturalearthdata', repos='https://cloud.r-project.org') }"
+Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('sf', quietly=TRUE)) { install.packages('sf', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org'); if (!requireNamespace('sf', quietly=TRUE)) stop('Missing R package: sf (and automatic install failed)') }"
+Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('rnaturalearth', quietly=TRUE)) { install.packages('rnaturalearth', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org') }"
+Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('rnaturalearthdata', quietly=TRUE)) { install.packages('rnaturalearthdata', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org') }"
 
 echo "--- Starting Python Processing ---"
 echo "Step 1: Standardizing Metadata..."
