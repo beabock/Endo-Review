@@ -19,7 +19,7 @@ mkdir -p results/logs
 # Load necessary modules
 module purge
 module load python/3.11
-module load R/4.3.1  # Or the version available on Monsoon
+module load R/4.5.2  # Use an available Monsoon R module version
 
 echo "--- Environment Preflight ---"
 python - <<'PY'
