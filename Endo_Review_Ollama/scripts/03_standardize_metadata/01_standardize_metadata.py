@@ -83,7 +83,7 @@ BIOME_MAP = {
     'western ghats': 'mountain',
     'northeast-iran': 'desert',
     'tropics': 'tropical forest',
-    'agricultur': 'agriculture', 'field': 'agriculture', 'orchard': 'agriculture', 
+    'agricultural': 'agriculture', 'agriculture': 'agriculture', 'field': 'agriculture', 'orchard': 'agriculture', 
     'vineyard': 'agriculture', 'viticulture': 'agriculture', 'farmland': 'agriculture',
     'agroecosystem': 'agriculture', 'nursery': 'agriculture',
     'forest': 'forest', 'woodland': 'forest', 'rainforest': 'forest',
@@ -161,14 +161,14 @@ def load_gbif_taxon_whitelists(taxon_tsv=GBIF_TAXON_TSV):
                 if standardize_value(row.get('taxonomicStatus', '')).lower() != 'accepted':
                     continue
 
-                kingdom = standardize_value(row.get('kingdom', ''))
-                if kingdom not in {'Fungi', 'Plantae'}:
+                kingdom = standardize_value(row.get('kingdom', '')).lower()
+                if kingdom not in {'fungi', 'plantae'}:
                     continue
 
                 phylum = normalize_taxon_label(row.get('phylum', ''))
                 class_name = normalize_taxon_label(row.get('class', ''))
 
-                if kingdom == 'Fungi':
+                if kingdom == 'fungi':
                     if phylum:
                         fungal_phyla.add(phylum)
                     if class_name:
