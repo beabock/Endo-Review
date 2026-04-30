@@ -5,7 +5,7 @@ library(dplyr)
 library(grid)
 
 source("scripts/utils/disputed_territory_parent_iso.R")
-source("scripts/plotting/theme_utils.R")
+source("scripts/05_plotting/theme_utils.R")
 
 # Load the enriched country-level data
 country_papers <- read.csv("data/country_enriched_data.csv")
