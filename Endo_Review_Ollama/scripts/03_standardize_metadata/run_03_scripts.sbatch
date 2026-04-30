@@ -20,14 +20,20 @@ mkdir -p results/logs
 module purge
 module load R/4.5.2  # Use an available Monsoon R module version
 
-# Prefer the project virtual environment if it exists on the cluster.
+# Prefer the project virtual environment if it exists; otherwise bootstrap one.
 if [ -x ".venv/bin/python" ]; then
     PYTHON_BIN=".venv/bin/python"
 elif [ -x ".venv/Scripts/python.exe" ]; then
     PYTHON_BIN=".venv/Scripts/python.exe"
 else
     module load python/3.11
-    PYTHON_BIN="$(command -v python)"
+    python -m venv .venv
+    PYTHON_BIN=".venv/bin/python"
+fi
+
+# Ensure pandas is available in the interpreter used by the pipeline.
+if ! "$PYTHON_BIN" -c "import pandas" >/dev/null 2>&1; then
+    "$PYTHON_BIN" -m pip install --upgrade pip pandas
 fi
 
 echo "--- Environment Preflight ---"
