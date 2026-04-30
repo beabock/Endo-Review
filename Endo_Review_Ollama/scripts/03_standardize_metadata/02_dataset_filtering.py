@@ -17,7 +17,7 @@ get_excluded_phyla = taxon_mapping.get_excluded_phyla
 get_excluded_classes = taxon_mapping.get_excluded_classes
 get_excluded_guilds = taxon_mapping.get_excluded_guilds
 
-INPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_final.csv'
+INPUT_FILE = 'data/Ollama_cleaned_synresolved_standardized_year.csv'
 OUTPUT_FILE = 'data/Ollama_cleaned_synresolved_filtered.csv'
 FILTERED_ROWS_FILE = 'results/logs/filtered_rows.csv'
 

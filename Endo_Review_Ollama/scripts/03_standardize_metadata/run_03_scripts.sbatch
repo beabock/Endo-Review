@@ -70,6 +70,13 @@ else
     echo "Skipping Step 1 (START_STEP=${START_STEP})"
 fi
 
+echo "Step 1a: Enriching Publication Year..."
+if [ "${START_STEP:-1}" -le 1 ]; then
+    "$PYTHON_BIN" scripts/03_standardize_metadata/01a_enrich_publication_year.py
+else
+    echo "Skipping Step 1a (START_STEP=${START_STEP})"
+fi
+
 echo "Step 2: Filtering Dataset..."
 if [ "${START_STEP:-1}" -le 2 ]; then
     "$PYTHON_BIN" scripts/03_standardize_metadata/02_dataset_filtering.py
@@ -91,4 +98,23 @@ echo "Step 5: Generating Dataset Summary..."
 echo "Step 6: Running pre-analysis QA check..."
 "$PYTHON_BIN" scripts/03_standardize_metadata/06_preanalysis_check.py
 
-echo "Pipeline complete. Check the 'data' folder for enriched CSVs."
+echo "--- Starting Stage 04 Analyses ---"
+echo "Running Geographic Bias Analysis..."
+Rscript scripts/04_analyses/01_country_gdp_latitude_analysis.R
+
+echo "Running Taxonomic Bias Analysis..."
+Rscript scripts/04_analyses/02_taxonomy.R
+
+echo "Running Geographic Bias Mapping..."
+Rscript scripts/04_analyses/03_geographic_bias_mapping.R
+
+echo "Running Fungal Taxonomic Bias Analysis..."
+"$PYTHON_BIN" scripts/04_analyses/03_fungal_taxonomic_bias.py
+
+echo "Running Interaction Bias Analysis (with statistical tests)..."
+Rscript scripts/04_analyses/04_interaction_bias.R
+
+echo "Running Manuscript Summary Generation..."
+"$PYTHON_BIN" scripts/04_analyses/05_manuscript_summary.py
+
+echo "Pipeline complete. Check the 'data' folder for enriched CSVs and 'results' folder for analyses."
