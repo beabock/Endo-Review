@@ -16,6 +16,25 @@ GBIF_TAXON_FILE <- "data/Reference_datasets/gbif_backbone/Taxon.tsv"
 PBDB_FILE <- "data/Reference_datasets/pbdb_all.csv"
 OUTPUT_DIR <- "results/taxonomy_analysis"
 
+resolve_existing_path <- function(candidates) {
+	for (p in candidates) {
+		if (file.exists(p)) {
+			return(p)
+		}
+	}
+	return(candidates[[1]])
+}
+
+GBIF_TAXON_FILE <- resolve_existing_path(c(
+	GBIF_TAXON_FILE,
+	"../data/Reference_datasets/gbif_backbone/Taxon.tsv"
+))
+
+PBDB_FILE <- resolve_existing_path(c(
+	PBDB_FILE,
+	"../data/Reference_datasets/pbdb_all.csv"
+))
+
 SUMMARY_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_summary.csv")
 PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_by_phylum.csv")
 GENUS_PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_genus_coverage_by_phylum.csv")
@@ -47,12 +66,11 @@ study_data <- read_csv(
 		paper_id,
 		plant_host_resolved,
 		plant_host_status,
-		plant_host_accepted_ids,
-		plant_host_kingdom
+		plant_host_accepted_ids
 	)
 )
 
-required_cols <- c("paper_id", "plant_host_resolved", "plant_host_accepted_ids", "plant_host_kingdom")
+required_cols <- c("paper_id", "plant_host_resolved", "plant_host_accepted_ids")
 missing_cols <- setdiff(required_cols, names(study_data))
 if (length(missing_cols) > 0) {
 	stop("Missing required columns in input data: ", paste(missing_cols, collapse = ", "))
@@ -88,12 +106,12 @@ resolve_phylum_from_lineage <- function(start_taxon_id, parent_map, phylum_map, 
 	current <- start_taxon_id
 	steps <- 0
 	while (!is.na(current) && current != "" && steps < max_steps) {
-		p <- phylum_map[[current]]
-		if (!is.null(p) && !is.na(p) && p != "") {
+		p <- unname(phylum_map[current])
+		if (length(p) > 0 && !is.na(p) && p != "") {
 			return(p)
 		}
-		next_id <- parent_map[[current]]
-		if (is.null(next_id) || is.na(next_id) || next_id == "" || identical(next_id, current)) {
+		next_id <- unname(parent_map[current])
+		if (length(next_id) == 0 || is.na(next_id) || next_id == "" || identical(next_id, current)) {
 			break
 		}
 		current <- next_id
@@ -214,16 +232,13 @@ study_species_links <- study_data %>%
 	mutate(
 		paper_id = as.character(paper_id),
 		plant_host_accepted_ids = as.character(plant_host_accepted_ids),
-		plant_host_resolved = as.character(plant_host_resolved),
-		plant_host_kingdom = as.character(plant_host_kingdom)
+		plant_host_resolved = as.character(plant_host_resolved)
 	) %>%
 	filter(
 		!is.na(paper_id),
 		paper_id != "",
 		!is.na(plant_host_accepted_ids),
-		plant_host_accepted_ids != "",
-		!is.na(plant_host_kingdom),
-		plant_host_kingdom == "Plantae"
+		plant_host_accepted_ids != ""
 	) %>%
 	mutate(accepted_id = str_split(plant_host_accepted_ids, "\\s*;\\s*")) %>%
 	unnest_longer(accepted_id) %>%
@@ -246,7 +261,7 @@ coverage_pct <- if (total_known_plant_species > 0) {
 
 coverage_summary <- tibble(
 	dataset_rows = nrow(study_data),
-	rows_with_plantae_host = sum(study_data$plant_host_kingdom == "Plantae", na.rm = TRUE),
+	rows_with_plantae_host = sum(!is.na(study_data$plant_host_accepted_ids) & study_data$plant_host_accepted_ids != "", na.rm = TRUE),
 	unique_papers_with_plantae_host_ids = n_distinct(study_species_links$paper_id),
 	unique_plantae_accepted_ids_in_dataset = n_distinct(study_species_links$accepted_id),
 	unique_plantae_species_matched_to_gbif = studied_species_count,

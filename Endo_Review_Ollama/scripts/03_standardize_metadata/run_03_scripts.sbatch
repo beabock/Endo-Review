@@ -120,24 +120,4 @@ echo "Step 5: Generating Dataset Summary..."
 
 echo "Step 6: Running pre-analysis QA check..."
 "$PYTHON_BIN" scripts/03_standardize_metadata/06_preanalysis_check.py
-
-echo "--- Starting Stage 04 Analyses ---"
-echo "Running Geographic Bias Analysis..."
-Rscript scripts/04_analyses/01_country_gdp_latitude_analysis.R
-
-echo "Running Taxonomic Bias Analysis..."
-Rscript scripts/04_analyses/02_taxonomy.R
-
-echo "Running Geographic Bias Mapping..."
-Rscript scripts/04_analyses/03_geographic_bias_mapping.R
-
-echo "Running Fungal Taxonomic Bias Analysis..."
-"$PYTHON_BIN" scripts/04_analyses/03_fungal_taxonomic_bias.py
-
-echo "Running Interaction Bias Analysis (with statistical tests)..."
-Rscript scripts/04_analyses/04_interaction_bias.R
-
-echo "Running Manuscript Summary Generation..."
-"$PYTHON_BIN" scripts/04_analyses/05_manuscript_summary.py
-
-echo "Pipeline complete. Check the 'data' folder for enriched CSVs and 'results' folder for analyses."
+echo "Stage 03 complete. Check the 'data' folder for enriched CSVs and 'results' for QA outputs."

@@ -2360,3 +2360,475 @@ row_index,paper_id,interaction_id,field_name,raw_token,cleaned_token,resolution_
 3980,doi:10.3390/biology10020100,int_f10204c4a3dec323,fungal_taxon,cryphonectria hypovirus 4 (chv4),cryphonectria hypovirus,no_match,False,0,0.00
 3981,doi:10.1093/femsec/fiv012,int_1f0be57796202571,fungal_taxon,ascomycetes,ascomycetes,no_match,False,0,0.00
 3982,doi:10.1093/femsec/fiv012,int_df74b39ca38bde56,fungal_taxon,basidiomycetes (various species not identified),basidiomycetes,no_match,False,0,0.00
+3983,doi:10.1038/s41598-022-06708-4,int_67cb6b8cba0ff47b,fungal_taxon,unknown (extracted by 16s rrna,unknown extracted,no_match,False,0,0.00
+3983,doi:10.1038/s41598-022-06708-4,int_67cb6b8cba0ff47b,fungal_taxon,its),its,no_match,False,0,0.00
+3984,doi:10.1094/phyto-72-1217,int_c95fd1882b706591,fungal_taxon,phytophthora megasperma f. sp. glycinea (pmg),phytophthora megasperma,no_match,False,0,0.00
+3987,doi:10.1016/j.biocontrol.2015.09.002,int_26c3d4f1ff4c1528,fungal_taxon,bacillus sp.,bacillus,no_match,False,0,0.00
+3995,doi:10.3390/ijms252313088,int_980ea20b30eb204c,fungal_taxon,penicillium polandii,penicillium polandii,no_match,False,0,0.00
+3998,doi:10.1080/01448765.2006.9755326,int_e34b2d1d82b0edc8,fungal_taxon,'t. viride',t. viride,abbreviation_context_first,True,4,0.55
+3999,doi:10.1080/01448765.2006.9755326,int_5427db0f212a870d,fungal_taxon,'t. hamatum',t. hamatum,abbreviation_context_first,True,2,0.55
+4002,doi:10.1007/s00114-016-1370-3,int_e5d9b73a186c2724,fungal_taxon,nocardiopsis prasina,nocardiopsis prasina,no_match,False,0,0.00
+4004,doi:10.1093/jee/42.6.942,int_b0e179c28c013f87,fungal_taxon,aeolus sp.,aeolus,no_match,False,0,0.00
+4004,doi:10.1093/jee/42.6.942,int_b0e179c28c013f87,plant_host,sugar beet (beta vulgaris),sugar beet,no_match,False,0,0.00
+4007,doi:10.1017/s0953756298006285,int_dd170fa28e86629d,fungal_taxon,tiarasporella parca,tiarasporella parca,no_match,False,0,0.00
+4009,doi:10.1017/s0953756298006285,int_7f90bb657ffed429,fungal_taxon,sclerophoma pythiophila,sclerophoma pythiophila,no_match,False,0,0.00
+4021,doi:10.3389/fmicb.2019.02565,int_a0f569b764216a5c,fungal_taxon,microdochium bolley,microdochium bolley,no_match,False,0,0.00
+4023,doi:10.1007/s11104-017-3503-7,int_eab92321cbc97cd6,fungal_taxon,dark septate endophytic fungi,dark septate,no_match,False,0,0.00
+4023,doi:10.1007/s11104-017-3503-7,int_eab92321cbc97cd6,plant_host,vellozia species,vellozia species,no_match,False,0,0.00
+4024,doi:10.1007/s13225-010-0023-7,int_52ab27e265dee07d,fungal_taxon,endophyte species not specified,endophyte species,no_match,False,0,0.00
+4033,doi:10.1016/j.ejsobi.2021.103334,int_6f96bf44c5eb4a14,plant_host,beech,beech,no_match,False,0,0.00
+4034,doi:10.1016/j.ejsobi.2021.103334,int_cb5cf3df9f851ca2,plant_host,corsican pine,corsican pine,no_match,False,0,0.00
+4035,doi:10.1016/j.ejsobi.2021.103334,int_9737fb50dbf32d8e,plant_host,unspecified coppice with standards,unspecified coppice,no_match,False,0,0.00
+4037,doi:10.1111/j.1365-313x.2007.03028.x,int_0831cf8585d9c4b6,fungal_taxon,basidiomycete),basidiomycete,no_match,False,0,0.00
+4039,doi:10.3389/fmicb.2021.778327,int_3f2298059f1a6b1d,fungal_taxon,neocamarosporium f_otu_388,neocamarosporium f,no_match,False,0,0.00
+4040,doi:10.3389/fmicb.2021.778327,int_bc9d4a149fa41453,fungal_taxon,f_otu_404,f. otu,no_match,False,0,0.00
+4041,doi:10.3389/fmicb.2021.778327,int_b0d670e0d0566b4a,fungal_taxon,f_otu_445,f. otu,no_match,False,0,0.00
+4042,doi:10.3389/fmicb.2021.778327,int_440bfdecd128aba7,fungal_taxon,unassigned fungi f_otu_704,unassigned fungi,no_match,False,0,0.00
+4043,doi:10.3389/fmicb.2021.778327,int_d8797ee68052b736,fungal_taxon,f_otu_767,f. otu,no_match,False,0,0.00
+4050,doi:10.1016/j.scienta.2019.108991,int_f4c69db13812c0cb,fungal_taxon,'aurobassium pullunts',aurobassium pullunts,no_match,False,0,0.00
+4052,doi:10.1007/s00248-016-0907-5,int_9261e6b60f8aeae4,fungal_taxon,['streptomyces',streptomyces,no_match,False,0,0.00
+4052,doi:10.1007/s00248-016-0907-5,int_9261e6b60f8aeae4,plant_host,andropogon gerardii,andropogon gerardii,no_match,False,0,0.00
+4053,doi:10.1007/s00248-016-0907-5,int_d186c674c8792199,plant_host,andropogon gerardii,andropogon gerardii,no_match,False,0,0.00
+4055,doi:10.3389/fmicb.2020.609952,int_1f1e1f322b4e5c68,plant_host,rhizosphere of mangroves (thai mangrove nature reserve),rhizosphere of,no_match,False,0,0.00
+4060,doi:10.1016/j.indcrop.2022.116005,int_34484cadfdfceb82,fungal_taxon,penicillum oxalicum g17,penicillum oxalicum,no_match,False,0,0.00
+4061,doi:10.5943/mycosphere/11/1/20,int_368d96dad7b6337d,fungal_taxon,basal fungi,basal fungi,no_match,False,0,0.00
+4064,doi:10.1371/journal.pone.0078866,int_8badb76b3b2f07e0,plant_host,human skin (malassezia host),human skin,no_match,False,0,0.00
+4065,doi:10.1371/journal.pone.0078866,int_810be646182a1e70,plant_host,human skin (malassezia host),human skin,no_match,False,0,0.00
+4066,doi:10.1371/journal.pone.0078866,int_f807a38a1522f755,plant_host,human skin (malassezia host),human skin,no_match,False,0,0.00
+4067,doi:10.1371/journal.pone.0078866,int_19b2fce2c08307d8,plant_host,human skin (malassezia host),human skin,no_match,False,0,0.00
+4071,doi:10.1093/jambio/lxad090,int_2e8f48ff2485626e,fungal_taxon,'trichoderma aff. crassum g1c'],trichoderma aff.,no_match,False,0,0.00
+4077,doi:10.1007/s00248-006-9123-z,int_fb527c461fc473d3,plant_host,arizona fescue (festuca arizonica),arizona fescue,no_match,False,0,0.00
+4088,doi:10.1007/s10661-023-11842-1,int_97baee752af03194,fungal_taxon,unknown (triadimefon is a fungicide,unknown triadimefon,no_match,False,0,0.00
+4090,doi:10.18699/vj19.457,int_012363280172bef5,fungal_taxon,endophyte,endophyte,no_match,False,0,0.00
+4092,doi:10.1016/j.colsurfb.2012.11.011,int_71f326aedca533ec,fungal_taxon,tebuconazole (fungicide),tebuconazole,no_match,False,0,0.00
+4096,doi:10.1080/15592324.2022.2030082,int_a6a41fb69a77592a,fungal_taxon,other root endophytic fungi,other root,no_match,False,0,0.00
+4096,doi:10.1080/15592324.2022.2030082,int_a6a41fb69a77592a,plant_host,agricultural plants,agricultural plants,no_match,False,0,0.00
+4098,doi:10.1371/journal.pone.0237478,int_659cb8d9e2e1edaa,fungal_taxon,endophytic fungus,endophytic fungus,no_match,False,0,0.00
+4099,doi:10.1016/j.bmc.2019.115279,int_35ec73d5b2ddf93a,fungal_taxon,5-epi-nakijiquinone q,-epi-nakijiquinone q,no_match,False,0,0.00
+4099,doi:10.1016/j.bmc.2019.115279,int_35ec73d5b2ddf93a,fungal_taxon,5-epi-ilimaquinone (marine nc),-epi-ilimaquinone,no_match,False,0,0.00
+4099,doi:10.1016/j.bmc.2019.115279,int_35ec73d5b2ddf93a,plant_host,pancreatic carcinoma cells,pancreatic carcinoma,no_match,False,0,0.00
+4100,doi:10.1016/j.bmc.2019.115279,int_a773bf91c8c6b988,fungal_taxon,secalonic acid f (fungal compound),secalonic acid,no_match,False,0,0.00
+4100,doi:10.1016/j.bmc.2019.115279,int_a773bf91c8c6b988,plant_host,pancreatic carcinoma cells,pancreatic carcinoma,no_match,False,0,0.00
+4103,doi:10.1080/07060661.2014.927791,int_a5a92aab8c37b747,fungal_taxon,'u. hordei'],u. hordei,abbreviation_context_first,True,2,0.55
+4133,doi:10.5423/ppj.2009.25.3.280,int_126e0dcecc1cbd8c,fungal_taxon,pseudoperonospora cubensis (downy mildew),pseudoperonospora cubensis,no_match,False,0,0.00
+4134,doi:10.3390/jof10070474,int_883567a5e7e4688a,fungal_taxon,halophilomyces hongkongensis,halophilomyces hongkongensis,no_match,False,0,0.00
+4136,doi:10.1016/j.chemosphere.2018.05.093,int_13d6252c2014f184,plant_host,oryzias latipes,oryzias latipes,no_match,False,0,0.00
+4137,doi:10.1016/j.chemosphere.2018.05.093,int_45c468d4b3eaffbd,plant_host,daphnia magna,daphnia magna,no_match,False,0,0.00
+4138,doi:10.1016/j.chemosphere.2018.05.093,int_8d89e3144086d2d9,plant_host,brachionus calyciflorus,brachionus calyciflorus,no_match,False,0,0.00
+4139,doi:10.1016/j.chemosphere.2018.05.093,int_dfda2360bbaf9bab,plant_host,heterocypris incongruens,heterocypris incongruens,no_match,False,0,0.00
+4140,doi:10.1016/j.chemosphere.2018.05.093,int_40ba37c93e32ebe9,plant_host,soirodela polyrhiza,soirodela polyrhiza,no_match,False,0,0.00
+4143,doi:10.1111/mec.15828,int_6f835db3b1ec3a5f,fungal_taxon,root-associated fungi (ectomycorrhizal,root-associated fungi,no_match,False,0,0.00
+4145,doi:10.1111/mec.15828,int_b3d0cd31a373d02c,fungal_taxon,root-associated fungi (ectomycorrhizal,root-associated fungi,no_match,False,0,0.00
+4145,doi:10.1111/mec.15828,int_b3d0cd31a373d02c,plant_host,possibly multiple plants),possibly multiple,no_match,False,0,0.00
+4146,doi:10.1111/mec.15828,int_f651ee6151fdac12,plant_host,possibly multiple plants),possibly multiple,no_match,False,0,0.00
+4157,doi:10.5941/myco.2017.45.3.178,int_8dd297e9eaf07b6a,fungal_taxon,penicillium amestolkiae elv609,penicillium amestolkiae,no_match,False,0,0.00
+4158,doi:10.3390/ijms24021672,int_fab6752b04038e50,plant_host,karlodinium veneficum,karlodinium veneficum,no_match,False,0,0.00
+4159,doi:10.1111/j.1365-2745.2007.01245.x,int_a7633e9f540ad731,fungal_taxon,chaetomium species,chaetomium species,no_match,False,0,0.00
+4168,doi:10.1016/j.rhisph.2022.100656,int_d99a56d649ae9a69,fungal_taxon,mortierellomycota],mortierellomycota,no_match,False,0,0.00
+4172,doi:10.1371/journal.pone.0310442,int_c3e0dd438f571e07,fungal_taxon,'tinctoporellus epi-miltinus'],tinctoporellus epi-miltinus,no_match,False,0,0.00
+4174,doi:10.1007/s10266-018-0366-1,int_6d451820f375b70f,plant_host,mus musculus (mouse),mus musculus,no_match,False,0,0.00
+4181,doi:10.3389/fagro.2022.1021028,int_68308283fd93d27d,fungal_taxon,aspergillus tamari,aspergillus tamari,no_match,False,0,0.00
+4184,doi:10.1016/j.phytochem.2014.12.016,int_910e1cb867bf1829,fungal_taxon,nigrospora sps.,nigrospora sps.,no_match,False,0,0.00
+4198,doi:10.1002/ecy.2976,int_1c5fc4cc7db45974,fungal_taxon,glomeromycotina,glomeromycotina,no_match,False,0,0.00
+4199,doi:10.1007/s00248-019-01340-8,int_03e468a7eca54377,fungal_taxon,multiple genera (pathogens mentioned but not specified),multiple genera,no_match,False,0,0.00
+4201,doi:10.1111/j.1439-0434.2005.01042.x,int_f04e4f927bd26154,fungal_taxon,['pseudomonas fluorescens migula',pseudomonas fluorescens,no_match,False,0,0.00
+4210,doi:10.1094/php-02-21-0044-fi,int_b676b196a42ce1a5,fungal_taxon,phytophthora infestans,phytophthora infestans,no_match,False,0,0.00
+4211,doi:10.1093/jee/toy423,int_f2a6515d29072b37,plant_host,california sycamore (platanus racemose nutt.),california sycamore,no_match,False,0,0.00
+4219,doi:10.1371/journal.pone.0196870,int_54a34f823529ce97,fungal_taxon,daldinia cf. concentrica,daldinia cf.,no_match,False,0,0.00
+4229,doi:10.1002/ecy.2790,int_f68b9da7bd4fec6e,fungal_taxon,fungal endophytes (unspecified),fungal endophytes,no_match,False,0,0.00
+4229,doi:10.1002/ecy.2790,int_f68b9da7bd4fec6e,plant_host,woody plant species (unspecified),woody plant,no_match,False,0,0.00
+4231,doi:10.1007/s13225-015-0324-y,int_6504286ff003a9ed,plant_host,dactylidis (not specified in genus),dactylidis,no_match,False,0,0.00
+4232,doi:10.3390/molecules27093033,int_7ebfdd3fc2eba32e,plant_host,cliona sp.,cliona,no_match,False,0,0.00
+4234,doi:10.3390/md20030210,int_3520b5b408f688d6,plant_host,fucus vesiculosus,fucus vesiculosus,no_match,False,0,0.00
+4237,doi:10.1016/j.sajb.2020.03.008,int_257a8172c3189452,fungal_taxon,'quantity': '11'},quantity,no_match,False,0,0.00
+4239,doi:10.1016/j.sajb.2020.03.008,int_af20adf39dbb889d,fungal_taxon,'species': [{'scientific_name': 'nigrospora sphaerica',species scientific,no_match,False,0,0.00
+4240,doi:10.1016/j.sajb.2020.03.008,int_fda10b8e04ddb031,fungal_taxon,'isolate': 'cel 5,isolate cel,no_match,False,0,0.00
+4241,doi:10.1016/j.sajb.2020.03.008,int_e8a179ac47f430d3,fungal_taxon,cel 19'},cel,no_match,False,0,0.00
+4243,doi:10.1016/j.sajb.2020.03.008,int_71f31d641a14c270,fungal_taxon,'isolate': 'cel 2'}]},isolate cel,no_match,False,0,0.00
+4245,doi:10.1016/j.sajb.2020.03.008,int_12e1a28aec6ebc28,fungal_taxon,'quantity': '2'},quantity,no_match,False,0,0.00
+4247,doi:10.1016/j.sajb.2020.03.008,int_36f3f569a87cf602,fungal_taxon,'quantity': '2'},quantity,no_match,False,0,0.00
+4249,doi:10.1016/j.sajb.2020.03.008,int_0679c9584ec4b2fe,fungal_taxon,'quantity': '1'},quantity,no_match,False,0,0.00
+4251,doi:10.1016/j.sajb.2020.03.008,int_d56c54de3bba9dd7,fungal_taxon,'quantity': '1'}],quantity,no_match,False,0,0.00
+4252,doi:10.1080/07060660709507432,int_670b914128855b86,fungal_taxon,bremia lactucae,bremia lactucae,no_match,False,0,0.00
+4254,doi:10.1016/j.phymed.2018.01.006,int_1603ae496e9cfed8,fungal_taxon,el002332,el,no_match,False,0,0.00
+4263,doi:10.1016/j.mrgentox.2017.12.008,int_a8be5959776160dd,plant_host,swiss albino mouse,swiss albino,no_match,False,0,0.00
+4269,doi:10.1016/j.indcrop.2023.117147,int_9d072223100a26c9,fungal_taxon,['acrocalymma aquatica',acrocalymma aquatica,no_match,False,0,0.00
+4277,doi:10.1094/phyto-81-636,int_4a15c65bf9b384af,fungal_taxon,phytophthora sp.,phytophthora,no_match,False,0,0.00
+4278,doi:10.1094/phyto-81-636,int_7ea52b72b6df45b7,fungal_taxon,pyrenobotrys compacta,pyrenobotrys compacta,no_match,False,0,0.00
+4280,doi:10.1016/j.jphotobiol.2018.02.005,int_96b209d8a3b6ccee,plant_host,chetomorpha antennina,chetomorpha antennina,no_match,False,0,0.00
+4281,doi:10.1111/oik.08987,int_9d5f77a9d1e830f9,fungal_taxon,root endophytic fungi (not specified species),root endophytic,no_match,False,0,0.00
+4283,doi:10.1007/s11540-018-9359-2,int_13692e5fe712bfb2,fungal_taxon,unknown (late blight pathogen,unknown late,no_match,False,0,0.00
+4284,doi:10.1007/s11540-018-9359-2,int_182d1a53f1e076ac,fungal_taxon,brown rot pathogen),brown rot,no_match,False,0,0.00
+4289,doi:10.1016/j.cropro.2023.106232,int_13069adc3d3b6e7b,fungal_taxon,phytophthora meadii,phytophthora meadii,no_match,False,0,0.00
+4289,doi:10.1016/j.cropro.2023.106232,int_13069adc3d3b6e7b,plant_host,arecanut (areca catechu),arecanut,no_match,False,0,0.00
+4290,doi:10.1111/1365-2745.13689,int_cacaa25ae47ddd33,fungal_taxon,four unspecified fungal pathogens,four unspecified,no_match,False,0,0.00
+4291,doi:10.1007/s00425-025-04684-3,int_677fc5d951c6f971,fungal_taxon,epichlo? occultans,epichlo occultans,no_match,False,0,0.00
+4297,doi:10.3389/fmicb.2021.786619,int_449c9ac20fe297bb,fungal_taxon,epichloë festucae leuchtm.,epichlo festucae,no_match,False,0,0.00
+4298,doi:10.3389/fmicb.2021.786619,int_982bc14d80ab6fee,fungal_taxon,schardl & m.r. siegel,schardl m.r.,no_match,False,0,0.00
+4300,doi:10.3389/fmicb.2021.786619,int_daf321bbdca7d443,fungal_taxon,sitobion sp.,sitobion,no_match,False,0,0.00
+4311,doi:10.7818/ecos.2429,int_c7414d3b7f70d6cc,fungal_taxon,dark septate fungi (hso),dark septate,no_match,False,0,0.00
+4317,doi:10.1111/1365-2664.14245,int_1d085c70f0d0cd96,fungal_taxon,[various,various,no_match,False,0,0.00
+4317,doi:10.1111/1365-2664.14245,int_1d085c70f0d0cd96,plant_host,lodgepole pine (pinus contorta),lodgepole pine,no_match,False,0,0.00
+4318,doi:10.1111/1365-2664.14245,int_2029bf600432d281,plant_host,lodgepole pine (pinus contorta),lodgepole pine,no_match,False,0,0.00
+4319,doi:10.1111/j.1469-8137.1995.tb03055.x,int_c6c7aa789fab3712,fungal_taxon,gams,gams,no_match,False,0,0.00
+4320,doi:10.3389/fmicb.2019.00651,int_b6ef6c5c16c4ff89,plant_host,tree leaves (various species),tree leaves,no_match,False,0,0.00
+4321,doi:10.3389/fmicb.2019.00651,int_11359f7e89bf144c,fungal_taxon,unspecified taxa from glomeromycota,unspecified taxa,no_match,False,0,0.00
+4321,doi:10.3389/fmicb.2019.00651,int_11359f7e89bf144c,plant_host,tree leaves (various species),tree leaves,no_match,False,0,0.00
+4322,doi:10.3389/fmicb.2019.00651,int_126e618d3bffeac7,plant_host,tree leaves (various species),tree leaves,no_match,False,0,0.00
+4323,doi:10.1007/s13213-019-01536-w,int_3b357ab8f1cec4cd,fungal_taxon,[{'name': 'trichoderma koningiopsis',name trichoderma,no_match,False,0,0.00
+4323,doi:10.1007/s13213-019-01536-w,int_3b357ab8f1cec4cd,plant_host,anticarsia gemmatalis (larval form),anticarsia gemmatalis,no_match,False,0,0.00
+4324,doi:10.1007/s13213-019-01536-w,int_60841a2682cd2d72,fungal_taxon,'strain': 'jusolcl039'},strain jusolcl,no_match,False,0,0.00
+4324,doi:10.1007/s13213-019-01536-w,int_60841a2682cd2d72,plant_host,anticarsia gemmatalis (larval form),anticarsia gemmatalis,no_match,False,0,0.00
+4325,doi:10.1007/s13213-019-01536-w,int_ec9de2ad7bb3749a,fungal_taxon,{'name': 'neurospora sp.',name neurospora,no_match,False,0,0.00
+4325,doi:10.1007/s13213-019-01536-w,int_ec9de2ad7bb3749a,plant_host,anticarsia gemmatalis (larval form),anticarsia gemmatalis,no_match,False,0,0.00
+4326,doi:10.1007/s13213-019-01536-w,int_c9fea835a0666490,fungal_taxon,'strain': 'juant070'},strain juant,no_match,False,0,0.00
+4326,doi:10.1007/s13213-019-01536-w,int_c9fea835a0666490,plant_host,anticarsia gemmatalis (larval form),anticarsia gemmatalis,no_match,False,0,0.00
+4327,doi:10.1007/s13213-019-01536-w,int_b912225c54dc268e,fungal_taxon,{'name': 'botryosphaeria rhodina',name botryosphaeria,no_match,False,0,0.00
+4327,doi:10.1007/s13213-019-01536-w,int_b912225c54dc268e,plant_host,anticarsia gemmatalis (larval form),anticarsia gemmatalis,no_match,False,0,0.00
+4328,doi:10.1007/s13213-019-01536-w,int_cb4fbcf3e6f75b6f,fungal_taxon,'strain': 'mamb-05'}],strain mamb-,no_match,False,0,0.00
+4328,doi:10.1007/s13213-019-01536-w,int_cb4fbcf3e6f75b6f,plant_host,anticarsia gemmatalis (larval form),anticarsia gemmatalis,no_match,False,0,0.00
+4330,doi:10.1371/journal.pone.0143353,int_9722351ae36b644e,fungal_taxon,[genetically distinct fungi,genetically distinct,no_match,False,0,0.00
+4331,doi:10.1371/journal.pone.0143353,int_50694dc2d9e89572,fungal_taxon,17 isolates with its analysis],isolates with,no_match,False,0,0.00
+4332,doi:10.1007/s13225-019-00426-5,int_949d6b8c8e2ac8d0,fungal_taxon,marine fungi (ascomycota,marine fungi,no_match,False,0,0.00
+4336,doi:10.1007/s13225-019-00426-5,int_f42095c842a2bcab,fungal_taxon,fungus-like organisms e.g. thraustochytriales),fungus-like organisms,no_match,False,0,0.00
+4343,doi:10.1111/1365-2745.12343,int_aabea650a277d91c,plant_host,48 cool season grasses (various species),cool season,no_match,False,0,0.00
+4344,doi:10.1111/1365-2745.12343,int_a5e41e40da04fdd4,fungal_taxon,ascomycetes: clavicipitaceae,ascomycetes clavicipitaceae,no_match,False,0,0.00
+4344,doi:10.1111/1365-2745.12343,int_a5e41e40da04fdd4,plant_host,48 cool season grasses (various species),cool season,no_match,False,0,0.00
+4345,doi:10.3390/f12010092,int_723de630ca2ec525,fungal_taxon,detrimental,detrimental,no_match,False,0,0.00
+4345,doi:10.3390/f12010092,int_723de630ca2ec525,fungal_taxon,beneficial fungi (not specified at species level),beneficial fungi,no_match,False,0,0.00
+4345,doi:10.3390/f12010092,int_723de630ca2ec525,plant_host,conspecific plants (not specified at species level),conspecific plants,no_match,False,0,0.00
+4347,doi:10.1016/j.soilbio.2017.05.007,int_f9dbb91d77d592da,fungal_taxon,potentially pathogenic fungi (not specified in species level),potentially pathogenic,no_match,False,0,0.00
+4349,doi:10.3389/fmicb.2019.02476,int_2834cad920b065af,fungal_taxon,novel clade sw-i,novel clade,no_match,False,0,0.00
+4352,doi:10.3390/insects15100744,int_02d658da2e9a6ffe,fungal_taxon,epichlo&euml,epichlo euml,no_match,False,0,0.00
+4352,doi:10.3390/insects15100744,int_02d658da2e9a6ffe,fungal_taxon,fungal endophytes,fungal endophytes,no_match,False,0,0.00
+4355,doi:10.1094/phyto-85-871,int_c437cbf07a9aebd5,fungal_taxon,phytophthora parasitica,phytophthora parasitica,no_match,False,0,0.00
+4358,doi:10.1093/oxfordjournals.aob.a090017,int_a0749898c2e305d7,fungal_taxon,endophytic mycorrhiza,endophytic mycorrhiza,no_match,False,0,0.00
+4359,doi:10.1093/oxfordjournals.aob.a090017,int_f8cf3fddf2aa4eaf,fungal_taxon,endophytic mycorrhiza,endophytic mycorrhiza,no_match,False,0,0.00
+4359,doi:10.1093/oxfordjournals.aob.a090017,int_f8cf3fddf2aa4eaf,plant_host,l,l,no_match,False,0,0.00
+4361,doi:10.3390/microorganisms10112250,int_b9d36d198485b682,fungal_taxon,cl. solani,cl. solani,no_match,False,0,0.00
+4362,doi:10.3390/microorganisms10112250,int_4aac2a26e07c73b1,fungal_taxon,cordyceps sp.,cordyceps,no_match,False,0,0.00
+4371,doi:10.3390/microorganisms10112250,int_ad8210ebe6a2b2fc,fungal_taxon,t. tomentosum,t. tomentosum,abbreviation_context_first,True,9,0.55
+4379,doi:10.3390/microorganisms10112250,int_32b422d145a26b6f,fungal_taxon,cl. solani,cl. solani,no_match,False,0,0.00
+4380,doi:10.3390/microorganisms10112250,int_ae132d0c1075aa82,fungal_taxon,cordyceps sp.,cordyceps,no_match,False,0,0.00
+4389,doi:10.3390/microorganisms10112250,int_5c42804285eab423,fungal_taxon,t. tomentosum,t. tomentosum,abbreviation_context_first,True,9,0.55
+4397,doi:10.1111/j.1570-7458.2008.00802.x,int_07f70358b2304390,fungal_taxon,bacon,bacon,no_match,False,0,0.00
+4398,doi:10.1111/j.1570-7458.2008.00802.x,int_e4b719292274c28b,fungal_taxon,price & hanlin),price hanlin,no_match,False,0,0.00
+4401,doi:10.1016/j.bbamcr.2024.119846,int_168fb38ee2f79b4a,fungal_taxon,endophytic fungus (not specifically mentioned),endophytic fungus,no_match,False,0,0.00
+4407,doi:10.1111/efp.12487,int_e2c49793c6b0069e,fungal_taxon,coniothyriumcomplex,coniothyriumcomplex,no_match,False,0,0.00
+4419,doi:10.1039/c8ra09886g,int_61ecbe6f2c206dc6,plant_host,clathria frondifera (marine sponge),clathria frondifera,no_match,False,0,0.00
+4420,doi:10.1016/j.arabjc.2022.104073,int_ea51ab0a1e02f1fa,plant_host,caenorhabditis elegans,caenorhabditis elegans,no_match,False,0,0.00
+4421,doi:10.1016/j.agsy.2022.103454,int_694b93207da58a5f,fungal_taxon,unspecified (mention of systemic fungicides,unspecified mention,no_match,False,0,0.00
+4421,doi:10.1016/j.agsy.2022.103454,int_694b93207da58a5f,fungal_taxon,contact fungicides),contact fungicides,no_match,False,0,0.00
+4421,doi:10.1016/j.agsy.2022.103454,int_694b93207da58a5f,plant_host,winter wheat,winter wheat,no_match,False,0,0.00
+4422,doi:10.1016/j.agsy.2022.103454,int_a338380ad66608b3,fungal_taxon,unspecified (mention of systemic fungicides,unspecified mention,no_match,False,0,0.00
+4422,doi:10.1016/j.agsy.2022.103454,int_a338380ad66608b3,fungal_taxon,contact fungicides),contact fungicides,no_match,False,0,0.00
+4422,doi:10.1016/j.agsy.2022.103454,int_a338380ad66608b3,plant_host,winter barley,winter barley,no_match,False,0,0.00
+4423,doi:10.1016/j.agsy.2022.103454,int_66a0da99027ae622,fungal_taxon,unspecified (mention of systemic fungicides,unspecified mention,no_match,False,0,0.00
+4423,doi:10.1016/j.agsy.2022.103454,int_66a0da99027ae622,fungal_taxon,contact fungicides),contact fungicides,no_match,False,0,0.00
+4423,doi:10.1016/j.agsy.2022.103454,int_66a0da99027ae622,plant_host,potato,potato,no_match,False,0,0.00
+4424,doi:10.1016/j.agsy.2022.103454,int_98131e567b7ba047,fungal_taxon,unspecified (mention of systemic fungicides,unspecified mention,no_match,False,0,0.00
+4424,doi:10.1016/j.agsy.2022.103454,int_98131e567b7ba047,fungal_taxon,contact fungicides),contact fungicides,no_match,False,0,0.00
+4424,doi:10.1016/j.agsy.2022.103454,int_98131e567b7ba047,plant_host,sugar beet,sugar beet,no_match,False,0,0.00
+4428,doi:10.1007/s00572-023-01111-x,int_106e574d59df4066,fungal_taxon,mucoromycotinian arbuscular mycorrhizal fungi (m-amf),mucoromycotinian arbuscular,no_match,False,0,0.00
+4429,doi:10.1007/s00572-023-01111-x,int_a175675d21dad573,fungal_taxon,glomeromycotinian amf (g-amf),glomeromycotinian amf,no_match,False,0,0.00
+4430,doi:10.1007/s00572-023-01111-x,int_e3e52335f6b4ccb2,fungal_taxon,mucoromycotinian arbuscular mycorrhizal fungi (m-amf),mucoromycotinian arbuscular,no_match,False,0,0.00
+4431,doi:10.1007/s00572-023-01111-x,int_d6a2a99b9f731159,fungal_taxon,glomeromycotinian amf (g-amf),glomeromycotinian amf,no_match,False,0,0.00
+4433,doi:10.1016/j.indcrop.2021.114443,int_ffb0e361fbed0389,fungal_taxon,'tricuderma virens'],tricuderma virens,no_match,False,0,0.00
+4435,doi:10.1016/j.clinthera.2008.04.020,int_1fd5271483880c75,plant_host,human,human,no_match,False,0,0.00
+4437,doi:10.1080/07060660909507572,int_5314abf0cca080df,plant_host,perennial ryegrass (lolium perenne),perennial ryegrass,no_match,False,0,0.00
+4439,doi:10.3389/fmicb.2025.1546323,int_9cee7779596e0762,fungal_taxon,[mortierellomycota,mortierellomycota,no_match,False,0,0.00
+4440,doi:10.3389/fmicb.2025.1546323,int_6578145305cf8737,fungal_taxon,aphelidiomyceta,aphelidiomyceta,no_match,False,0,0.00
+4441,doi:10.3389/fmicb.2025.1546323,int_61a10429744c0c0d,fungal_taxon,calcarisporiellomycota,calcarisporiellomycota,no_match,False,0,0.00
+4443,doi:10.3389/fmicb.2025.1546323,int_dbb7e0f34c3df836,fungal_taxon,[mortierellomycota,mortierellomycota,no_match,False,0,0.00
+4444,doi:10.3389/fmicb.2025.1546323,int_894e0972e08dbc58,fungal_taxon,aphelidiomyceta,aphelidiomyceta,no_match,False,0,0.00
+4445,doi:10.3389/fmicb.2025.1546323,int_f2592fd006c34dbc,fungal_taxon,calcarisporiellomycota,calcarisporiellomycota,no_match,False,0,0.00
+4447,doi:10.3389/fmicb.2025.1546323,int_226b468145ea8522,fungal_taxon,[mortierellomycota,mortierellomycota,no_match,False,0,0.00
+4447,doi:10.3389/fmicb.2025.1546323,int_226b468145ea8522,plant_host,merlot,merlot,no_match,False,0,0.00
+4448,doi:10.3389/fmicb.2025.1546323,int_0e5a90f2fb3f6a8e,fungal_taxon,aphelidiomyceta,aphelidiomyceta,no_match,False,0,0.00
+4448,doi:10.3389/fmicb.2025.1546323,int_0e5a90f2fb3f6a8e,plant_host,merlot,merlot,no_match,False,0,0.00
+4449,doi:10.3389/fmicb.2025.1546323,int_a06094a47edede04,fungal_taxon,calcarisporiellomycota,calcarisporiellomycota,no_match,False,0,0.00
+4449,doi:10.3389/fmicb.2025.1546323,int_a06094a47edede04,plant_host,merlot,merlot,no_match,False,0,0.00
+4450,doi:10.3389/fmicb.2025.1546323,int_7022b3c3c113d09e,plant_host,merlot,merlot,no_match,False,0,0.00
+4451,doi:10.3389/fmicb.2025.1546323,int_afaa78cc5e9b04be,fungal_taxon,[mortierellomycota,mortierellomycota,no_match,False,0,0.00
+4451,doi:10.3389/fmicb.2025.1546323,int_afaa78cc5e9b04be,plant_host,and pinot noir),and pinot,no_match,False,0,0.00
+4452,doi:10.3389/fmicb.2025.1546323,int_373edb82f51c8bea,fungal_taxon,aphelidiomyceta,aphelidiomyceta,no_match,False,0,0.00
+4452,doi:10.3389/fmicb.2025.1546323,int_373edb82f51c8bea,plant_host,and pinot noir),and pinot,no_match,False,0,0.00
+4453,doi:10.3389/fmicb.2025.1546323,int_2cfb45d6e003dcdc,fungal_taxon,calcarisporiellomycota,calcarisporiellomycota,no_match,False,0,0.00
+4453,doi:10.3389/fmicb.2025.1546323,int_2cfb45d6e003dcdc,plant_host,and pinot noir),and pinot,no_match,False,0,0.00
+4454,doi:10.3389/fmicb.2025.1546323,int_5eb858fb0b29a9cb,plant_host,and pinot noir),and pinot,no_match,False,0,0.00
+4456,doi:10.1139/b95-393,int_d3caededbb03c6ad,plant_host,conifer species,conifer species,no_match,False,0,0.00
+4462,doi:10.1016/j.cropro.2012.06.007,int_4a449b36b94ce672,fungal_taxon,peronospora sparsa,peronospora sparsa,no_match,False,0,0.00
+4464,doi:10.1186/s43088-025-00594-1,int_95fed0a125c301b0,plant_host,peanut,peanut,no_match,False,0,0.00
+4465,doi:10.1186/s43088-025-00594-1,int_13b4ee62820a5d34,plant_host,maize,maize,no_match,False,0,0.00
+4466,doi:10.1016/j.flora.2011.03.001,int_59395abb747fe6bd,fungal_taxon,dark septate endophytic fungi,dark septate,no_match,False,0,0.00
+4469,doi:10.1111/j.1570-7458.2007.00526.x,int_7bd299354d9b80bc,fungal_taxon,endophytic fungus (unspecified),endophytic fungus,no_match,False,0,0.00
+4487,doi:10.1186/s40490-015-0055-6,int_2c2e127bb1d7eacb,fungal_taxon,operational taxonomic units (otus) belonging to teratosphaeriaceae],operational taxonomic,no_match,False,0,0.00
+4492,doi:10.1371/journal.pone.0062394,int_ffed6c816c3c8c39,fungal_taxon,colletotrichum fructivorum,colletotrichum fructivorum,no_match,False,0,0.00
+4503,doi:10.3390/jof9060611,int_3baf12f8e60f3f15,plant_host,oryza sativa. l.,oryza sativa.,no_match,False,0,0.00
+4505,doi:10.1603/0022-0493(2006)099[0203:eocawg]2.0.co;2,int_b1c4ad9127b6a3d5,fungal_taxon,unknown endophyte (not specified in text),unknown endophyte,no_match,False,0,0.00
+4507,doi:10.1603/029.102.0107,int_510f24df59ebe4a2,fungal_taxon,strobel,strobel,no_match,False,0,0.00
+4507,doi:10.1603/029.102.0107,int_510f24df59ebe4a2,fungal_taxon,hess (ascomycota: xylariales),hess,no_match,False,0,0.00
+4508,doi:10.1111/j.1365-2745.2008.01388.x,int_5ccff9478967d163,fungal_taxon,dark septate ascomycetes,dark septate,no_match,False,0,0.00
+4509,doi:10.1111/j.1365-2745.2008.01388.x,int_8d621f6a3aeb82df,fungal_taxon,most classified as pleosporales,most classified,no_match,False,0,0.00
+4510,doi:10.3390/microorganisms11071801,int_8abdbded1d35c7c9,fungal_taxon,[gff06,gff,no_match,False,0,0.00
+4511,doi:10.3390/microorganisms11071801,int_ba12589e253b5d06,fungal_taxon,gff08],gff,no_match,False,0,0.00
+4516,doi:10.1007/s10529-012-1123-0,int_075cdf7be6f0312b,plant_host,citrus aurantifolia,citrus aurantifolia,no_match,False,0,0.00
+4517,doi:10.1046/j.1469-8137.2000.00605.x,int_58fbe82d416b9388,plant_host,piceirhiza bicolorata,piceirhiza bicolorata,no_match,False,0,0.00
+4518,doi:10.3390/f15122178,int_c9ee0e35c747bb19,fungal_taxon,[botritis cinerea pers.,botritis cinerea,no_match,False,0,0.00
+4519,doi:10.3390/f15122178,int_e8a37c203ecec28c,fungal_taxon,globisporangium intermedium (de bary) uzuhashi,globisporangium intermedium,no_match,False,0,0.00
+4520,doi:10.3390/f15122178,int_395762ccf0e44bd2,fungal_taxon,tojo & kakish.,tojo kakish.,no_match,False,0,0.00
+4521,doi:10.3390/f15122178,int_3e2307ee6b812453,fungal_taxon,pythium dissotocum drechsler,pythium dissotocum,no_match,False,0,0.00
+4523,doi:10.3390/f15122178,int_4dc5defd4d5ed369,fungal_taxon,hn.,hn.,no_match,False,0,0.00
+4525,doi:10.3390/f15122178,int_eb17c58af32cd136,fungal_taxon,globisporangium sp.,globisporangium,no_match,False,0,0.00
+4526,doi:10.3390/f15122178,int_3848ecc789b37694,fungal_taxon,pythium sp.,pythium,no_match,False,0,0.00
+4529,doi:10.3390/f15122178,int_bed5e787a84748ce,fungal_taxon,oomycota,oomycota,no_match,False,0,0.00
+4533,doi:10.3390/ijms24054904,int_69d371b95749390a,fungal_taxon,['mgrf1',mgrf,no_match,False,0,0.00
+4534,doi:10.3390/ijms24054904,int_48cfb2c0365d5e4e,fungal_taxon,'mgrf2',mgrf,no_match,False,0,0.00
+4535,doi:10.3390/ijms24054904,int_c9db8c85e9aa89a7,fungal_taxon,'gref1',gref,no_match,False,0,0.00
+4536,doi:10.3390/ijms24054904,int_f465a3e8af03e365,fungal_taxon,'gref2',gref,no_match,False,0,0.00
+4537,doi:10.3390/ijms24054904,int_0a17892cce80add8,fungal_taxon,'tqrf4',tqrf,no_match,False,0,0.00
+4538,doi:10.3390/ijms24054904,int_7ff0927ed303c6f0,fungal_taxon,'tqrf5',tqrf,no_match,False,0,0.00
+4539,doi:10.3390/ijms24054904,int_b04591c428527c9e,fungal_taxon,'tqrf6',tqrf,no_match,False,0,0.00
+4540,doi:10.3390/ijms24054904,int_1f8691e61e1bdba3,fungal_taxon,'tqrf7',tqrf,no_match,False,0,0.00
+4541,doi:10.3390/ijms24054904,int_2e580ccc4ed9a35f,fungal_taxon,'tqrf8',tqrf,no_match,False,0,0.00
+4542,doi:10.3390/ijms24054904,int_589b89883c8cef0f,fungal_taxon,'tqrf9'],tqrf,no_match,False,0,0.00
+4544,doi:10.1094/pbiomes-05-24-0047-r,int_1e5c381dfb53a8ab,fungal_taxon,epichlo & euml,epichlo euml,no_match,False,0,0.00
+4545,doi:10.1016/j.gecco.2025.e03496,int_bb61ca72dc419050,fungal_taxon,mycorrhizal fungi (not specified in text),mycorrhizal fungi,no_match,False,0,0.00
+4546,doi:10.3390/foods12030487,int_480809ce020c7968,fungal_taxon,talaromyces citrinum,talaromyces citrinum,no_match,False,0,0.00
+4547,doi:10.1016/j.bmc.2015.11.038,int_8245289d0c70bb31,plant_host,olea europea (olive tree),olea europea,no_match,False,0,0.00
+4553,doi:10.1094/mpmi-05-10-0110,int_c4bc5bcf038d878f,fungal_taxon,order sebacinales),order sebacinales,no_match,False,0,0.00
+4555,doi:10.1016/j.pmpp.2023.102166,int_71b500ae38d4ad49,fungal_taxon,unknown (mentioned as soil pathogens,unknown mentioned,no_match,False,0,0.00
+4556,doi:10.1016/j.pmpp.2023.102166,int_e64baf39f1cdbbd5,fungal_taxon,possibly multiple species),possibly multiple,no_match,False,0,0.00
+4557,doi:10.3390/f11040467,int_2b747a5cf7642c31,fungal_taxon,r.c. lorenz,r.c. lorenz,no_match,False,0,0.00
+4558,doi:10.2307/3071806,int_06f4225c66e3b250,fungal_taxon,[{'name': 'neotyphodium lolii',name neotyphodium,no_match,False,0,0.00
+4559,doi:10.2307/3071806,int_219496f10a6d2780,fungal_taxon,{'name': 'gloinits mosseae',name gloinits,no_match,False,0,0.00
+4570,doi:10.1111/jph.13353,int_7b36333c72a41c16,fungal_taxon,fusarium cf. incarnatum,fusarium cf.,no_match,False,0,0.00
+4570,doi:10.1111/jph.13353,int_7b36333c72a41c16,fungal_taxon,equiseti,equiseti,no_match,False,0,0.00
+4577,doi:10.1094/pdis.1998.82.5.584,int_3b10176c2e5b37fb,fungal_taxon,caulivora'],caulivora,no_match,False,0,0.00
+4578,doi:10.1016/s0261-2194(00)00023-5,int_dad829b8f6556a46,fungal_taxon,peronospora viciae,peronospora viciae,no_match,False,0,0.00
+4579,doi:10.1016/j.jspr.2021.101857,int_13ef05f30d0289f3,fungal_taxon,unspecified seed borne fungal pathogen,unspecified seed,no_match,False,0,0.00
+4581,doi:10.1080/00275514.2018.1442078,int_5301d127696e8474,fungal_taxon,endophytic,endophytic,no_match,False,0,0.00
+4581,doi:10.1080/00275514.2018.1442078,int_5301d127696e8474,fungal_taxon,endolichenic fungi (>7000 isolates),endolichenic fungi,no_match,False,0,0.00
+4581,doi:10.1080/00275514.2018.1442078,int_5301d127696e8474,plant_host,more than 50 localities across the biotically rich state of arizona,more than,no_match,False,0,0.00
+4582,doi:10.1002/jbt.22884,int_e7cd528195f6ab4c,fungal_taxon,penconazole (pen),penconazole,no_match,False,0,0.00
+4583,doi:10.1111/ddi.12310,int_15355e809185712c,fungal_taxon,levels not specified in text but includes: fungal symbionts,levels not,no_match,False,0,0.00
+4583,doi:10.1111/ddi.12310,int_15355e809185712c,plant_host,perennial,perennial,no_match,False,0,0.00
+4584,doi:10.1111/ddi.12310,int_75f7fdb0946c3c39,fungal_taxon,localized foliar endophytes (lfe),localized foliar,no_match,False,0,0.00
+4584,doi:10.1111/ddi.12310,int_75f7fdb0946c3c39,plant_host,perennial,perennial,no_match,False,0,0.00
+4585,doi:10.1111/ddi.12310,int_c7b8cef5e34a5f50,fungal_taxon,systemic endophytes (epichloae),systemic endophytes,no_match,False,0,0.00
+4585,doi:10.1111/ddi.12310,int_c7b8cef5e34a5f50,plant_host,perennial,perennial,no_match,False,0,0.00
+4586,doi:10.1111/ddi.12310,int_26328c968af01609,plant_host,perennial,perennial,no_match,False,0,0.00
+4587,doi:10.1111/ddi.12310,int_80b8f4ed3f432ced,fungal_taxon,dark septate endophytes (dse),dark septate,no_match,False,0,0.00
+4587,doi:10.1111/ddi.12310,int_80b8f4ed3f432ced,plant_host,perennial,perennial,no_match,False,0,0.00
+4588,doi:10.1111/ddi.12310,int_fb0c3ed4b83e4010,fungal_taxon,levels not specified in text but includes: fungal symbionts,levels not,no_match,False,0,0.00
+4588,doi:10.1111/ddi.12310,int_fb0c3ed4b83e4010,plant_host,cool-season grasses (various),cool-season grasses,no_match,False,0,0.00
+4589,doi:10.1111/ddi.12310,int_bbef633d3a2985df,fungal_taxon,localized foliar endophytes (lfe),localized foliar,no_match,False,0,0.00
+4589,doi:10.1111/ddi.12310,int_bbef633d3a2985df,plant_host,cool-season grasses (various),cool-season grasses,no_match,False,0,0.00
+4590,doi:10.1111/ddi.12310,int_0bb8290898b52dae,fungal_taxon,systemic endophytes (epichloae),systemic endophytes,no_match,False,0,0.00
+4590,doi:10.1111/ddi.12310,int_0bb8290898b52dae,plant_host,cool-season grasses (various),cool-season grasses,no_match,False,0,0.00
+4591,doi:10.1111/ddi.12310,int_593f817ab6e003a9,plant_host,cool-season grasses (various),cool-season grasses,no_match,False,0,0.00
+4592,doi:10.1111/ddi.12310,int_05c5d7846b309e1b,fungal_taxon,dark septate endophytes (dse),dark septate,no_match,False,0,0.00
+4592,doi:10.1111/ddi.12310,int_05c5d7846b309e1b,plant_host,cool-season grasses (various),cool-season grasses,no_match,False,0,0.00
+4597,doi:10.1016/j.eja.2010.05.005,int_f61908c15a9ac252,plant_host,peach (prunus persica),peach,no_match,False,0,0.00
+4599,doi:10.1111/tpj.16674,int_b1979d597c7b947e,fungal_taxon,unspecified (mention of grapevine-associated microbiota,unspecified mention,no_match,False,0,0.00
+4602,doi:10.3390/agriculture13010215,int_af00ce426284cb40,plant_host,olive (olea europaea),olive,no_match,False,0,0.00
+4609,doi:10.3390/toxics13030199,int_3103479643f92f1c,plant_host,danio rerio (zebrafish),danio rerio,no_match,False,0,0.00
+4611,doi:10.1089/152581603321628296,int_cfa4021c7e8c7a5a,fungal_taxon,clostridium difficile,clostridium difficile,no_match,False,0,0.00
+4615,doi:10.1016/j.scitotenv.2023.165524,int_f2f9e3f9dd863207,plant_host,desert shrubs (five unspecified species),desert shrubs,no_match,False,0,0.00
+4616,doi:10.1111/brv.13085,int_569eaf2ca6fb50d9,fungal_taxon,fungal endophytes (not specific),fungal endophytes,no_match,False,0,0.00
+4619,doi:10.1186/s13213-023-01735-6,int_78736f7035b63ff6,fungal_taxon,multiple fungal genera including ascomycota,multiple fungal,no_match,False,0,0.00
+4626,doi:10.1186/s13213-023-01735-6,int_1abb90e7a656efc8,fungal_taxon,and alternaria,and alternaria,no_match,False,0,0.00
+4629,doi:10.1016/j.micres.2023.127334,int_f9b3f236aacc05fc,plant_host,spodoptera littoralis,spodoptera littoralis,no_match,False,0,0.00
+4632,doi:10.1111/j.1365-2745.2012.01997.x,int_72b4a9bc2689e8f9,fungal_taxon,various (not specified in text),various,no_match,False,0,0.00
+4633,doi:10.1111/j.1365-2745.2012.01997.x,int_aa2582f7e879fa62,fungal_taxon,various (not specified in text),various,no_match,False,0,0.00
+4634,doi:10.1111/j.1365-2745.2012.01997.x,int_4c704b02a74c8479,fungal_taxon,various (not specified in text),various,no_match,False,0,0.00
+4635,doi:10.1016/j.envpol.2022.120658,int_150f5942cfc8ce90,fungal_taxon,tolypocaldia virens sb10,tolypocaldia virens,no_match,False,0,0.00
+4640,doi:10.1186/s12906-025-05011-9,int_722e3e736ffd8eb1,fungal_taxon,'a. tenuissima',a. tenuissima,abbreviation_context_first,True,7,0.55
+4643,doi:10.3390/microorganisms12061247,int_4545c86470b984e3,fungal_taxon,bacillus amyloliquefaciens,bacillus amyloliquefaciens,no_match,False,0,0.00
+4644,doi:10.3390/microorganisms12061247,int_c1c1ee73ea1d2113,fungal_taxon,bacillus aryabhattai,bacillus aryabhattai,no_match,False,0,0.00
+4651,doi:10.3390/jof10080581,int_3c9b5369b6ef2ff0,fungal_taxon,gibberellia sp.],gibberellia,no_match,False,0,0.00
+4654,doi:10.1080/00288233.1994.9513089,int_ca7bde467e35c837,fungal_taxon,acremonium-like endophytic fungus,acremonium-like endophytic,no_match,False,0,0.00
+4659,doi:10.1016/j.cropro.2011.10.001,int_22ad081455c33f58,fungal_taxon,bird's eye spot disease causing pathogen (not specified in the text),bird s,no_match,False,0,0.00
+4662,doi:10.3767/003158509x461701,int_2e5dfd86d0062353,plant_host,sterile endophytic fungus isolated in mexico,sterile endophytic,no_match,False,0,0.00
+4663,doi:10.1007/s13225-011-0126-9,int_00be54fcc1a1b3e5,plant_host,various phytopathologically important plants,various phytopathologically,no_match,False,0,0.00
+4665,doi:10.1111/jbi.14719,int_4c8bd08cf8135533,fungal_taxon,epiphytic fungi (no specific latin names provided in the text),epiphytic fungi,no_match,False,0,0.00
+4665,doi:10.1111/jbi.14719,int_4c8bd08cf8135533,plant_host,dominant tree species in changbai mountain natural reserve,dominant tree,no_match,False,0,0.00
+4666,doi:10.1111/jbi.14719,int_c09e6ee84bafa8e7,fungal_taxon,epiphytic fungi (no specific latin names provided in the text),epiphytic fungi,no_match,False,0,0.00
+4666,doi:10.1111/jbi.14719,int_c09e6ee84bafa8e7,plant_host,china (species not specified in the text),china,no_match,False,0,0.00
+4667,doi:10.1007/s00284-022-02916-3,int_beb98b89ac82eef7,plant_host,staphylococcus aureus,staphylococcus aureus,no_match,False,0,0.00
+4669,doi:10.1016/j.apsoil.2024.105780,int_32b2746cd7a3e1ae,fungal_taxon,proteobacteria phylum,proteobacteria phylum,no_match,False,0,0.00
+4670,doi:10.1016/j.apsoil.2024.105780,int_9c86dfbd3e729170,fungal_taxon,sphingomonas genus,sphingomonas genus,no_match,False,0,0.00
+4671,doi:10.1016/j.apsoil.2024.105780,int_4d05c75cbafcc366,fungal_taxon,bacillus,bacillus,no_match,False,0,0.00
+4674,doi:10.3390/f10121096,int_73216c703bfca874,plant_host,northern temperate,northern temperate,no_match,False,0,0.00
+4674,doi:10.3390/f10121096,int_73216c703bfca874,plant_host,boreal quebec forest (species not specified in the text),boreal quebec,no_match,False,0,0.00
+4675,doi:10.3390/f10121096,int_446c83feb3df61a3,plant_host,northern temperate,northern temperate,no_match,False,0,0.00
+4675,doi:10.3390/f10121096,int_446c83feb3df61a3,plant_host,boreal quebec forest (species not specified in the text),boreal quebec,no_match,False,0,0.00
+4676,doi:10.3390/f10121096,int_31a471d7656baa85,plant_host,northern temperate,northern temperate,no_match,False,0,0.00
+4676,doi:10.3390/f10121096,int_31a471d7656baa85,plant_host,boreal quebec forest (species not specified in the text),boreal quebec,no_match,False,0,0.00
+4677,doi:10.1016/0038-0717(95)98638-5,int_db78aa92a074c2eb,fungal_taxon,soil-borne rhizobia,soil-borne rhizobia,no_match,False,0,0.00
+4678,doi:10.1094/pdis.2001.85.6.649,int_29ca62d67c92e9bb,fungal_taxon,plasmopara viticola (downy mildew pathogen),plasmopara viticola,no_match,False,0,0.00
+4679,doi:10.3389/fmicb.2017.02437,int_d5998914c0171519,fungal_taxon,dark septate endophytic fungi (pleosporales,dark septate,no_match,False,0,0.00
+4680,doi:10.3389/fmicb.2017.02437,int_838bfb275069a572,fungal_taxon,massarineae - a104,massarineae -,no_match,False,0,0.00
+4680,doi:10.3389/fmicb.2017.02437,int_838bfb275069a572,fungal_taxon,a105,a,no_match,False,0,0.00
+4680,doi:10.3389/fmicb.2017.02437,int_838bfb275069a572,fungal_taxon,unknown taxon - a101),unknown taxon,no_match,False,0,0.00
+4682,doi:10.21273/hortsci.40.7.2109,int_d8f8682679169c84,fungal_taxon,strobel & w.m. hess,strobel w.m.,no_match,False,0,0.00
+4688,doi:10.1007/s13225-024-00549-4,int_459e6951621ad9e2,fungal_taxon,multiple fungal species (see list below),multiple fungal,no_match,False,0,0.00
+4688,doi:10.1007/s13225-024-00549-4,int_459e6951621ad9e2,plant_host,medicinal plants (various,medicinal plants,no_match,False,0,0.00
+4689,doi:10.1007/s13225-024-00549-4,int_0894a58418f5c1b7,fungal_taxon,multiple fungal species (see list below),multiple fungal,no_match,False,0,0.00
+4694,doi:10.22207/jpam.18.3.41,int_b04349828be8c55b,fungal_taxon,methylobacterium radiotolerans (isolate oj4),methylobacterium radiotolerans,no_match,False,0,0.00
+4694,doi:10.22207/jpam.18.3.41,int_b04349828be8c55b,plant_host,centella asiatica (c. caudatus),centella asiatica,no_match,False,0,0.00
+4697,doi:10.1016/j.cropro.2023.106432,int_f8f13596c8eb1a6e,fungal_taxon,magn.) briosi,magn. briosi,no_match,False,0,0.00
+4697,doi:10.1016/j.cropro.2023.106432,int_f8f13596c8eb1a6e,fungal_taxon,cavara,cavara,no_match,False,0,0.00
+4703,doi:10.1111/j.1570-7458.2008.00739.x,int_40cd708ba89f1150,fungal_taxon,m.j. chr. & samuels),m.j. chr.,no_match,False,0,0.00
+4707,doi:10.1111/mec.14244,int_66b5089c34bc0902,plant_host,lichen thalli (unspecified species),lichen thalli,no_match,False,0,0.00
+4708,doi:10.1111/mec.14244,int_f0ba99e6f86f2f6c,plant_host,lichen thalli (unspecified species),lichen thalli,no_match,False,0,0.00
+4709,doi:10.1111/mec.14244,int_0c179e8938f34ded,plant_host,lichen thalli (unspecified species),lichen thalli,no_match,False,0,0.00
+4710,doi:10.3390/microorganisms13030692,int_13e4aad64d75b325,fungal_taxon,['setosphaeria',setosphaeria,no_match,False,0,0.00
+4729,doi:10.1007/s13225-012-0198-1,int_25356ba006c1128c,fungal_taxon,pestalotiopsis (multiple species mentioned: asiatica,pestalotiopsis multiple,no_match,False,0,0.00
+4729,doi:10.1007/s13225-012-0198-1,int_25356ba006c1128c,plant_host,(various host plants,various host,no_match,False,0,0.00
+4730,doi:10.1007/s13225-012-0198-1,int_139b960b2c8df528,fungal_taxon,chinensis,chinensis,no_match,False,0,0.00
+4730,doi:10.1007/s13225-012-0198-1,int_139b960b2c8df528,plant_host,(various host plants,various host,no_match,False,0,0.00
+4731,doi:10.1007/s13225-012-0198-1,int_90804012135314f7,fungal_taxon,chrysea,chrysea,no_match,False,0,0.00
+4731,doi:10.1007/s13225-012-0198-1,int_90804012135314f7,plant_host,(various host plants,various host,no_match,False,0,0.00
+4732,doi:10.1007/s13225-012-0198-1,int_9631b31990c04ede,fungal_taxon,clavata,clavata,no_match,False,0,0.00
+4732,doi:10.1007/s13225-012-0198-1,int_9631b31990c04ede,plant_host,(various host plants,various host,no_match,False,0,0.00
+4733,doi:10.1007/s13225-012-0198-1,int_1edc569da8166b33,fungal_taxon,diversiseta,diversiseta,no_match,False,0,0.00
+4733,doi:10.1007/s13225-012-0198-1,int_1edc569da8166b33,plant_host,(various host plants,various host,no_match,False,0,0.00
+4734,doi:10.1007/s13225-012-0198-1,int_98869612b9f73138,fungal_taxon,ellipsospora,ellipsospora,no_match,False,0,0.00
+4734,doi:10.1007/s13225-012-0198-1,int_98869612b9f73138,plant_host,(various host plants,various host,no_match,False,0,0.00
+4735,doi:10.1007/s13225-012-0198-1,int_20fddc2196cc5347,fungal_taxon,inflexa,inflexa,no_match,False,0,0.00
+4735,doi:10.1007/s13225-012-0198-1,int_20fddc2196cc5347,plant_host,(various host plants,various host,no_match,False,0,0.00
+4736,doi:10.1007/s13225-012-0198-1,int_5542e76a1ce49b75,fungal_taxon,intermedia,intermedia,no_match,False,0,0.00
+4736,doi:10.1007/s13225-012-0198-1,int_5542e76a1ce49b75,plant_host,(various host plants,various host,no_match,False,0,0.00
+4737,doi:10.1007/s13225-012-0198-1,int_9b1c43ea940447d5,fungal_taxon,linearis,linearis,no_match,False,0,0.00
+4737,doi:10.1007/s13225-012-0198-1,int_9b1c43ea940447d5,plant_host,(various host plants,various host,no_match,False,0,0.00
+4738,doi:10.1007/s13225-012-0198-1,int_e155dbebffbf514c,plant_host,(various host plants,various host,no_match,False,0,0.00
+4739,doi:10.1007/s13225-012-0198-1,int_57d3adb7f17eacfb,fungal_taxon,saprophyta,saprophyta,no_match,False,0,0.00
+4739,doi:10.1007/s13225-012-0198-1,int_57d3adb7f17eacfb,plant_host,(various host plants,various host,no_match,False,0,0.00
+4740,doi:10.1007/s13225-012-0198-1,int_0513c392fd00f9bb,fungal_taxon,umberspora,umberspora,no_match,False,0,0.00
+4740,doi:10.1007/s13225-012-0198-1,int_0513c392fd00f9bb,plant_host,(various host plants,various host,no_match,False,0,0.00
+4741,doi:10.1007/s13225-012-0198-1,int_e6e0a9a2599d9ac6,fungal_taxon,unicolor,unicolor,no_match,False,0,0.00
+4741,doi:10.1007/s13225-012-0198-1,int_e6e0a9a2599d9ac6,plant_host,(various host plants,various host,no_match,False,0,0.00
+4742,doi:10.1007/s13225-012-0198-1,int_a2f0df599caf225f,fungal_taxon,verruculosa,verruculosa,no_match,False,0,0.00
+4742,doi:10.1007/s13225-012-0198-1,int_a2f0df599caf225f,plant_host,(various host plants,various host,no_match,False,0,0.00
+4743,doi:10.1007/s13225-012-0198-1,int_8c2880e926e44e8e,fungal_taxon,adusta,adusta,no_match,False,0,0.00
+4743,doi:10.1007/s13225-012-0198-1,int_8c2880e926e44e8e,plant_host,(various host plants,various host,no_match,False,0,0.00
+4744,doi:10.1007/s13225-012-0198-1,int_47b6e0edf2bd8d7a,plant_host,(various host plants,various host,no_match,False,0,0.00
+4745,doi:10.1007/s13225-012-0198-1,int_d8b74350d0425e84,fungal_taxon,foedans),foedans,no_match,False,0,0.00
+4745,doi:10.1007/s13225-012-0198-1,int_d8b74350d0425e84,plant_host,(various host plants,various host,no_match,False,0,0.00
+4746,doi:10.1007/s13225-012-0198-1,int_3ef579148bc5c669,fungal_taxon,pestalotiopsis (multiple species mentioned: asiatica,pestalotiopsis multiple,no_match,False,0,0.00
+4747,doi:10.1007/s13225-012-0198-1,int_f1925134c5dd28a1,fungal_taxon,chinensis,chinensis,no_match,False,0,0.00
+4748,doi:10.1007/s13225-012-0198-1,int_10da674ba6d00d1c,fungal_taxon,chrysea,chrysea,no_match,False,0,0.00
+4749,doi:10.1007/s13225-012-0198-1,int_2a645e80eeac697a,fungal_taxon,clavata,clavata,no_match,False,0,0.00
+4750,doi:10.1007/s13225-012-0198-1,int_665912da0864a5d5,fungal_taxon,diversiseta,diversiseta,no_match,False,0,0.00
+4751,doi:10.1007/s13225-012-0198-1,int_894c31ceaa3e100c,fungal_taxon,ellipsospora,ellipsospora,no_match,False,0,0.00
+4752,doi:10.1007/s13225-012-0198-1,int_e9a42928da7f6c30,fungal_taxon,inflexa,inflexa,no_match,False,0,0.00
+4753,doi:10.1007/s13225-012-0198-1,int_8256c0a538ed5f71,fungal_taxon,intermedia,intermedia,no_match,False,0,0.00
+4754,doi:10.1007/s13225-012-0198-1,int_fcda479011f94930,fungal_taxon,linearis,linearis,no_match,False,0,0.00
+4756,doi:10.1007/s13225-012-0198-1,int_6f6cb5cb008eaf68,fungal_taxon,saprophyta,saprophyta,no_match,False,0,0.00
+4757,doi:10.1007/s13225-012-0198-1,int_c7cd327d4a21dd19,fungal_taxon,umberspora,umberspora,no_match,False,0,0.00
+4758,doi:10.1007/s13225-012-0198-1,int_54e55e110a13803c,fungal_taxon,unicolor,unicolor,no_match,False,0,0.00
+4759,doi:10.1007/s13225-012-0198-1,int_01c5bec1dab9a9ca,fungal_taxon,verruculosa,verruculosa,no_match,False,0,0.00
+4760,doi:10.1007/s13225-012-0198-1,int_b2667a85847c9cce,fungal_taxon,adusta,adusta,no_match,False,0,0.00
+4762,doi:10.1007/s13225-012-0198-1,int_3f3ccb9baaf3ba9b,fungal_taxon,foedans),foedans,no_match,False,0,0.00
+4764,doi:10.2134/jpa1991.0208,int_fba3280ac04a793d,fungal_taxon,gams,gams,no_match,False,0,0.00
+4766,doi:10.1016/j.pestbp.2014.05.004,int_acb76524ab5243a3,fungal_taxon,phytophthora infestans,phytophthora infestans,no_match,False,0,0.00
+4767,doi:10.1016/j.pestbp.2014.05.004,int_21ee5d2f6c71a465,fungal_taxon,peronophythora litchi,peronophythora litchi,no_match,False,0,0.00
+4771,doi:10.1016/j.pestbp.2014.05.004,int_b225793e537ced93,fungal_taxon,solani,solani,no_match,False,0,0.00
+4772,doi:10.1016/j.pestbp.2014.05.004,int_7065c3b0077ed699,fungal_taxon,colletotrichun orbiculare,colletotrichun orbiculare,no_match,False,0,0.00
+4775,doi:10.1111/myc.12499,int_9f82585c78210743,fungal_taxon,cryptococcus gattiivgii,cryptococcus gattiivgii,no_match,False,0,0.00
+4775,doi:10.1111/myc.12499,int_9f82585c78210743,plant_host,pigeons,pigeons,no_match,False,0,0.00
+4776,doi:10.1111/myc.12499,int_7bf30083475b5f3c,fungal_taxon,cryptococcus neoformansvni,cryptococcus neoformansvni,no_match,False,0,0.00
+4776,doi:10.1111/myc.12499,int_7bf30083475b5f3c,plant_host,pigeons,pigeons,no_match,False,0,0.00
+4777,doi:10.1111/myc.12499,int_6e6dcadb78b4a784,fungal_taxon,cryptococcus gattiivgii,cryptococcus gattiivgii,no_match,False,0,0.00
+4777,doi:10.1111/myc.12499,int_6e6dcadb78b4a784,plant_host,captive birds,captive birds,no_match,False,0,0.00
+4778,doi:10.1111/myc.12499,int_a36b211dc409df0c,fungal_taxon,cryptococcus neoformansvni,cryptococcus neoformansvni,no_match,False,0,0.00
+4778,doi:10.1111/myc.12499,int_a36b211dc409df0c,plant_host,captive birds,captive birds,no_match,False,0,0.00
+4779,doi:10.1111/myc.12499,int_fbc4b23af0b6a907,fungal_taxon,cryptococcus gattiivgii,cryptococcus gattiivgii,no_match,False,0,0.00
+4779,doi:10.1111/myc.12499,int_fbc4b23af0b6a907,plant_host,trees,trees,no_match,False,0,0.00
+4780,doi:10.1111/myc.12499,int_4954399a40152f3f,fungal_taxon,cryptococcus neoformansvni,cryptococcus neoformansvni,no_match,False,0,0.00
+4780,doi:10.1111/myc.12499,int_4954399a40152f3f,plant_host,trees,trees,no_match,False,0,0.00
+4781,doi:10.1186/s12864-021-08232-7,int_9dacd2e00eb10481,plant_host,heterodera avenae,heterodera avenae,no_match,False,0,0.00
+4784,doi:10.1094/pdis-01-21-0067-re,int_bfccd81ded317582,fungal_taxon,phytophthora cactorum,phytophthora cactorum,no_match,False,0,0.00
+4787,doi:10.2478/ebtj-2021-0020,int_3b5eb07af0fe6e71,plant_host,drosophila melanogaster,drosophila melanogaster,no_match,False,0,0.00
+4790,doi:10.1016/j.rhisph.2021.100432,int_1bfaa1785a7b244b,fungal_taxon,gams 2001,gams,no_match,False,0,0.00
+4794,doi:10.3389/fmicb.2022.920561,int_69e2a3f334d3fa27,plant_host,helecteris isora,helecteris isora,no_match,False,0,0.00
+4797,doi:10.1071/ar9770821,int_78a008e4fa72bc2f,fungal_taxon,[fusarium] acuminatum,acuminatum,no_match,False,0,0.00
+4807,doi:10.1071/ar9770821,int_069945ee9dd35827,fungal_taxon,myrothecium leucotricha (unidentified species of fusarium),myrothecium leucotricha,no_match,False,0,0.00
+4808,doi:10.1071/ar9770821,int_5f4cfbe1b4806938,fungal_taxon,[fusarium] acuminatum,acuminatum,no_match,False,0,0.00
+4818,doi:10.1071/ar9770821,int_aaefd0cd78368497,fungal_taxon,myrothecium leucotricha (unidentified species of fusarium),myrothecium leucotricha,no_match,False,0,0.00
+4821,doi:10.3390/microbiolres12040057,int_7ff5ad51dfd0c144,fungal_taxon,unclassified endophytic fungi (range: 41-69 otus),unclassified endophytic,no_match,False,0,0.00
+4824,doi:10.1093/jpe/rtz017,int_f435cee70bbefd00,fungal_taxon,epichloe sibirica,epichloe sibirica,no_match,False,0,0.00
+4830,doi:10.3389/fmicb.2021.737616,int_dcca1b996b29c8cd,plant_host,maize (zea mays),maize,no_match,False,0,0.00
+4831,doi:10.1016/j.scienta.2019.108595,int_43e1e6b7d30b9731,fungal_taxon,[{'name': 'arbuscular mychorrizal fungi (amf)',name arbuscular,no_match,False,0,0.00
+4832,doi:10.1016/j.scienta.2019.108595,int_fc6df7b95f8797ea,fungal_taxon,'notes': 'associated with lettuce roots'},notes associated,no_match,False,0,0.00
+4833,doi:10.1016/j.scienta.2019.108595,int_0e2bf96722adca15,fungal_taxon,{'name': 'trichoderma koningii',name trichoderma,no_match,False,0,0.00
+4834,doi:10.1016/j.scienta.2019.108595,int_31e618e4f71c6253,fungal_taxon,'notes': 'associated with lettuce roots'}],notes associated,no_match,False,0,0.00
+4837,doi:10.1016/j.ijpara.2016.01.008,int_d6bb1c8c5fe934d3,plant_host,fungal species: fusarium oxysporum,fungal species,no_match,False,0,0.00
+4840,doi:10.1016/0167-8809(93)90039-r,int_13e878f1adc82df1,fungal_taxon,gams,gams,no_match,False,0,0.00
+4842,doi:10.1016/j.pestbp.2022.105244,int_080db774dacd9e68,plant_host,caenorhabditis elegans,caenorhabditis elegans,no_match,False,0,0.00
+4844,doi:10.1104/pp.7.4.643,int_13bfd7de3bee8d84,fungal_taxon,endophytic fungus,endophytic fungus,no_match,False,0,0.00
+4846,doi:10.3390/v14102279,int_45782f7088a23581,plant_host,potato,potato,no_match,False,0,0.00
+4847,doi:10.3390/d15121170,int_eda09009b2a3e545,fungal_taxon,actinobacteria (not specified at species level),actinobacteria,no_match,False,0,0.00
+4848,doi:10.4141/p97-011,int_920f44210ee7a25f,fungal_taxon,sterol-synthesizing mycetocyte-symbionts,sterol-synthesizing mycetocyte-symbionts,no_match,False,0,0.00
+4849,doi:10.1111/mpp.13339,int_df1b5c42c8c9167e,fungal_taxon,[{'genus': 'stagonosporopsis',genus stagonosporopsis,no_match,False,0,0.00
+4850,doi:10.1111/mpp.13339,int_06791fafe5b870ca,fungal_taxon,'species': 'cucurbitacearum'},species cucurbitacearum,no_match,False,0,0.00
+4851,doi:10.1111/mpp.13339,int_b1004d85b751558e,fungal_taxon,{'genus': 'stagonosporopsis',genus stagonosporopsis,no_match,False,0,0.00
+4852,doi:10.1111/mpp.13339,int_c61b6d471c2e59c3,fungal_taxon,'species': 'citrulli'},species citrulli,no_match,False,0,0.00
+4853,doi:10.1111/mpp.13339,int_12f5e096a01fa369,fungal_taxon,{'genus': 'stagonosporopsis',genus stagonosporopsis,no_match,False,0,0.00
+4854,doi:10.1111/mpp.13339,int_5d235b607db2d1ae,fungal_taxon,'species': 'caricae'}],species caricae,no_match,False,0,0.00
+4855,doi:10.1186/s12870-024-04785-3,int_61ba9be7f7cedcad,fungal_taxon,trichoderma cf. asperellum,trichoderma cf.,no_match,False,0,0.00
+4856,doi:10.5943/mycosphere/12/1/17,int_5f4869dddd23d3e3,plant_host,spartii,spartii,no_match,False,0,0.00
+4861,doi:10.7717/peerj.7295,int_624c38c9e40cc543,fungal_taxon,dark septate fungi,dark septate,no_match,False,0,0.00
+4862,doi:10.1016/j.pestbp.2018.02.006,int_09a71466f4685c4b,plant_host,valsa malt,valsa malt,no_match,False,0,0.00
+4878,doi:10.5943/mycosphere/8/10/11,int_5b813268886f73d8,fungal_taxon,unidentified genus],unidentified genus,no_match,False,0,0.00
+4879,doi:10.3852/mycologia.99.2.185,int_a71e56ebbd41ac29,fungal_taxon,439 isolates,isolates,no_match,False,0,0.00
+4879,doi:10.3852/mycologia.99.2.185,int_a71e56ebbd41ac29,plant_host,loblolly pine (pinus taeda),loblolly pine,no_match,False,0,0.00
+4880,doi:10.3852/mycologia.99.2.185,int_e63ad75b2fc7ab87,fungal_taxon,59 distinct its genotypes,distinct its,no_match,False,0,0.00
+4880,doi:10.3852/mycologia.99.2.185,int_e63ad75b2fc7ab87,plant_host,loblolly pine (pinus taeda),loblolly pine,no_match,False,0,0.00
+4881,doi:10.1186/s40538-021-00238-3,int_274021d57c6158db,fungal_taxon,phytophthora colocasiae,phytophthora colocasiae,no_match,False,0,0.00
+4884,doi:10.1371/journal.pone.0013856,int_87ddb716fdbe0db5,plant_host,human (homo sapiens),human,no_match,False,0,0.00
+4890,doi:10.1186/s41938-023-00725-9,int_1571a25d9b805821,fungal_taxon,clostostachys chloroleuca tmds 2.1,clostostachys chloroleuca,no_match,False,0,0.00
+4899,doi:10.1038/s41598-022-20221-8,int_4870d32e8a546e6c,plant_host,pinot noir,pinot noir,no_match,False,0,0.00
+4900,doi:10.1038/s41598-022-20221-8,int_183893378371220b,plant_host,cabernet sauvignon,cabernet sauvignon,no_match,False,0,0.00
+4902,doi:10.1094/phyto-06-12-0123-r,int_86fc1017e3bd360c,fungal_taxon,plasmodiophora brassicae,plasmodiophora brassicae,no_match,False,0,0.00
+4904,doi:10.1080/07060661.2013.763293,int_4be74af52e24b7b5,fungal_taxon,plasmodiophora brassicae (clubroot pathogen),plasmodiophora brassicae,no_match,False,0,0.00
+4906,doi:10.3389/fpls.2023.1139704,int_f8334d819292be22,fungal_taxon,fungal endophytes from the atacama desert (unspecified species),fungal endophytes,no_match,False,0,0.00
+4906,doi:10.3389/fpls.2023.1139704,int_f8334d819292be22,plant_host,lettuce (lactuca sativa),lettuce,no_match,False,0,0.00
+4907,doi:10.1007/s00520-013-1844-1,int_2f30c5921cfc831f,fungal_taxon,ascioglu criteria unspecified,ascioglu criteria,no_match,False,0,0.00
+4912,doi:10.3390/scipharm89040048,int_7e4e084bb274f8d1,fungal_taxon,as they are referred to as 'taxol-producing endophytic fungi'),as they,no_match,False,0,0.00
+4913,doi:10.3390/scipharm89040048,int_0db14ea56ada7838,plant_host,as the tds gene was sequenced displaying a higher similarity with tds from these plants),as the,no_match,False,0,0.00
+4914,doi:10.3390/scipharm89040048,int_12cbc303577a7cb1,fungal_taxon,as they are referred to as 'taxol-producing endophytic fungi'),as they,no_match,False,0,0.00
+4914,doi:10.3390/scipharm89040048,int_12cbc303577a7cb1,plant_host,as the tds gene was sequenced displaying a higher similarity with tds from these plants),as the,no_match,False,0,0.00
+4915,doi:10.1094/phyto-80-1190,int_a3dd2763f76663bc,fungal_taxon,phytophthora infestans,phytophthora infestans,no_match,False,0,0.00
+4918,doi:10.1094/pdis-06-23-1044-re,int_424e04c7897c9d14,fungal_taxon,epicoccum species,epicoccum species,no_match,False,0,0.00
+4922,doi:10.1128/spectrum.00110-22,int_8f7eabc14f49bac3,fungal_taxon,multiple fungal species (not specified in detail),multiple fungal,no_match,False,0,0.00
+4929,doi:10.22034/gjesm.2024.10.si.02,int_ef1d57c0cd478f2b,fungal_taxon,rhizopycnis vagum,rhizopycnis vagum,no_match,False,0,0.00
+4937,doi:10.1080/07060661.2011.562245,int_07e24f5b103bee77,fungal_taxon,phytophthora capsici leonian,phytophthora capsici,no_match,False,0,0.00
+4943,doi:10.1111/j.1365-2435.2008.01432.x,int_296ee9519907410d,fungal_taxon,ar542),ar,no_match,False,0,0.00
+4944,doi:10.7759/cureus.40177,int_a8ae82433b6da61f,plant_host,human,human,no_match,False,0,0.00
+4945,doi:10.1016/j.cropro.2009.11.014,int_241d9f9e51e85840,fungal_taxon,paralobesia viteana (insect pest,paralobesia viteana,no_match,False,0,0.00
+4948,doi:10.1089/jmf.2015.0093,int_4fa1f684ab50ca6b,plant_host,schinus terebinthifolius,schinus terebinthifolius,no_match,False,0,0.00
+4950,doi:10.1007/s10340-011-0400-3,int_8780f721e6dd6a1e,plant_host,grain (unspecified type,grain unspecified,no_match,False,0,0.00
+4951,doi:10.1007/s10340-011-0400-3,int_b3f50a4991e576fa,plant_host,grain (unspecified type,grain unspecified,no_match,False,0,0.00
+4952,doi:10.1007/s10340-011-0400-3,int_7d8189c66e0b7c16,plant_host,context suggests rice or similar),context suggests,no_match,False,0,0.00
+4953,doi:10.1007/s10340-011-0400-3,int_c9a9bdfedcb49559,plant_host,context suggests rice or similar),context suggests,no_match,False,0,0.00
+4958,doi:10.1094/pbiomes-09-24-0090-r,int_029206f4e86ee153,fungal_taxon,botryosphaeria dieback,botryosphaeria dieback,no_match,False,0,0.00
+4959,doi:10.1094/pbiomes-09-24-0090-r,int_3332d26dd942b5d1,fungal_taxon,phomopsis dieback,phomopsis dieback,no_match,False,0,0.00
+4960,doi:10.1094/pbiomes-09-24-0090-r,int_6c28f907001114da,fungal_taxon,eutypa dieback,eutypa dieback,no_match,False,0,0.00
+4982,doi:10.1016/j.apsoil.2021.104307,int_8a6fb8b80a680cd3,fungal_taxon,indigenous filamentous fungi consortium,indigenous filamentous,no_match,False,0,0.00
+4982,doi:10.1016/j.apsoil.2021.104307,int_8a6fb8b80a680cd3,plant_host,alocasia calidora,alocasia calidora,no_match,False,0,0.00
+4983,doi:10.1371/journal.pone.0156426,int_a54a1222cf308aad,fungal_taxon,multiple species of fungi associated with live plant material and,multiple species,no_match,False,0,0.00
+4983,doi:10.1371/journal.pone.0156426,int_a54a1222cf308aad,fungal_taxon,or the fermentation process used in production of plant extracts,or the,no_match,False,0,0.00
+4984,doi:10.1371/journal.pone.0156426,int_2e2e8780b56362de,fungal_taxon,multiple species of fungi associated with live plant material and,multiple species,no_match,False,0,0.00
+4984,doi:10.1371/journal.pone.0156426,int_2e2e8780b56362de,fungal_taxon,or the fermentation process used in production of plant extracts,or the,no_match,False,0,0.00
+4985,doi:10.1371/journal.pone.0156426,int_e7dad32c59be60df,fungal_taxon,multiple species of fungi associated with live plant material and,multiple species,no_match,False,0,0.00
+4985,doi:10.1371/journal.pone.0156426,int_e7dad32c59be60df,fungal_taxon,or the fermentation process used in production of plant extracts,or the,no_match,False,0,0.00
+4986,doi:10.1371/journal.pone.0156426,int_d4c9db79993355b2,fungal_taxon,multiple species of fungi associated with live plant material and,multiple species,no_match,False,0,0.00
+4986,doi:10.1371/journal.pone.0156426,int_d4c9db79993355b2,fungal_taxon,or the fermentation process used in production of plant extracts,or the,no_match,False,0,0.00
+4987,doi:10.1371/journal.pone.0156426,int_186b695fcae978e8,fungal_taxon,multiple species of fungi associated with live plant material and,multiple species,no_match,False,0,0.00
+4987,doi:10.1371/journal.pone.0156426,int_186b695fcae978e8,fungal_taxon,or the fermentation process used in production of plant extracts,or the,no_match,False,0,0.00
+4993,doi:10.1016/j.anorl.2013.10.006,int_d50461e5d93e2ee2,plant_host,human,human,no_match,False,0,0.00
+4994,doi:10.1016/j.smallrumres.2021.106463,int_65ed38c272e62688,fungal_taxon,['endophyte protektm',endophyte protektm,no_match,False,0,0.00
+4995,doi:10.1016/j.smallrumres.2021.106463,int_bf77ff9db471fe24,fungal_taxon,'wild endophyte in kentucky-31',wild endophyte,no_match,False,0,0.00
+4996,doi:10.1016/j.smallrumres.2021.106463,int_15188e9791800133,fungal_taxon,'series 9 endophyte'],series endophyte,no_match,False,0,0.00
