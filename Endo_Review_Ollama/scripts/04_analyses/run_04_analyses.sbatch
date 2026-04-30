@@ -9,8 +9,15 @@
 
 set -euo pipefail
 
-# Navigate to project root (prefer submit directory when available)
-PROJECT_ROOT="${SLURM_SUBMIT_DIR:-/scratch/bmb646/Endo-Review/Endo_Review_Ollama}"
+# Resolve project root robustly, regardless of where sbatch is launched from.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# If launched from an explicit submit dir that looks like the project root, prefer it.
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -d "${SLURM_SUBMIT_DIR}/scripts/04_analyses" ]; then
+    PROJECT_ROOT="${SLURM_SUBMIT_DIR}"
+fi
+
 cd "$PROJECT_ROOT"
 
 mkdir -p results/logs

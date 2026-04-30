@@ -27,12 +27,14 @@ resolve_existing_path <- function(candidates) {
 
 GBIF_TAXON_FILE <- resolve_existing_path(c(
 	GBIF_TAXON_FILE,
-	"../data/Reference_datasets/gbif_backbone/Taxon.tsv"
+	"../data/Reference_datasets/gbif_backbone/Taxon.tsv",
+	"../../data/Reference_datasets/gbif_backbone/Taxon.tsv"
 ))
 
 PBDB_FILE <- resolve_existing_path(c(
 	PBDB_FILE,
-	"../data/Reference_datasets/pbdb_all.csv"
+	"../data/Reference_datasets/pbdb_all.csv",
+	"../../data/Reference_datasets/pbdb_all.csv"
 ))
 
 SUMMARY_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_summary.csv")

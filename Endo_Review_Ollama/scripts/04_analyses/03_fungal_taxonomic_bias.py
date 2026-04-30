@@ -43,11 +43,13 @@ def first_existing_path(*candidates):
 GBIF_TAXON_FILE = first_existing_path(
     GBIF_TAXON_FILE,
     "../data/Reference_datasets/gbif_backbone/Taxon.tsv",
+    "../../data/Reference_datasets/gbif_backbone/Taxon.tsv",
 )
 
 PLANT_COVERAGE_FILE = first_existing_path(
     PLANT_COVERAGE_FILE,
     "../results/taxonomy_analysis/plant_species_coverage_summary.csv",
+    "../../results/taxonomy_analysis/plant_species_coverage_summary.csv",
 )
 
 OUTPUT_PHYLUM = Path(RESULTS_DIR) / "fungal_phylum_coverage.csv"
