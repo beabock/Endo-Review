@@ -17,6 +17,16 @@ cd "$PROJECT_ROOT"
 mkdir -p results/logs
 mkdir -p .rlibs/R/library
 
+# Reuse the shared GBIF backbone from the parent Endo-Review checkout when
+# the local project copy is incomplete. This avoids copying the large dataset.
+LOCAL_GBIF_DIR="data/Reference_datasets/gbif_backbone"
+PARENT_GBIF_DIR="../data/Reference_datasets/gbif_backbone"
+if [ ! -e "$LOCAL_GBIF_DIR" ] && [ -d "$PARENT_GBIF_DIR" ]; then
+    mkdir -p data/Reference_datasets
+    ln -s "$PARENT_GBIF_DIR" "$LOCAL_GBIF_DIR"
+    echo "Linked $LOCAL_GBIF_DIR -> $PARENT_GBIF_DIR"
+fi
+
 # Default to starting at filtering if the year-enriched file is already present.
 # Set START_STEP explicitly when you need to rerun earlier steps from scratch.
 YEAR_ENRICHED_FILE="data/Ollama_cleaned_synresolved_standardized_year.csv"
