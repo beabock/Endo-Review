@@ -1177,13 +1177,23 @@ def consolidate_country_data(row, headers: List[str]) -> Optional[str]:
 # Pre-sort countries by length (longest first) for better pattern matching
 _COUNTRIES_BY_LENGTH = sorted(COUNTRY_TO_ISO.items(), key=lambda x: -len(x[0]))
 
+# Pre-compile regex patterns for word boundary matching (one-time cost at module load)
+_COUNTRY_PATTERNS = {}
+for country_name, iso_code in COUNTRY_TO_ISO.items():
+    if len(country_name) > 2:  # Skip very short names to avoid false matches
+        pattern_str = r"\b" + re.escape(country_name) + r"\b"
+        try:
+            _COUNTRY_PATTERNS[country_name] = (re.compile(pattern_str), iso_code)
+        except re.error:
+            pass  # Skip patterns that fail to compile
+
 
 def extract_all_countries(row, headers: List[str]) -> List[Tuple[str, str]]:
     """
-    Extract ALL country information from relevant columns in a row (optimized).
+    Extract ALL country information from relevant columns (fast).
     Returns list of (iso_code, source_column) tuples.
     Checks priority-ordered columns most likely to contain geographic data.
-    Much faster by pre-sorting countries and limiting column checks.
+    Uses pre-compiled regex patterns for word-boundary matching (one-time cost).
     Deduplicates on ISO code - keeps first source found.
     """
     found_countries = {}  # {iso_code: source_column} - keeps first source found
@@ -1212,19 +1222,21 @@ def extract_all_countries(row, headers: List[str]) -> List[Tuple[str, str]]:
             if cell_value and isinstance(cell_value, str) and len(cell_value.strip()) > 0:
                 text_lower = cell_value.lower().strip()
                 
-                # Check for exact match first
+                # Check for exact match first (fastest)
                 if text_lower in COUNTRY_TO_ISO:
                     iso_code = COUNTRY_TO_ISO[text_lower]
                     if iso_code not in found_countries:
                         found_countries[iso_code] = col_name
-                else:
-                    # Check for word boundary matches (using pre-sorted countries)
-                    for country_name, iso_code in _COUNTRIES_BY_LENGTH:
-                        pattern = r"\b" + re.escape(country_name) + r"\b"
-                        if re.search(pattern, text_lower):
-                            if iso_code not in found_countries:
-                                found_countries[iso_code] = col_name
-        except (IndexError, ValueError, TypeError):
+                    continue
+                
+                # Check for word boundary matches using pre-compiled patterns
+                # Only search if text is reasonably short (avoid ultra-long cells)
+                if len(text_lower) < 5000:
+                    for country_name, (pattern, iso_code) in _COUNTRY_PATTERNS.items():
+                        if iso_code not in found_countries and pattern.search(text_lower):
+                            found_countries[iso_code] = col_name
+                            # Don't break - continue collecting all matches
+        except (IndexError, ValueError, TypeError, AttributeError):
             continue
     
     return [(iso, source) for iso, source in found_countries.items()]

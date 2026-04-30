@@ -3,6 +3,8 @@ import argparse
 import csv
 import os
 import re
+import sys
+import time
 import pandas as pd
 import itertools
 from importlib import util
@@ -307,6 +309,7 @@ def expand_multi_value_rows(rows, headers):
     Returns:
         Expanded list of rows with duplicates for multi-value papers
     """
+    print(f"  [expand_multi_value_rows] Starting with {len(rows)} rows", flush=True)
     expanded_rows = []
     col_indices = {name: idx for idx, name in enumerate(headers)}
     
@@ -318,7 +321,14 @@ def expand_multi_value_rows(rows, headers):
         'biome': (col_indices.get('biome'), extract_biome_values),
     }
     
-    for row in rows:
+    max_expansion = 0
+    expansion_count = 0
+    heavy_expansions = []  # Track rows that expand significantly
+    
+    for i, row in enumerate(rows):
+        if i % 5000 == 0:
+            print(f"    Processing row {i}/{len(rows)} (expanded to {len(expanded_rows)} so far)", flush=True)
+        
         # Extract all possible values for each target column from all source columns
         all_extractions = {}
         expansion_needed = False
@@ -351,6 +361,23 @@ def expand_multi_value_rows(rows, headers):
                 col_idxs = list(multi_cols.keys())
                 col_val_lists = [multi_cols[idx] for idx in col_idxs]
                 
+                # Calculate expansion factor
+                expansion_factor = 1
+                for vals in col_val_lists:
+                    expansion_factor *= len(vals)
+                
+                if expansion_factor > max_expansion:
+                    max_expansion = expansion_factor
+                
+                if expansion_factor > 10:
+                    heavy_expansions.append({
+                        'row_idx': i,
+                        'expansion_factor': expansion_factor,
+                        'multi_cols': {col_idxs[j]: len(col_val_lists[j]) for j in range(len(col_idxs))}
+                    })
+                
+                expansion_count += expansion_factor
+                
                 for value_combo in itertools.product(*col_val_lists):
                     row_copy = row[:]
                     for col_idx, val in zip(col_idxs, value_combo):
@@ -362,7 +389,18 @@ def expand_multi_value_rows(rows, headers):
             else:
                 expanded_rows.append(row)
     
+    print(f"  [expand_multi_value_rows] Completed:", flush=True)
+    print(f"    Input rows: {len(rows)}", flush=True)
+    print(f"    Output rows: {len(expanded_rows)}", flush=True)
+    print(f"    Total expansions: {expansion_count}", flush=True)
+    print(f"    Max single-row expansion: {max_expansion}x", flush=True)
+    if heavy_expansions:
+        print(f"    Rows with 10+ expansions: {len(heavy_expansions)}", flush=True)
+        for exp in heavy_expansions[:5]:  # Show first 5
+            print(f"      Row {exp['row_idx']}: {exp['expansion_factor']}x - {exp['multi_cols']}", flush=True)
+    
     return expanded_rows
+
 
 
 def clean_parentheticals(val):
@@ -409,19 +447,26 @@ def run_standardization(input_file=DEFAULT_INPUT_FILE, output_file=DEFAULT_OUTPU
         print(f"Error: {input_file} not found.")
         return
 
-    print("Starting standardization...")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Starting standardization...", flush=True)
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Input file: {input_file}", flush=True)
+    
+    step_start = time.time()
     with open(input_file, 'r', encoding='utf-8') as f_in:
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Opened file, reading headers...", flush=True)
         reader = csv.reader(f_in)
         headers = next(reader)
         h_idx = {name: i for i, name in enumerate(headers)}
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Headers: {len(headers)} columns", flush=True)
         
         # Load all rows first (needed for multi-country expansion)
         all_rows = []
-        print(f"Processing {input_file}...")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Processing {input_file}...", flush=True)
         
         for row_num, row in enumerate(reader):
-            if row_num % 1000 == 0:
-                print(f"  Row {row_num}...")
+            if row_num % 5000 == 0:
+                elapsed = time.time() - step_start
+                rate = row_num / elapsed if elapsed > 0 else 0
+                print(f"  Row {row_num:6d} (elapsed: {elapsed:.1f}s, rate: {rate:.0f} rows/sec)", flush=True)
                 
             if 'tissue' in h_idx:
                 row[h_idx['tissue']] = standardize_value(row[h_idx['tissue']], TISSUE_MAP)
@@ -446,30 +491,47 @@ def run_standardization(input_file=DEFAULT_INPUT_FILE, output_file=DEFAULT_OUTPU
             
             all_rows.append(row)
         
+        read_time = time.time() - step_start
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Loaded {len(all_rows)} rows in {read_time:.1f}s", flush=True)
+        
         # First recover clear fungal/plant taxonomy swaps, then expand multi-value fields.
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Recovering taxonomy misplacements...", flush=True)
+        tax_start = time.time()
         taxonomy_recovered_rows = expand_taxonomy_recovery_rows(all_rows, headers)
+        tax_time = time.time() - tax_start
         taxonomy_rows_added = len(taxonomy_recovered_rows) - len(all_rows)
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Taxonomy recovery added {taxonomy_rows_added} rows in {tax_time:.1f}s", flush=True)
 
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Expanding multi-value rows...", flush=True)
+        expand_start = time.time()
         expanded_rows = expand_multi_value_rows(taxonomy_recovered_rows, headers)
+        expand_time = time.time() - expand_start
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-value expansion completed in {expand_time:.1f}s", flush=True)
         
         # Write all rows (including expanded ones)
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Writing {len(expanded_rows)} rows to {output_file}...", flush=True)
+        write_start = time.time()
         with open(output_file, 'w', encoding='utf-8') as f_out:
             writer = csv.writer(f_out, quoting=csv.QUOTE_ALL)
             writer.writerow(headers)
             writer.writerows(expanded_rows)
+        write_time = time.time() - write_start
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Write completed in {write_time:.1f}s", flush=True)
     
+    total_time = time.time() - step_start
     original_count = len(all_rows)
     taxonomy_count = len(taxonomy_recovered_rows)
     expanded_count = len(expanded_rows)
     new_rows_added = expanded_count - original_count
     
-    print(f"Standardization complete:")
-    print(f"  Original rows: {original_count}")
-    print(f"  Rows after taxonomy recovery: {taxonomy_count} (+{taxonomy_rows_added})")
-    print(f"  Expanded rows: {expanded_count}")
-    print(f"  New rows added (multi-value expansion): {new_rows_added}")
-    print(f"  Saved to: {output_file}")
-    print(f"  Values searched: country, tissue, primary_guild, biome, taxonomy recovery")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Standardization complete in {total_time:.1f}s:", flush=True)
+    print(f"  Original rows: {original_count}", flush=True)
+    print(f"  Rows after taxonomy recovery: {taxonomy_count} (+{taxonomy_rows_added})", flush=True)
+    print(f"  Expanded rows: {expanded_count}", flush=True)
+    print(f"  New rows added (multi-value expansion): {new_rows_added}", flush=True)
+    print(f"  Saved to: {output_file}", flush=True)
+    print(f"  Values searched: country, tissue, primary_guild, biome, taxonomy recovery", flush=True)
+
 
 
 def build_parser():

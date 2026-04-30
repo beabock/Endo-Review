@@ -71,4 +71,7 @@ echo "--- Final Audit ---"
 echo "Step 5: Generating Dataset Summary..."
 "$PYTHON_BIN" scripts/03_standardize_metadata/05_dataset_summary.py
 
+echo "Step 6: Running pre-analysis QA check..."
+"$PYTHON_BIN" scripts/03_standardize_metadata/06_preanalysis_check.py
+
 echo "Pipeline complete. Check the 'data' folder for enriched CSVs."
