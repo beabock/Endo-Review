@@ -1,5 +1,5 @@
 {
-  "processed_rows": "3000",
+  "processed_rows": "4000",
   "total_rows": "5000",
   "output_csv": "results/temp/taxa_speed_test/Ollama_cleaned_synresolved_test.csv",
   "unresolved_csv": "results/temp/taxa_speed_test/taxa_unresolved_review_test.csv"

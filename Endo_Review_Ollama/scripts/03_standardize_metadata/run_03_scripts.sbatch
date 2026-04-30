@@ -17,6 +17,19 @@ cd "$PROJECT_ROOT"
 mkdir -p results/logs
 mkdir -p .rlibs/R/library
 
+# Default to starting at filtering if the year-enriched file is already present.
+# Set START_STEP explicitly when you need to rerun earlier steps from scratch.
+YEAR_ENRICHED_FILE="data/Ollama_cleaned_synresolved_standardized_year.csv"
+if [ -z "${START_STEP:-}" ]; then
+    if [ -f "$YEAR_ENRICHED_FILE" ]; then
+        START_STEP=2
+        echo "Detected $YEAR_ENRICHED_FILE; defaulting START_STEP=2 to skip standardization and year enrichment."
+    else
+        START_STEP=1
+        echo "No year-enriched file detected; defaulting START_STEP=1."
+    fi
+fi
+
 # Load necessary modules
 module purge
 module load R/4.5.2  # Use an available Monsoon R module version
@@ -64,21 +77,21 @@ Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=F
 
 echo "--- Starting Python Processing ---"
 echo "Step 1: Standardizing Metadata..."
-if [ "${START_STEP:-1}" -le 1 ]; then
+if [ "$START_STEP" -le 1 ]; then
     "$PYTHON_BIN" scripts/03_standardize_metadata/01_standardize_metadata.py
 else
     echo "Skipping Step 1 (START_STEP=${START_STEP})"
 fi
 
 echo "Step 1a: Enriching Publication Year..."
-if [ "${START_STEP:-1}" -le 1 ]; then
+if [ "$START_STEP" -le 1 ]; then
     "$PYTHON_BIN" scripts/03_standardize_metadata/01a_enrich_publication_year.py
 else
     echo "Skipping Step 1a (START_STEP=${START_STEP})"
 fi
 
 echo "Step 2: Filtering Dataset..."
-if [ "${START_STEP:-1}" -le 2 ]; then
+if [ "$START_STEP" -le 2 ]; then
     "$PYTHON_BIN" scripts/03_standardize_metadata/02_dataset_filtering.py
 else
     echo "Skipping Step 2 (START_STEP=${START_STEP})"
