@@ -18,11 +18,20 @@ mkdir -p results/logs
 
 # Load necessary modules
 module purge
-module load python/3.11
 module load R/4.5.2  # Use an available Monsoon R module version
 
+# Prefer the project virtual environment if it exists on the cluster.
+if [ -x ".venv/bin/python" ]; then
+    PYTHON_BIN=".venv/bin/python"
+elif [ -x ".venv/Scripts/python.exe" ]; then
+    PYTHON_BIN=".venv/Scripts/python.exe"
+else
+    module load python/3.11
+    PYTHON_BIN="$(command -v python)"
+fi
+
 echo "--- Environment Preflight ---"
-python - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 import sys
 print(f"Python executable: {sys.executable}")
 print(f"Python version: {sys.version.split()[0]}")
@@ -40,10 +49,10 @@ Rscript -e "if (!requireNamespace('jsonlite', quietly=TRUE)) stop('Missing R pac
 
 echo "--- Starting Python Processing ---"
 echo "Step 1: Standardizing Metadata..."
-python scripts/03_standardize_metadata/01_standardize_metadata.py
+"$PYTHON_BIN" scripts/03_standardize_metadata/01_standardize_metadata.py
 
 echo "Step 2: Filtering Dataset..."
-python scripts/03_standardize_metadata/02_dataset_filtering.py
+"$PYTHON_BIN" scripts/03_standardize_metadata/02_dataset_filtering.py
 
 echo "--- Starting R Geographic Processing ---"
 echo "Step 3: Geographic Standardizing (ISO Mapping)..."
@@ -54,6 +63,6 @@ Rscript scripts/03_standardize_metadata/04_country_enrichment.R
 
 echo "--- Final Audit ---"
 echo "Step 5: Generating Dataset Summary..."
-python scripts/03_standardize_metadata/05_dataset_summary.py
+"$PYTHON_BIN" scripts/03_standardize_metadata/05_dataset_summary.py
 
 echo "Pipeline complete. Check the 'data' folder for enriched CSVs."
