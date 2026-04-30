@@ -60,10 +60,18 @@ Rscript -e "if (!requireNamespace('rnaturalearthdata', quietly=TRUE)) { install.
 
 echo "--- Starting Python Processing ---"
 echo "Step 1: Standardizing Metadata..."
-"$PYTHON_BIN" scripts/03_standardize_metadata/01_standardize_metadata.py
+if [ "${START_STEP:-1}" -le 1 ]; then
+    "$PYTHON_BIN" scripts/03_standardize_metadata/01_standardize_metadata.py
+else
+    echo "Skipping Step 1 (START_STEP=${START_STEP})"
+fi
 
 echo "Step 2: Filtering Dataset..."
-"$PYTHON_BIN" scripts/03_standardize_metadata/02_dataset_filtering.py
+if [ "${START_STEP:-1}" -le 2 ]; then
+    "$PYTHON_BIN" scripts/03_standardize_metadata/02_dataset_filtering.py
+else
+    echo "Skipping Step 2 (START_STEP=${START_STEP})"
+fi
 
 echo "--- Starting R Geographic Processing ---"
 echo "Step 3: Geographic Standardizing (ISO Mapping)..."
