@@ -9,13 +9,34 @@
 
 set -euo pipefail
 
-# Navigate to project root
-cd /scratch/bmb646/Endo-Review/Endo_Review_Ollama
+# Navigate to project root (prefer submit directory when available)
+PROJECT_ROOT="${SLURM_SUBMIT_DIR:-/scratch/bmb646/Endo-Review/Endo_Review_Ollama}"
+cd "$PROJECT_ROOT"
+
+# Ensure log/output directory exists before writing job logs/artifacts
+mkdir -p results/logs
 
 # Load necessary modules
 module purge
 module load python/3.11
 module load R/4.3.1  # Or the version available on Monsoon
+
+echo "--- Environment Preflight ---"
+python - <<'PY'
+import sys
+print(f"Python executable: {sys.executable}")
+print(f"Python version: {sys.version.split()[0]}")
+try:
+    import pandas  # noqa: F401
+    print("Python dependency check: pandas OK")
+except Exception as exc:
+    raise SystemExit(f"Python dependency check failed (pandas): {exc}")
+PY
+
+Rscript -e "cat('R version:', as.character(getRversion()), '\n')"
+Rscript -e "if (!requireNamespace('dplyr', quietly=TRUE)) stop('Missing R package: dplyr')"
+Rscript -e "if (!requireNamespace('stringr', quietly=TRUE)) stop('Missing R package: stringr')"
+Rscript -e "if (!requireNamespace('jsonlite', quietly=TRUE)) stop('Missing R package: jsonlite')"
 
 echo "--- Starting Python Processing ---"
 echo "Step 1: Standardizing Metadata..."
