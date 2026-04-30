@@ -52,6 +52,11 @@ Rscript -e "cat('R version:', as.character(getRversion()), '\n')"
 Rscript -e "if (!requireNamespace('dplyr', quietly=TRUE)) stop('Missing R package: dplyr')"
 Rscript -e "if (!requireNamespace('stringr', quietly=TRUE)) stop('Missing R package: stringr')"
 Rscript -e "if (!requireNamespace('jsonlite', quietly=TRUE)) stop('Missing R package: jsonlite')"
+# Ensure geographic/R spatial packages are available; attempt non-interactive install if missing.
+# Note: 'sf' may require system dependencies; installation will fail if system libs are missing.
+Rscript -e "if (!requireNamespace('sf', quietly=TRUE)) { try(install.packages('sf', repos='https://cloud.r-project.org'), silent=FALSE); if (!requireNamespace('sf', quietly=TRUE)) stop('Missing R package: sf (and automatic install failed)') }"
+Rscript -e "if (!requireNamespace('rnaturalearth', quietly=TRUE)) { install.packages('rnaturalearth', repos='https://cloud.r-project.org') }"
+Rscript -e "if (!requireNamespace('rnaturalearthdata', quietly=TRUE)) { install.packages('rnaturalearthdata', repos='https://cloud.r-project.org') }"
 
 echo "--- Starting Python Processing ---"
 echo "Step 1: Standardizing Metadata..."
