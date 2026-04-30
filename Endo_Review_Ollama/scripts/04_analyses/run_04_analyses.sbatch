@@ -26,10 +26,15 @@ mkdir -p .rlibs/R/library
 # Reuse shared GBIF backbone from parent checkout if local copy is missing.
 LOCAL_GBIF_DIR="data/Reference_datasets/gbif_backbone"
 PARENT_GBIF_DIR="../data/Reference_datasets/gbif_backbone"
-if [ ! -e "$LOCAL_GBIF_DIR" ] && [ -d "$PARENT_GBIF_DIR" ]; then
-    mkdir -p data/Reference_datasets
-    ln -s "$PARENT_GBIF_DIR" "$LOCAL_GBIF_DIR"
-    echo "Linked $LOCAL_GBIF_DIR -> $PARENT_GBIF_DIR"
+mkdir -p "$(dirname "$LOCAL_GBIF_DIR")"
+if [ -L "$LOCAL_GBIF_DIR" ]; then
+    echo "GBIF symlink already exists: $LOCAL_GBIF_DIR -> $(readlink "$LOCAL_GBIF_DIR")"
+elif [ -d "$LOCAL_GBIF_DIR" ]; then
+    echo "GBIF directory already exists at $LOCAL_GBIF_DIR; skipping symlink creation"
+elif [ -d "$PARENT_GBIF_DIR" ]; then
+    ln -s "$PARENT_GBIF_DIR" "$LOCAL_GBIF_DIR" && echo "Linked $LOCAL_GBIF_DIR -> $PARENT_GBIF_DIR" || echo "Warning: failed to create symlink $LOCAL_GBIF_DIR"
+else
+    echo "GBIF backbone not found in parent path: $PARENT_GBIF_DIR; continuing without symlink"
 fi
 
 # Default START_STEP for Stage 04 is step 1 unless overridden.
