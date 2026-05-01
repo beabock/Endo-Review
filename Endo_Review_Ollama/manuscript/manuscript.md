@@ -145,3 +145,5 @@ New Phytologist
 - Avoid overclaims such as "global ubiquity is proven" from sparse host coverage.
 - Prefer language like "evidence-supported in sampled domains" and "currently untested domains."
 - Tie each major claim to one figure and one concrete quantitative result.
+- Do not use em-dashes (--)
+- Do not randomly quote or bold things.

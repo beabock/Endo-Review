@@ -23,7 +23,7 @@ mkdir -p results/logs
 INPUT_DIR="${INPUT_DIR:-/scratch/bmb646/Bea_Nick_papers_endoreview}"
 OUTPUT_DIR="${OUTPUT_DIR:-results/ubiquity_claims}"
 OLLAMA_HOST="${OLLAMA_HOST:-http://127.0.0.1:11434}"
-OLLAMA_MODEL="${OLLAMA_MODEL:-}"
+OLLAMA_MODEL="${OLLAMA_MODEL:-mistral}"
 MAX_FILES="${MAX_FILES:-0}"
 SOURCE_MODE="${SOURCE_MODE:-paired}"
 ABSTRACT_CSV="${ABSTRACT_CSV:-/scratch/bmb646/Abstracts_for_Monsoon.csv}"
@@ -31,12 +31,8 @@ ABSTRACT_TEXT_COL="${ABSTRACT_TEXT_COL:-}"
 ABSTRACT_ID_COL="${ABSTRACT_ID_COL:-}"
 AUTO_START_OLLAMA="${AUTO_START_OLLAMA:-1}"
 OLLAMA_SERVE_LOG="${OLLAMA_SERVE_LOG:-results/logs/ollama_serve_${SLURM_JOB_ID:-manual}.log}"
-
-if [ -z "$OLLAMA_MODEL" ]; then
-    echo "ERROR: OLLAMA_MODEL is required."
-    echo "Example: sbatch --export=OLLAMA_MODEL=your_model_name scripts/04_analyses/run_06_ubiquity_claims_ollama.sbatch"
-    exit 1
-fi
+OLLAMA_MODELS="${OLLAMA_MODELS:-/scratch/bmb646/ollama_models}"
+OLLAMA_BIN="${OLLAMA_BIN:-}"
 
 # Python environment setup
 if [ -x ".venv/bin/python" ]; then
@@ -64,6 +60,30 @@ echo "Max files: $MAX_FILES"
 echo "Source mode: $SOURCE_MODE"
 echo "Abstract CSV: $ABSTRACT_CSV"
 echo "Auto-start Ollama: $AUTO_START_OLLAMA"
+echo "Ollama models dir: $OLLAMA_MODELS"
+
+if [ -z "$OLLAMA_BIN" ]; then
+    if command -v ollama >/dev/null 2>&1; then
+        OLLAMA_BIN="$(command -v ollama)"
+    else
+        for candidate in \
+            /scratch/bmb646/envs/*/bin/ollama \
+            /scratch/bmb646/conda_envs/*/bin/ollama \
+            /scratch/bmb646/envs/bin/ollama \
+            /scratch/bmb646/conda_envs/bin/ollama; do
+            if [ -x "$candidate" ]; then
+                OLLAMA_BIN="$candidate"
+                break
+            fi
+        done
+    fi
+fi
+
+if [ -n "$OLLAMA_BIN" ]; then
+    echo "Ollama binary: $OLLAMA_BIN"
+else
+    echo "Ollama binary: <not found>"
+fi
 
 check_ollama_up() {
     "$PYTHON_BIN" - <<'PY'
@@ -86,9 +106,9 @@ PY
 if ! check_ollama_up; then
     echo "Ollama is not reachable at $OLLAMA_HOST"
     if [ "$AUTO_START_OLLAMA" = "1" ]; then
-        if command -v ollama >/dev/null 2>&1; then
+        if [ -n "$OLLAMA_BIN" ]; then
             echo "Attempting to start local ollama server..."
-            nohup ollama serve > "$OLLAMA_SERVE_LOG" 2>&1 &
+            OLLAMA_MODELS="$OLLAMA_MODELS" nohup "$OLLAMA_BIN" serve > "$OLLAMA_SERVE_LOG" 2>&1 &
             echo "Started ollama serve (log: $OLLAMA_SERVE_LOG)"
             if ! check_ollama_up; then
                 echo "ERROR: Ollama still unreachable after auto-start attempt."
@@ -96,7 +116,11 @@ if ! check_ollama_up; then
                 exit 1
             fi
         else
-            echo "ERROR: 'ollama' command not found and Ollama host is unreachable."
+            echo "ERROR: No ollama executable found in PATH or scratch envs, and Ollama host is unreachable."
+            echo "Expected a local server binary to start at least one of these paths:"
+            echo "  - /scratch/bmb646/envs/*/bin/ollama"
+            echo "  - /scratch/bmb646/conda_envs/*/bin/ollama"
+            echo "  - or set OLLAMA_BIN=/full/path/to/ollama"
             exit 1
         fi
     else
