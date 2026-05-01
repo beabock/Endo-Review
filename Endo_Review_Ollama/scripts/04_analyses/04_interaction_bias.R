@@ -41,19 +41,11 @@ if (!file.exists(INPUT_FILE)) stop("Input file not found: ", INPUT_FILE)
 message("Loading interaction data...")
 df <- read_csv(INPUT_FILE, show_col_types = FALSE)
 
-# We also need the country-to-continent mapping from the enriched data
-country_df <- read_csv(COUNTRY_FILE, show_col_types = FALSE) %>%
-  select(country_name, iso_a3) %>% distinct()
-
-# To get continents, we can use rnaturalearth
-world <- ne_countries(scale = 50, returnclass = "sf") %>%
+# Create a continent lookup table directly from rnaturalearth
+continent_lookup <- ne_countries(scale = 110, returnclass = "sf") %>%
   sf::st_drop_geometry() %>%
-  select(iso_a3, continent)
-
-country_map <- country_df %>%
-  left_join(world, by = "iso_a3") %>%
-  mutate(continent = replace_na(continent, "Unknown")) %>%
-  select(country = country_name, continent) %>% distinct()
+  select(iso_a3, continent) %>%
+  distinct(iso_a3, .keep_all = TRUE)
 
 message("Loading minimal GBIF taxonomy for Phyla from cache...")
 gbif_qs_path <- file.path(CACHE_DIR, "gbif_taxa_min.qs")
@@ -65,7 +57,7 @@ gbif_min <- cache_read_object(gbif_qs_path, gbif_rds_path) %>%
     phylum = ifelse(is.na(phylum) | phylum == "", "Unassigned", phylum)
   )
 
-# Extract first accepted ID for simple joining
+# Extract first accepted ID and join phylum/continent data
 df_clean <- df %>%
   mutate(
     fungal_id = str_extract(fungal_taxon_accepted_ids, "^[^;]+"),
@@ -73,7 +65,7 @@ df_clean <- df %>%
   ) %>%
   left_join(gbif_min %>% rename(fungal_phylum = phylum, f_king = kingdom), by = c("fungal_id" = "taxonID")) %>%
   left_join(gbif_min %>% rename(plant_phylum = phylum, p_king = kingdom), by = c("plant_id" = "taxonID")) %>%
-  left_join(country_map, by = "country") %>%
+  left_join(continent_lookup, by = c("country" = "iso_a3")) %>%
   mutate(
     fungal_phylum = replace_na(fungal_phylum, "Unknown Fungi"),
     plant_phylum = replace_na(plant_phylum, "Unknown Plant"),
