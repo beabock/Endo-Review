@@ -12,7 +12,7 @@ Outputs:
 - results/ubiquity_claims/ubiquity_claims_positive.csv
 - results/ubiquity_claims/ubiquity_claims_all.jsonl
 
-This script is intended to run on Monsoon and uses the Ollama HTTP API.
+This script is intended to run on Monsoon and uses the Ollama Python SDK.
 """
 
 from __future__ import annotations
@@ -28,7 +28,6 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
-from urllib import error, request
 
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}
@@ -268,26 +267,20 @@ def collect_snippets(
     return joined, len(snippets), len(matches)
 
 
-def build_prompt(context: str, source_name: str) -> List[Dict[str, str]]:
-    system_message = (
-        "You are an information extraction model for scientific literature. "
+def build_prompt(context: str, source_name: str) -> str:
+    return (
+        "You are an information extraction model for scientific literature.\n"
         "Decide whether the document text contains a claim that fungal endophytes are ubiquitous "
-        "or near-universal, including equivalent wording (e.g., found in nearly all plants, widespread across plants). "
+        "or near-universal, including equivalent wording (e.g., found in nearly all plants, widespread across plants).\n"
         "Return strict JSON only with keys: contains_ubiquity_claim (boolean), claim_strength "
         "(explicit|qualified|none), claim_scope (endophytes_general|specific_taxon|other|none), "
-        "confidence (0-1 number), evidence_sentences (array of up to 3 verbatim short quotes), rationale (string)."
-    )
-    user_message = (
+        "confidence (0-1 number), evidence_sentences (array of up to 3 verbatim short quotes), rationale (string).\n\n"
         f"Source file: {source_name}\n"
         "Task: detect ubiquity claims about fungal endophytes based only on this text.\n"
-        "If no such claim appears, set contains_ubiquity_claim=false and claim_strength=none.\n"
+        "If no such claim appears, set contains_ubiquity_claim=false and claim_strength=none.\n\n"
         "Text:\n"
         f"{context}"
     )
-    return [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": user_message},
-    ]
 
 
 def sanitize_for_filename(value: str) -> str:
@@ -315,51 +308,111 @@ def find_pdf_for_row(input_dir: Path, doi: str, doc_id: str) -> Optional[Path]:
     return None
 
 
-def ollama_chat_json(
-    ollama_host: str,
-    model: str,
-    messages: List[Dict[str, str]],
-    timeout_seconds: int = 180,
-) -> Dict:
-    url = ollama_host.rstrip("/") + "/api/chat"
-    payload = {
-        "model": model,
-        "messages": messages,
-        "stream": False,
-        "format": "json",
-        "options": {
-            "temperature": 0,
-        },
-    }
-
-    req = request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
+def get_ollama_client(ollama_host: str):
     try:
-        with request.urlopen(req, timeout=timeout_seconds) as resp:
-            body = resp.read().decode("utf-8", errors="replace")
-    except error.URLError as exc:
-        raise RuntimeError(f"Ollama API request failed: {exc}") from exc
+        ollama_mod = importlib.import_module("ollama")
+    except Exception as exc:
+        raise RuntimeError("Missing Python package 'ollama'. Install with: pip install ollama") from exc
 
-    outer = json.loads(body)
-    message = outer.get("message", {})
-    content = message.get("content", "")
-    if not content:
-        raise RuntimeError("Ollama returned empty message content")
+    client_ctor = getattr(ollama_mod, "Client", None)
+    if client_ctor is None:
+        # Fallback for older package APIs.
+        return ollama_mod
+    return client_ctor(host=ollama_host)
 
+
+def parse_model_json_response(content: str) -> Dict:
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        # Fallback for occasionally wrapped text around JSON.
         start = content.find("{")
         end = content.rfind("}")
         if start != -1 and end != -1 and end > start:
             return json.loads(content[start : end + 1])
         raise RuntimeError("Could not parse JSON content from Ollama response")
+
+
+def ollama_generate_json(
+    ollama_host: str,
+    model: str,
+    prompt: str,
+) -> Dict:
+    client = get_ollama_client(ollama_host)
+    try:
+        response_data = client.generate(
+            model=model,
+            prompt=prompt,
+            format="json",
+            options={"temperature": 0},
+        )
+    except Exception as exc:
+        raise RuntimeError(f"Ollama API request failed: {exc}") from exc
+
+    content = ""
+    if isinstance(response_data, dict):
+        content = str(response_data.get("response", "") or "")
+    else:
+        content = str(getattr(response_data, "response", "") or "")
+
+    if not content:
+        raise RuntimeError("Ollama returned empty response content")
+
+    return parse_model_json_response(content)
+
+
+def fetch_ollama_tags(ollama_host: str) -> Dict:
+    client = get_ollama_client(ollama_host)
+    try:
+        tags = client.list()
+    except Exception as exc:
+        raise RuntimeError(f"Cannot connect to Ollama at {ollama_host}: {exc}") from exc
+
+    if isinstance(tags, dict):
+        return tags
+    if hasattr(tags, "model_dump"):
+        return tags.model_dump()
+    return {}
+
+
+def model_available(tags_json: Dict, requested_model: str) -> bool:
+    models = tags_json.get("models", [])
+    if not isinstance(models, list):
+        return False
+
+    names: List[str] = []
+    for m in models:
+        if isinstance(m, dict):
+            for key in ("name", "model"):
+                value = m.get(key)
+                if isinstance(value, str) and value.strip():
+                    names.append(value.strip())
+
+    req = requested_model.strip()
+    if req in names:
+        return True
+
+    # Also allow matching without explicit tag, e.g., mistral == mistral:latest.
+    if ":" not in req:
+        prefix = req + ":"
+        if any(n.startswith(prefix) for n in names):
+            return True
+
+    return False
+
+
+def preflight_ollama(ollama_host: str, model: str) -> None:
+    tags = fetch_ollama_tags(ollama_host)
+    if not model_available(tags, model):
+        available = []
+        for m in tags.get("models", []):
+            if isinstance(m, dict) and isinstance(m.get("name"), str):
+                available.append(m["name"])
+        preview = ", ".join(available[:15]) if available else "<none>"
+        raise SystemExit(
+            "Ollama is reachable, but requested model was not found: "
+            f"'{model}'. Available models (first 15): {preview}. "
+            "Run 'ollama pull <model>' or set OLLAMA_MODEL to an installed model."
+        )
 
 
 def to_result(
@@ -547,6 +600,9 @@ def main() -> None:
     print(f"Full-text files to process: {len(documents)}")
     print(f"Abstract rows to process: {len(abstract_rows)}")
 
+    # Fail fast if Ollama is down or model is unavailable.
+    preflight_ollama(args.ollama_host, args.model)
+
     results: List[DetectionResult] = []
 
     for idx, path in enumerate(documents, start=1):
@@ -585,11 +641,11 @@ def main() -> None:
                 )
                 continue
 
-            messages = build_prompt(context=context, source_name=rel_path)
-            response_json = ollama_chat_json(
+            prompt = build_prompt(context=context, source_name=rel_path)
+            response_json = ollama_generate_json(
                 ollama_host=args.ollama_host,
                 model=args.model,
-                messages=messages,
+                prompt=prompt,
             )
             result = to_result(
                 response_json=response_json,
@@ -684,11 +740,11 @@ def main() -> None:
                 )
                 continue
 
-            messages = build_prompt(context=context, source_name=source_name)
-            response_json = ollama_chat_json(
+            prompt = build_prompt(context=context, source_name=source_name)
+            response_json = ollama_generate_json(
                 ollama_host=args.ollama_host,
                 model=args.model,
-                messages=messages,
+                prompt=prompt,
             )
             result = to_result(
                 response_json=response_json,

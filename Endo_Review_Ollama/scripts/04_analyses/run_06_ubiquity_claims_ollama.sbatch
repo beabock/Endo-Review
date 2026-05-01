@@ -29,6 +29,8 @@ SOURCE_MODE="${SOURCE_MODE:-paired}"
 ABSTRACT_CSV="${ABSTRACT_CSV:-/scratch/bmb646/Abstracts_for_Monsoon.csv}"
 ABSTRACT_TEXT_COL="${ABSTRACT_TEXT_COL:-}"
 ABSTRACT_ID_COL="${ABSTRACT_ID_COL:-}"
+AUTO_START_OLLAMA="${AUTO_START_OLLAMA:-1}"
+OLLAMA_SERVE_LOG="${OLLAMA_SERVE_LOG:-results/logs/ollama_serve_${SLURM_JOB_ID:-manual}.log}"
 
 if [ -z "$OLLAMA_MODEL" ]; then
     echo "ERROR: OLLAMA_MODEL is required."
@@ -61,6 +63,47 @@ echo "Ollama model: $OLLAMA_MODEL"
 echo "Max files: $MAX_FILES"
 echo "Source mode: $SOURCE_MODE"
 echo "Abstract CSV: $ABSTRACT_CSV"
+echo "Auto-start Ollama: $AUTO_START_OLLAMA"
+
+check_ollama_up() {
+    "$PYTHON_BIN" - <<'PY'
+import os
+import sys
+import urllib.request
+
+host = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+url = host + "/api/tags"
+try:
+        with urllib.request.urlopen(url, timeout=5) as resp:
+                ok = resp.status == 200
+except Exception:
+        ok = False
+
+sys.exit(0 if ok else 1)
+PY
+}
+
+if ! check_ollama_up; then
+    echo "Ollama is not reachable at $OLLAMA_HOST"
+    if [ "$AUTO_START_OLLAMA" = "1" ]; then
+        if command -v ollama >/dev/null 2>&1; then
+            echo "Attempting to start local ollama server..."
+            nohup ollama serve > "$OLLAMA_SERVE_LOG" 2>&1 &
+            echo "Started ollama serve (log: $OLLAMA_SERVE_LOG)"
+            if ! check_ollama_up; then
+                echo "ERROR: Ollama still unreachable after auto-start attempt."
+                echo "Check log: $OLLAMA_SERVE_LOG"
+                exit 1
+            fi
+        else
+            echo "ERROR: 'ollama' command not found and Ollama host is unreachable."
+            exit 1
+        fi
+    else
+        echo "ERROR: AUTO_START_OLLAMA=0 and Ollama host is unreachable."
+        exit 1
+    fi
+fi
 
 "$PYTHON_BIN" scripts/04_analyses/06_detect_ubiquity_claims_ollama.py \
   --input-dir "$INPUT_DIR" \
