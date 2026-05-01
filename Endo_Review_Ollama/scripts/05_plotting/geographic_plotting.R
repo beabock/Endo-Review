@@ -8,29 +8,30 @@ source("scripts/utils/disputed_territory_parent_iso.R")
 source("scripts/05_plotting/theme_utils.R")
 
 # Load the enriched country-level data
-country_papers <- read.csv("data/country_enriched_data.csv")
-
-# Preserve the precomputed study counts from the enrichment step
-country_papers <- country_papers %>%
+country_papers <- read.csv("data/country_enriched_data.csv") %>%
   mutate(
     study_count = as.numeric(study_count),
     study_count_plot = log10(study_count + 1)
-  )
+  ) %>%
+  distinct(iso_a3, .keep_all = TRUE)
 
 # Load world map
 world <- ne_countries(scale = 50, returnclass = "sf") %>%
   apply_disputed_parent_iso_world() %>%
   filter(!is.na(iso_a3), iso_a3 != "-99")
 
+world_lookup <- world %>%
+  st_drop_geometry() %>%
+  distinct(iso_a3, .keep_all = TRUE) %>%
+  select(iso_a3, name)
+
 # Join study counts with world map data
 world_data <- world %>%
-  left_join(country_papers, by = c("iso_a3" = "iso_a3"))
+  left_join(country_papers, by = c("iso_a3" = "iso_a3"), relationship = "many-to-one")
 
 # Build explicit status labels for countries in the world map.
-country_status <- world %>%
-  st_drop_geometry() %>%
-  distinct(iso_a3, name) %>%
-  left_join(country_papers %>% select(iso_a3, study_count), by = "iso_a3") %>%
+country_status <- world_lookup %>%
+  left_join(country_papers %>% select(iso_a3, study_count), by = "iso_a3", relationship = "many-to-one") %>%
   mutate(
     data_status = case_when(
       is.na(study_count) ~ "NA",
@@ -82,7 +83,7 @@ ggsave("results/study_count_by_country_robinson.png", map, width = 14, height = 
 cat("Summary of studies by country:\n")
 # Joining with country names for a more readable summary
 summary_data <- country_papers %>%
-  left_join(world %>% st_drop_geometry() %>% distinct(iso_a3, name), by = "iso_a3") %>%
+  left_join(world_lookup, by = "iso_a3", relationship = "many-to-one") %>%
   select(country_name = name, iso_a3, study_count) %>%
   arrange(desc(study_count))
 print(summary_data)
@@ -92,16 +93,14 @@ cat("\nTotal countries with studies:", nrow(country_papers), "\n")
 cat("Total studies across all countries:", sum(country_papers$study_count), "\n")
 
 # Show countries NOT represented in the dataset
-all_countries <- world %>% pull(iso_a3) %>% unique() %>% sort()
+all_countries <- world_lookup %>% pull(iso_a3) %>% unique() %>% sort()
 countries_with_data <- country_papers %>% filter(study_count > 0) %>% pull(iso_a3) %>% unique() %>% sort()
 countries_without_data <- setdiff(all_countries, countries_with_data)
 
 cat("\n\nCountries/territories NOT represented in dataset (", length(countries_without_data), " total):\n", sep="")
 # Get country names from world map for display
-world_names <- world %>%
+world_names <- world_lookup %>%
   filter(iso_a3 %in% countries_without_data) %>%
-  select(name, iso_a3) %>%
-  st_drop_geometry() %>%
   arrange(name)
 cat(paste(world_names$name, collapse = ", "), "\n")
 
