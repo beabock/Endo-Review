@@ -83,10 +83,33 @@ if (length(missing_cols) > 0) {
 
 message("Loading GBIF backbone reference species (with caching)...")
 
+# Define phylum resolution function (needed for both cache build and load)
+resolve_phylum_from_lineage <- function(start_taxon_id, parent_map, phylum_map, max_steps = 40) {
+	current <- start_taxon_id
+	steps <- 0
+	while (!is.na(current) && current != "" && steps < max_steps) {
+		p <- unname(phylum_map[current])
+		if (length(p) > 0 && !is.na(p) && p != "") {
+			return(p)
+		}
+		next_id <- unname(parent_map[current])
+		if (length(next_id) == 0 || is.na(next_id) || next_id == "" || identical(next_id, current)) {
+			break
+		}
+		current <- next_id
+		steps <- steps + 1
+	}
+	""
+}
+
 if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 	message("Loading cached GBIF objects from RDS...")
 	gbif_taxa_min <- readRDS(GBIF_MIN_RDS)
 	reference_species <- readRDS(GBIF_REF_RDS)
+	
+	# Rebuild lookup tables from cached data
+	parent_lookup <- setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
+	phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
 } else {
 	# Build a minimal accepted Plantae taxonomy index for lineage-based phylum backfill.
 	gbif_taxa_min <- fast_read_tsv(
@@ -110,24 +133,6 @@ if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 
 	parent_lookup <- setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
 	phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
-
-	resolve_phylum_from_lineage <- function(start_taxon_id, parent_map, phylum_map, max_steps = 40) {
-		current <- start_taxon_id
-		steps <- 0
-		while (!is.na(current) && current != "" && steps < max_steps) {
-			p <- unname(phylum_map[current])
-			if (length(p) > 0 && !is.na(p) && p != "") {
-				return(p)
-			}
-			next_id <- unname(parent_map[current])
-			if (length(next_id) == 0 || is.na(next_id) || next_id == "" || identical(next_id, current)) {
-				break
-			}
-			current <- next_id
-			steps <- steps + 1
-		}
-		""
-	}
 
 	reference_species <- fast_read_tsv(
 		GBIF_TAXON_FILE,

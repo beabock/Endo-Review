@@ -82,7 +82,14 @@ country_counts <- standardized_country_data %>%
 # Load country geometry and compute centroid latitude/longitude
 world <- ne_countries(scale = 50, returnclass = "sf") %>%
   apply_disputed_parent_iso_world() %>%
-  filter(!is.na(iso_a3), iso_a3 != "-99")
+  filter(!is.na(iso_a3), iso_a3 != "-99") %>%
+  # Deduplicate by iso_a3: prefer primary countries over territories
+  mutate(
+    is_territory = grepl("(Island|Ocean|Glacier|Ter\\.|Territory)", name, ignore.case = TRUE)
+  ) %>%
+  arrange(iso_a3, is_territory) %>%
+  distinct(iso_a3, .keep_all = TRUE) %>%
+  select(-is_territory)
 
 world_valid <- suppressWarnings(st_make_valid(world))
 

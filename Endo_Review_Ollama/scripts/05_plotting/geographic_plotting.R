@@ -64,12 +64,12 @@ world_robinson <- st_transform(world_data, robinson_proj)
 legend_breaks <- c(0, 1, 2, 5, 10, 25, 50, 100, 250, 500, 1000)
 legend_breaks <- legend_breaks[legend_breaks <= max(world_robinson$study_count, na.rm = TRUE)]
 
-# Modify study_count_plot to treat 0 specially (shift slightly to show as distinct)
+# Modify study_count_plot to treat 0 specially (shift significantly to show as distinct)
 world_robinson <- world_robinson %>%
   mutate(
     study_count_plot_adjusted = if_else(
       study_count == 0,
-      -0.05,  # Slight negative shift for 0 to appear visually distinct
+      -0.15,  # Larger negative shift for 0 to create clear visual separation from 1
       study_count_plot
     )
   )
@@ -77,12 +77,13 @@ world_robinson <- world_robinson %>%
 map <- ggplot(world_robinson) +
   geom_sf(aes(fill = study_count_plot_adjusted), color = "white", linewidth = 0.2) +
   scale_fill_gradient(
-    low = "#F5E6D3",
-    high = "#006837",
+    low = "#FEE8C8",
+    high = "#8B0000",
     name = "Studies per country",
-    breaks = c(-0.05, log10(legend_breaks[legend_breaks > 0] + 1)),
+    breaks = c(-0.15, log10(legend_breaks[legend_breaks > 0] + 1)),
     labels = c("0", scales::label_number(accuracy = 1)(legend_breaks[legend_breaks > 0])),
-    na.value = "#EEEEEE"
+    na.value = "#EEEEEE",
+    oob = scales::squish
   ) +
   guides(fill = guide_colorbar(barwidth = unit(14, "cm"), barheight = unit(0.45, "cm"))) +
   theme_endo_bw(base_size = 12) +
