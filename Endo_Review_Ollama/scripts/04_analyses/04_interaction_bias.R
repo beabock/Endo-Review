@@ -22,15 +22,30 @@ library(ggplot2)
 library(readr)
 library(tidyr)
 library(stringr)
+library(rnaturalearth)
+library(sf)
 
 source("scripts/05_plotting/theme_utils.R")
 
 INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
 COUNTRY_FILE <- "data/country_enriched_data.csv"
-GBIF_TAXON_FILE <- "data/Reference_datasets/gbif_backbone/Taxon.tsv"
-
+CACHE_DIR <- "results/taxonomy_analysis/cache"
 OUTPUT_DIR <- "results/interaction_analysis"
+
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
+
+# --- Helper function to read cached objects ---
+cache_read_object <- function(qs_path, rds_path) {
+  if (file.exists(qs_path)) {
+    if (requireNamespace("qs", quietly = TRUE)) {
+      return(qs::qread(qs_path))
+    }
+  }
+  if (file.exists(rds_path)) {
+    return(readRDS(rds_path))
+  }
+  stop("Neither qs nor RDS cache file found. Run 02_taxonomy.R first.")
+}
 
 if (!file.exists(INPUT_FILE)) stop("Input file not found: ", INPUT_FILE)
 
@@ -42,7 +57,6 @@ country_df <- read_csv(COUNTRY_FILE, show_col_types = FALSE) %>%
   select(country_name, iso_a3) %>% distinct()
 
 # To get continents, we can use rnaturalearth
-library(rnaturalearth)
 world <- ne_countries(scale = 50, returnclass = "sf") %>%
   sf::st_drop_geometry() %>%
   select(iso_a3, continent)
@@ -52,12 +66,11 @@ country_map <- country_df %>%
   mutate(continent = replace_na(continent, "Unknown")) %>%
   select(country = country_name, continent) %>% distinct()
 
-message("Loading minimal GBIF taxonomy for Phyla...")
-gbif_min <- read_tsv(
-  GBIF_TAXON_FILE, 
-  col_select = c(taxonID, kingdom, phylum),
-  show_col_types = FALSE
-) %>%
+message("Loading minimal GBIF taxonomy for Phyla from cache...")
+gbif_qs_path <- file.path(CACHE_DIR, "gbif_taxa_min.qs")
+gbif_rds_path <- file.path(CACHE_DIR, "gbif_taxa_min.rds")
+gbif_min <- cache_read_object(gbif_qs_path, gbif_rds_path) %>%
+  select(taxonID, kingdom, phylum) %>%
   mutate(
     taxonID = as.character(taxonID),
     phylum = ifelse(is.na(phylum) | phylum == "", "Unassigned", phylum)
