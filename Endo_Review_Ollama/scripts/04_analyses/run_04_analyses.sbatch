@@ -116,46 +116,32 @@ else
     echo "Skipping Step 2 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 3: Taxonomy Representation Plots"
+echo "Step 3: Fungal Taxonomic Bias"
 if [ "$START_STEP" -le 3 ]; then
-    Rscript scripts/05_plotting/taxonomy_representation.R
+    "$PYTHON_BIN" scripts/04_analyses/03_fungal_taxonomic_bias.py
 else
     echo "Skipping Step 3 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 4: Geographic Bias Mapping"
+echo "Step 4: Interaction Bias Analysis"
 if [ "$START_STEP" -le 4 ]; then
-    Rscript scripts/04_analyses/03_geographic_bias_mapping.R
+    Rscript scripts/04_analyses/04_interaction_bias.R
 else
     echo "Skipping Step 4 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 5: Fungal Taxonomic Bias"
+echo "Step 5: Manuscript Summary"
 if [ "$START_STEP" -le 5 ]; then
-    "$PYTHON_BIN" scripts/04_analyses/03_fungal_taxonomic_bias.py
+    "$PYTHON_BIN" scripts/04_analyses/05_manuscript_summary.py
 else
     echo "Skipping Step 5 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 6: Interaction Bias Analysis"
+echo "Step 6: Identify Understudied Taxa & Countries"
 if [ "$START_STEP" -le 6 ]; then
-    Rscript scripts/04_analyses/04_interaction_bias.R
+    Rscript scripts/04_analyses/03_identify_understudied_taxa.R
 else
     echo "Skipping Step 6 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 7: Manuscript Summary"
-if [ "$START_STEP" -le 7 ]; then
-    "$PYTHON_BIN" scripts/04_analyses/05_manuscript_summary.py
-else
-    echo "Skipping Step 7 (START_STEP=${START_STEP})"
-fi
-
-echo "Step 8: Identify Understudied Taxa & Countries"
-if [ "$START_STEP" -le 8 ]; then
-    Rscript scripts/04_analyses/03_identify_understudied_taxa.R
-else
-    echo "Skipping Step 8 (START_STEP=${START_STEP})"
-fi
-
-echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, plots/taxonomy, results/interaction_analysis, and results/manuscript_dataset_summary.*"
+echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, results/interaction_analysis, results/manuscript_dataset_summary.*, and results/understudied_analysis"
