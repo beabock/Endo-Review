@@ -151,4 +151,11 @@ else
     echo "Skipping Step 7 (START_STEP=${START_STEP})"
 fi
 
+echo "Step 8: Identify Understudied Taxa & Countries"
+if [ "$START_STEP" -le 8 ]; then
+    Rscript scripts/04_analyses/03_identify_understudied_taxa.R
+else
+    echo "Skipping Step 8 (START_STEP=${START_STEP})"
+fi
+
 echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, plots/taxonomy, results/interaction_analysis, and results/manuscript_dataset_summary.*"

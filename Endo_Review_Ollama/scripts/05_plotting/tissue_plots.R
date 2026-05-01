@@ -10,7 +10,12 @@ library(purrr)
 
 source("scripts/05_plotting/theme_utils.R")
 
-INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
+# Use the year-enriched file if available, fallback to final
+INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_year.csv"
+if (!file.exists(INPUT_FILE)) {
+  INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
+}
+
 OUTPUT_DIR <- "results/tissue_analysis"
 RAW_COUNTS_FILE <- file.path(OUTPUT_DIR, "tissue_counts_by_study_raw.csv")
 PLANT_COUNTS_FILE <- file.path(OUTPUT_DIR, "tissue_counts_by_study_plant_parts.csv")
@@ -185,7 +190,7 @@ tissue_country_filtered <- tissue_country %>%
 
 p_tissue_country <- ggplot(tissue_country_filtered, aes(x = tissue_token, y = fct_reorder(country, study_count, .fun = max), fill = study_count)) +
 	geom_tile(color = "white", linewidth = 0.3) +
-	scale_fill_viridis(option = "mako", begin = 0.1, end = 0.95, name = "Studies") +
+	scale_fill_viridis(option = "mako", begin = 0.1, end = 0.95, name = "Studies", direction = -1) +
 	theme_endo_bw(base_size = 11) +
 	theme(
 		axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
@@ -492,6 +497,47 @@ ggsave(coverage_file, p_coverage, width = 9, height = 7, dpi = 300)
 # ============================================================================
 # Summary output
 # ============================================================================
+
+# ============================================================================
+# VISUALIZATION 9: Tissue Research Over Time
+# ============================================================================
+if ("publication_year" %in% names(df)) {
+  
+  # Get top 8 tissue parts for clarity in the plot
+  top_tissues_time <- plant_counts %>%
+    slice_head(n = 8) %>%
+    pull(tissue_part)
+
+  # Join year info back to the paper_tissue_plant data
+  tissue_time_data <- paper_tissue_plant %>%
+    left_join(df %>% select(paper_id, publication_year) %>% distinct(), by = "paper_id") %>%
+    filter(
+      !is.na(publication_year),
+      publication_year >= 1990,
+      publication_year <= 2024,
+      tissue_part %in% top_tissues_time
+    ) %>%
+    count(publication_year, tissue_part)
+
+  p_tissue_time <- ggplot(tissue_time_data, aes(x = publication_year, y = n, color = tissue_part)) +
+    geom_line(linewidth = 1, alpha = 0.8) +
+    geom_point(size = 1.5) +
+    scale_color_manual(values = endo_palette_discrete, name = "Tissue Part") +
+    theme_endo_bw(base_size = 11) +
+    labs(
+      title = "Trends in Tissue Research Over Time",
+      subtitle = "Annual study counts for the top 8 standardized tissue parts (1990-2024)",
+      x = "Publication Year",
+      y = "Number of Studies"
+    )
+
+  tissue_time_file <- file.path(OUTPUT_DIR, "tissue_trends_over_time.png")
+  ggsave(tissue_time_file, p_tissue_time, width = 11, height = 7, dpi = 300)
+  
+} else {
+  tissue_time_file <- "skipped (no publication_year column found)"
+}
+
 cat("\n=== EXTENDED TISSUE VISUALIZATIONS ===\n")
 cat("  1. Tissue × Country Heatmap: ", tissue_country_file, "\n", sep = "")
 cat("  2. Tissue × Plant Family Heatmap: ", tissue_family_file, "\n", sep = "")
@@ -501,3 +547,4 @@ cat("  5. Tissue by Biome (Stacked): ", biome_file, "\n", sep = "")
 cat("  6. Tissue Richness Distribution: ", richness_file, "\n", sep = "")
 cat("  7. Top Tissue × Family Tile: ", tile_file, "\n", sep = "")
 cat("  8. Cumulative Coverage Curve: ", coverage_file, "\n", sep = "")
+cat("  9. Tissue Trends Over Time: ", tissue_time_file, "\n", sep = "")

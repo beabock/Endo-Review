@@ -30,19 +30,7 @@ world_lookup <- world %>%
 
 # Join study counts with world map data
 world_data <- world %>%
-  left_join(country_papers, by = c("iso_a3" = "iso_a3"), relationship = "many-to-one") %>%
-  mutate(
-    # Coarser bins to improve contrast between 0 and non-zero categories
-    study_count_binned = case_when(
-      study_count == 0 ~ "0",
-      study_count == 1 ~ "1",
-      study_count <= 9 ~ "2-9",
-      study_count <= 49 ~ "10-49",
-      study_count <= 249 ~ "50-249",
-      study_count <= 999 ~ "250-999",
-      TRUE ~ "1000+"
-    ) %>% factor(levels = c("0", "1", "2-9", "10-49", "50-249", "250-999", "1000+"))
-  )
+  left_join(country_papers, by = c("iso_a3" = "iso_a3"), relationship = "many-to-one")
 
 # Build explicit status labels for countries in the world map.
 country_status <- world_lookup %>%
@@ -105,106 +93,12 @@ map <- ggplot() +
   ) +
   labs(
     title = "Number of Endophyte Studies by Country",
-    subtitle = "Orange = 0 studies (categorical key) — mako scale is colorblind-friendly; light gray = No data",
-    caption = "Note: legend shows log10(study_count + 1) scale where applicable"
+    subtitle = "Orange = 0 studies | Color gradient = 1 to 1000+ studies"
+    
   )
 
 # Save the continuous map
 ggsave("results/study_count_by_country_robinson.png", map, width = 14, height = 8, dpi = 300)
-
-# Create binned version for clarity
-# Use a hatched pattern for zero-study countries when ggpattern is available; otherwise fall back to a high-contrast solid color
-if (requireNamespace("ggpattern", quietly = TRUE)) {
-  zeros_sf <- world_robinson %>% filter(study_count_binned == "0")
-  nonzeros_sf <- world_robinson %>% filter(study_count_binned != "0")
-
-  map_binned <- ggplot() +
-    geom_sf(data = nonzeros_sf, aes(fill = study_count_binned), color = "white", linewidth = 0.2) +
-    ggpattern::geom_sf_pattern(
-      data = zeros_sf,
-      mapping = aes(geometry = geometry),
-      pattern = "crosshatch",
-      pattern_fill = "#222222",
-      pattern_colour = "#222222",
-      pattern_density = 0.5,
-      pattern_spacing = 0.02,
-      pattern_angle = 45,
-      fill = NA,
-      colour = NA
-    ) +
-    scale_fill_manual(
-      name = "Studies per country",
-      values = c(
-        "1" = "#fff7ec",
-        "2-9" = "#fee8c8",
-        "10-49" = "#fdbb84",
-        "50-249" = "#fc8d59",
-        "250-999" = "#e34a33",
-        "1000+" = "#b30000"
-      ),
-      na.value = "#DDDDDD",
-      drop = FALSE
-    ) +
-    guides(fill = guide_legend(ncol = 2)) +
-    theme_endo_bw(base_size = 12) +
-    theme(
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      axis.ticks = element_blank(),
-      panel.grid = element_blank(),
-      panel.border = element_blank(),
-      legend.position = "bottom",
-      legend.title = element_text(size = 10, face = "bold"),
-      legend.text = element_text(size = 9),
-      plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
-      plot.margin = margin(10, 10, 10, 10)
-    ) +
-    labs(
-      title = "Number of Endophyte Studies by Country (Binned)",
-      caption = "Cross-hatched = 0 studies | Light gray = No data | Darker colors = more studies"
-    )
-
-  ggsave("results/study_count_by_country_robinson_binned.png", map_binned, width = 14, height = 8, dpi = 300)
-} else {
-  message("Package 'ggpattern' not installed: falling back to high-contrast solid color for zero-study countries. To enable hatch patterns install ggpattern.")
-  # Fallback: use a bright yellow for zeros to ensure contrast
-  map_binned <- ggplot(world_robinson) +
-    geom_sf(aes(fill = study_count_binned), color = "white", linewidth = 0.2) +
-    scale_fill_manual(
-      name = "Studies per country",
-      values = c(
-        "0" = "#FFD425",
-        "1" = "#fff7ec",
-        "2-9" = "#fee8c8",
-        "10-49" = "#fdbb84",
-        "50-249" = "#fc8d59",
-        "250-999" = "#e34a33",
-        "1000+" = "#b30000"
-      ),
-      na.value = "#DDDDDD",
-      drop = FALSE
-    ) +
-    guides(fill = guide_legend(ncol = 2)) +
-    theme_endo_bw(base_size = 12) +
-    theme(
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      axis.ticks = element_blank(),
-      panel.grid = element_blank(),
-      panel.border = element_blank(),
-      legend.position = "bottom",
-      legend.title = element_text(size = 10, face = "bold"),
-      legend.text = element_text(size = 9),
-      plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
-      plot.margin = margin(10, 10, 10, 10)
-    ) +
-    labs(
-      title = "Number of Endophyte Studies by Country (Binned)",
-      caption = "Bright yellow = 0 studies (fallback) | Light gray = No data | Darker colors = more studies"
-    )
-
-  ggsave("results/study_count_by_country_robinson_binned.png", map_binned, width = 14, height = 8, dpi = 300)
-}
 
 # Create ranked bar chart of top countries
 top_countries <- country_papers %>%
@@ -282,6 +176,58 @@ cat(paste(zero_countries$name, collapse = ", "), "\n")
 
 write.csv(na_countries, "results/countries_study_count_NA.csv", row.names = FALSE)
 write.csv(zero_countries, "results/countries_study_count_zero.csv", row.names = FALSE)
+
+
+# === TIME SERIES PLOT: TOP COUNTRIES OVER TIME ===
+cat("\nGenerating time series plot for top countries...\n")
+
+TIME_SERIES_INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_year.csv"
+if (file.exists(TIME_SERIES_INPUT_FILE)) {
+
+  time_df <- read_csv(TIME_SERIES_INPUT_FILE, show_col_types = FALSE)
+
+  # Get top 8 country names for plot clarity
+  top_8_country_names <- top_countries %>%
+    slice_head(n = 8) %>%
+    pull(country_name) %>%
+    as.character()
+  
+  # Map full country names back to iso_a3 for filtering
+  top_8_iso <- country_papers %>%
+    filter(country_name %in% top_8_country_names) %>%
+    pull(iso_a3)
+
+  # Process data
+  country_time_data <- time_df %>%
+    filter(
+      !is.na(publication_year),
+      publication_year >= 1990,
+      publication_year <= 2024,
+      country %in% top_8_iso
+    ) %>%
+    # Add full names for plotting
+    left_join(country_papers %>% select(iso_a3, country_name) %>% distinct(iso_a3, .keep_all=TRUE), by = c("country" = "iso_a3")) %>%
+    filter(!is.na(country_name), country_name %in% top_8_country_names) %>%
+    count(publication_year, country_name)
+
+  p_country_time <- ggplot(country_time_data, aes(x = publication_year, y = n, color = country_name)) +
+    geom_line(linewidth = 1, alpha = 0.8) +
+    geom_point(size = 1.5) +
+    scale_color_manual(values = endo_palette_discrete, name = "Country") +
+    theme_endo_bw(base_size = 11) +
+    labs(
+      title = "Trends in Endophyte Research Over Time by Country",
+      subtitle = "Annual study counts for the top 8 countries (1990-2024)",
+      x = "Publication Year",
+      y = "Number of Studies"
+    )
+
+  ggsave("results/country_trends_over_time.png", p_country_time, width = 11, height = 7, dpi = 300)
+  cat("Saved country time series plot to results/country_trends_over_time.png\n")
+
+} else {
+  cat("Skipping time series plot: year-enriched data file not found at", TIME_SERIES_INPUT_FILE, "\n")
+}
 
 
 # === SCATTER PLOTS: GDP AND LATITUDE ===

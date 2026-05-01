@@ -50,6 +50,14 @@ phylum_common_names <- tibble(
 # Create output directory
 dir.create(PLOTS_OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
+# --- Load Year-Enriched Data for Time-Series ---
+TIME_SERIES_INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_year.csv"
+time_df <- if (file.exists(TIME_SERIES_INPUT_FILE)) {
+  read_csv(TIME_SERIES_INPUT_FILE, show_col_types = FALSE)
+} else {
+  NULL
+}
+
 # =================================================================================
 # DATA LOADING AND PREPARATION
 # =================================================================================
@@ -260,6 +268,12 @@ plot_coverage_lollipop <- function(summary_data, title, taxon_label) {
 }
 
 plot_taxonomy_heatmap <- function(summary_data, title, taxon_label) {
+  # Remove redundant count from labels for heatmap view as it is shown in the 'Known' column
+  # We also convert to factor to preserve the phylum ordering
+  summary_data <- summary_data %>%
+    mutate(phylum_label = sub("\n.*$", "", phylum_label)) %>%
+    mutate(phylum_label = factor(phylum_label, levels = rev(unique(phylum_label))))
+
   long_data <- summary_data %>%
     select(phylum_label, known_count, studied_count, coverage_percent) %>%
     pivot_longer(
@@ -307,6 +321,74 @@ plot_taxonomy_heatmap <- function(summary_data, title, taxon_label) {
       axis.text.y = element_text(size = 9),
       axis.text.x = element_text(size = 10, face = "bold"),
       panel.grid = element_blank(),
+      legend.position = "none"
+    )
+}
+
+plot_compound_taxonomy_heatmap <- function(species_summary, genus_summary, family_summary, title) {
+  # Combine all three summaries
+  combined_data <- bind_rows(
+    species_summary %>% mutate(level = "Species"),
+    genus_summary %>% mutate(level = "Genus"),
+    family_summary %>% mutate(level = "Family")
+  ) %>%
+    mutate(level = factor(level, levels = c("Species", "Genus", "Family")))
+
+  # Strip the total n from labels for the phyla
+  combined_data <- combined_data %>%
+    mutate(phylum_label = sub("\n.*$", "", phylum_label)) %>%
+    mutate(phylum_label = factor(phylum_label, levels = rev(unique(phylum_label))))
+
+  # Reshape for metrics
+  long_data <- combined_data %>%
+    select(phylum_label, level, known_count, studied_count, coverage_percent) %>%
+    pivot_longer(
+      cols = c(known_count, studied_count, coverage_percent),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+    mutate(
+      metric = factor(
+        metric,
+        levels = c("known_count", "studied_count", "coverage_percent"),
+        labels = c("Known", "Studied", "Coverage %")
+      )
+    ) %>%
+    group_by(level, metric) %>%
+    mutate(
+      value_scaled = if (all(is.na(value))) {
+        NA_real_
+      } else if (dplyr::n_distinct(value, na.rm = TRUE) <= 1) {
+        0.5
+      } else {
+        scales::rescale(value, to = c(0, 1), na.rm = TRUE)
+      },
+      label = case_when(
+        metric == "Coverage %" ~ paste0(round(value, 1), "%"),
+        TRUE ~ comma(value)
+      ),
+      text_color = if_else(is.na(value_scaled) | value_scaled < 0.65, "#222222", "white")
+    ) %>%
+    ungroup()
+
+  ggplot(long_data, aes(x = metric, y = phylum_label, fill = value_scaled)) +
+    geom_tile(color = "white", width = 0.95, height = 0.9) +
+    geom_text(aes(label = label, color = text_color), size = 2.8, show.legend = FALSE) +
+    facet_wrap(~level, scales = "free_x") +
+    scale_fill_gradient(low = "#F7F7F7", high = "#2C7FB8", limits = c(0, 1), na.value = "#F0F0F0", guide = "none") +
+    scale_color_identity() +
+    labs(
+      title = title,
+      x = NULL,
+      y = "Phylum",
+      subtitle = "Comparison of research effort and taxonomic coverage across plant Species, Genera, and Families"
+    ) +
+    theme_endo_bw(base_size = 11) +
+    theme(
+      axis.text.y = element_text(size = 9),
+      axis.text.x = element_text(size = 9, face = "bold"),
+      panel.grid = element_blank(),
+      strip.text = element_text(size = 12, face = "bold"),
       legend.position = "none"
     )
 }
@@ -381,5 +463,73 @@ save_plot(family_views$coverage_bar, "09_families_coverage_bar.png", width = 10,
 save_plot(family_views$studied_bar, "10_families_studied_bar.png", width = 10, height = 7)
 save_plot(family_views$lollipop, "11_families_coverage_lollipop.png", width = 10, height = 7)
 save_plot(family_views$heatmap, "12_families_summary_heatmap.png", width = 10, height = 7)
+
+# 13. Compound Heatmap (Species, Genus, Family comparison)
+# ... (existing code for compound heatmap) ...
+save_plot(compound_heatmap, "13_compound_taxonomy_heatmap.png", width = 14, height = 8)
+
+# =================================================================================
+# VISUALIZATION 14: Plant Family Research Over Time
+# =================================================================================
+if (!is.null(time_df)) {
+
+  # --- Load Taxonomy Lookup for Family ---
+  TAXA_LOOKUP_FILE <- "results/taxonomy_analysis/top_studied_plant_species.csv"
+  if (!file.exists(TAXA_LOOKUP_FILE)) {
+    stop("Taxonomy lookup file not found! Please run the 04_analyses scripts first.\n  Expected file: ", TAXA_LOOKUP_FILE)
+  }
+
+  taxa_lookup <- read_csv(TAXA_LOOKUP_FILE, show_col_types = FALSE) %>%
+    select(canonicalName, family) %>%
+    distinct()
+
+  # Join family data to the main dataframe using a normalized join key
+  df_with_family <- time_df %>%
+    mutate(join_name = tolower(gsub("[^A-Za-z ]", "", plant_host_resolved)))
+
+  taxa_lookup_norm <- taxa_lookup %>%
+    mutate(join_name = tolower(gsub("[^A-Za-z ]", "", canonicalName))) %>%
+    select(join_name, family) %>%
+    distinct(join_name, .keep_all = TRUE)
+
+  df_with_family <- df_with_family %>%
+    left_join(taxa_lookup_norm, by = "join_name") %>%
+    select(-join_name)
+
+  # Determine the top 8 families from the full, joined dataset
+  top_8_families <- df_with_family %>%
+    filter(!is.na(family), family != "") %>%
+    count(family, sort = TRUE) %>%
+    slice_head(n = 8) %>%
+    pull(family)
+    
+  # Create the time-series data using this definitive list
+  family_time_data <- df_with_family %>%
+    filter(
+      !is.na(publication_year),
+      publication_year >= 1990,
+      publication_year <= 2024,
+      family %in% top_8_families
+    ) %>%
+    count(publication_year, family)
+
+  p_family_time <- ggplot(family_time_data, aes(x = publication_year, y = n, color = family)) +
+    geom_line(linewidth = 1, alpha = 0.8) +
+    geom_point(size = 1.5) +
+    scale_color_manual(values = endo_palette_discrete, name = "Plant Family") +
+    theme_endo_bw(base_size = 11) +
+    labs(
+      title = "Trends in Plant Family Research Over Time",
+      subtitle = "Annual study counts for the top 8 most-studied plant families (1990-2024)",
+      x = "Publication Year",
+      y = "Number of Studies"
+    )
+    
+  save_plot(p_family_time, "14_family_trends_over_time.png", width = 12, height = 7)
+
+} else {
+  cat("Skipping family time-series plot: year-enriched data file not found.\n")
+}
+
 
 cat("\nTaxonomy representation plots complete!\n")
