@@ -135,40 +135,59 @@ write_csv(fungal_tissue, file.path(OUTPUT_DIR, "fungal_phylum_vs_tissue.csv"))
 message("Running statistical tests...")
 
 # Test 1: Fungal Phylum vs Continent (Chi-Square)
-# Are certain fungal phyla disproportionately studied in certain continents?
-fc_table <- table(
-  factor(df_clean$fungal_phylum[df_clean$fungal_phylum %in% top_fungal]), 
-  factor(df_clean$continent[df_clean$continent != "Unknown" & df_clean$fungal_phylum %in% top_fungal])
-)
+# Create a clean data frame for this specific analysis to ensure vector lengths match.
+fc_analysis_data <- df_clean %>%
+  filter(fungal_phylum %in% top_fungal, continent != "Unknown")
 
-fc_chi <- chisq.test(fc_table, simulate.p.value = TRUE, B = 2000)
-fc_stats <- tibble(
-  test = "Chi-Square: Fungal Phylum x Continent",
-  statistic = fc_chi$statistic,
-  p_value = fc_chi$p.value,
-  method = fc_chi$method,
-  interpretation = ifelse(fc_chi$p.value < 0.05, 
-                          "Significant bias: Fungal phyla are not studied equally across continents.", 
-                          "No significant bias detected.")
-)
+# Check if there's enough data to proceed
+if (nrow(fc_analysis_data) > 0 && n_distinct(fc_analysis_data$fungal_phylum) > 1 && n_distinct(fc_analysis_data$continent) > 1) {
+  fc_table <- table(fc_analysis_data$fungal_phylum, fc_analysis_data$continent)
+
+  # Only run test if the table has dimensions
+  if (all(dim(fc_table) > 1)) {
+    fc_chi <- chisq.test(fc_table, simulate.p.value = TRUE, B = 2000)
+    fc_stats <- tibble(
+      test = "Chi-Square: Fungal Phylum x Continent",
+      statistic = fc_chi$statistic,
+      p_value = fc_chi$p.value,
+      method = fc_chi$method,
+      interpretation = ifelse(fc_chi$p.value < 0.05, 
+                              "Significant bias: Fungal phyla are not studied equally across continents.", 
+                              "No significant bias detected.")
+    )
+  } else {
+    fc_stats <- tibble(test = "Chi-Square: Fungal Phylum x Continent", interpretation = "Skipped: Not enough data diversity for test.")
+  }
+} else {
+  fc_stats <- tibble(test = "Chi-Square: Fungal Phylum x Continent", interpretation = "Skipped: Not enough data to create contingency table.")
+}
+
 
 # Test 2: Fungal Phylum vs Tissue Category (Chi-Square)
-# Are certain fungal phyla disproportionately studied in specific tissues?
-ft_table <- table(
-  factor(df_clean$fungal_phylum[df_clean$fungal_phylum %in% top_fungal]), 
-  factor(df_clean$tissue_group[df_clean$tissue_group != "Other/Unknown" & df_clean$fungal_phylum %in% top_fungal])
-)
+# Create a second clean data frame for this analysis.
+ft_analysis_data <- df_clean %>%
+  filter(fungal_phylum %in% top_fungal, tissue_group != "Other/Unknown")
 
-ft_chi <- chisq.test(ft_table, simulate.p.value = TRUE, B = 2000)
-ft_stats <- tibble(
-  test = "Chi-Square: Fungal Phylum x Tissue Category",
-  statistic = ft_chi$statistic,
-  p_value = ft_chi$p.value,
-  method = ft_chi$method,
-  interpretation = ifelse(ft_chi$p.value < 0.05, 
-                          "Significant bias: Fungal phyla are not studied equally across plant tissues.", 
-                          "No significant bias detected.")
-)
+if (nrow(ft_analysis_data) > 0 && n_distinct(ft_analysis_data$fungal_phylum) > 1 && n_distinct(ft_analysis_data$tissue_group) > 1) {
+  ft_table <- table(ft_analysis_data$fungal_phylum, ft_analysis_data$tissue_group)
+
+  if (all(dim(ft_table) > 1)) {
+    ft_chi <- chisq.test(ft_table, simulate.p.value = TRUE, B = 2000)
+    ft_stats <- tibble(
+      test = "Chi-Square: Fungal Phylum x Tissue Category",
+      statistic = ft_chi$statistic,
+      p_value = ft_chi$p.value,
+      method = ft_chi$method,
+      interpretation = ifelse(ft_chi$p.value < 0.05, 
+                              "Significant bias: Fungal phyla are not studied equally across plant tissues.", 
+                              "No significant bias detected.")
+    )
+  } else {
+    ft_stats <- tibble(test = "Chi-Square: Fungal Phylum x Tissue Category", interpretation = "Skipped: Not enough data diversity for test.")
+  }
+} else {
+  ft_stats <- tibble(test = "Chi-Square: Fungal Phylum x Tissue Category", interpretation = "Skipped: Not enough data to create contingency table.")
+}
 
 # Combine and save statistical results
 all_stats <- bind_rows(fc_stats, ft_stats)
