@@ -21,10 +21,17 @@ mkdir -p .rlibs/R/library
 # the local project copy is incomplete. This avoids copying the large dataset.
 LOCAL_GBIF_DIR="data/Reference_datasets/gbif_backbone"
 PARENT_GBIF_DIR="../data/Reference_datasets/gbif_backbone"
-if [ ! -e "$LOCAL_GBIF_DIR" ] && [ -d "$PARENT_GBIF_DIR" ]; then
+
+if [ -L "$LOCAL_GBIF_DIR" ]; then
+    echo "GBIF symlink already exists: $LOCAL_GBIF_DIR -> $(readlink "$LOCAL_GBIF_DIR")"
+elif [ -d "$LOCAL_GBIF_DIR" ]; then
+    echo "GBIF directory already exists at $LOCAL_GBIF_DIR; skipping symlink"
+elif [ -d "$PARENT_GBIF_DIR" ]; then
     mkdir -p data/Reference_datasets
     ln -s "$PARENT_GBIF_DIR" "$LOCAL_GBIF_DIR"
     echo "Linked $LOCAL_GBIF_DIR -> $PARENT_GBIF_DIR"
+else
+    echo "Warning: GBIF backbone not found at $PARENT_GBIF_DIR; script may fail."
 fi
 
 # Default to starting at filtering if the year-enriched file is already present.

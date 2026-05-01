@@ -4,6 +4,9 @@ library(readr)
 library(stringr)
 library(tidyr)
 library(forcats)
+library(viridis)
+library(scales)
+library(purrr)
 
 source("scripts/05_plotting/theme_utils.R")
 
@@ -142,3 +145,359 @@ cat("  Raw tissue terms saved to: ", RAW_COUNTS_FILE, "\n", sep = "")
 cat("  Plant tissue parts saved to: ", PLANT_COUNTS_FILE, "\n", sep = "")
 cat("  Raw plot saved to: ", RAW_PLOT_FILE, "\n", sep = "")
 cat("  Plant tissue-part plot saved to: ", PLANT_PLOT_FILE, "\n", sep = "")
+
+# ============================================================================
+# VISUALIZATION 1: Tissue × Country Heatmap (Geographic bias in tissue choice)
+# ============================================================================
+tissue_country <- df %>%
+	transmute(
+		paper_id = as.character(paper_id),
+		country = as.character(country),
+		tissue_raw = clean_tissue_value(as.character(tissue))
+	) %>%
+	filter(!is.na(country), country != "", !is.na(tissue_raw), !is_missing_tissue(tissue_raw)) %>%
+	mutate(tissue_tokens = split_tissues(tissue_raw)) %>%
+	unnest_longer(tissue_tokens) %>%
+	mutate(
+		tissue_token = tissue_tokens %>%
+			str_squish() %>%
+			str_replace_all("[^a-z0-9\\s-]", "")
+	) %>%
+	filter(!is.na(tissue_token), tissue_token != "", !is_missing_tissue(tissue_token)) %>%
+	distinct(paper_id, country, tissue_token) %>%
+	count(country, tissue_token, name = "study_count", sort = TRUE)
+
+# Top 15 tissues and top 15 countries for readability
+top_tissues_hm <- paper_tissue %>%
+	count(tissue_token, name = "n", sort = TRUE) %>%
+	slice_head(n = 15) %>%
+	pull(tissue_token)
+
+top_countries_hm <- tissue_country %>%
+	group_by(country) %>%
+	summarise(total = sum(study_count), .groups = "drop") %>%
+	slice_head(n = 15) %>%
+	pull(country)
+
+tissue_country_filtered <- tissue_country %>%
+	filter(tissue_token %in% top_tissues_hm, country %in% top_countries_hm) %>%
+	complete(country, tissue_token, fill = list(study_count = 0))
+
+p_tissue_country <- ggplot(tissue_country_filtered, aes(x = tissue_token, y = fct_reorder(country, study_count, .fun = max), fill = study_count)) +
+	geom_tile(color = "white", linewidth = 0.3) +
+	scale_fill_viridis(option = "mako", begin = 0.1, end = 0.95, name = "Studies") +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+		plot.title = element_text(face = "bold")
+	) +
+	labs(
+		title = "Tissue studied by country (top 15 of each)",
+		subtitle = "Heatmap intensity shows number of studies examining each tissue-country combination",
+		x = "Tissue term",
+		y = "Country"
+	)
+
+tissue_country_file <- file.path(OUTPUT_DIR, "tissue_country_heatmap.png")
+ggsave(tissue_country_file, p_tissue_country, width = 11, height = 8, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 2: Tissue × Plant Family Heatmap (Host-tissue specialization)
+# ============================================================================
+tissue_family <- df %>%
+	transmute(
+		paper_id = as.character(paper_id),
+		plant_host = as.character(plant_host),
+		tissue_raw = clean_tissue_value(as.character(tissue))
+	) %>%
+	filter(!is.na(plant_host), plant_host != "", !is.na(tissue_raw), !is_missing_tissue(tissue_raw)) %>%
+	mutate(tissue_tokens = split_tissues(tissue_raw)) %>%
+	unnest_longer(tissue_tokens) %>%
+	mutate(
+		tissue_token = tissue_tokens %>%
+			str_squish() %>%
+			str_replace_all("[^a-z0-9\\s-]", "")
+	) %>%
+	filter(!is.na(tissue_token), tissue_token != "", !is_missing_tissue(tissue_token)) %>%
+	distinct(paper_id, plant_host, tissue_token) %>%
+	count(plant_host, tissue_token, name = "study_count", sort = TRUE)
+
+# Top 12 tissues and families
+top_tissues_fam <- paper_tissue %>%
+	count(tissue_token, name = "n", sort = TRUE) %>%
+	slice_head(n = 12) %>%
+	pull(tissue_token)
+
+top_families <- tissue_family %>%
+	group_by(plant_host) %>%
+	summarise(total = sum(study_count), .groups = "drop") %>%
+	slice_head(n = 12) %>%
+	pull(plant_host)
+
+tissue_family_filtered <- tissue_family %>%
+	filter(tissue_token %in% top_tissues_fam, plant_host %in% top_families) %>%
+	complete(plant_host, tissue_token, fill = list(study_count = 0))
+
+p_tissue_family <- ggplot(tissue_family_filtered, aes(x = tissue_token, y = fct_reorder(plant_host, study_count, .fun = max), fill = study_count)) +
+	geom_tile(color = "white", linewidth = 0.3) +
+	scale_fill_viridis(option = "viridis", begin = 0.1, end = 0.95, name = "Studies") +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+		plot.title = element_text(face = "bold")
+	) +
+	labs(
+		title = "Tissue specialization by plant family (top 12 of each)",
+		subtitle = "Shows which plant families are studied for which tissues",
+		x = "Tissue term",
+		y = "Plant family"
+	)
+
+tissue_family_file <- file.path(OUTPUT_DIR, "tissue_family_heatmap.png")
+ggsave(tissue_family_file, p_tissue_family, width = 11, height = 8, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 3: Tissue Co-occurrence Network (shared tissues in papers)
+# ============================================================================
+tissue_cooccurrence <- paper_tissue %>%
+	group_by(paper_id) %>%
+	filter(n() > 1) %>%
+	ungroup() %>%
+	arrange(paper_id, tissue_token) %>%
+	group_by(paper_id) %>%
+	summarise(tissues = list(tissue_token), .groups = "drop") %>%
+	mutate(tissue_pairs = map(tissues, function(x) {
+		if (length(x) <= 1) return(data.frame(tissue1 = character(), tissue2 = character()))
+		t(combn(sort(x), 2)) %>%
+			as.data.frame(stringsAsFactors = FALSE) %>%
+			setNames(c("tissue1", "tissue2"))
+	})) %>%
+	unnest(tissue_pairs) %>%
+	count(tissue1, tissue2, name = "co_count", sort = TRUE) %>%
+	slice_head(n = 30)
+
+p_cooccurrence <- ggplot(tissue_cooccurrence, aes(x = tissue1, y = tissue2, size = co_count, color = co_count)) +
+	geom_point(alpha = 0.7) +
+	geom_label(aes(label = co_count), size = 2.5, alpha = 0.8, label.padding = unit(0.2, "lines")) +
+	scale_color_viridis(option = "plasma", name = "Co-occurrences") +
+	scale_size_continuous(range = c(3, 8), name = "Co-occurrences") +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+		plot.title = element_text(face = "bold"),
+		legend.position = "bottom"
+	) +
+	labs(
+		title = "Tissue co-occurrence in same studies (top 30 pairs)",
+		subtitle = "Shows which tissues are commonly studied together",
+		x = "Tissue 1",
+		y = "Tissue 2"
+	)
+
+cooccurrence_file <- file.path(OUTPUT_DIR, "tissue_cooccurrence_plot.png")
+ggsave(cooccurrence_file, p_cooccurrence, width = 10, height = 8, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 4: Tissue Data Completeness (Sankey-style waterfall)
+# ============================================================================
+completeness_summary <- df %>%
+	transmute(
+		has_tissue = !is.na(tissue) & tissue != "" & !is_missing_tissue(clean_tissue_value(tissue)),
+		has_plant = !is.na(plant_host) & plant_host != "",
+		has_country = !is.na(country) & country != "",
+		has_fungal = !is.na(fungal_taxon_resolved) & fungal_taxon_resolved != ""
+	) %>%
+	summarise(
+		Total = n(),
+		"Has tissue" = sum(has_tissue),
+		"Has host plant" = sum(has_plant),
+		"Has country" = sum(has_country),
+		"Has fungal ID" = sum(has_fungal),
+		"Has all four" = sum(has_tissue & has_plant & has_country & has_fungal)
+	)
+
+total_obs <- completeness_summary$Total[1]
+
+completeness_stats <- completeness_summary %>%
+	pivot_longer(cols = everything(), names_to = "category", values_to = "count") %>%
+	mutate(
+		category = fct_inorder(category),
+		pct = count / total_obs * 100
+	)
+
+p_completeness <- ggplot(completeness_stats, aes(x = category, y = count, fill = category)) +
+	geom_col(width = 0.7, show.legend = FALSE) +
+	geom_text(aes(label = paste0(count, "\n(", round(pct, 1), "%)")), vjust = -0.2, size = 3.2, fontface = "bold") +
+	scale_fill_endo_discrete() +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+		plot.title = element_text(face = "bold")
+	) +
+	labs(
+		title = "Data completeness across key fields",
+		subtitle = "Shows availability of tissue, host plant, location, and fungal identification",
+		x = "Data field",
+		y = "Number of observations"
+	) +
+	coord_cartesian(clip = "off")
+
+completeness_file <- file.path(OUTPUT_DIR, "tissue_data_completeness.png")
+ggsave(completeness_file, p_completeness, width = 9, height = 7, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 5: Tissue by Biome (Faceted bar chart)
+# ============================================================================
+tissue_biome <- df %>%
+	transmute(
+		paper_id = as.character(paper_id),
+		biome = as.character(biome),
+		tissue_raw = clean_tissue_value(as.character(tissue))
+	) %>%
+	filter(!is.na(biome), biome != "", !is.na(tissue_raw), !is_missing_tissue(tissue_raw)) %>%
+	mutate(tissue_tokens = split_tissues(tissue_raw)) %>%
+	unnest_longer(tissue_tokens) %>%
+	mutate(
+		tissue_token = tissue_tokens %>%
+			str_squish() %>%
+			str_replace_all("[^a-z0-9\\s-]", "")
+	) %>%
+	filter(!is.na(tissue_token), tissue_token != "", !is_missing_tissue(tissue_token)) %>%
+	distinct(paper_id, biome, tissue_token)
+
+# For clarity, show top 10 tissues per biome
+top_tissues_biome <- tissue_biome %>%
+	count(tissue_token, name = "n", sort = TRUE) %>%
+	slice_head(n = 10) %>%
+	pull(tissue_token)
+
+tissue_biome_plot <- tissue_biome %>%
+	filter(tissue_token %in% top_tissues_biome) %>%
+	count(biome, tissue_token, name = "study_count") %>%
+	mutate(tissue_token = fct_reorder(tissue_token, study_count, .fun = sum))
+
+p_biome <- ggplot(tissue_biome_plot, aes(x = tissue_token, y = study_count, fill = biome)) +
+	geom_col(position = "stack") +
+	scale_fill_viridis(option = "turbo", discrete = TRUE, name = "Biome") +
+	coord_flip() +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		plot.title = element_text(face = "bold"),
+		legend.position = "bottom"
+	) +
+	labs(
+		title = "Tissue research across biomes",
+		subtitle = "Stacked bar chart showing biome distribution for top 10 tissues studied",
+		y = "Number of studies",
+		x = "Tissue term"
+	)
+
+biome_file <- file.path(OUTPUT_DIR, "tissue_by_biome_stacked.png")
+ggsave(biome_file, p_biome, width = 10, height = 8, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 6: Tissue Richness per Study (Distribution)
+# ============================================================================
+tissue_richness <- paper_tissue %>%
+	group_by(paper_id) %>%
+	summarise(n_tissues = n(), .groups = "drop")
+
+p_richness <- ggplot(tissue_richness, aes(x = n_tissues)) +
+	geom_histogram(binwidth = 1, fill = endo_palette_discrete[1], color = "white", alpha = 0.85) +
+	geom_vline(aes(xintercept = median(n_tissues)), color = endo_palette_discrete[2], linetype = "dashed", linewidth = 1) +
+	geom_vline(aes(xintercept = mean(n_tissues)), color = endo_palette_discrete[3], linetype = "dotted", linewidth = 1) +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		plot.title = element_text(face = "bold")
+	) +
+	labs(
+		title = "Tissue research breadth per study",
+		subtitle = "Distribution of number of distinct tissues examined per paper (dashed = median, dotted = mean)",
+		x = "Number of distinct tissues per study",
+		y = "Number of studies"
+	) +
+	annotate("text", x = Inf, y = Inf, label = paste0("Median: ", median(tissue_richness$n_tissues), "\nMean: ", round(mean(tissue_richness$n_tissues), 2)),
+		hjust = 1.05, vjust = 1.2, size = 3.5, fontface = "bold", color = endo_palette_discrete[2])
+
+richness_file <- file.path(OUTPUT_DIR, "tissue_richness_distribution.png")
+ggsave(richness_file, p_richness, width = 9, height = 7, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 7: Top Tissue × Top Plant Family Tile Plot (Focused cross-tab)
+# ============================================================================
+top_tissue_x_family <- tissue_family %>%
+	filter(tissue_token %in% top_tissues_fam, plant_host %in% top_families) %>%
+	complete(plant_host, tissue_token, fill = list(study_count = 0)) %>%
+	mutate(
+		tissue_token = fct_reorder(tissue_token, study_count, .fun = max),
+		plant_host = fct_reorder(plant_host, study_count, .fun = max)
+	)
+
+p_tile <- ggplot(top_tissue_x_family, aes(x = tissue_token, y = plant_host, fill = study_count)) +
+	geom_tile(color = "white", linewidth = 0.5) +
+	geom_text(aes(label = if_else(study_count > 0, as.character(study_count), "")), 
+		size = 3, fontface = "bold", color = "white") +
+	scale_fill_viridis(option = "cividis", name = "Studies") +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+		plot.title = element_text(face = "bold"),
+		panel.grid = element_blank()
+	) +
+	labs(
+		title = "Top tissue-plant family interactions",
+		subtitle = "Detailed cross-tabulation of 12 most-studied tissues vs. plant families",
+		x = "Tissue term",
+		y = "Plant family"
+	)
+
+tile_file <- file.path(OUTPUT_DIR, "tissue_family_tile_plot.png")
+ggsave(tile_file, p_tile, width = 10, height = 8, dpi = 300)
+
+# ============================================================================
+# VISUALIZATION 8: Cumulative Coverage Curve (Ranked coverage threshold)
+# ============================================================================
+tissue_coverage <- paper_tissue %>%
+	count(tissue_token, name = "study_count", sort = TRUE) %>%
+	mutate(
+		rank = row_number(),
+		cumulative_studies = cumsum(study_count),
+		total_studies = max(cumsum(study_count)),
+		pct_coverage = cumulative_studies / total_studies * 100
+	) %>%
+	filter(rank <= 50)
+
+p_coverage <- ggplot(tissue_coverage, aes(x = rank, y = pct_coverage)) +
+	geom_line(size = 1, color = endo_palette_discrete[1]) +
+	geom_point(size = 2, color = endo_palette_discrete[1]) +
+	geom_hline(aes(yintercept = 80), linetype = "dashed", color = endo_palette_discrete[2], alpha = 0.7) +
+	geom_hline(aes(yintercept = 50), linetype = "dotted", color = endo_palette_discrete[3], alpha = 0.7) +
+	scale_y_continuous(limits = c(0, 105), labels = label_percent(scale = 1)) +
+	annotate("text", x = 45, y = 82, label = "80% coverage", size = 3.2, fontface = "bold", color = endo_palette_discrete[2]) +
+	annotate("text", x = 45, y = 52, label = "50% coverage", size = 3.2, fontface = "bold", color = endo_palette_discrete[3]) +
+	theme_endo_bw(base_size = 11) +
+	theme(
+		plot.title = element_text(face = "bold")
+	) +
+	labs(
+		title = "Cumulative tissue coverage curve",
+		subtitle = "How many tissues are needed to cover different percentages of the literature?",
+		x = "Number of tissues (ranked by frequency)",
+		y = "% of literature covered"
+	)
+
+coverage_file <- file.path(OUTPUT_DIR, "tissue_cumulative_coverage.png")
+ggsave(coverage_file, p_coverage, width = 9, height = 7, dpi = 300)
+
+# ============================================================================
+# Summary output
+# ============================================================================
+cat("\n=== EXTENDED TISSUE VISUALIZATIONS ===\n")
+cat("  1. Tissue × Country Heatmap: ", tissue_country_file, "\n", sep = "")
+cat("  2. Tissue × Plant Family Heatmap: ", tissue_family_file, "\n", sep = "")
+cat("  3. Tissue Co-occurrence Network: ", cooccurrence_file, "\n", sep = "")
+cat("  4. Data Completeness Waterfall: ", completeness_file, "\n", sep = "")
+cat("  5. Tissue by Biome (Stacked): ", biome_file, "\n", sep = "")
+cat("  6. Tissue Richness Distribution: ", richness_file, "\n", sep = "")
+cat("  7. Top Tissue × Family Tile: ", tile_file, "\n", sep = "")
+cat("  8. Cumulative Coverage Curve: ", coverage_file, "\n", sep = "")
