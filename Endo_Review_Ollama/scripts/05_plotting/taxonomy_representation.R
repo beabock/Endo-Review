@@ -17,7 +17,6 @@ library(dplyr)
 library(readr)
 library(tidyr)
 library(ggplot2)
-library(gridExtra)
 library(scales)
 
 theme_utils_paths <- c(
@@ -305,36 +304,6 @@ save_plot(p_genus_rel, "04_genera_relative_representation.png", width = 11, heig
 
 save_plot(p_family_abs, "05_families_absolute_representation.png", width = 11, height = 7)
 save_plot(p_family_rel, "06_families_relative_representation.png", width = 11, height = 7)
-
-# =================================================================================
-# GENERATE COMBINED SUMMARY FIGURE
-# =================================================================================
-
-cat("Creating combined summary figure...\n")
-
-# Create a comprehensive summary with all three levels side-by-side
-summary_figure <- gridExtra::grid.arrange(
-  p_species_abs + theme(plot.title = element_text(size = 10)),
-  p_genus_abs + theme(plot.title = element_text(size = 10)),
-  p_family_abs + theme(plot.title = element_text(size = 10)),
-  nrow = 1,
-  top = grid::textGrob("Plant Taxon Representation: Absolute Counts by Phylum",
-                       gp = grid::gpar(fontsize = 14, fontface = "bold"))
-)
-
-save_plot(summary_figure, "07_all_taxa_absolute_summary.png", width = 16, height = 6)
-
-# Relative coverage summary
-rel_summary_figure <- gridExtra::grid.arrange(
-  p_species_rel + theme(plot.title = element_text(size = 10)),
-  p_genus_rel + theme(plot.title = element_text(size = 10)),
-  p_family_rel + theme(plot.title = element_text(size = 10)),
-  nrow = 1,
-  top = grid::textGrob("Plant Taxon Representation: Relative Coverage by Phylum",
-                       gp = grid::gpar(fontsize = 14, fontface = "bold"))
-)
-
-save_plot(rel_summary_figure, "08_all_taxa_relative_summary.png", width = 16, height = 6)
 
 # =================================================================================
 # PRINT SUMMARY STATISTICS

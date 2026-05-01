@@ -83,7 +83,6 @@ Rscript -e "if (!requireNamespace('stringr', quietly=TRUE)) stop('Missing R pack
 Rscript -e "if (!requireNamespace('ggplot2', quietly=TRUE)) stop('Missing R package: ggplot2')"
 Rscript -e "if (!requireNamespace('forcats', quietly=TRUE)) stop('Missing R package: forcats')"
 Rscript -e "if (!requireNamespace('scales', quietly=TRUE)) stop('Missing R package: scales')"
-Rscript -e "if (!requireNamespace('gridExtra', quietly=TRUE)) stop('Missing R package: gridExtra')"
 Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('sf', quietly=TRUE)) { install.packages('sf', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org'); if (!requireNamespace('sf', quietly=TRUE)) stop('Missing R package: sf (and automatic install failed)') }"
 Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('rnaturalearth', quietly=TRUE)) { install.packages('rnaturalearth', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org') }"
 Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('rnaturalearthdata', quietly=TRUE)) { install.packages('rnaturalearthdata', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org') }"
