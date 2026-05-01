@@ -132,6 +132,34 @@ resolve_phylum_from_lineage <- function(start_taxon_id, parent_map, phylum_map, 
 	""
 }
 
+resolve_phylum_lookup <- function(gbif_taxa_min, parent_lookup, max_iter = 40) {
+	resolved_phylum <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
+	unresolved_ids <- names(resolved_phylum)[resolved_phylum == "" | is.na(resolved_phylum)]
+
+	if (length(unresolved_ids) == 0) {
+		return(resolved_phylum)
+	}
+
+	for (i in seq_len(max_iter)) {
+		if (length(unresolved_ids) == 0) {
+			break
+		}
+
+		parent_ids <- unname(parent_lookup[unresolved_ids])
+		parent_phylum <- unname(resolved_phylum[parent_ids])
+		fillable <- !is.na(parent_phylum) & parent_phylum != ""
+
+		if (!any(fillable)) {
+			break
+		}
+
+		resolved_phylum[unresolved_ids[fillable]] <- parent_phylum[fillable]
+		unresolved_ids <- names(resolved_phylum)[resolved_phylum == "" | is.na(resolved_phylum)]
+	}
+
+	resolved_phylum
+}
+
 if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 	message("Loading cached GBIF objects...")
 	gbif_taxa_min <- step_time(
@@ -148,7 +176,10 @@ if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 		"Rebuilding GBIF parent/phylum lookup tables",
 		setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
 	)
-	phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
+	phylum_lookup <- step_time(
+		"Resolving GBIF phylum lookup from lineage",
+		resolve_phylum_lookup(gbif_taxa_min, parent_lookup)
+	)
 } else {
 	# Build a minimal accepted Plantae taxonomy index for lineage-based phylum backfill.
 	gbif_taxa_min <- step_time(
@@ -208,7 +239,10 @@ if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 
 	# Ensure parent/phylum lookups exist in this branch
 	parent_lookup <- setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
-	phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
+	phylum_lookup <- step_time(
+		"Resolving GBIF phylum lookup from lineage",
+		resolve_phylum_lookup(gbif_taxa_min, parent_lookup)
+	)
 }
 
 missing_phylum_before_backfill <- sum(is.na(reference_species$phylum) | reference_species$phylum == "")
@@ -217,15 +251,9 @@ if (missing_phylum_before_backfill > 0) {
 	reference_species <- step_time(
 		"Backfilling missing phylum values from GBIF lineage",
 		{
-			resolved_values <- vapply(
-				reference_species$taxonID,
-				resolve_phylum_from_lineage,
-				FUN.VALUE = character(1),
-				parent_map = parent_lookup,
-				phylum_map = phylum_lookup
-			)
+			resolved_values <- unname(phylum_lookup[reference_species$taxonID])
 			reference_species %>%
-				mutate(phylum = if_else(phylum == "" & resolved_values != "", resolved_values, phylum))
+				mutate(phylum = if_else(phylum == "" & !is.na(resolved_values) & resolved_values != "", resolved_values, phylum))
 		}
 	)
 }
