@@ -30,6 +30,20 @@ PBDB_FILE <- resolve_existing_path(c(
 	"../../data/Reference_datasets/pbdb_all.csv"
 ))
 
+# RDS cache paths for GBIF processed subsets
+GBIF_CACHE_DIR <- file.path(dirname(GBIF_TAXON_FILE))
+GBIF_MIN_RDS <- file.path(GBIF_CACHE_DIR, "Taxon_minimal.rds")
+GBIF_REF_RDS <- file.path(GBIF_CACHE_DIR, "Taxon_reference_species.rds")
+
+# fast reader wrapper: prefer vroom when available
+fast_read_tsv <- function(path, col_select = NULL) {
+	if (requireNamespace("vroom", quietly = TRUE)) {
+		vroom::vroom(path, delim = "\t", col_select = col_select, progress = FALSE)
+	} else {
+		readr::read_tsv(path, show_col_types = FALSE, progress = FALSE, col_select = col_select)
+	}
+}
+
 SUMMARY_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_summary.csv")
 PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_by_phylum.csv")
 GENUS_PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_genus_coverage_by_phylum.csv")
@@ -66,71 +80,85 @@ if (length(missing_cols) > 0) {
 	stop("Missing required columns in input data: ", paste(missing_cols, collapse = ", "))
 }
 
-message("Loading GBIF backbone reference species...")
-# Build a minimal accepted Plantae taxonomy index for lineage-based phylum backfill.
-gbif_taxa_min <- read_tsv(
-	GBIF_TAXON_FILE,
-	show_col_types = FALSE,
-	progress = FALSE,
-	col_select = c(taxonID, parentNameUsageID, phylum, taxonomicStatus, kingdom)
-) %>%
-	mutate(
-		taxonID = as.character(taxonID),
-		parentNameUsageID = as.character(parentNameUsageID),
-		phylum = as.character(phylum),
-		taxonomicStatus = str_to_lower(str_trim(taxonomicStatus)),
-		kingdom = str_trim(kingdom)
-	) %>%
-	filter(
-		kingdom == "Plantae",
-		taxonomicStatus == "accepted",
-		!is.na(taxonID),
-		taxonID != ""
-	) %>%
-	mutate(phylum = if_else(is.na(phylum), "", str_squish(phylum)))
+message("Loading GBIF backbone reference species (with caching)...")
 
-parent_lookup <- setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
-phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
+if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
+	message("Loading cached GBIF objects from RDS...")
+	gbif_taxa_min <- readRDS(GBIF_MIN_RDS)
+	reference_species <- readRDS(GBIF_REF_RDS)
+} else {
+	# Build a minimal accepted Plantae taxonomy index for lineage-based phylum backfill.
+	gbif_taxa_min <- fast_read_tsv(
+		GBIF_TAXON_FILE,
+		col_select = c("taxonID", "parentNameUsageID", "phylum", "taxonomicStatus", "kingdom")
+	) %>%
+		mutate(
+			taxonID = as.character(taxonID),
+			parentNameUsageID = as.character(parentNameUsageID),
+			phylum = as.character(phylum),
+			taxonomicStatus = str_to_lower(str_trim(taxonomicStatus)),
+			kingdom = str_trim(kingdom)
+		) %>%
+		filter(
+			kingdom == "Plantae",
+			taxonomicStatus == "accepted",
+			!is.na(taxonID),
+			taxonID != ""
+		) %>%
+		mutate(phylum = if_else(is.na(phylum), "", str_squish(phylum)))
 
-resolve_phylum_from_lineage <- function(start_taxon_id, parent_map, phylum_map, max_steps = 40) {
-	current <- start_taxon_id
-	steps <- 0
-	while (!is.na(current) && current != "" && steps < max_steps) {
-		p <- unname(phylum_map[current])
-		if (length(p) > 0 && !is.na(p) && p != "") {
-			return(p)
+	parent_lookup <- setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
+	phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
+
+	resolve_phylum_from_lineage <- function(start_taxon_id, parent_map, phylum_map, max_steps = 40) {
+		current <- start_taxon_id
+		steps <- 0
+		while (!is.na(current) && current != "" && steps < max_steps) {
+			p <- unname(phylum_map[current])
+			if (length(p) > 0 && !is.na(p) && p != "") {
+				return(p)
+			}
+			next_id <- unname(parent_map[current])
+			if (length(next_id) == 0 || is.na(next_id) || next_id == "" || identical(next_id, current)) {
+				break
+			}
+			current <- next_id
+			steps <- steps + 1
 		}
-		next_id <- unname(parent_map[current])
-		if (length(next_id) == 0 || is.na(next_id) || next_id == "" || identical(next_id, current)) {
-			break
-		}
-		current <- next_id
-		steps <- steps + 1
+		""
 	}
-	""
-}
 
-reference_species <- read_tsv(
-	GBIF_TAXON_FILE,
-	show_col_types = FALSE,
-	progress = FALSE,
-	col_select = c(taxonID, canonicalName, taxonRank, taxonomicStatus, kingdom, phylum, family, genus)
-) %>%
-	mutate(
-		taxonID = as.character(taxonID),
-		taxonRank = str_to_upper(str_trim(taxonRank)),
-		taxonomicStatus = str_to_lower(str_trim(taxonomicStatus)),
-		kingdom = str_trim(kingdom),
-		phylum = if_else(is.na(phylum), "", str_squish(phylum))
+	reference_species <- fast_read_tsv(
+		GBIF_TAXON_FILE,
+		col_select = c("taxonID", "canonicalName", "taxonRank", "taxonomicStatus", "kingdom", "phylum", "family", "genus")
 	) %>%
-	filter(
-		kingdom == "Plantae",
-		taxonRank == "SPECIES",
-		taxonomicStatus == "accepted",
-		!is.na(taxonID),
-		taxonID != ""
-	) %>%
-	distinct(taxonID, .keep_all = TRUE)
+		mutate(
+			taxonID = as.character(taxonID),
+			taxonRank = str_to_upper(str_trim(taxonRank)),
+			taxonomicStatus = str_to_lower(str_trim(taxonomicStatus)),
+			kingdom = str_trim(kingdom),
+			phylum = if_else(is.na(phylum), "", str_squish(phylum))
+		) %>%
+		filter(
+			kingdom == "Plantae",
+			taxonRank == "SPECIES",
+			taxonomicStatus == "accepted",
+			!is.na(taxonID),
+			taxonID != ""
+		) %>%
+		distinct(taxonID, .keep_all = TRUE)
+
+	# Save caches for future runs
+	try({
+		saveRDS(gbif_taxa_min, GBIF_MIN_RDS)
+		saveRDS(reference_species, GBIF_REF_RDS)
+		message("Saved GBIF caches to RDS files.")
+	}, silent = TRUE)
+
+	# Ensure parent/phylum lookups exist in this branch
+	parent_lookup <- setNames(gbif_taxa_min$parentNameUsageID, gbif_taxa_min$taxonID)
+	phylum_lookup <- setNames(gbif_taxa_min$phylum, gbif_taxa_min$taxonID)
+}
 
 missing_phylum_before_backfill <- sum(is.na(reference_species$phylum) | reference_species$phylum == "")
 
