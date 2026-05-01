@@ -91,7 +91,7 @@ if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 	# Build a minimal accepted Plantae taxonomy index for lineage-based phylum backfill.
 	gbif_taxa_min <- fast_read_tsv(
 		GBIF_TAXON_FILE,
-		col_select = c("taxonID", "parentNameUsageID", "phylum", "taxonomicStatus", "kingdom")
+		col_select = all_of(c("taxonID", "parentNameUsageID", "phylum", "taxonomicStatus", "kingdom"))
 	) %>%
 		mutate(
 			taxonID = as.character(taxonID),
@@ -131,7 +131,7 @@ if (file.exists(GBIF_MIN_RDS) && file.exists(GBIF_REF_RDS)) {
 
 	reference_species <- fast_read_tsv(
 		GBIF_TAXON_FILE,
-		col_select = c("taxonID", "canonicalName", "taxonRank", "taxonomicStatus", "kingdom", "phylum", "family", "genus")
+		col_select = all_of(c("taxonID", "canonicalName", "taxonRank", "taxonomicStatus", "kingdom", "phylum", "family", "genus"))
 	) %>%
 		mutate(
 			taxonID = as.character(taxonID),

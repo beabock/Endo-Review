@@ -5,7 +5,7 @@ library(stringr)
 library(tidyr)
 library(forcats)
 
-source("scripts/plotting/theme_utils.R")
+source("scripts/05_plotting/theme_utils.R")
 
 INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
 OUTPUT_DIR <- "results/tissue_analysis"

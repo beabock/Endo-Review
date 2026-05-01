@@ -1,151 +1,139 @@
 tissue_token,study_count
-root,6335
-leaf,4293
-seed,2628
-stem,2362
-fruit,349
-rhizosphere,280
-wood,243
-soil,221
-tuber,207
-bark,186
-flower,160
-needle,155
-foliar,125
-endophytic,111
-rhizome,105
-nodule,104
-reproductive,98
-grass,49
-xylem,45
-foliage,44
-phyllosphere,40
-plant,40
+root,5436
+leaf,3621
+stem,2068
+seed,1730
+fruit,324
+wood,245
+rhizosphere,242
+soil,199
+tuber,184
+bark,159
+needle,130
+flower,122
+foliar,114
+endophytic,108
+rhizome,98
+nodule,92
+reproductive,77
+grass,45
+plant,39
+phyllosphere,37
+foliage,36
 pasture,30
-petiole,28
-plants,28
-internal tissues,26
-mycelium,26
-mycelia,22
-seaweed,21
-plant tissue,20
+xylem,29
+plants,27
+mycelium,23
+petiole,21
+mycelia,19
+plant tissue,19
+tiller,19
+internal tissues,18
 culture,17
-tiller,17
 endophyte,16
+seaweed,16
 litter,13
 endosphere,12
 forage,12
 grasses,12
 aboveground,11
 thalli,10
-liver,9
-skin,9
+gall,9
+inflorescences,9
+stroma,9
 tree,9
+whole plant,9
 aboveground tissues,8
-air-borne,8
 callus,8
-gall,8
-hay,8
-inflorescences,8
-soil-borne,8
-stern,8
-whole plant,8
-corm,7
-ear,7
-hair,7
-lungs,7
+sheath,8
+hay,7
+liver,7
 phylloplane,7
 planta,7
 plants as a whole,7
-sheath,7
-stroma,7
 suspension cells,7
-beechnut,6
-blood,6
-cell culture,6
+above-ground tissues,6
+corm,6
 culture broth,6
 fermentation broth,6
 grass tissue,6
 herbage,6
+phloem,6
 plantlets,6
 rhizoids,6
 sclerotia,6
 stalk,6
 straw,6
-stromata,6
 various tissues,6
-above-ground tissues,5
-conidia,5
+aboveground biomass,5
+buds,5
+cortex,5
 cultures,5
+ear,5
 epiphytic,5
 fresh tissue,5
 fronds,5
 host tissue,5
-internal tissues of plants,5
+inflorescence,5
 marine red alga,5
 none specified,5
-phloem,5
-plant surfaces,5
-sheaths,5
-spores,5
-buds,4
-cell line,4
+pollen,5
+skin,5
+stromata,5
+aboveground parts,4
+blood,4
+cell culture,4
 cell suspension culture,4
-cells,4
-cortex,4
+conidia,4
 crown,4
 cultured,4
 different tissues,4
+galls,4
 grass blade,4
-gut,4
 host plant,4
 hyphae,4
 in planta,4
 infected tissue,4
 interior tissues,4
-intestine,4
+internal tissues of plants,4
 intracellular,4
 lichen thalli,4
 notspecified,4
-oral mucosa,4
 plant as a whole,4
 plant host,4
 plant material,4
-respective host plants,4
 rhizoma,4
 rhizospheric,4
 rumen,4
+sheaths,4
 solid cultures,4
+spikes,4
+spines,4
+spores,4
 sprouts,4
 surface,4
-various organs,4
-aboveground biomass,3
-aboveground parts,3
-aerial,3
+vegetative tissues,4
+above-ground parts,3
 aerial part,3
 air,3
 algal tissue,3
 apoplast,3
 asymptomatic tissues,3
 bulk soil,3
+canes,3
 cladodes,3
 embryo,3
 endophytic fungus,3
 endorhiza,3
 entire plant,3
-galls,3
 grass samples,3
 grass tissues,3
+gut,3
 host plants,3
 host tissues,3
-in vitro,3
 intercellular,3
 internal,3
 larvae,3
-macrophages,3
-moss,3
-not specifically mentioned,3
-notum,3
 nut,3
 organs,3
 peel,3
@@ -154,34 +142,31 @@ pinnules,3
 plant endophyte,3
 plant interior,3
 pod,3
-savory tissues,3
-spikes,3
-spines,3
+rhizospheric soil,3
+sap,3
 stomata,3
-submerged parts,3
 suspension culture,3
+tillers,3
 tissues,3
-vegetative tissues,3
 wound,3
+above-ground biomass,2
 above-ground organs,2
-above-ground parts,2
+above-ground tissue,2
+aerial,2
 aerial plant parts,2
 aerial regions,2
 anther,2
 anthers,2
 apoplast fluid,2
-bone marrow,2
 broth,2
 broth extract,2
 broth fermentation,2
 calli,2
 cambium,2
-canes,2
-cankers,2
 canopy,2
 cell suspension,2
 cell suspension cultures,2
-citrus tissues,2
+cells,2
 coleoptile,2
 coleoptiles,2
 crop,2
@@ -189,7 +174,6 @@ culture extract,2
 cultured on rice,2
 cuttings,2
 diet,2
-dorsal pedal vein,2
 ears,2
 endemic plant,2
 endolichenic,2
@@ -200,7 +184,6 @@ epidermal tissues,2
 epiphyte,2
 frond,2
 generative organs,2
-germ tube,2
 grass biomass,2
 grass clippings,2
 grass host,2
@@ -213,6 +196,7 @@ healthy plant parts,2
 host,2
 hypocotyl,2
 hypocotyls,2
+in vitro,2
 infected grass,2
 infected plant,2
 infected tissues,2
@@ -231,11 +215,15 @@ latex,2
 lichen,2
 living,2
 lung,2
+macrophages,2
 mangrove plant,2
 marine alga,2
-nodal segments,2
+moss,2
+not specifically mentioned,2
+notum,2
 nymphs,2
-oral cavity,2
+oral mucosa,2
+ovaries,2
 pedicel,2
 photosynthetic tissues,2
 plant cells,2
@@ -243,6 +231,7 @@ plant organs,2
 plant parts,2
 plant samples,2
 plantlet,2
+pods,2
 pruning wounds,2
 pupae,2
 rhizoid,2
@@ -250,21 +239,15 @@ rhizoplane,2
 rice,2
 rice plant,2
 rumen fluid,2
-sap,2
 senescent tissues,2
-serum,2
-setts,2
 silks,2
 solid rice medium,2
 sprout,2
 stalks,2
+submerged parts,2
 substrate,2
-surface of straw,2
 suspension cell culture,2
 symptomatic,2
-terminal buds,2
-thrips tabaci lindeman,2
-tillers,2
 tissues of the plant,2
 tissues of various plants,2
 tomato plants,2
@@ -274,16 +257,14 @@ vascular,2
 vascular bundles,2
 vascular tissues,2
 vegetative organs,2
+vegetative tissue,2
 within plant,2
 6 colonies,1
 above ground dry matter,1
-above ground parts,1
 above-,1
 above-ground,1
-above-ground biomass,1
 above-ground plant material,1
 above-ground plant tissue,1
-above-ground tissue,1
 aboveground litter,1
 aboveground organs,1
 aboveground tissues of frond blades,1
@@ -302,6 +283,7 @@ agar media,1
 ages,1
 agricultural wastes,1
 air particulate matter,1
+air-borne,1
 airborne,1
 airborne aerosols,1
 alga,1
@@ -324,7 +306,6 @@ aphid cuticle,1
 aphids body,1
 apices,1
 apoplastic protein fraction,1
-appendix,1
 apple,1
 apple parts,1
 arils,1
@@ -356,6 +337,7 @@ basidioma,1
 basidiomata,1
 bean,1
 bean plants,1
+beechnut,1
 below-ground organs,1
 below-ground tissues,1
 belowground biomass,1
@@ -369,10 +351,10 @@ blood culture,1
 blood serum,1
 blossoms,1
 body tissues,1
+bone marrow,1
 bovine lateral saphenous vein,1
 bract,1
 brain,1
-breathing passages,1
 broth culture,1
 brown algae,1
 bryophyte,1
@@ -388,10 +370,10 @@ callus cultures,1
 callus liquid cultures,1
 callus material of beech,1
 cambial region of the tree limbs,1
-cancer cells,1
 cane,1
 canker,1
 canker on tree,1
+cankers,1
 cankers associated with n arbuti infection,1
 canopy soil,1
 capitula,1
@@ -402,15 +384,15 @@ caudal artery,1
 caulosphere,1
 cell,1
 cell cultures,1
+cell line,1
 cell lineage,1
 cell lines,1
 cell wall,1
 cell wall residues,1
 cellulose,1
 cellulose-based medium,1
-central venous catheter tunnel,1
-cerebrospinal fluid,1
 chemical-epigenetic cultures,1
+citrus tissues,1
 clumps,1
 cob,1
 cocoa pods,1
@@ -423,6 +405,7 @@ conidia derived from lesions,1
 conidiospores obtained from the atmosphere,1
 conidium,1
 core rot,1
+cork,1
 corn fiber,1
 cornea,1
 cotton,1
@@ -450,7 +433,6 @@ cultures of endophytic fungus,1
 cultures of penicillium sp,1
 cupule litter,1
 cut surface,1
-cutaneous,1
 cuticle,1
 cyst,1
 cysts,1
@@ -467,7 +449,6 @@ different tissues of brugmansia aurea lagerh,1
 digestive tract,1
 digestive tracts,1
 disease symptoms,1
-diseased parts of grasses,1
 diseased samples from various orchards,1
 diseased tissue,1
 diseased tissues,1
@@ -476,6 +457,8 @@ diverse parts throughout plant kingdom,1
 dna,1
 dna from endophyte-infected tall fescue,1
 dormant buds,1
+dormant vegetative buds,1
+dorsal pedal vein,1
 dried plant material,1
 droppings,1
 dry yellow foxtail,1
@@ -505,9 +488,7 @@ endophytic microbiome of hazelnut,1
 endophytic tissue,1
 endosymbiont,1
 endotrophic,1
-environmental,1
 environmental exposure,1
-environmental sample,1
 environmental substrata,1
 epibiotic upon the surface of ferns,1
 epidermal strips,1
@@ -518,7 +499,6 @@ ergot sclerotia,1
 erythrocytes,1
 explants,1
 external fungal structures,1
-eyelid,1
 faeces,1
 feces,1
 fermentation product,1
@@ -534,6 +514,7 @@ forage grasses,1
 fungal comb,1
 fungal garden,1
 fungal tissues,1
+gall cortex,1
 gall rust tumors,1
 gall tissue,1
 gallery,1
@@ -542,6 +523,8 @@ gel,1
 genome,1
 genomic dna of calluses,1
 genomic sequences,1
+germ tube,1
+germlings,1
 germs,1
 gi tract,1
 graft union,1
@@ -575,7 +558,7 @@ growing host tissues,1
 growing on agricultural waste substrates,1
 gut-associated microbiomes,1
 guttation fluid,1
-hair shaft,1
+hair,1
 harvested onions,1
 haustorium,1
 heads,1
@@ -589,7 +572,7 @@ hemolymph,1
 herbal medicine,1
 hidden microbiomes,1
 higher plant tissue,1
-holobiont,1
+honey,1
 host apoplast,1
 host cuticle,1
 host extract,1
@@ -621,14 +604,12 @@ infected scale insect,1
 infected tissues of f excelsior,1
 infected tissues of weeds,1
 infection site,1
-inflorescence,1
 inflorescence axis,1
 inflorescence tissues,1
 ingested conidia within the alimentary tracts,1
 ingested through forage,1
 inner compartments of the host plant,1
 inner cortical cells,1
-inner host tissues,1
 inner parts of plants,1
 inner regions of various plant parts,1
 inoculum multiplication,1
@@ -666,8 +647,8 @@ internal tissues of fungi-infected peanuts,1
 internal tissues of host plants,1
 internal tissues of the host plant,1
 intestinal contents,1
-intestinal mucosa,1
 intestinal tract,1
+intestine,1
 intestines,1
 intra-cellular,1
 intra-plant,1
@@ -681,6 +662,7 @@ kelp detritus,1
 knots,1
 knots caused by pseudomonas savastanoi pv savastanoi dapp-pg 722 in olive trees,1
 konjac tissue,1
+larva,1
 laticifers,1
 leave,1
 lesion,1
@@ -711,6 +693,7 @@ living tissues of the host plant,1
 living tissues of visually healthy trees,1
 log,1
 luem pua glutinous rice,1
+lungs,1
 macroalgal tissue,1
 macrophage,1
 maize ear,1
@@ -723,7 +706,6 @@ mature pecan nut,1
 medicinal plant,1
 medicinal plant tissue samples,1
 medulla,1
-menings,1
 mesocotyl,1
 mesophyll,1
 midgut,1
@@ -738,6 +720,7 @@ mosses,1
 mound soils,1
 multilayered midrib tissue,1
 multiple tissues of alfalfa cultivars,1
+mycelia grown in culture plates,1
 mycelia or fermented liquor,1
 mycelial,1
 mycelial growth on agar,1
@@ -748,14 +731,12 @@ mycorrhizae,1
 mycorrhizal,1
 mycorrhizal morphotype hyphal mantle,1
 mycorrhizas,1
-nail,1
-nasopharynx,1
-necrosis in declining plants,1
 necrotic tissue pieces from symptomatic pears,1
 nematode,1
 nematode eggs,1
 nest fiber,1
 nest material,1
+nodal segments,1
 nodal segments of adult plants,1
 node explants,1
 nodes,1
@@ -768,21 +749,22 @@ not applied,1
 not directly specified in text,1
 not specific,1
 not-specified-in-text,1
+nuts,1
 nymphal stage,1
 oil body organelles,1
 olive organs,1
 on plant surfaces,1
 onion plants,1
+oral cavity,1
 organ tissue,1
 outer cortex of the aerial axes,1
 ovarial grass,1
-ovaries,1
 ovary,1
 ovular nucellus,1
 paddy sheath,1
 painted surface,1
 panicle initiation stage,1
-paranasal sinuses,1
+panicles,1
 parchment,1
 parenchyma,1
 pasture forage,1
@@ -793,6 +775,7 @@ pathogenic fungi,1
 pda medium,1
 peat,1
 peduncle,1
+peduncles,1
 pelotons,1
 pericarp,1
 periderm,1
@@ -800,7 +783,6 @@ periderm cells,1
 perithecia,1
 perithecia structure studied,1
 perithecial stroma,1
-phellem,1
 phloem sap,1
 phloem-feeding aphid,1
 photosynthetic,1
@@ -815,6 +797,7 @@ plant body,1
 plant callus,1
 plant cane,1
 plant cell wall,1
+plant community,1
 plant growing in soil,1
 plant interiors,1
 plant internal tissues,1
@@ -832,6 +815,7 @@ plant structures,1
 plant substrate,1
 plant substrates in early stages of decay attached to host,1
 plant surface,1
+plant surfaces,1
 plant tissue as a whole,1
 plant tissue cultured,1
 plant tissue in general,1
@@ -840,6 +824,7 @@ plant whole plant after dipping,1
 plant-derived endophytic fungus,1
 planting material,1
 plants in general,1
+plants soil,1
 plants were asymptomatic,1
 plants without specific tissue mentioned,1
 plasma,1
@@ -847,9 +832,9 @@ plasma membrane,1
 pleural effusion,1
 plum yew,1
 pneumatophore,1
+pneumatophores,1
 pod surface,1
 podetia,1
-pods,1
 pollen mother cells,1
 pots,1
 powdery mildew,1
@@ -862,6 +847,7 @@ pst pustules,1
 pulp,1
 pupae inferred from context,1
 rachis,1
+ramet,1
 ramets,1
 rat liver tissue,1
 ratoon,1
@@ -870,13 +856,13 @@ regrowth,1
 regrowth tissue,1
 residues,1
 resinous tissues,1
+respective host plants,1
 retina,1
 rhizodermis,1
 rhizoid environment,1
 rhizoid parenchyma cortex,1
 rhizomatous axis,1
 rhizoplane soil,1
-rhizospheric soil,1
 rice fermentation extract,1
 rice fermented,1
 rice plant interiors,1
@@ -891,6 +877,7 @@ ryegrass silage,1
 ryegrass tillers,1
 sapling,1
 saprophytic,1
+savory tissues,1
 sawdust,1
 scale tissues of the buds,1
 scions,1
@@ -900,13 +887,11 @@ secondary cell walls,1
 sediment,1
 sediments,1
 semitendinosus muscle,1
+setts,1
 silage,1
 sinus tissues,1
 six plant parts,1
 skeleton,1
-skin scraping,1
-skin scrapings,1
-skin tissue,1
 skoog medium,1
 sloth hair,1
 snow-covered alpine bare soil,1
@@ -915,6 +900,7 @@ soil microsite,1
 soil residue,1
 soil surface,1
 soil under canopy,1
+soil-borne,1
 soil-derived debris,1
 soil-derived rhizospheric soil,1
 solid culture,1
@@ -933,7 +919,9 @@ sputum,1
 stalk parenchyma cells,1
 stalk tissues,1
 sterile conditions on murashige,1
+stern,1
 stigmas,1
+stolons,1
 stomach,1
 stored sugar beets,1
 stump,1
@@ -952,6 +940,7 @@ surface of cucumber,1
 surface of host,1
 surface of humid soils,1
 surface of living curtobacterium sp strain er1,1
+surface of straw,1
 surface tissues,1
 suspension cell,1
 suspension cell cultures,1
@@ -969,9 +958,11 @@ tea plant,1
 teff hay,1
 teliospores,1
 tepals,1
+terminal buds,1
 testes,1
 testicular,1
 thallose liverwort,1
+thrips tabaci lindeman,1
 thylakoids,1
 tiller bases,1
 tiller sections,1
@@ -1004,6 +995,7 @@ upper,1
 urediniospore,1
 uterine,1
 vagina,1
+various organs,1
 various organs of asymptomatic weeds,1
 various parts of pinellia ternata,1
 various parts of s flavescens,1
@@ -1021,10 +1013,8 @@ vegetative growth,1
 vegetative parts,1
 vegetative state,1
 vegetative tillers,1
-vegetative tissue,1
 venom glands,1
 vent,1
-wastewater samples,1
 water column,1
 waxy cuticle superficially,1
 wheat bran,1
