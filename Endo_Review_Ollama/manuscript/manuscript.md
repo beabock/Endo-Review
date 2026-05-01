@@ -22,3 +22,4 @@ biome_family_heatmap.png
 tissue_trends_over_time.png
 top_tissue_parts_by_study.png
 top_countries_ranked.png
+

@@ -42,7 +42,7 @@ cat("Loading studied species data...\n")
 studied_taxa <- read_csv(STUDIED_SPECIES_FILE, show_col_types = FALSE)
 
 # Get unique known taxa at each level
-known_families <- all_known_taxa %>% filter(!is.na(family)) %>% distinct(family) %>% pull(family)
+known_families <- all_known_taxa %>% filter(!is.na(.data$family)) %>% distinct(.data$family) %>% pull(family)
 known_genera <- all_known_taxa %>% filter(!is.na(genus)) %>% distinct(genus) %>% pull(genus)
 known_species <- all_known_taxa %>% filter(!is.na(canonicalName)) %>% distinct(canonicalName) %>% pull(canonicalName)
 
@@ -51,7 +51,7 @@ cat("Total known plant genera in GBIF:", length(known_genera), "\n")
 cat("Total known plant species in GBIF:", length(known_species), "\n")
 
 # Get unique studied taxa at each level
-studied_families <- studied_taxa %>% filter(!is.na(family)) %>% distinct(family) %>% pull(family)
+studied_families <- studied_taxa %>% filter(!is.na(.data$family)) %>% distinct(.data$family) %>% pull(family)
 studied_genera <- studied_taxa %>% filter(!is.na(genus)) %>% distinct(genus) %>% pull(genus)
 studied_species <- studied_taxa %>% filter(!is.na(canonicalName)) %>% distinct(canonicalName) %>% pull(canonicalName)
 
