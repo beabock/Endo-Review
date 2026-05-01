@@ -4,6 +4,8 @@ library(ggplot2)
 library(ggrepel)
 library(dplyr)
 library(grid)
+library(ggnewscale)
+library(viridisLite)
 
 source("scripts/utils/disputed_territory_parent_iso.R")
 source("scripts/05_plotting/theme_utils.R")
@@ -30,19 +32,16 @@ world_lookup <- world %>%
 world_data <- world %>%
   left_join(country_papers, by = c("iso_a3" = "iso_a3"), relationship = "many-to-one") %>%
   mutate(
+    # Coarser bins to improve contrast between 0 and non-zero categories
     study_count_binned = case_when(
       study_count == 0 ~ "0",
       study_count == 1 ~ "1",
-      study_count <= 4 ~ "2-4",
-      study_count <= 9 ~ "5-9",
-      study_count <= 24 ~ "10-24",
-      study_count <= 49 ~ "25-49",
-      study_count <= 99 ~ "50-99",
-      study_count <= 249 ~ "100-249",
-      study_count <= 499 ~ "250-499",
-      study_count <= 999 ~ "500-999",
+      study_count <= 9 ~ "2-9",
+      study_count <= 49 ~ "10-49",
+      study_count <= 249 ~ "50-249",
+      study_count <= 999 ~ "250-999",
       TRUE ~ "1000+"
-    ) %>% factor(levels = c("0", "1", "2-4", "5-9", "10-24", "25-49", "50-99", "100-249", "250-499", "500-999", "1000+"))
+    ) %>% factor(levels = c("0", "1", "2-9", "10-49", "50-249", "250-999", "1000+"))
   )
 
 # Build explicit status labels for countries in the world map.
@@ -64,28 +63,30 @@ world_robinson <- st_transform(world_data, robinson_proj)
 legend_breaks <- c(0, 1, 2, 5, 10, 25, 50, 100, 250, 500, 1000)
 legend_breaks <- legend_breaks[legend_breaks <= max(world_robinson$study_count, na.rm = TRUE)]
 
-# Modify study_count_plot to treat 0 specially (shift significantly to show as distinct)
-world_robinson <- world_robinson %>%
-  mutate(
-    study_count_plot_adjusted = if_else(
-      study_count == 0,
-      -0.15,  # Larger negative shift for 0 to create clear visual separation from 1
-      study_count_plot
-    )
-  )
+# Prepare separate layers so zero-study countries get a distinct solid fill
+zeros_sf <- world_robinson %>% filter(study_count == 0)
+nonzeros_sf <- world_robinson %>% filter(study_count > 0)
 
-map <- ggplot(world_robinson) +
-  geom_sf(aes(fill = study_count_plot_adjusted), color = "white", linewidth = 0.2) +
-  scale_fill_gradient(
-    low = "#FEE8C8",
-    high = "#8B0000",
+map <- ggplot() +
+  # discrete legend key for zero-study countries using a separate fill scale
+  geom_sf(data = zeros_sf, aes(fill = "0 studies"), color = "white", linewidth = 0.2, show.legend = TRUE) +
+  scale_fill_manual(
+    name = NULL,
+    values = c("0 studies" = "#E69F00"),
+    guide = guide_legend(order = 1)
+  ) +
+  ggnewscale::new_scale_fill() +
+  # draw non-zero countries with continuous gradient (viridisLite palette)
+  geom_sf(data = nonzeros_sf, aes(fill = study_count_plot), color = "white", linewidth = 0.2) +
+  scale_fill_gradientn(
+    colours = viridisLite::viridis(256, option = "mako", direction = -1),
     name = "Studies per country",
-    breaks = c(-0.15, log10(legend_breaks[legend_breaks > 0] + 1)),
-    labels = c("0", scales::label_number(accuracy = 1)(legend_breaks[legend_breaks > 0])),
+    breaks = log10(legend_breaks[legend_breaks > 0] + 1),
+    labels = scales::label_number(accuracy = 1)(legend_breaks[legend_breaks > 0]),
     na.value = "#EEEEEE",
     oob = scales::squish
   ) +
-  guides(fill = guide_colorbar(barwidth = unit(14, "cm"), barheight = unit(0.45, "cm"))) +
+  guides(fill = guide_colorbar(barwidth = unit(12, "cm"), barheight = unit(0.45, "cm"), title.position = "top", label.position = "bottom", order = 2)) +
   theme_endo_bw(base_size = 12) +
   theme(
     axis.title = element_blank(),
@@ -96,58 +97,114 @@ map <- ggplot(world_robinson) +
     legend.position = "bottom",
     legend.title = element_text(size = 10, face = "bold"),
     legend.text = element_text(size = 9),
+    legend.key.width = unit(3, "cm"),
+    legend.key.height = unit(0.45, "cm"),
     plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(size = 11, hjust = 0.5),
     plot.margin = margin(10, 10, 10, 10)
   ) +
   labs(
     title = "Number of Endophyte Studies by Country",
-    caption = "Dark gray = No data | Light colors = fewer studies | Dark colors = more studies"
+    subtitle = "Orange = 0 studies (categorical key) — mako scale is colorblind-friendly; light gray = No data",
+    caption = "Note: legend shows log10(study_count + 1) scale where applicable"
   )
 
 # Save the continuous map
 ggsave("results/study_count_by_country_robinson.png", map, width = 14, height = 8, dpi = 300)
 
 # Create binned version for clarity
-map_binned <- ggplot(world_robinson) +
-  geom_sf(aes(fill = study_count_binned), color = "white", linewidth = 0.2) +
-  scale_fill_manual(
-    name = "Studies per country",
-    values = c(
-      "0" = "#F5E6D3",
-      "1" = "#FEE5D9",
-      "2-4" = "#FCBBA1",
-      "5-9" = "#FC8D59",
-      "10-24" = "#E34A33",
-      "25-49" = "#B30000",
-      "50-99" = "#7F0000",
-      "100-249" = "#404040",
-      "250-499" = "#2D2D2D",
-      "500-999" = "#1A1A1A",
-      "1000+" = "#000000"
-    ),
-    na.value = "#EEEEEE",
-    drop = FALSE
-  ) +
-  guides(fill = guide_legend(ncol = 2)) +
-  theme_endo_bw(base_size = 12) +
-  theme(
-    axis.title = element_blank(),
-    axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid = element_blank(),
-    panel.border = element_blank(),
-    legend.position = "bottom",
-    legend.title = element_text(size = 10, face = "bold"),
-    legend.text = element_text(size = 9),
-    plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
-    plot.margin = margin(10, 10, 10, 10)
-  ) +
-  labs(
-    title = "Number of Endophyte Studies by Country (Binned)",
-    caption = "Light beige = 0 studies | Darker colors = more studies"
-  )
+# Use a hatched pattern for zero-study countries when ggpattern is available; otherwise fall back to a high-contrast solid color
+if (requireNamespace("ggpattern", quietly = TRUE)) {
+  zeros_sf <- world_robinson %>% filter(study_count_binned == "0")
+  nonzeros_sf <- world_robinson %>% filter(study_count_binned != "0")
 
-ggsave("results/study_count_by_country_robinson_binned.png", map_binned, width = 14, height = 8, dpi = 300)
+  map_binned <- ggplot() +
+    geom_sf(data = nonzeros_sf, aes(fill = study_count_binned), color = "white", linewidth = 0.2) +
+    ggpattern::geom_sf_pattern(
+      data = zeros_sf,
+      mapping = aes(geometry = geometry),
+      pattern = "crosshatch",
+      pattern_fill = "#222222",
+      pattern_colour = "#222222",
+      pattern_density = 0.5,
+      pattern_spacing = 0.02,
+      pattern_angle = 45,
+      fill = NA,
+      colour = NA
+    ) +
+    scale_fill_manual(
+      name = "Studies per country",
+      values = c(
+        "1" = "#fff7ec",
+        "2-9" = "#fee8c8",
+        "10-49" = "#fdbb84",
+        "50-249" = "#fc8d59",
+        "250-999" = "#e34a33",
+        "1000+" = "#b30000"
+      ),
+      na.value = "#DDDDDD",
+      drop = FALSE
+    ) +
+    guides(fill = guide_legend(ncol = 2)) +
+    theme_endo_bw(base_size = 12) +
+    theme(
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank(),
+      panel.border = element_blank(),
+      legend.position = "bottom",
+      legend.title = element_text(size = 10, face = "bold"),
+      legend.text = element_text(size = 9),
+      plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
+      plot.margin = margin(10, 10, 10, 10)
+    ) +
+    labs(
+      title = "Number of Endophyte Studies by Country (Binned)",
+      caption = "Cross-hatched = 0 studies | Light gray = No data | Darker colors = more studies"
+    )
+
+  ggsave("results/study_count_by_country_robinson_binned.png", map_binned, width = 14, height = 8, dpi = 300)
+} else {
+  message("Package 'ggpattern' not installed: falling back to high-contrast solid color for zero-study countries. To enable hatch patterns install ggpattern.")
+  # Fallback: use a bright yellow for zeros to ensure contrast
+  map_binned <- ggplot(world_robinson) +
+    geom_sf(aes(fill = study_count_binned), color = "white", linewidth = 0.2) +
+    scale_fill_manual(
+      name = "Studies per country",
+      values = c(
+        "0" = "#FFD425",
+        "1" = "#fff7ec",
+        "2-9" = "#fee8c8",
+        "10-49" = "#fdbb84",
+        "50-249" = "#fc8d59",
+        "250-999" = "#e34a33",
+        "1000+" = "#b30000"
+      ),
+      na.value = "#DDDDDD",
+      drop = FALSE
+    ) +
+    guides(fill = guide_legend(ncol = 2)) +
+    theme_endo_bw(base_size = 12) +
+    theme(
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank(),
+      panel.border = element_blank(),
+      legend.position = "bottom",
+      legend.title = element_text(size = 10, face = "bold"),
+      legend.text = element_text(size = 9),
+      plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
+      plot.margin = margin(10, 10, 10, 10)
+    ) +
+    labs(
+      title = "Number of Endophyte Studies by Country (Binned)",
+      caption = "Bright yellow = 0 studies (fallback) | Light gray = No data | Darker colors = more studies"
+    )
+
+  ggsave("results/study_count_by_country_robinson_binned.png", map_binned, width = 14, height = 8, dpi = 300)
+}
 
 # Create ranked bar chart of top countries
 top_countries <- country_papers %>%
