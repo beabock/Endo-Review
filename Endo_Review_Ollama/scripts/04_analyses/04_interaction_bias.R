@@ -25,27 +25,16 @@ library(stringr)
 library(rnaturalearth)
 library(sf)
 
+source("scripts/utils/pipeline_helpers.R")
 source("scripts/05_plotting/theme_utils.R")
 
 INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
 COUNTRY_FILE <- "data/country_enriched_data.csv"
-CACHE_DIR <- "results/taxonomy_analysis/cache"
 OUTPUT_DIR <- "results/interaction_analysis"
 
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-# --- Helper function to read cached objects ---
-cache_read_object <- function(qs_path, rds_path) {
-  if (file.exists(qs_path)) {
-    if (requireNamespace("qs", quietly = TRUE)) {
-      return(qs::qread(qs_path))
-    }
-  }
-  if (file.exists(rds_path)) {
-    return(readRDS(rds_path))
-  }
-  stop("Neither qs nor RDS cache file found. Run 02_taxonomy.R first.")
-}
+# The cache_read_object function is now defined in pipeline_helpers.R
 
 if (!file.exists(INPUT_FILE)) stop("Input file not found: ", INPUT_FILE)
 

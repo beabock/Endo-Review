@@ -4,6 +4,8 @@ library(stringr)
 library(tidyr)
 library(scales)
 
+source("scripts/utils/pipeline_helpers.R")
+
 INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
 GBIF_TAXON_FILE <- "data/Reference_datasets/gbif_backbone/Taxon.tsv"
 PBDB_FILE <- "data/Reference_datasets/pbdb_all.csv"
@@ -30,13 +32,15 @@ PBDB_FILE <- resolve_existing_path(c(
 	"../../data/Reference_datasets/pbdb_all.csv"
 ))
 
-# RDS cache paths for GBIF processed subsets
-GBIF_CACHE_DIR <- file.path(OUTPUT_DIR, "cache")
-dir.create(GBIF_CACHE_DIR, recursive = TRUE, showWarnings = FALSE)
-GBIF_MIN_RDS <- file.path(GBIF_CACHE_DIR, "Taxon_minimal.rds")
-GBIF_REF_RDS <- file.path(GBIF_CACHE_DIR, "Taxon_reference_species.rds")
-GBIF_MIN_QS <- file.path(GBIF_CACHE_DIR, "Taxon_minimal.qs")
-GBIF_REF_QS <- file.path(GBIF_CACHE_DIR, "Taxon_reference_species.qs")
+# Use centrally defined cache paths
+GBIF_MIN_RDS <- file.path(CACHE_DIR, "gbif_taxa_min.rds")
+GBIF_REF_RDS <- file.path(CACHE_DIR, "gbif_reference_species.rds")
+GBIF_MIN_QS <- file.path(CACHE_DIR, "gbif_taxa_min.qs")
+GBIF_REF_QS <- file.path(CACHE_DIR, "gbif_reference_species.qs")
+
+# The step_time, cache_read_object, and cache_write_object functions
+# are now defined in pipeline_helpers.R and sourced above.
+# The fast_read_tsv function remains local to this script.
 
 step_time <- function(label, expr) {
 	message(label)

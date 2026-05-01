@@ -14,30 +14,14 @@ library(readr)
 library(rnaturalearth)
 library(sf)
 
+source("scripts/utils/pipeline_helpers.R")
+
 # --- Configuration ---
-CACHE_DIR <- "results/taxonomy_analysis/cache"
 STUDIED_SPECIES_FILE <- "results/taxonomy_analysis/top_studied_plant_species.csv"
 COUNTRY_DATA_FILE <- "data/country_enriched_data.csv"
 OUTPUT_DIR <- "results/understudied_analysis"
 
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
-
-# --- Helper function to read cached objects (from 02_taxonomy.R) ---
-cache_read_object <- function(qs_path, rds_path) {
-  if (file.exists(qs_path)) {
-    if (requireNamespace("qs", quietly = TRUE)) {
-      cat("Reading from qs cache:", qs_path, "\n")
-      return(qs::qread(qs_path))
-    } else {
-      cat("qs package not available, falling back to RDS for reading.\n")
-    }
-  }
-  if (file.exists(rds_path)) {
-    cat("Reading from RDS cache:", rds_path, "\n")
-    return(readRDS(rds_path))
-  }
-  stop("Neither qs nor RDS cache file found.")
-}
 
 # --- 1. Identify Unstudied Plant Taxa ---
 
