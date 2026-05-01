@@ -31,7 +31,8 @@ PBDB_FILE <- resolve_existing_path(c(
 ))
 
 # RDS cache paths for GBIF processed subsets
-GBIF_CACHE_DIR <- file.path(dirname(GBIF_TAXON_FILE))
+GBIF_CACHE_DIR <- file.path(OUTPUT_DIR, "cache")
+dir.create(GBIF_CACHE_DIR, recursive = TRUE, showWarnings = FALSE)
 GBIF_MIN_RDS <- file.path(GBIF_CACHE_DIR, "Taxon_minimal.rds")
 GBIF_REF_RDS <- file.path(GBIF_CACHE_DIR, "Taxon_reference_species.rds")
 
@@ -66,12 +67,12 @@ message("Loading study-level host data...")
 study_data <- read_csv(
 	INPUT_FILE,
 	show_col_types = FALSE,
-	col_select = c(
-		paper_id,
-		plant_host_resolved,
-		plant_host_status,
-		plant_host_accepted_ids
-	)
+	col_select = all_of(c(
+		"paper_id",
+		"plant_host_resolved",
+		"plant_host_status",
+		"plant_host_accepted_ids"
+	))
 )
 
 required_cols <- c("paper_id", "plant_host_resolved", "plant_host_accepted_ids")

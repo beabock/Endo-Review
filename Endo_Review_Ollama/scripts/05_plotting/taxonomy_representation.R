@@ -162,11 +162,26 @@ plot_absolute_representation <- function(data, title, taxon_label,
     ) %>%
     mutate(Type = factor(Type, levels = c("Studied", "Not Studied"))) %>%
     left_join(phylum_known, by = "phylum") %>%
-    left_join(phylum_labels, by = "phylum") %>%
+    mutate(
+      phylum_label = factor(phylum_label, levels = phylum_labels$phylum_label),
+      percent = ifelse(Known > 0, Count / Known * 100, NA_real_),
+      label = ifelse(
+        !is.na(percent) & (Count >= 5 || percent >= 12),
+        paste0(scales::comma(Count), "\n(", round(percent, 1), "%)"),
+        ""
+      )
+    )
     mutate(
       percent = ifelse(Known > 0, Count / Known * 100, NA_real_),
-      phylum_label = factor(phylum_label, levels = phylum_labels$phylum_label),
-      label = ifelse(Count > 0, paste0(scales::comma(Count), "\n(", round(percent, 1), "% )"), "")
+      phylum_label = factor(phylum_label, levels = phylum_labels$phylum_label))+
+    geom_text(
+      aes(label = label),
+      position = position_stack(vjust = 0.5),
+      size = 2.8,
+      lineheight = 0.9,
+      check_overlap = TRUE
+    ) +
+    scale_fill_manual(
     )
 
   plot <- ggplot(plot_data, aes(x = phylum_label, y = Count, fill = Type)) +
