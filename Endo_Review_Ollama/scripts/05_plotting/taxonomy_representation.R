@@ -13,13 +13,23 @@
 # Usage: Rscript scripts/05_plotting/taxonomy_representation.R
 # =================================================================================
 
-library(tidyverse)
+library(dplyr)
+library(readr)
+library(tidyr)
 library(ggplot2)
 library(gridExtra)
-library(here)
+library(scales)
 
-# Source custom theme utilities
-source("scripts/05_plotting/theme_utils.R")
+theme_utils_paths <- c(
+  "scripts/05_plotting/theme_utils.R",
+  "scripts/plotting/theme_utils.R"
+)
+for (theme_utils_path in theme_utils_paths) {
+  if (file.exists(theme_utils_path)) {
+    source(theme_utils_path)
+    break
+  }
+}
 
 # Configuration
 TAXONOMY_RESULTS_DIR <- "results/taxonomy_analysis"

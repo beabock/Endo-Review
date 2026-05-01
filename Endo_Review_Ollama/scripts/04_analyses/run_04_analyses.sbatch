@@ -83,6 +83,7 @@ Rscript -e "if (!requireNamespace('stringr', quietly=TRUE)) stop('Missing R pack
 Rscript -e "if (!requireNamespace('ggplot2', quietly=TRUE)) stop('Missing R package: ggplot2')"
 Rscript -e "if (!requireNamespace('forcats', quietly=TRUE)) stop('Missing R package: forcats')"
 Rscript -e "if (!requireNamespace('scales', quietly=TRUE)) stop('Missing R package: scales')"
+Rscript -e "if (!requireNamespace('gridExtra', quietly=TRUE)) stop('Missing R package: gridExtra')"
 Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('sf', quietly=TRUE)) { install.packages('sf', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org'); if (!requireNamespace('sf', quietly=TRUE)) stop('Missing R package: sf (and automatic install failed)') }"
 Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('rnaturalearth', quietly=TRUE)) { install.packages('rnaturalearth', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org') }"
 Rscript -e "dir.create(Sys.getenv('R_LIBS_USER'), recursive=TRUE, showWarnings=FALSE); if (!requireNamespace('rnaturalearthdata', quietly=TRUE)) { install.packages('rnaturalearthdata', lib=Sys.getenv('R_LIBS_USER'), repos='https://cloud.r-project.org') }"
@@ -116,32 +117,39 @@ else
     echo "Skipping Step 2 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 3: Geographic Bias Mapping"
+echo "Step 3: Taxonomy Representation Plots"
 if [ "$START_STEP" -le 3 ]; then
-    Rscript scripts/04_analyses/03_geographic_bias_mapping.R
+    Rscript scripts/05_plotting/taxonomy_representation.R
 else
     echo "Skipping Step 3 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 4: Fungal Taxonomic Bias"
+echo "Step 4: Geographic Bias Mapping"
 if [ "$START_STEP" -le 4 ]; then
-    "$PYTHON_BIN" scripts/04_analyses/03_fungal_taxonomic_bias.py
+    Rscript scripts/04_analyses/03_geographic_bias_mapping.R
 else
     echo "Skipping Step 4 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 5: Interaction Bias Analysis"
+echo "Step 5: Fungal Taxonomic Bias"
 if [ "$START_STEP" -le 5 ]; then
-    Rscript scripts/04_analyses/04_interaction_bias.R
+    "$PYTHON_BIN" scripts/04_analyses/03_fungal_taxonomic_bias.py
 else
     echo "Skipping Step 5 (START_STEP=${START_STEP})"
 fi
 
-echo "Step 6: Manuscript Summary"
+echo "Step 6: Interaction Bias Analysis"
 if [ "$START_STEP" -le 6 ]; then
-    "$PYTHON_BIN" scripts/04_analyses/05_manuscript_summary.py
+    Rscript scripts/04_analyses/04_interaction_bias.R
 else
     echo "Skipping Step 6 (START_STEP=${START_STEP})"
 fi
 
-echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, results/interaction_analysis, and results/manuscript_dataset_summary.*"
+echo "Step 7: Manuscript Summary"
+if [ "$START_STEP" -le 7 ]; then
+    "$PYTHON_BIN" scripts/04_analyses/05_manuscript_summary.py
+else
+    echo "Skipping Step 7 (START_STEP=${START_STEP})"
+fi
+
+echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, plots/taxonomy, results/interaction_analysis, and results/manuscript_dataset_summary.*"

@@ -2,14 +2,7 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(tidyr)
-library(ggplot2)
-library(forcats)
 library(scales)
-
-theme_utils_path <- "scripts/plotting/theme_utils.R"
-if (file.exists(theme_utils_path)) {
-	source(theme_utils_path)
-}
 
 INPUT_FILE <- "data/Ollama_cleaned_synresolved_standardized_final.csv"
 GBIF_TAXON_FILE <- "data/Reference_datasets/gbif_backbone/Taxon.tsv"
@@ -42,11 +35,6 @@ PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_by_phylum.csv")
 GENUS_PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_genus_coverage_by_phylum.csv")
 FAMILY_PHYLUM_FILE <- file.path(OUTPUT_DIR, "plant_family_coverage_by_phylum.csv")
 TOP_SPECIES_FILE <- file.path(OUTPUT_DIR, "top_studied_plant_species.csv")
-OVERALL_PLOT_FILE <- file.path(OUTPUT_DIR, "plant_species_coverage_overall.png")
-SPECIES_PHYLUM_ABS_PLOT_FILE <- file.path(OUTPUT_DIR, "plant_species_representation_by_phylum_absolute.png")
-SPECIES_PHYLUM_REL_PLOT_FILE <- file.path(OUTPUT_DIR, "plant_species_representation_by_phylum_relative.png")
-GENUS_PHYLUM_PLOT_FILE <- file.path(OUTPUT_DIR, "plant_genus_representation_by_phylum_relative.png")
-FAMILY_PHYLUM_PLOT_FILE <- file.path(OUTPUT_DIR, "plant_family_representation_by_phylum_relative.png")
 
 if (!file.exists(INPUT_FILE)) {
 	stop("Input file not found: ", INPUT_FILE)
@@ -349,114 +337,6 @@ top_studied_species <- study_species_matched %>%
 
 write_csv(top_studied_species, TOP_SPECIES_FILE)
 
-# Overall coverage plot
-overall_plot_data <- tibble(
-	category = c("Studied", "Not studied"),
-	species_count = c(studied_species_count, max(total_known_plant_species - studied_species_count, 0L))
-)
-
-overall_plot <- ggplot(overall_plot_data, aes(x = category, y = species_count, fill = category)) +
-	geom_col(width = 0.7) +
-	geom_text(aes(label = comma(species_count)), vjust = -0.3, size = 4) +
-	scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.08))) +
-	scale_fill_endo_discrete() +
-	labs(
-		title = "Plant Species Coverage in Endophyte Literature",
-		subtitle = paste0("Coverage: ", percent(coverage_pct / 100, accuracy = 0.01), " of known GBIF accepted plant species"),
-		x = NULL,
-		y = "Number of species",
-		fill = NULL
-	) +
-	theme_endo_bw(base_size = 12) +
-	theme(legend.position = "none")
-
-ggsave(OVERALL_PLOT_FILE, overall_plot, width = 8, height = 5, dpi = 300)
-
-# Species representation by phylum (absolute + relative)
-top_n_phyla <- 12
-species_phylum_plot_data <- coverage_by_phylum %>%
-	slice_head(n = top_n_phyla) %>%
-	mutate(phylum = fct_reorder(phylum, known_species))
-
-species_absolute_plot_data <- species_phylum_plot_data %>%
-	select(phylum, known_species, studied_species) %>%
-	pivot_longer(cols = c(known_species, studied_species), names_to = "metric", values_to = "value") %>%
-	mutate(metric = recode(metric, known_species = "Known species", studied_species = "Studied species"))
-
-species_phylum_abs_plot <- ggplot(species_absolute_plot_data, aes(x = phylum, y = value, fill = metric)) +
-	geom_col(position = position_dodge(width = 0.75), width = 0.7) +
-	coord_flip() +
-	scale_y_continuous(labels = comma) +
-	scale_fill_endo_discrete() +
-	labs(
-		title = "Plant Species Representation by Phylum (Absolute)",
-		subtitle = paste0("Top ", top_n_phyla, " phyla by known species richness"),
-		x = "Phylum",
-		y = "Number of species",
-		fill = NULL
-	) +
-	theme_endo_bw(base_size = 12)
-
-ggsave(SPECIES_PHYLUM_ABS_PLOT_FILE, species_phylum_abs_plot, width = 10, height = 7, dpi = 300)
-
-species_phylum_rel_plot_data <- coverage_by_phylum %>%
-	slice_head(n = top_n_phyla) %>%
-	mutate(phylum = fct_reorder(phylum, coverage_percent))
-
-species_phylum_rel_plot <- ggplot(species_phylum_rel_plot_data, aes(x = phylum, y = coverage_percent)) +
-	geom_col(fill = endo_palette_discrete[1], width = 0.75) +
-	geom_text(aes(label = percent(coverage_percent / 100, accuracy = 0.01)), hjust = -0.1, size = 3.3) +
-	coord_flip(clip = "off") +
-	scale_y_continuous(labels = function(x) percent(x / 100, accuracy = 1), expand = expansion(mult = c(0, 0.12))) +
-	labs(
-		title = "Plant Species Representation by Phylum (Relative)",
-		subtitle = paste0("Top ", top_n_phyla, " phyla by known species richness (GBIF accepted species)"),
-		x = "Phylum",
-		y = "Species representation"
-	) +
-	theme_endo_bw(base_size = 12)
-
-ggsave(SPECIES_PHYLUM_REL_PLOT_FILE, species_phylum_rel_plot, width = 10, height = 7, dpi = 300)
-
-# Genus and family representation (% of known taxa represented per phylum)
-genus_plot_data <- genus_coverage_by_phylum %>%
-	slice_head(n = top_n_phyla) %>%
-	mutate(phylum = fct_reorder(phylum, coverage_percent))
-
-genus_phylum_plot <- ggplot(genus_plot_data, aes(x = phylum, y = coverage_percent)) +
-	geom_col(fill = endo_palette_discrete[2], width = 0.75) +
-	geom_text(aes(label = percent(coverage_percent / 100, accuracy = 0.01)), hjust = -0.1, size = 3.3) +
-	coord_flip(clip = "off") +
-	scale_y_continuous(labels = function(x) percent(x / 100, accuracy = 1), expand = expansion(mult = c(0, 0.12))) +
-	labs(
-		title = "Plant Genus Representation by Phylum (Relative)",
-		subtitle = paste0("Top ", top_n_phyla, " phyla by known genus richness"),
-		x = "Phylum",
-		y = "Genus representation"
-	) +
-	theme_endo_bw(base_size = 12)
-
-ggsave(GENUS_PHYLUM_PLOT_FILE, genus_phylum_plot, width = 10, height = 7, dpi = 300)
-
-family_plot_data <- family_coverage_by_phylum %>%
-	slice_head(n = top_n_phyla) %>%
-	mutate(phylum = fct_reorder(phylum, coverage_percent))
-
-family_phylum_plot <- ggplot(family_plot_data, aes(x = phylum, y = coverage_percent)) +
-	geom_col(fill = endo_palette_discrete[3], width = 0.75) +
-	geom_text(aes(label = percent(coverage_percent / 100, accuracy = 0.01)), hjust = -0.1, size = 3.3) +
-	coord_flip(clip = "off") +
-	scale_y_continuous(labels = function(x) percent(x / 100, accuracy = 1), expand = expansion(mult = c(0, 0.12))) +
-	labs(
-		title = "Plant Family Representation by Phylum (Relative)",
-		subtitle = paste0("Top ", top_n_phyla, " phyla by known family richness"),
-		x = "Phylum",
-		y = "Family representation"
-	) +
-	theme_endo_bw(base_size = 12)
-
-ggsave(FAMILY_PHYLUM_PLOT_FILE, family_phylum_plot, width = 10, height = 7, dpi = 300)
-
 message("Taxonomy coverage analysis complete:")
 message("  GBIF species missing phylum before lineage backfill: ", comma(missing_phylum_before_backfill))
 message("  GBIF species phylum backfilled from lineage: ", comma(phylum_backfilled_count))
@@ -473,8 +353,4 @@ message("  Phylum table: ", PHYLUM_FILE)
 message("  Genus phylum table: ", GENUS_PHYLUM_FILE)
 message("  Family phylum table: ", FAMILY_PHYLUM_FILE)
 message("  Top species table: ", TOP_SPECIES_FILE)
-message("  Overall plot: ", OVERALL_PLOT_FILE)
-message("  Species phylum absolute plot: ", SPECIES_PHYLUM_ABS_PLOT_FILE)
-message("  Species phylum relative plot: ", SPECIES_PHYLUM_REL_PLOT_FILE)
-message("  Genus phylum relative plot: ", GENUS_PHYLUM_PLOT_FILE)
-message("  Family phylum relative plot: ", FAMILY_PHYLUM_PLOT_FILE)
+message("  Plotting moved to scripts/05_plotting/taxonomy_representation.R")
