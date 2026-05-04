@@ -57,8 +57,13 @@ if ! type module >/dev/null 2>&1; then
     exit 1
 fi
 
-module purge
-module load ollama
+if ! module purge; then
+    echo "Warning: module purge returned non-zero; continuing"
+fi
+if ! module load ollama; then
+    echo "ERROR: failed to load ollama module"
+    exit 1
+fi
 echo "Ollama version: $(ollama --version)"
 
 # Defaults can be overridden via sbatch --export
@@ -81,8 +86,13 @@ if [ -x ".venv/bin/python" ]; then
 elif [ -x ".venv/Scripts/python.exe" ]; then
     PYTHON_BIN=".venv/Scripts/python.exe"
 else
-    module purge
-    module load python/3.11
+    if ! module purge; then
+        echo "Warning: module purge returned non-zero before python setup; continuing"
+    fi
+    if ! module load python/3.11; then
+        echo "ERROR: failed to load python/3.11 module"
+        exit 1
+    fi
     python -m venv .venv
     PYTHON_BIN=".venv/bin/python"
 fi
