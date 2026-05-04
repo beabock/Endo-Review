@@ -61,9 +61,9 @@ else
     PYTHON_BIN=".venv/bin/python"
 fi
 
-# Ensure required dependency for PDF parsing
+# Ensure required dependencies for PDF parsing and Ollama API
 "$PYTHON_BIN" -m pip install --upgrade pip >/dev/null
-"$PYTHON_BIN" -m pip install pypdf >/dev/null
+"$PYTHON_BIN" -m pip install pypdf ollama >/dev/null
 
 echo "--- Ubiquity Claim Detection Run ---"
 echo "Project root: $PROJECT_ROOT"

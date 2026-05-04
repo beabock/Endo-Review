@@ -16,6 +16,7 @@ library(rnaturalearth)
 library(sf)
 
 source("scripts/utils/pipeline_helpers.R")
+source("scripts/utils/disputed_territory_parent_iso.R")
 
 # --- Configuration ---
 STUDIED_SPECIES_FILE <- "results/taxonomy_analysis/top_studied_plant_species.csv"
@@ -194,8 +195,10 @@ if (file.exists(COUNTRIES_ZERO_FILE)) {
   # Fallback: recompute from country_enriched_data and world country universe.
   world <- ne_countries(scale = 110, returnclass = "sf") %>%
     select(iso_a3, name) %>%
+    apply_disputed_parent_iso_world() %>%
     st_drop_geometry() %>%
-    filter(iso_a3 != "-99")
+    filter(iso_a3 != "-99") %>%
+    distinct(iso_a3, name)
 
   studied_countries_data <- read_csv(COUNTRY_DATA_FILE, show_col_types = FALSE)
   studied_countries_iso <- studied_countries_data %>%
