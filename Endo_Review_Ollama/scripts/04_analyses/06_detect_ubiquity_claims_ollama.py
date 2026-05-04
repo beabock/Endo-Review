@@ -336,28 +336,46 @@ def ollama_generate_json(
     ollama_host: str,
     model: str,
     prompt: str,
+    max_retries: int = 3,
 ) -> Dict:
+    """Generate JSON from Ollama with retry logic for transient connection failures."""
     client = get_ollama_client(ollama_host)
-    try:
-        response_data = client.generate(
-            model=model,
-            prompt=prompt,
-            format="json",
-            options={"temperature": 0},
-        )
-    except Exception as exc:
-        raise RuntimeError(f"Ollama API request failed: {exc}") from exc
+    
+    for attempt in range(max_retries):
+        try:
+            response_data = client.generate(
+                model=model,
+                prompt=prompt,
+                format="json",
+                options={"temperature": 0},
+                stream=False,
+            )
+            content = ""
+            if isinstance(response_data, dict):
+                content = str(response_data.get("response", "") or "")
+            else:
+                content = str(getattr(response_data, "response", "") or "")
 
-    content = ""
-    if isinstance(response_data, dict):
-        content = str(response_data.get("response", "") or "")
-    else:
-        content = str(getattr(response_data, "response", "") or "")
+            if not content:
+                raise RuntimeError("Ollama returned empty response content")
 
-    if not content:
-        raise RuntimeError("Ollama returned empty response content")
-
-    return parse_model_json_response(content)
+            return parse_model_json_response(content)
+        
+        except (ConnectionError, BrokenPipeError, TimeoutError) as exc:
+            # Transient connection errors - retry
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # exponential backoff: 1s, 2s, 4s
+                print(f"Connection error (attempt {attempt + 1}/{max_retries}): {exc}. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            else:
+                raise RuntimeError(f"Ollama API request failed after {max_retries} attempts: {exc}") from exc
+        
+        except Exception as exc:
+            # Other errors - fail immediately
+            raise RuntimeError(f"Ollama API request failed: {exc}") from exc
+    
+    raise RuntimeError("Unexpected state in ollama_generate_json retry loop")
 
 
 def fetch_ollama_tags(ollama_host: str) -> Dict:

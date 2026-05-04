@@ -116,7 +116,7 @@ if ! check_ollama_up; then
         # Wait up to 30 seconds for server to be ready
         for i in {1..30}; do
             if check_ollama_up; then
-                echo "Ollama server is ready!"
+                echo "Ollama server endpoint is ready!"
                 break
             fi
             echo "Waiting for Ollama to be ready... ($i/30)"
@@ -126,6 +126,41 @@ if ! check_ollama_up; then
         if ! check_ollama_up; then
             echo "ERROR: Ollama still unreachable after 30 seconds."
             echo "Check log: $OLLAMA_SERVE_LOG"
+            tail -20 "$OLLAMA_SERVE_LOG"
+            exit 1
+        fi
+        
+        # Extended wait for model to fully load into VRAM (can take 3-5+ minutes)
+        echo "Waiting for model to be fully loaded into VRAM (up to 300 seconds)..."
+        max_attempts=300
+        for i in $(seq 1 $max_attempts); do
+            "$PYTHON_BIN" - <<'PYTEST'
+import os, sys, time
+try:
+    import ollama
+    host = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
+    model = os.environ.get("OLLAMA_MODEL", "mistral")
+    client = ollama.Client(host=host)
+    # Simple test inference - if this succeeds, model is loaded
+    response = client.generate(model=model, prompt="test", stream=False, options={"temperature": 0})
+    print(f"✓ Model {model} is ready!")
+    sys.exit(0)
+except Exception as e:
+    sys.exit(1)
+PYTEST
+            if [ $? -eq 0 ]; then
+                echo "✓ Model fully loaded and responding after $i second(s)"
+                break
+            fi
+            if [ $((i % 30)) -eq 0 ]; then
+                echo "Still loading model... ($i/300 seconds elapsed)"
+            fi
+            sleep 1
+        done
+        
+        # Final verification
+        if ! check_ollama_up; then
+            echo "ERROR: Ollama not reachable after full wait cycle."
             tail -20 "$OLLAMA_SERVE_LOG"
             exit 1
         fi
