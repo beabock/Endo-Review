@@ -31,6 +31,22 @@ mkdir -p results/logs
 
 # Load Ollama module from Monsoon HPC
 echo "Loading Ollama module..."
+if ! command -v module >/dev/null 2>&1; then
+    # Non-login batch shells may not preload the modules function.
+    if [ -f /etc/profile.d/modules.sh ]; then
+        # shellcheck source=/etc/profile.d/modules.sh
+        source /etc/profile.d/modules.sh
+    elif [ -f /usr/share/Modules/init/bash ]; then
+        # shellcheck source=/usr/share/Modules/init/bash
+        source /usr/share/Modules/init/bash
+    fi
+fi
+
+if ! command -v module >/dev/null 2>&1; then
+    echo "ERROR: environment modules system is not initialized; 'module' command unavailable."
+    exit 1
+fi
+
 module purge
 module load ollama
 echo "Ollama version: $(ollama --version)"
@@ -133,8 +149,9 @@ if ! check_ollama_up; then
         # Extended wait for model to fully load into VRAM (can take 3-5+ minutes)
         echo "Waiting for model to be fully loaded into VRAM (up to 300 seconds)..."
         max_attempts=300
+        model_ready=0
         for i in $(seq 1 $max_attempts); do
-            "$PYTHON_BIN" - <<'PYTEST'
+            if "$PYTHON_BIN" - <<'PYTEST'
 import os, sys, time
 try:
     import ollama
@@ -143,13 +160,14 @@ try:
     client = ollama.Client(host=host)
     # Simple test inference - if this succeeds, model is loaded
     response = client.generate(model=model, prompt="test", stream=False, options={"temperature": 0})
-    print(f"✓ Model {model} is ready!")
+    print(f"Model {model} is ready")
     sys.exit(0)
 except Exception as e:
     sys.exit(1)
 PYTEST
-            if [ $? -eq 0 ]; then
-                echo "✓ Model fully loaded and responding after $i second(s)"
+            then
+                model_ready=1
+                echo "Model fully loaded and responding after $i second(s)"
                 break
             fi
             if [ $((i % 30)) -eq 0 ]; then
@@ -157,6 +175,13 @@ PYTEST
             fi
             sleep 1
         done
+
+        if [ "$model_ready" -ne 1 ]; then
+            echo "ERROR: model readiness check did not succeed within 300 seconds."
+            echo "Check log: $OLLAMA_SERVE_LOG"
+            tail -30 "$OLLAMA_SERVE_LOG"
+            exit 1
+        fi
         
         # Final verification
         if ! check_ollama_up; then
