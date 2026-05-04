@@ -2,10 +2,20 @@
 #SBATCH --job-name=endo_ubiquity_claims
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
+#SBATCH --gres=gpu:a100:1
 #SBATCH --time=08:00:00
 #SBATCH --output=results/logs/ubiquity_claims_%j.out
+#
+# Ollama-based ubiquity claims detection for endophyte abstracts and full texts.
+# Requires Monsoon module system: module load ollama
+# Models pre-staged at: /scratch/bmb646/ollama_models
+#
+# Usage:
+#   sbatch run_06_ubiquity_claims_ollama.sbatch
+#   sbatch --export=OLLAMA_MODEL=mistral run_06_ubiquity_claims_ollama.sbatch
+#   sbatch --export=SOURCE_MODE=fulltext run_06_ubiquity_claims_ollama.sbatch
 
 set -euo pipefail
 
@@ -18,6 +28,12 @@ fi
 
 cd "$PROJECT_ROOT"
 mkdir -p results/logs
+
+# Load Ollama module from Monsoon HPC
+echo "Loading Ollama module..."
+module purge
+module load ollama
+echo "Ollama version: $(ollama --version)"
 
 # Defaults can be overridden via sbatch --export
 INPUT_DIR="${INPUT_DIR:-/scratch/bmb646/Bea_Nick_papers_endoreview}"
@@ -32,7 +48,6 @@ ABSTRACT_ID_COL="${ABSTRACT_ID_COL:-}"
 AUTO_START_OLLAMA="${AUTO_START_OLLAMA:-1}"
 OLLAMA_SERVE_LOG="${OLLAMA_SERVE_LOG:-results/logs/ollama_serve_${SLURM_JOB_ID:-manual}.log}"
 OLLAMA_MODELS="${OLLAMA_MODELS:-/scratch/bmb646/ollama_models}"
-OLLAMA_BIN="${OLLAMA_BIN:-}"
 
 # Python environment setup
 if [ -x ".venv/bin/python" ]; then
@@ -62,28 +77,14 @@ echo "Abstract CSV: $ABSTRACT_CSV"
 echo "Auto-start Ollama: $AUTO_START_OLLAMA"
 echo "Ollama models dir: $OLLAMA_MODELS"
 
-if [ -z "$OLLAMA_BIN" ]; then
-    if command -v ollama >/dev/null 2>&1; then
-        OLLAMA_BIN="$(command -v ollama)"
-    else
-        for candidate in \
-            /scratch/bmb646/envs/*/bin/ollama \
-            /scratch/bmb646/conda_envs/*/bin/ollama \
-            /scratch/bmb646/envs/bin/ollama \
-            /scratch/bmb646/conda_envs/bin/ollama; do
-            if [ -x "$candidate" ]; then
-                OLLAMA_BIN="$candidate"
-                break
-            fi
-        done
-    fi
+# Verify ollama is available from module
+if ! command -v ollama >/dev/null 2>&1; then
+    echo "ERROR: ollama command not found after module load."
+    echo "Verify: module load ollama was successful."
+    exit 1
 fi
 
-if [ -n "$OLLAMA_BIN" ]; then
-    echo "Ollama binary: $OLLAMA_BIN"
-else
-    echo "Ollama binary: <not found>"
-fi
+echo "Ollama binary path: $(command -v ollama)"
 
 check_ollama_up() {
     "$PYTHON_BIN" - <<'PY'
@@ -106,27 +107,35 @@ PY
 if ! check_ollama_up; then
     echo "Ollama is not reachable at $OLLAMA_HOST"
     if [ "$AUTO_START_OLLAMA" = "1" ]; then
-        if [ -n "$OLLAMA_BIN" ]; then
-            echo "Attempting to start local ollama server..."
-            OLLAMA_MODELS="$OLLAMA_MODELS" nohup "$OLLAMA_BIN" serve > "$OLLAMA_SERVE_LOG" 2>&1 &
-            echo "Started ollama serve (log: $OLLAMA_SERVE_LOG)"
-            if ! check_ollama_up; then
-                echo "ERROR: Ollama still unreachable after auto-start attempt."
-                echo "Check log: $OLLAMA_SERVE_LOG"
-                exit 1
+        echo "Attempting to start Ollama server (module-provided binary)..."
+        export OLLAMA_MODELS="$OLLAMA_MODELS"
+        nohup ollama serve > "$OLLAMA_SERVE_LOG" 2>&1 &
+        echo "Started ollama serve with PID $!"
+        echo "Log file: $OLLAMA_SERVE_LOG"
+        
+        # Wait up to 30 seconds for server to be ready
+        for i in {1..30}; do
+            if check_ollama_up; then
+                echo "Ollama server is ready!"
+                break
             fi
-        else
-            echo "ERROR: No ollama executable found in PATH or scratch envs, and Ollama host is unreachable."
-            echo "Expected a local server binary to start at least one of these paths:"
-            echo "  - /scratch/bmb646/envs/*/bin/ollama"
-            echo "  - /scratch/bmb646/conda_envs/*/bin/ollama"
-            echo "  - or set OLLAMA_BIN=/full/path/to/ollama"
+            echo "Waiting for Ollama to be ready... ($i/30)"
+            sleep 1
+        done
+        
+        if ! check_ollama_up; then
+            echo "ERROR: Ollama still unreachable after 30 seconds."
+            echo "Check log: $OLLAMA_SERVE_LOG"
+            tail -20 "$OLLAMA_SERVE_LOG"
             exit 1
         fi
     else
         echo "ERROR: AUTO_START_OLLAMA=0 and Ollama host is unreachable."
+        echo "Ensure Ollama server is running: ollama serve &"
         exit 1
     fi
+else
+    echo "Ollama server is already running at $OLLAMA_HOST"
 fi
 
 "$PYTHON_BIN" scripts/04_analyses/06_detect_ubiquity_claims_ollama.py \
