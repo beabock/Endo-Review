@@ -98,6 +98,24 @@ def parse_args() -> argparse.Namespace:
         help="Ollama model name (or set OLLAMA_MODEL env var)",
     )
     parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=500,
+        help="Write checkpointed output files every N processed items (default: 500)",
+    )
+    parser.add_argument(
+        "--n-shards",
+        type=int,
+        default=1,
+        help="Total number of shards to split the workload into (default: 1)",
+    )
+    parser.add_argument(
+        "--shard-id",
+        type=int,
+        default=0,
+        help="Zero-based shard id for this process (0 <= shard-id < n-shards)",
+    )
+    parser.add_argument(
         "--ollama-host",
         default=os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434"),
         help="Ollama API host, e.g. http://127.0.0.1:11434",
@@ -581,6 +599,8 @@ def main() -> None:
 
     input_dir = Path(args.input_dir)
     output_dir = Path(args.output_dir)
+    # Ensure output dir exists early so checkpoint writes succeed during long runs
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     documents: List[Path] = []
     abstract_rows: List[Dict[str, str]] = []
@@ -595,6 +615,23 @@ def main() -> None:
             text_col=args.abstract_text_col,
             id_col=args.abstract_id_col,
         )
+
+    # Apply sharding if requested: split both document list and abstract rows by index modulo n_shards
+    n_shards = max(1, int(args.n_shards))
+    shard_id = int(args.shard_id) % n_shards
+    if n_shards > 1:
+        if documents:
+            docs_sharded: List[Path] = []
+            for i, p in enumerate(documents):
+                if (i % n_shards) == shard_id:
+                    docs_sharded.append(p)
+            documents = docs_sharded
+        if abstract_rows:
+            abs_sharded: List[Dict[str, str]] = []
+            for i, row in enumerate(abstract_rows):
+                if (i % n_shards) == shard_id:
+                    abs_sharded.append(row)
+            abstract_rows = abs_sharded
 
     if args.max_files > 0:
         if args.source_mode == "fulltext":
@@ -679,6 +716,22 @@ def main() -> None:
             result.source_type = "fulltext"
             results.append(result)
 
+            # Checkpoint writes for long runs to produce partial outputs incrementally
+            try:
+                if args.checkpoint_interval > 0 and len(results) % args.checkpoint_interval == 0:
+                    write_outputs(results, output_dir)
+                    print(f"Checkpoint: wrote {len(results)} results to {output_dir}")
+            except Exception as _:
+                print("WARNING: checkpoint write failed; continuing")
+
+            # Checkpoint writes for long runs to produce partial outputs incrementally
+            try:
+                if args.checkpoint_interval > 0 and len(results) % args.checkpoint_interval == 0:
+                    write_outputs(results, output_dir)
+                    print(f"Checkpoint: wrote {len(results)} results to {output_dir}")
+            except Exception as _:
+                print("WARNING: checkpoint write failed; continuing")
+
             if args.sleep_seconds > 0:
                 time.sleep(args.sleep_seconds)
 
@@ -702,6 +755,18 @@ def main() -> None:
                 )
             )
             print(f"  ERROR: {exc}")
+            try:
+                if args.checkpoint_interval > 0 and len(results) % args.checkpoint_interval == 0:
+                    write_outputs(results, output_dir)
+                    print(f"Checkpoint: wrote {len(results)} results to {output_dir}")
+            except Exception:
+                pass
+            try:
+                if args.checkpoint_interval > 0 and len(results) % args.checkpoint_interval == 0:
+                    write_outputs(results, output_dir)
+                    print(f"Checkpoint: wrote {len(results)} results to {output_dir}")
+            except Exception:
+                pass
 
     for idx, row in enumerate(abstract_rows, start=1):
         source_name = row["source_name"]

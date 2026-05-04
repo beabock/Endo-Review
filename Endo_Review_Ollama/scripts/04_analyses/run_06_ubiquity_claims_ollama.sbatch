@@ -79,6 +79,8 @@ ABSTRACT_ID_COL="${ABSTRACT_ID_COL:-}"
 AUTO_START_OLLAMA="${AUTO_START_OLLAMA:-1}"
 OLLAMA_SERVE_LOG="${OLLAMA_SERVE_LOG:-results/logs/ollama_serve_${SLURM_JOB_ID:-manual}.log}"
 OLLAMA_MODELS="${OLLAMA_MODELS:-/scratch/bmb646/ollama_models}"
+SHARD_ID="${SHARD_ID:-0}"
+N_SHARDS="${N_SHARDS:-1}"
 
 # Python environment setup
 if [ -x ".venv/bin/python" ]; then
@@ -100,6 +102,7 @@ fi
 # Ensure required dependencies for PDF parsing and Ollama API
 "$PYTHON_BIN" -m pip install --upgrade pip >/dev/null
 "$PYTHON_BIN" -m pip install pypdf ollama >/dev/null
+export PYTHONUNBUFFERED=1
 
 echo "--- Ubiquity Claim Detection Run ---"
 echo "Project root: $PROJECT_ROOT"
@@ -218,15 +221,20 @@ else
     echo "Ollama server is already running at $OLLAMA_HOST"
 fi
 
+SHARD_OUTPUT_DIR="${OUTPUT_DIR}/shard_${SHARD_ID}"
+mkdir -p "$SHARD_OUTPUT_DIR"
+
 "$PYTHON_BIN" scripts/04_analyses/06_detect_ubiquity_claims_ollama.py \
-  --input-dir "$INPUT_DIR" \
-  --output-dir "$OUTPUT_DIR" \
-    --source-mode "$SOURCE_MODE" \
-    --abstract-csv "$ABSTRACT_CSV" \
-    --abstract-text-col "$ABSTRACT_TEXT_COL" \
-    --abstract-id-col "$ABSTRACT_ID_COL" \
-  --model "$OLLAMA_MODEL" \
-  --ollama-host "$OLLAMA_HOST" \
-  --max-files "$MAX_FILES"
+    --input-dir "$INPUT_DIR" \
+    --output-dir "$SHARD_OUTPUT_DIR" \
+        --source-mode "$SOURCE_MODE" \
+        --abstract-csv "$ABSTRACT_CSV" \
+        --abstract-text-col "$ABSTRACT_TEXT_COL" \
+        --abstract-id-col "$ABSTRACT_ID_COL" \
+    --model "$OLLAMA_MODEL" \
+    --ollama-host "$OLLAMA_HOST" \
+    --max-files "$MAX_FILES" \
+    --n-shards "$N_SHARDS" \
+    --shard-id "$SHARD_ID"
 
 echo "Done. Outputs are in: $OUTPUT_DIR"
