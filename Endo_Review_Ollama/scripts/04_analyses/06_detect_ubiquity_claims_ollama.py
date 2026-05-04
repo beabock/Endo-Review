@@ -423,6 +423,7 @@ def to_result(
     snippets_used: int,
     keyword_hits: int,
     model_name: str,
+    source_type: str = "",
 ) -> DetectionResult:
     contains = bool(response_json.get("contains_ubiquity_claim", False))
     strength = str(response_json.get("claim_strength", "none")).strip().lower() or "none"
@@ -443,6 +444,7 @@ def to_result(
     rationale = str(response_json.get("rationale", "")).strip()
 
     return DetectionResult(
+        source_type=source_type,
         source_file=source_file,
         doc_id=doc_id,
         contains_ubiquity_claim=contains,
