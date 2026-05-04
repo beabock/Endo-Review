@@ -7,6 +7,7 @@
 #SBATCH --gres=gpu:a100:1
 #SBATCH --time=08:00:00
 #SBATCH --output=results/logs/ubiquity_claims_%j.out
+#SBATCH --error=results/logs/ubiquity_claims_%j.out
 #
 # Ollama-based ubiquity claims detection for endophyte abstracts and full texts.
 # Requires Monsoon module system: module load ollama
@@ -18,6 +19,7 @@
 #   sbatch --export=SOURCE_MODE=fulltext run_06_ubiquity_claims_ollama.sbatch
 
 set -euo pipefail
+trap 'rc=$?; echo "ERROR: line ${LINENO}: ${BASH_COMMAND} (exit ${rc})"; exit ${rc}' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -31,7 +33,14 @@ mkdir -p results/logs
 
 # Load Ollama module from Monsoon HPC
 echo "Loading Ollama module..."
-if ! command -v module >/dev/null 2>&1; then
+if ! type module >/dev/null 2>&1; then
+    if [ -f /etc/profile ]; then
+        # shellcheck source=/etc/profile
+        source /etc/profile
+    fi
+fi
+
+if ! type module >/dev/null 2>&1; then
     # Non-login batch shells may not preload the modules function.
     if [ -f /etc/profile.d/modules.sh ]; then
         # shellcheck source=/etc/profile.d/modules.sh
@@ -42,8 +51,9 @@ if ! command -v module >/dev/null 2>&1; then
     fi
 fi
 
-if ! command -v module >/dev/null 2>&1; then
+if ! type module >/dev/null 2>&1; then
     echo "ERROR: environment modules system is not initialized; 'module' command unavailable."
+    echo "Checked: /etc/profile, /etc/profile.d/modules.sh, /usr/share/Modules/init/bash"
     exit 1
 fi
 
