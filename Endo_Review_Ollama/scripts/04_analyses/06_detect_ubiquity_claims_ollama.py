@@ -691,6 +691,7 @@ def main() -> None:
                         snippets_used=0,
                         keyword_hits=0,
                         model_name=args.model,
+                        citation="",
                         error="no_text_extracted",
                     )
                 )
@@ -749,6 +750,7 @@ def main() -> None:
                     snippets_used=0,
                     keyword_hits=0,
                     model_name=args.model,
+                    citation="",
                     error=str(exc),
                 )
             )
@@ -818,6 +820,7 @@ def main() -> None:
                         snippets_used=0,
                         keyword_hits=0,
                         model_name=args.model,
+                        citation="",
                         error="no_text_extracted",
                     )
                 )
@@ -860,6 +863,7 @@ def main() -> None:
                     snippets_used=0,
                     keyword_hits=0,
                     model_name=args.model,
+                    citation="",
                     error=str(exc),
                 )
             )
