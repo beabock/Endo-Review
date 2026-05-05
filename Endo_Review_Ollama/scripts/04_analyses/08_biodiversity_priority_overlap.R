@@ -37,6 +37,7 @@ library(readr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
+library(scales)
 
 INPUT_ENDOPHYTE_COUNTRIES <- "results/country_analysis/country_gdp_latitude_summary.csv"
 INPUT_UNSTUDIED_COUNTRIES <- "results/understudied_analysis/unstudied_countries.csv"
@@ -232,24 +233,46 @@ if (!is.null(biome_priority)) {
 }
 
 if (!is.null(country_priority)) {
-  overlap_country_for_plot <- read_csv(file.path(OUTPUT_DIR, "overlap_by_country.csv"), show_col_types = FALSE)
-  plot_data <- overlap_country_for_plot %>%
+  plot_metric_source <- "WB_TOTAL"
+  plot_metric_label <- "Total species"
+
+  plot_data <- country_summary %>%
+    left_join(country_priority %>% filter(source == plot_metric_source), by = c("iso_a3" = "iso_a3")) %>%
     mutate(
-      priority_score = as.numeric(priority_score),
-      study_count = as.numeric(study_count)
+      metric_value = as.numeric(priority_score),
+      study_count = as.numeric(study_count),
+      understudied = study_count == 0
     ) %>%
-    filter(!is.na(priority_score), !is.na(study_count))
+    filter(!is.na(metric_value), !is.na(study_count)) %>%
+    mutate(
+      study_count_log = log10(study_count + 1)
+    )
 
   if (nrow(plot_data) > 0) {
-    scatter <- ggplot(plot_data, aes(x = priority_score, y = study_count)) +
-      geom_point(alpha = 0.75, size = 2, color = "#1f78b4") +
+    scatter <- ggplot(plot_data, aes(x = metric_value, y = study_count_log)) +
+      geom_point(aes(color = understudied), alpha = 0.8, size = 2.2) +
       geom_smooth(method = "lm", se = TRUE, color = "#b22222") +
-      theme_minimal(base_size = 12) +
+      theme_endo_bw(base_size = 12) +
       labs(
-        title = "Understudied Endophyte Countries vs Biodiversity Priority",
-        subtitle = "Replace the priority score file with your chosen biodiversity estimate layer",
-        x = "Biodiversity priority score",
-        y = "Endophyte study count"
+        title = "Endophyte Study Effort vs World Bank Total Species Richness",
+        subtitle = paste0("Scatter uses ", plot_metric_source, " (", plot_metric_label, "); understudied countries are highlighted"),
+        x = "World Bank total species count",
+        y = "log10(endophyte study count + 1)"
+      ) +
+      scale_x_continuous(labels = comma) +
+      scale_color_manual(
+        values = c(
+          `TRUE` = "#E24A33",
+          `FALSE` = "#1f78b4"
+        ),
+        labels = c("Studied countries", "Understudied countries"),
+        name = NULL
+      ) +
+      theme(
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(color = "gray40"),
+        panel.grid.major.x = element_blank(),
+        legend.position = "top"
       )
 
     ggsave(file.path(OUTPUT_DIR, "priority_overlap_scatter.png"), scatter, width = 8, height = 5, dpi = 300)

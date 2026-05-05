@@ -11,16 +11,18 @@ Tests conducted:
 2. Spearman rank correlation (priority metric vs study count)
 3. Binomial test (observed vs random overlap in top quantile)
 4. Sensitivity analysis (different priority score quantile thresholds)
-5. Regional subsampling (chi-square by continent)
+5. Quartile-based study-count unevenness test (Kruskal-Wallis)
+6. Regional subsampling (chi-square by continent)
 
 Outputs: results/biodiversity_priority_overlap/robustness_report.txt
          results/biodiversity_priority_overlap/sensitivity_analysis.csv
+         results/biodiversity_priority_overlap/priority_quartile_unevenness.csv
          results/biodiversity_priority_overlap/regional_subsampling.csv
 """
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from scipy.stats import chi2_contingency, spearmanr
+from scipy.stats import chi2_contingency, spearmanr, kruskal
 try:
     from scipy.stats import binom_test
 except ImportError:
@@ -195,7 +197,50 @@ sensitivity_df.to_csv(OUTPUT_DIR / 'sensitivity_analysis.csv', index=False)
 report.append(f"\nSensitivity results saved to: sensitivity_analysis.csv")
 
 report.append("\n" + "=" * 80)
-report.append("5. REGIONAL SUBSAMPLING (Chi-square by continent)")
+report.append("5. QUARTILE-BASED STUDY-COUNT UNEVENNESS")
+report.append("=" * 80)
+report.append("Test whether endophyte study counts differ across biodiversity-priority quartiles\n")
+
+unevenness_results = []
+for metric_name, metric_label in [("priority_metric", "World Bank biodiversity priority")]:
+    quartile_data = overlap_unique.dropna(subset=[metric_name, "study_count"]).copy()
+    quartile_data["priority_quartile"] = pd.qcut(
+        quartile_data[metric_name].rank(method="first"),
+        q=4,
+        labels=["Q1 (lowest)", "Q2", "Q3", "Q4 (highest)"],
+    )
+
+    if quartile_data["priority_quartile"].nunique() < 2:
+        report.append(f"{metric_label}: insufficient variation for quartile test")
+        continue
+
+    groups = [g["study_count"].values for _, g in quartile_data.groupby("priority_quartile") if len(g) > 0]
+    if len(groups) < 2:
+        report.append(f"{metric_label}: insufficient groups for quartile test")
+        continue
+
+    kw_stat, kw_p = kruskal(*groups)
+    quartile_medians = quartile_data.groupby("priority_quartile")["study_count"].median()
+    report.append(f"{metric_label}: Kruskal-Wallis H={kw_stat:.4f}, p={kw_p:.4e}")
+    report.append(f"  Median study counts by quartile: {quartile_medians.to_dict()}")
+
+    unevenness_results.append({
+        'metric': metric_label,
+        'kruskal_wallis_H': kw_stat,
+        'p_value': kw_p,
+        'median_q1': quartile_medians.get('Q1 (lowest)', np.nan),
+        'median_q2': quartile_medians.get('Q2', np.nan),
+        'median_q3': quartile_medians.get('Q3', np.nan),
+        'median_q4': quartile_medians.get('Q4 (highest)', np.nan)
+    })
+
+if unevenness_results:
+    unevenness_df = pd.DataFrame(unevenness_results)
+    unevenness_df.to_csv(OUTPUT_DIR / 'priority_quartile_unevenness.csv', index=False)
+    report.append(f"\nQuartile unevenness results saved to: priority_quartile_unevenness.csv")
+
+report.append("\n" + "=" * 80)
+report.append("6. REGIONAL SUBSAMPLING (Chi-square by continent)")
 report.append("=" * 80)
 report.append("Repeat chi-square test within each continent region\n")
 

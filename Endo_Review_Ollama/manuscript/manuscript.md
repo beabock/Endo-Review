@@ -134,6 +134,7 @@ New Phytologist
 
 ### Overlap with biodiversity conservation priorities
 
+- **Definition of "understudied" countries**: Countries with zero publications in the analysis corpus (study_count = 0). This is derived from filtering the world country universe against studied countries.
 - Compare the 84 understudied endophyte countries to World Bank biodiversity metrics (endemic species counts, threatened species probabilities, total endemic richness).
 - Key finding: **70% of understudied endophyte countries rank in the top 25% of global biodiversity priority areas** (highest conservation concern).
 - This enrichment is systematic across priority thresholds:
