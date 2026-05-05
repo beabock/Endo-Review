@@ -69,6 +69,17 @@ New Phytologist
 	- Quantify scope and coverage limits of the globally aggregated record.
 	- Position the rest of the Results as tests of where the ubiquity claim can and cannot currently be supported.
 
+### Estimated prevalence of explicit ubiquity claims in the sampled literature
+
+- Observed sample (live run, partial): 1 positive detection out of 291 processed items (per-checkpoint counting from shard logs), i.e. ~0.34%.
+- Simple projection to the full dataset (N = 21,891 abstracts): expected positives ≈ 21,891 * 0.003436 ≈ 75 abstracts (rough estimate).
+- Uncertainty: this projection is imprecise (only a single positive observed so far). A 95% approximate CI for the proportion given n=291 is wide (roughly 0% to ~1.0%), implying a plausible range of ~0 to ~220 positives across the full corpus.
+
+Notes and recommended manuscript wording:
+- Phrase conservatively: "In a reproducible, abstract-driven sample we observed an initial detection rate of explicit or qualified ubiquity claims of ~0.34%; a naïve projection to the full corpus suggests on the order of tens (≈75) of abstracts making such claims, though the estimate is imprecise given current sampling and will be refined as processing completes."
+- Emphasize limits: this is an abstract-level signal (may miss implicit claims present only in full text), depends on model sensitivity, and is subject to checkpointing/write-frequency effects.
+- Use this estimate to motivate results that follow: the ubiquity claim is frequently repeated qualitatively in introductions and reviews, but explicit, testable statements appear to be rare in the sampled abstracts; this motivates the need for targeted full-text follow-up in prioritized domains.
+
 1. Global geography of study effort
 	- Show strong spatial concentration and zero/near-zero regions.
 	- Figure: `study_count_by_country_robinson.png`

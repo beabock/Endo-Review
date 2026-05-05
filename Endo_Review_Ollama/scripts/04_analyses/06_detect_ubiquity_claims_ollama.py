@@ -23,6 +23,7 @@ import importlib
 import json
 import os
 import re
+import signal
 import sys
 import time
 from dataclasses import dataclass
@@ -55,6 +56,7 @@ class DetectionResult:
     confidence: float
     evidence_sentences: List[str]
     rationale: str
+    citation: str
     text_chars: int
     snippets_used: int
     keyword_hits: int
@@ -124,19 +126,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-snippets",
         type=int,
-        default=10,
+        default=5,
         help="Max keyword-centered snippets per document",
     )
     parser.add_argument(
         "--snippet-window",
         type=int,
-        default=900,
+        default=500,
         help="Character window around each keyword hit",
     )
     parser.add_argument(
         "--max-context-chars",
         type=int,
-        default=12000,
+        default=8000,
         help="Maximum text length sent to model per file",
     )
     parser.add_argument(
@@ -261,41 +263,31 @@ def collect_snippets(
     snippet_window: int,
     max_context_chars: int,
 ) -> Tuple[str, int, int]:
+    """Collect text snippets. For speed, just grab first max_context_chars."""
     text = compact_whitespace(text)
     if not text:
         return "", 0, 0
 
+    # Count keyword hits for reporting
     matches = list(KEYWORD_RE.finditer(text))
-    snippets: List[str] = []
+    keyword_hits = len(matches)
 
-    for m in matches[:max_snippets]:
-        start = max(0, m.start() - snippet_window)
-        end = min(len(text), m.end() + snippet_window)
-        snippet = text[start:end]
-        snippets.append(snippet)
-
-    if not snippets:
-        # Fallback ensures model still sees context in documents with non-keyword phrasing.
-        snippets = [text[: min(max_context_chars, len(text))]]
-
-    joined = "\n\n---\n\n".join(snippets)
-    if len(joined) > max_context_chars:
-        joined = joined[:max_context_chars]
-
-    return joined, len(snippets), len(matches)
+    # Simple: just take the first max_context_chars to avoid complex snippet logic
+    context = text[:max_context_chars]
+    
+    return context, 1, keyword_hits
 
 
 def build_prompt(context: str, source_name: str) -> str:
     return (
         "You are an information extraction model for scientific literature.\n"
-        "Decide whether the document text contains a claim that fungal endophytes are ubiquitous "
-        "or near-universal, including equivalent wording (e.g., found in nearly all plants, widespread across plants).\n"
+        "Decide whether the text contains a claim that fungal endophytes are ubiquitous, "
+        "near-universal, or found in nearly all plants.\n"
         "Return strict JSON only with keys: contains_ubiquity_claim (boolean), claim_strength "
         "(explicit|qualified|none), claim_scope (endophytes_general|specific_taxon|other|none), "
-        "confidence (0-1 number), evidence_sentences (array of up to 3 verbatim short quotes), rationale (string).\n\n"
-        f"Source file: {source_name}\n"
-        "Task: detect ubiquity claims about fungal endophytes based only on this text.\n"
-        "If no such claim appears, set contains_ubiquity_claim=false and claim_strength=none.\n\n"
+        "confidence (0-1), evidence_sentences (array), citation (string: if the claim cites a reference, extract it; "
+        "otherwise empty), rationale (string).\n\n"
+        f"Source: {source_name}\n"
         "Text:\n"
         f"{context}"
     )
@@ -350,50 +342,49 @@ def parse_model_json_response(content: str) -> Dict:
         raise RuntimeError("Could not parse JSON content from Ollama response")
 
 
+def timeout_handler(signum, frame):
+    raise TimeoutError("Model request exceeded timeout")
+
+
 def ollama_generate_json(
     ollama_host: str,
     model: str,
     prompt: str,
-    max_retries: int = 3,
+    timeout_seconds: int = 120,
 ) -> Dict:
-    """Generate JSON from Ollama with retry logic for transient connection failures."""
+    """Generate JSON from Ollama with simple timeout."""
     client = get_ollama_client(ollama_host)
     
-    for attempt in range(max_retries):
-        try:
-            response_data = client.generate(
-                model=model,
-                prompt=prompt,
-                format="json",
-                options={"temperature": 0},
-                stream=False,
-            )
-            content = ""
-            if isinstance(response_data, dict):
-                content = str(response_data.get("response", "") or "")
-            else:
-                content = str(getattr(response_data, "response", "") or "")
-
-            if not content:
-                raise RuntimeError("Ollama returned empty response content")
-
-            return parse_model_json_response(content)
-        
-        except (ConnectionError, BrokenPipeError, TimeoutError) as exc:
-            # Transient connection errors - retry
-            if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # exponential backoff: 1s, 2s, 4s
-                print(f"Connection error (attempt {attempt + 1}/{max_retries}): {exc}. Retrying in {wait_time}s...")
-                time.sleep(wait_time)
-                continue
-            else:
-                raise RuntimeError(f"Ollama API request failed after {max_retries} attempts: {exc}") from exc
-        
-        except Exception as exc:
-            # Other errors - fail immediately
-            raise RuntimeError(f"Ollama API request failed: {exc}") from exc
+    # Set timeout alarm
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout_seconds)
     
-    raise RuntimeError("Unexpected state in ollama_generate_json retry loop")
+    try:
+        response_data = client.generate(
+            model=model,
+            prompt=prompt,
+            format="json",
+            stream=False,
+        )
+        signal.alarm(0)  # Cancel alarm
+        
+        content = ""
+        if isinstance(response_data, dict):
+            content = str(response_data.get("response", "") or "")
+        else:
+            content = str(getattr(response_data, "response", "") or "")
+
+        if not content:
+            raise RuntimeError("Ollama returned empty response content")
+
+        return parse_model_json_response(content)
+    
+    except TimeoutError as exc:
+        signal.alarm(0)
+        raise RuntimeError(f"Model request timeout after {timeout_seconds}s: {exc}") from exc
+    except Exception as exc:
+        signal.alarm(0)
+        raise RuntimeError(f"Ollama API request failed: {exc}") from exc
 
 
 def fetch_ollama_tags(ollama_host: str) -> Dict:
@@ -478,6 +469,8 @@ def to_result(
     evidence = [str(x).strip() for x in evidence if str(x).strip()][:3]
 
     rationale = str(response_json.get("rationale", "")).strip()
+    
+    citation = str(response_json.get("citation", "")).strip()
 
     return DetectionResult(
         source_type=source_type,
@@ -489,6 +482,7 @@ def to_result(
         confidence=confidence,
         evidence_sentences=evidence,
         rationale=rationale,
+        citation=citation,
         text_chars=text_chars,
         snippets_used=snippets_used,
         keyword_hits=keyword_hits,
@@ -513,6 +507,7 @@ def write_outputs(results: List[DetectionResult], output_dir: Path) -> None:
         "confidence",
         "evidence_sentences",
         "rationale",
+        "citation",
         "text_chars",
         "snippets_used",
         "keyword_hits",
@@ -535,6 +530,7 @@ def write_outputs(results: List[DetectionResult], output_dir: Path) -> None:
                     "confidence": f"{r.confidence:.3f}",
                     "evidence_sentences": " || ".join(r.evidence_sentences),
                     "rationale": r.rationale,
+                    "citation": r.citation,
                     "text_chars": r.text_chars,
                     "snippets_used": r.snippets_used,
                     "keyword_hits": r.keyword_hits,
@@ -559,6 +555,7 @@ def write_outputs(results: List[DetectionResult], output_dir: Path) -> None:
                     "confidence": f"{r.confidence:.3f}",
                     "evidence_sentences": " || ".join(r.evidence_sentences),
                     "rationale": r.rationale,
+                    "citation": r.citation,
                     "text_chars": r.text_chars,
                     "snippets_used": r.snippets_used,
                     "keyword_hits": r.keyword_hits,
@@ -581,6 +578,7 @@ def write_outputs(results: List[DetectionResult], output_dir: Path) -> None:
                         "confidence": r.confidence,
                         "evidence_sentences": r.evidence_sentences,
                         "rationale": r.rationale,
+                        "citation": r.citation,
                         "text_chars": r.text_chars,
                         "snippets_used": r.snippets_used,
                         "keyword_hits": r.keyword_hits,
