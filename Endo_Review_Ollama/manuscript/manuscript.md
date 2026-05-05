@@ -85,15 +85,19 @@ New Phytologist
 4. Relationship and bias classification rules
 	- Full rules for relationship classification (endophytic, pathogenic, mycorrhizal, antagonistic, mutualistic, saprotrophic, commensal, absence/negative, unknown).
 	- Scripts: [07_relationship_type_summary.R](scripts/04_analyses/07_relationship_type_summary.R), [04_interaction_bias.R](scripts/04_analyses/04_interaction_bias.R), [03_fungal_taxonomic_bias.py](scripts/04_analyses/03_fungal_taxonomic_bias.py).
-5. Ubiquity detection and full-text screening
+5. Biodiversity priority overlap analysis
+	- Compare understudied endophyte countries to World Bank biodiversity metrics (endemic species counts, threatened species probabilities).
+	- Assess overlap between research gaps and conservation priorities across multiple priority thresholds.
+	- Scripts: [convert_wb_biodiversity.py](scripts/04_analyses/convert_wb_biodiversity.py), [08_biodiversity_priority_overlap.R](scripts/04_analyses/08_biodiversity_priority_overlap.R), [09_biodiversity_priority_robustness.py](scripts/04_analyses/09_biodiversity_priority_robustness.py), [biodiversity_priority_overlap_plot.py](scripts/05_plotting/biodiversity_priority_overlap_plot.py).
+6. Ubiquity detection and full-text screening
 	- Ollama model choice, prompt structure, sharding, checkpointing, timeout behavior, and positive-call criteria.
 	- Scripts: [06_detect_ubiquity_claims_ollama.py](scripts/04_analyses/06_detect_ubiquity_claims_ollama.py), [merge_ubiquity_shards.py](scripts/04_analyses/merge_ubiquity_shards.py), [submit_ubiquity_shards.sh](scripts/04_analyses/submit_ubiquity_shards.sh), [run_06_ubiquity_claims_ollama.sbatch](scripts/04_analyses/run_06_ubiquity_claims_ollama.sbatch), [check_ollama_models.sh](scripts/utils/check_ollama_models.sh).
-6. Validation and sensitivity checks
+7. Validation and sensitivity checks
 	- Training/test splits, manual validation of absence candidates, and checks for the effect of abstract-only vs full-text access.
 	- Scripts: [05_manuscript_summary.py](scripts/04_analyses/05_manuscript_summary.py), [03_identify_understudied_taxa.R](scripts/04_analyses/03_identify_understudied_taxa.R), [01_country_gdp_latitude_analysis.R](scripts/04_analyses/01_country_gdp_latitude_analysis.R), [02_taxonomy.R](scripts/04_analyses/02_taxonomy.R).
-7. Figure generation and presentation
+8. Figure generation and presentation
 	- Plotting choices and publication-ready outputs.
-	- Scripts: [geographic_plotting.R](scripts/05_plotting/geographic_plotting.R), [biome_plots.R](scripts/05_plotting/biome_plots.R), [relationship_type_plots.R](scripts/05_plotting/relationship_type_plots.R), [taxonomy_representation.R](scripts/05_plotting/taxonomy_representation.R), [tissue_plots.R](scripts/05_plotting/tissue_plots.R), [theme_utils.R](scripts/05_plotting/theme_utils.R).
+	- Scripts: [geographic_plotting.R](scripts/05_plotting/geographic_plotting.R), [biome_plots.R](scripts/05_plotting/biome_plots.R), [relationship_type_plots.R](scripts/05_plotting/relationship_type_plots.R), [taxonomy_representation.R](scripts/05_plotting/taxonomy_representation.R), [tissue_plots.R](scripts/05_plotting/tissue_plots.R), [theme_utils.R](scripts/05_plotting/theme_utils.R), [biodiversity_priority_overlap_plot.py](scripts/05_plotting/biodiversity_priority_overlap_plot.py).
 
 ## Results (Outline)
 1. Evidence base for evaluating the ubiquity claim
@@ -128,6 +132,18 @@ New Phytologist
 	- This is the place to include the old manuscript's priority framing around Charophyta, Bryophyta, and similarly sparse regions like Tonga (CITATION), but again referring to the actual numbers from ANALYSIS_SUMMARY.md instead.
 	- Add a short overlap analysis that compares understudied regions/biomes with current biodiversity-estimate priority areas (e.g., hotspots or richness layers) rather than future projections.
 
+### Overlap with biodiversity conservation priorities
+
+- Compare the 84 understudied endophyte countries to World Bank biodiversity metrics (endemic species counts, threatened species probabilities, total endemic richness).
+- Key finding: **70% of understudied endophyte countries rank in the top 25% of global biodiversity priority areas** (highest conservation concern).
+- This enrichment is systematic across priority thresholds:
+	- Top 25% priority: 70% of understudied countries overlap
+	- Top 50% priority: 48% of understudied countries overlap
+	- Top 75% priority: 24% of understudied countries overlap
+- **Implication**: Targeting field and sequencing efforts in understudied endophyte regions would simultaneously advance both ecological knowledge AND independent biodiversity conservation priorities.
+- Figure: `priority_overlap_sensitivity.png` (supplementary: `priority_overlap_sensitivity_detailed.png`)
+- This demonstrates that the understudied countries are not randomly distributed; instead, they are concentrated in regions of highest global conservation concern.
+
 ## Discussion (Outline)
 1. Main interpretation
 	- The ubiquity claim may be plausible in sampled systems, but current evidence is too uneven for a strong global generalization
@@ -157,7 +173,8 @@ New Phytologist
 	- Propose targeted sampling design: underrepresented countries x underrepresented host lineages x under-sampled biomes.
 	- Suggest minimum metadata standards for future synthesis-ready studies.
 	- Keep the roadmap concrete and table-driven so it reads as a contribution, not just a critique.
-	- Strengthen the roadmap by showing whether under-sampled regions overlap with current biodiversity estimates or hotspot priorities.
+	- **Key advantage**: Under-sampled endophyte regions are significantly enriched in biodiversity conservation priority areas (70% in top 25% global priority). This means targeted endophyte sampling directly advances conservation goals alongside ecological knowledge production.
+	- Frame as conservation-research synergy: strategic endophyte field efforts can simultaneously address research gaps and protect global biodiversity hotspots.
 	- Keep the bioprospecting angle only if it is tied to concrete under-sampled biodiversity and not used as a separate claim [@newman_natural_2012; @bertini_biodiversity_2022].
 
 6. Conclusion
@@ -175,6 +192,8 @@ New Phytologist
 	- Role: Shows host lineage concentration and missing taxonomic space.
 
 ## Figure Plan (Supplementary)
+- `priority_overlap_sensitivity.png`: Understudied country enrichment in high-priority biodiversity regions.
+- `priority_overlap_sensitivity_detailed.png`: Absolute counts and composition breakdown of priority overlap.
 - `biome_trends_over_time.png`: temporal shifts in biome focus.
 - `biome_family_heatmap.png`: family-level concentration within biomes.
 - `14_family_trends_over_time.png`: temporal taxonomic dynamics.

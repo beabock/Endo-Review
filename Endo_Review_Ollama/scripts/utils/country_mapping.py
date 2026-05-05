@@ -1009,6 +1009,23 @@ for country_name, iso_code in COUNTRY_TO_ISO.items():
     ALIAS_TO_COUNTRY[country_name] = canonical
 
 
+# Continent mapping for regional analysis (iso3 -> continent)
+CONTINENT_MAP = {
+    'CHN': 'Asia', 'IND': 'Asia', 'JPN': 'Asia', 'IDN': 'Asia', 'PHL': 'Asia', 'THA': 'Asia', 'VNM': 'Asia', 'MYS': 'Asia', 'SGP': 'Asia', 'PAK': 'Asia',
+    'BGD': 'Asia', 'MMR': 'Asia', 'LKA': 'Asia', 'NPL': 'Asia', 'BTN': 'Asia', 'AFG': 'Asia', 'KAZ': 'Asia', 'UZB': 'Asia', 'TKM': 'Asia', 'TJK': 'Asia', 'KGZ': 'Asia',
+    'USA': 'North America', 'CAN': 'North America', 'MEX': 'North America',
+    'BRA': 'South America', 'ARG': 'South America', 'COL': 'South America', 'PER': 'South America', 'CHL': 'South America', 'VEN': 'South America', 'ECU': 'South America', 'BOL': 'South America', 'PRY': 'South America', 'URY': 'South America', 'GUY': 'South America', 'SUR': 'South America',
+    'DEU': 'Europe', 'GBR': 'Europe', 'FRA': 'Europe', 'ITA': 'Europe', 'ESP': 'Europe', 'NLD': 'Europe', 'BEL': 'Europe', 'AUT': 'Europe', 'CHE': 'Europe', 'SWE': 'Europe', 'NOR': 'Europe', 'DNK': 'Europe', 'FIN': 'Europe', 'POL': 'Europe', 'ROU': 'Europe', 'GRC': 'Europe', 'PRT': 'Europe', 'CZE': 'Europe', 'HUN': 'Europe', 'SVK': 'Europe', 'SVN': 'Europe', 'HRV': 'Europe', 'BIH': 'Europe', 'SRB': 'Europe', 'MNE': 'Europe', 'ALB': 'Europe', 'MKD': 'Europe', 'UKR': 'Europe', 'BLR': 'Europe', 'MDA': 'Europe', 'RUS': 'Europe/Asia', 'LVA': 'Europe', 'LTU': 'Europe', 'EST': 'Europe', 'ISL': 'Europe',
+    'AUS': 'Oceania', 'NZL': 'Oceania', 'FJI': 'Oceania', 'PNG': 'Oceania', 'WSM': 'Oceania', 'VUT': 'Oceania', 'SLB': 'Oceania',
+    'ZAF': 'Africa', 'EGY': 'Africa', 'NGA': 'Africa', 'KEN': 'Africa', 'ETH': 'Africa', 'MAR': 'Africa', 'DZA': 'Africa', 'AGO': 'Africa', 'ZWE': 'Africa', 'ZMB': 'Africa', 'MWI': 'Africa', 'MOZ': 'Africa', 'TZA': 'Africa', 'UGA': 'Africa', 'RWA': 'Africa', 'BDI': 'Africa', 'COG': 'Africa', 'COD': 'Africa', 'CMR': 'Africa', 'CAF': 'Africa', 'GAB': 'Africa', 'GNQ': 'Africa', 'GHA': 'Africa', 'CIV': 'Africa', 'BFA': 'Africa', 'MLI': 'Africa', 'SEN': 'Africa', 'TUN': 'Africa',
+    'ARE': 'Middle East', 'ISR': 'Middle East', 'SAU': 'Middle East', 'IRN': 'Middle East', 'IRQ': 'Middle East', 'LBN': 'Middle East', 'SYR': 'Middle East', 'YEM': 'Middle East', 'OMN': 'Middle East', 'QAT': 'Middle East', 'BHR': 'Middle East', 'KWT': 'Middle East',
+}
+
+def get_continent(iso):
+    """Map ISO3 country code to continent."""
+    return CONTINENT_MAP.get(iso, 'Other')
+
+
 # Tissue, guild, and biome extraction functions for multi-column field recovery
 def extract_tissue_values(row, headers: List[str]) -> List[Tuple[str, str]]:
     """
