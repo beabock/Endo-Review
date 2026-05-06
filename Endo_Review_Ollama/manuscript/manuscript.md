@@ -135,15 +135,13 @@ New Phytologist
 ### Overlap with biodiversity conservation priorities
 
 - **Definition of "understudied" countries**: Countries with zero publications in the analysis corpus (study_count = 0). This is derived from filtering the world country universe against studied countries.
-- Compare the 84 understudied endophyte countries to World Bank biodiversity metrics (endemic species counts, threatened species probabilities, total endemic richness).
-- Key finding: **70% of understudied endophyte countries rank in the top 25% of global biodiversity priority areas** (highest conservation concern).
-- This enrichment is systematic across priority thresholds:
-	- Top 25% priority: 70% of understudied countries overlap
-	- Top 50% priority: 48% of understudied countries overlap
-	- Top 75% priority: 24% of understudied countries overlap
-- **Implication**: Targeting field and sequencing efforts in understudied endophyte regions would simultaneously advance both ecological knowledge AND independent biodiversity conservation priorities.
-- Figure: `priority_overlap_sensitivity.png` (supplementary: `priority_overlap_sensitivity_detailed.png`)
-- This demonstrates that the understudied countries are not randomly distributed; instead, they are concentrated in regions of highest global conservation concern.
+- Compare the **80 understudied endophyte countries** to World Bank biodiversity metrics (total species richness, endemic species counts, and threatened species probabilities).
+- Key finding: Overall, there is a significant **positive correlation** between biodiversity and endophyte research effort. Countries with higher biodiversity tend to have more studies (Spearman p < 0.001 for all three metrics). This general trend is visible in the scatter plots, where study counts rise with increasing biodiversity.
+- However, this trend does not mean high-biodiversity regions are all well-studied. A large number of countries (80) remain completely unstudied. These unstudied countries are not randomly distributed. They are disproportionately found in lower-biodiversity regions. For instance, only 5% of unstudied countries are in the top 25% of nations by total species richness.
+- The most critical finding for future research is the presence of **high-biodiversity, low-study countries**. These are visible as points in the upper-right of the scatter plots with low y-values. These countries represent a misalignment between conservation priority and research effort, and are prime candidates for future sampling campaigns.
+- Economic factors also play a role. GDP is positively correlated with both study count and total biodiversity (Spearman p < 0.001 for both). However, GDP is *negatively* correlated with biodiversity density (biodiversity per km²), suggesting that while larger economies have more species, they are not necessarily the most concentrated biodiversity hotspots. This highlights the importance of considering both absolute biodiversity and biodiversity density when prioritizing future research.
+- **Implication**: While research has tended to follow biodiversity, significant gaps remain. Targeting high-biodiversity countries that are currently under-studied would efficiently advance both ecological knowledge and conservation priorities.
+- Figures: `priority_overlap_scatter.png`, `priority_overlap_hotspot_scatter.png`, `priority_overlap_unevenness.png`
 
 ## Discussion (Outline)
 1. Main interpretation
@@ -174,7 +172,7 @@ New Phytologist
 	- Propose targeted sampling design: underrepresented countries x underrepresented host lineages x under-sampled biomes.
 	- Suggest minimum metadata standards for future synthesis-ready studies.
 	- Keep the roadmap concrete and table-driven so it reads as a contribution, not just a critique.
-	- **Key advantage**: Under-sampled endophyte regions are significantly enriched in biodiversity conservation priority areas (70% in top 25% global priority). This means targeted endophyte sampling directly advances conservation goals alongside ecological knowledge production.
+	- **Key advantage**: While endophyte research generally follows biodiversity gradients (higher biodiversity countries have more studies; Spearman p < 0.001), there are critical gaps. High-biodiversity countries with few or no studies represent a misalignment of research effort and conservation priority. Targeting these specific regions directly advances conservation goals alongside ecological knowledge production.
 	- Frame as conservation-research synergy: strategic endophyte field efforts can simultaneously address research gaps and protect global biodiversity hotspots.
 	- Keep the bioprospecting angle only if it is tied to concrete under-sampled biodiversity and not used as a separate claim [@newman_natural_2012; @bertini_biodiversity_2022].
 
@@ -193,8 +191,9 @@ New Phytologist
 	- Role: Shows host lineage concentration and missing taxonomic space.
 
 ## Figure Plan (Supplementary)
-- `priority_overlap_sensitivity.png`: Understudied country enrichment in high-priority biodiversity regions.
-- `priority_overlap_sensitivity_detailed.png`: Absolute counts and composition breakdown of priority overlap.
+- `priority_overlap_scatter.png`: Endophyte study counts versus World Bank biodiversity metrics.
+- `priority_overlap_hotspot_scatter.png`: Endophyte study density versus area-normalized biodiversity metrics.
+- `priority_overlap_unevenness.png`: Boxplots showing uneven study counts across biodiversity quartiles.
 - `biome_trends_over_time.png`: temporal shifts in biome focus.
 - `biome_family_heatmap.png`: family-level concentration within biomes.
 - `14_family_trends_over_time.png`: temporal taxonomic dynamics.

@@ -18,6 +18,9 @@ Outputs: results/biodiversity_priority_overlap/robustness_report.txt
          results/biodiversity_priority_overlap/sensitivity_analysis.csv
          results/biodiversity_priority_overlap/priority_quartile_unevenness.csv
          results/biodiversity_priority_overlap/regional_subsampling.csv
+         results/biodiversity_priority_overlap/country_land_area_summary.csv
+         results/biodiversity_priority_overlap/area_normalized_summary.csv
+         results/biodiversity_priority_overlap/gdp_biodiversity_correlation.csv
 """
 from pathlib import Path
 import pandas as pd
@@ -33,7 +36,7 @@ except ImportError:
         return result.pvalue
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / 'utils'))
-from country_mapping import CONTINENT_MAP, get_continent
+from country_mapping import CONTINENT_MAP, find_country_in_text, get_continent
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -43,8 +46,12 @@ INPUT_OVERLAP = ROOT / 'results' / 'biodiversity_priority_overlap' / 'overlap_by
 INPUT_UNSTUDIED = ROOT / 'results' / 'understudied_analysis' / 'unstudied_countries.csv'
 INPUT_PRIORITY = ROOT / 'data' / 'biodiversity' / 'biodiversity_priority_countries.csv'
 INPUT_COUNTRY_SUMMARY = ROOT / 'results' / 'country_analysis' / 'country_gdp_latitude_summary.csv'
+INPUT_FAOSTAT_LAND = ROOT / 'data' / 'biodiversity' / 'FAOSTAT_Land' / 'FAOSTAT_data_en_5-5-2026.csv'
 OUTPUT_DIR = ROOT / 'results' / 'biodiversity_priority_overlap'
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_COUNTRY_AREA = OUTPUT_DIR / 'country_land_area_summary.csv'
+OUTPUT_AREA_NORMALIZED = OUTPUT_DIR / 'area_normalized_summary.csv'
+OUTPUT_GDP_CORRELATION = OUTPUT_DIR / 'gdp_biodiversity_correlation.csv'
 
 print("=" * 80)
 print("ROBUSTNESS AND STATISTICAL TESTS FOR BIODIVERSITY PRIORITY OVERLAP")
@@ -58,256 +65,327 @@ unstudied = pd.read_csv(INPUT_UNSTUDIED)
 priority = pd.read_csv(INPUT_PRIORITY)
 country_summary = pd.read_csv(INPUT_COUNTRY_SUMMARY)
 
-# Prepare data for analysis
 print("Preparing data...")
 
-# Mark understudied
-overlap['understudied'] = overlap['iso_a3'].isin(unstudied['iso_a3']).astype(int)
-overlap['continent'] = overlap['iso_a3'].map(get_continent)
+metric_sources = [
+    ("WB_TOTAL", "Total species"),
+    ("WB_SMALL50XENDEMIC100", "Endemic species"),
+    ("WB_TPROB80", "Threatened species probability"),
+]
 
-# For each country, aggregate priority metrics across sources
-# Take the MAXIMUM priority_score across all WB indicators (endemic, threatened, total)
-# This reflects: higher endemic count OR higher threatened probability = higher priority
-priority_agg = priority.groupby('iso3')['priority_score'].max().reset_index()
-priority_agg.columns = ['iso_a3', 'priority_metric']
+FAOSTAT_AREA_OVERRIDES = {
+    'bonaire, sint eustatius and saba': 'BES',
+    'cabo verde': 'CPV',
+    'cayman islands': 'CYM',
+    'czechia': 'CZE',
+    'gibraltar': 'GIB',
+    'holy see': 'VAT',
+    "lao people's democratic republic": 'LAO',
+    'mayotte': 'MYT',
+    'saint barthélemy': 'BLM',
+    'saint barthelemy': 'BLM',
+    'saint martin (french part)': 'MAF',
+    'saint pierre and miquelon': 'SPM',
+    'syrian arab republic': 'SYR',
+    'tokelau': 'TKL',
+    'viet nam': 'VNM',
+    'western sahara': 'ESH',
+}
 
-# Merge priority metrics into overlap
-overlap = overlap.merge(priority_agg, on='iso_a3', how='left')
+country_summary = country_summary.copy()
+country_summary['study_count'] = pd.to_numeric(country_summary['study_count'], errors='coerce')
+country_summary['understudied'] = (country_summary['study_count'] == 0).astype(int)
+country_summary['continent'] = country_summary['iso_a3'].map(get_continent)
 
-# Extract unique countries (one row per country)
-overlap_unique = overlap.drop_duplicates(subset=['iso_a3'], keep='first').copy()
 
+def resolve_fao_iso(country_name):
+    if pd.isna(country_name):
+        return None
+    name = str(country_name).lower().strip()
+    if name in FAOSTAT_AREA_OVERRIDES:
+        return FAOSTAT_AREA_OVERRIDES[name]
+    return find_country_in_text(str(country_name))
+
+
+fao_land = pd.read_csv(INPUT_FAOSTAT_LAND)
+country_area = fao_land[(fao_land['Item'] == 'Country area') & (fao_land['Element'] == 'Area')].copy()
+country_area['iso_a3'] = country_area['Area'].apply(resolve_fao_iso)
+country_area['country_area_1000ha'] = pd.to_numeric(country_area['Value'], errors='coerce')
+country_area['year'] = pd.to_numeric(country_area['Year'], errors='coerce')
+country_area = country_area.dropna(subset=['iso_a3', 'country_area_1000ha'])
+country_area = country_area.sort_values(['iso_a3', 'year'])
+country_area = country_area.drop_duplicates(subset=['iso_a3'], keep='last')
+country_area['country_area_km2'] = country_area['country_area_1000ha'] * 10.0
+country_area = country_area[['iso_a3', 'Area', 'country_area_1000ha', 'country_area_km2', 'year']]
+country_area = country_area.rename(columns={'Area': 'country_area_name'})
+
+country_area.to_csv(OUTPUT_COUNTRY_AREA, index=False)
+country_summary = country_summary.merge(
+    country_area[['iso_a3', 'country_area_1000ha', 'country_area_km2']],
+    on='iso_a3',
+    how='left'
+)
+
+area_matches = int(country_summary['country_area_km2'].notna().sum())
+sensitivity_rows = []
+unevenness_rows = []
+regional_rows = []
+metric_summary_rows = []
 report = []
-report.append("\n" + "=" * 80)
-report.append("1. CHI-SQUARE TEST (Independence: understudied vs top-priority status)")
-report.append("=" * 80)
-report.append("Metric used: Maximum endemic/threatened value across WB indicators")
-report.append("Classification: Countries in top 25% priority (highest conservation concern)")
-report.append("Null hypothesis: understudied status independent of priority metric")
-report.append("Alternative: understudied regions concentrated in highest-priority areas\n")
 
-# Create binary classification: top 25% priority (above 75th percentile)
-top_quartile_threshold = overlap_unique['priority_metric'].quantile(0.75)
-overlap_unique['high_priority'] = (overlap_unique['priority_metric'] >= top_quartile_threshold).astype(int)
+report.append(f"FAOSTAT land area coverage: {area_matches}/{len(country_summary)} countries matched")
+report.append(f"Country area summary saved to: {OUTPUT_COUNTRY_AREA}")
 
-# Create contingency table
-contingency = pd.crosstab(overlap_unique['understudied'], overlap_unique['high_priority'])
-report.append(f"Contingency table (rows=understudied, cols=high_priority):\n{contingency}\n")
+def make_metric_frame(source_name):
+    metric = priority[priority['source'] == source_name].copy()
+    if metric.empty:
+        return pd.DataFrame()
 
-try:
-    chi2, p_val, dof, expected = chi2_contingency(contingency)
-    report.append(f"Chi-square statistic: {chi2:.4f}")
-    report.append(f"P-value: {p_val:.4e}")
-    report.append(f"Degrees of freedom: {dof}")
-    report.append(f"Significance (alpha=0.05): {'YES' if p_val < 0.05 else 'NO'}")
-    if p_val < 0.05:
-        report.append("→ Result: Understudied regions show different priority metric distribution.")
+    if 'iso3' in metric.columns:
+        metric['iso_a3'] = metric['iso3'].astype(str)
+    elif 'iso_a3' in metric.columns:
+        metric['iso_a3'] = metric['iso_a3'].astype(str)
     else:
-        report.append("→ Result: No significant difference in priority metrics between understudied and studied regions.")
-except Exception as e:
-    report.append(f"→ Test skipped: {str(e)}")
+        return pd.DataFrame()
 
-report.append("\n" + "=" * 80)
-report.append("2. SPEARMAN RANK CORRELATION (Priority metric vs study count)")
-report.append("=" * 80)
-report.append("Hypothesis: negative correlation expected (higher priority areas less studied)\n")
+    metric['priority_score'] = pd.to_numeric(metric['priority_score'], errors='coerce')
+    metric = metric[['iso_a3', 'priority_score']].dropna(subset=['iso_a3', 'priority_score'])
+    metric = metric.drop_duplicates(subset=['iso_a3'])
+    frame = country_summary[['iso_a3', 'country_name', 'study_count', 'understudied', 'continent', 'country_area_km2', 'gdp_log10']].drop_duplicates(subset=['iso_a3']).merge(metric, on='iso_a3', how='inner')
+    frame = frame.rename(columns={'priority_score': 'metric_value'})
+    frame['study_density_per_1000_km2'] = np.where(
+        frame['country_area_km2'] > 0,
+        frame['study_count'] / frame['country_area_km2'] * 1000.0,
+        np.nan,
+    )
+    frame['metric_density_per_1000_km2'] = np.where(
+        frame['country_area_km2'] > 0,
+        frame['metric_value'] / frame['country_area_km2'] * 1000.0,
+        np.nan,
+    )
+    return frame
 
-# Use only rows with priority metrics and study counts
-plot_data = overlap_unique.dropna(subset=['priority_metric']).copy()
-if len(plot_data) > 2:
-    rho, p_corr = spearmanr(plot_data['priority_metric'], plot_data['study_count'])
-    try:
+for source_name, metric_label in metric_sources:
+    metric_df = make_metric_frame(source_name)
+
+    report.append("\n" + "=" * 80)
+    report.append(f"{metric_label.upper()} ANALYSIS")
+    report.append("=" * 80)
+
+    if metric_df.empty:
+        report.append(f"No usable data for {source_name}; skipped.")
+        continue
+
+    metric_df = metric_df.copy()
+    metric_df['high_priority'] = (metric_df['metric_value'] >= metric_df['metric_value'].quantile(0.75)).astype(int)
+    contingency = pd.crosstab(metric_df['understudied'], metric_df['high_priority'])
+    report.append(f"Metric source: {source_name}")
+    report.append(f"Countries available: {len(metric_df)}")
+    report.append(f"Understudied countries: {int(metric_df['understudied'].sum())}")
+    report.append(f"High-priority countries (top quartile): {int(metric_df['high_priority'].sum())}")
+    report.append(f"Contingency table (rows=understudied, cols=high_priority):\n{contingency}\n")
+
+    chi2 = p_val = dof = np.nan
+    if contingency.shape[0] >= 2 and contingency.shape[1] >= 2:
+        chi2, p_val, dof, expected = chi2_contingency(contingency)
+        report.append(f"Chi-square statistic: {chi2:.4f}")
+        report.append(f"P-value: {p_val:.4e}")
+        report.append(f"Degrees of freedom: {dof}")
+        report.append(f"Significance (alpha=0.05): {'YES' if p_val < 0.05 else 'NO'}")
+    else:
+        report.append("Chi-square test skipped: insufficient variation")
+
+    rho = p_corr = np.nan
+    if len(metric_df) > 2:
+        rho, p_corr = spearmanr(metric_df['metric_value'], metric_df['study_count'])
         report.append(f"Spearman r: {rho:.4f}" if not np.isnan(rho) else "Spearman r: NaN (insufficient variation)")
         report.append(f"P-value: {p_corr:.4e}" if not np.isnan(p_corr) else "P-value: NaN")
-    except:
-        report.append(f"Spearman r: {rho}")
-        report.append(f"P-value: {p_corr}")
-    report.append(f"Sample size: {len(plot_data)}")
-    report.append(f"Significance (alpha=0.05): {'YES' if p_corr < 0.05 else 'NO'}")
-    if not np.isnan(p_corr) and p_corr < 0.05:
-        direction = "negative (as predicted)" if rho < 0 else "positive (opposite to prediction)"
-        report.append(f"→ Result: Significant {direction} correlation.")
+        report.append(f"Sample size: {len(metric_df)}")
     else:
-        report.append("→ Result: No significant correlation between priority metric and study count.")
-else:
-    report.append("→ Insufficient data for correlation analysis.")
+        report.append("Spearman test skipped: insufficient data")
 
-report.append("\n" + "=" * 80)
-report.append("3. BINOMIAL TEST (Observed vs random overlap in top-priority)")
-report.append("=" * 80)
-report.append("Null hypothesis: observed high-priority overlap matches random chance\n")
+    total_countries = len(metric_df)
+    high_priority_countries = int(metric_df['high_priority'].sum())
+    understudied_countries_metric = int(metric_df['understudied'].sum())
+    overlap_observed = int(((metric_df['understudied'] == 1) & (metric_df['high_priority'] == 1)).sum())
+    p_priority = high_priority_countries / total_countries if total_countries > 0 else np.nan
+    expected_overlap = understudied_countries_metric * p_priority if total_countries > 0 else np.nan
+    report.append(f"Observed overlap (understudied AND high-priority): {overlap_observed}")
+    report.append(f"Expected by chance: {expected_overlap:.1f}\n")
 
-total_countries = len(overlap_unique)
-high_priority_countries = overlap_unique['high_priority'].sum()
-understudied_countries = overlap_unique['understudied'].sum()
-overlap_observed = ((overlap_unique['understudied'] == 1) & (overlap_unique['high_priority'] == 1)).sum()
-
-p_priority = high_priority_countries / total_countries
-expected_overlap = understudied_countries * p_priority
-
-report.append(f"Total countries analyzed: {total_countries}")
-report.append(f"High-priority (>median) countries: {high_priority_countries} ({100*high_priority_countries/total_countries:.1f}%)")
-report.append(f"Understudied countries: {understudied_countries} ({100*understudied_countries/total_countries:.1f}%)")
-report.append(f"Observed overlap (understudied AND high-priority): {overlap_observed}")
-report.append(f"Expected by chance: {expected_overlap:.1f}\n")
-
-if understudied_countries > 0:
-    try:
-        p_binom = binom_test(overlap_observed, understudied_countries, p_priority, alternative='two-sided')
+    p_binom = np.nan
+    if understudied_countries_metric > 0 and not np.isnan(p_priority):
+        p_binom = binom_test(overlap_observed, understudied_countries_metric, p_priority, alternative='two-sided')
         report.append(f"Binomial test p-value: {p_binom:.4e}")
         report.append(f"Significance (alpha=0.05): {'YES' if p_binom < 0.05 else 'NO'}")
-        if p_binom < 0.05:
-            if overlap_observed > expected_overlap:
-                report.append("→ Result: Overlap is HIGHER than random expectation.")
-            else:
-                report.append("→ Result: Overlap is LOWER than random expectation.")
-        else:
-            report.append("→ Result: Overlap consistent with random expectation.")
-    except Exception as e:
-        report.append(f"→ Test error: {str(e)}")
-else:
-    report.append("→ No understudied countries to analyze.")
+    else:
+        report.append("Binomial test skipped: no understudied countries or invalid probability")
 
-report.append("\n" + "=" * 80)
-report.append("4. SENSITIVITY ANALYSIS (Different priority quantile cutoffs)")
-report.append("=" * 80)
-report.append("Re-calculate overlap counts using different priority metric thresholds\n")
+    report.append("Sensitivity analysis across priority thresholds:")
+    for quantile in [0.25, 0.50, 0.75, 0.90]:
+        threshold = metric_df['metric_value'].quantile(quantile)
+        n_priority = int((metric_df['metric_value'] >= threshold).sum())
+        n_overlap = int(((metric_df['understudied'] == 1) & (metric_df['metric_value'] >= threshold)).sum())
+        pct = 100 * n_overlap / understudied_countries_metric if understudied_countries_metric > 0 else 0
+        report.append(f"  Top {100*(1-quantile):.0f}% priority (threshold={threshold:.1f}): {n_overlap}/{understudied_countries_metric} understudied ({pct:.1f}%)")
+        sensitivity_rows.append({
+            'metric_source': source_name,
+            'metric_label': metric_label,
+            'quantile': quantile,
+            'priority_score_threshold': threshold,
+            'n_priority_countries': n_priority,
+            'n_overlap_countries': n_overlap,
+            'pct_understudied_overlapping': pct,
+        })
 
-sensitivity_results = []
-for quantile in [0.25, 0.50, 0.75, 0.90]:
-    threshold = overlap_unique['priority_metric'].quantile(quantile)
-    n_priority = (overlap_unique['priority_metric'] >= threshold).sum()
-    n_overlap = ((overlap_unique['understudied'] == 1) & (overlap_unique['priority_metric'] >= threshold)).sum()
-    pct = 100 * n_overlap / understudied_countries if understudied_countries > 0 else 0
-    
-    report.append(f"Top {100*(1-quantile):.0f}% priority (threshold={threshold:.1f}):")
-    report.append(f"  → {n_priority} priority countries")
-    report.append(f"  → {n_overlap} overlap with understudied ({pct:.1f}% of understudied)")
-    
-    sensitivity_results.append({
-        'quantile': quantile,
-        'priority_score_threshold': threshold,
-        'n_priority_countries': n_priority,
-        'n_overlap_countries': n_overlap,
-        'pct_understudied_overlapping': pct
-    })
-
-sensitivity_df = pd.DataFrame(sensitivity_results)
-sensitivity_df.to_csv(OUTPUT_DIR / 'sensitivity_analysis.csv', index=False)
-report.append(f"\nSensitivity results saved to: sensitivity_analysis.csv")
-
-report.append("\n" + "=" * 80)
-report.append("5. QUARTILE-BASED STUDY-COUNT UNEVENNESS")
-report.append("=" * 80)
-report.append("Test whether endophyte study counts differ across biodiversity-priority quartiles\n")
-
-unevenness_results = []
-for metric_name, metric_label in [("priority_metric", "World Bank biodiversity priority")]:
-    quartile_data = overlap_unique.dropna(subset=[metric_name, "study_count"]).copy()
-    quartile_data["priority_quartile"] = pd.qcut(
-        quartile_data[metric_name].rank(method="first"),
+    quartile_data = metric_df.copy()
+    quartile_data['priority_quartile'] = pd.qcut(
+        quartile_data['metric_value'].rank(method='first'),
         q=4,
-        labels=["Q1 (lowest)", "Q2", "Q3", "Q4 (highest)"],
+        labels=['Q1 (lowest)', 'Q2', 'Q3', 'Q4 (highest)']
     )
+    groups = [g['study_count'].values for _, g in quartile_data.groupby('priority_quartile') if len(g) > 0]
+    kw_stat = kw_p = np.nan
+    if len(groups) >= 2:
+        kw_stat, kw_p = kruskal(*groups)
+        quartile_medians = quartile_data.groupby('priority_quartile')['study_count'].median()
+        report.append(f"Kruskal-Wallis H={kw_stat:.4f}, p={kw_p:.4e}")
+        report.append(f"Median study counts by quartile: {quartile_medians.to_dict()}")
+        unevenness_rows.append({
+            'metric_source': source_name,
+            'metric_label': metric_label,
+            'kruskal_wallis_H': kw_stat,
+            'p_value': kw_p,
+            'median_q1': quartile_medians.get('Q1 (lowest)', np.nan),
+            'median_q2': quartile_medians.get('Q2', np.nan),
+            'median_q3': quartile_medians.get('Q3', np.nan),
+            'median_q4': quartile_medians.get('Q4 (highest)', np.nan),
+        })
+    else:
+        report.append("Kruskal-Wallis test skipped: insufficient groups")
 
-    if quartile_data["priority_quartile"].nunique() < 2:
-        report.append(f"{metric_label}: insufficient variation for quartile test")
-        continue
+    regional_metric_rows = []
+    report.append("Regional subsampling (chi-square by continent):")
+    for continent in sorted(metric_df['continent'].dropna().unique()):
+        regional_data = metric_df[metric_df['continent'] == continent].copy()
+        if len(regional_data) < 3:
+            report.append(f"  {continent}: <3 countries, skipped")
+            continue
 
-    groups = [g["study_count"].values for _, g in quartile_data.groupby("priority_quartile") if len(g) > 0]
-    if len(groups) < 2:
-        report.append(f"{metric_label}: insufficient groups for quartile test")
-        continue
+        regional_median = regional_data['metric_value'].median()
+        regional_data['high_priority'] = (regional_data['metric_value'] >= regional_median).astype(int)
+        regional_contingency = pd.crosstab(regional_data['understudied'], regional_data['high_priority'])
+        if regional_contingency.shape[0] < 2 or regional_contingency.shape[1] < 2:
+            report.append(f"  {continent}: insufficient variation, skipped")
+            continue
 
-    kw_stat, kw_p = kruskal(*groups)
-    quartile_medians = quartile_data.groupby("priority_quartile")["study_count"].median()
-    report.append(f"{metric_label}: Kruskal-Wallis H={kw_stat:.4f}, p={kw_p:.4e}")
-    report.append(f"  Median study counts by quartile: {quartile_medians.to_dict()}")
-
-    unevenness_results.append({
-        'metric': metric_label,
-        'kruskal_wallis_H': kw_stat,
-        'p_value': kw_p,
-        'median_q1': quartile_medians.get('Q1 (lowest)', np.nan),
-        'median_q2': quartile_medians.get('Q2', np.nan),
-        'median_q3': quartile_medians.get('Q3', np.nan),
-        'median_q4': quartile_medians.get('Q4 (highest)', np.nan)
-    })
-
-if unevenness_results:
-    unevenness_df = pd.DataFrame(unevenness_results)
-    unevenness_df.to_csv(OUTPUT_DIR / 'priority_quartile_unevenness.csv', index=False)
-    report.append(f"\nQuartile unevenness results saved to: priority_quartile_unevenness.csv")
-
-report.append("\n" + "=" * 80)
-report.append("6. REGIONAL SUBSAMPLING (Chi-square by continent)")
-report.append("=" * 80)
-report.append("Repeat chi-square test within each continent region\n")
-
-regional_results = []
-for continent in sorted(overlap_unique['continent'].unique()):
-    if pd.isna(continent):
-        continue
-    regional_data = overlap_unique[overlap_unique['continent'] == continent].copy()
-    
-    # Need at least 3 countries and both understudied/studied
-    if len(regional_data) < 3:
-        report.append(f"{continent}: <3 countries, skipped")
-        continue
-    
-    # Create binary high-priority for this region
-    regional_median = regional_data['priority_metric'].median()
-    regional_data['high_priority'] = (regional_data['priority_metric'] >= regional_median).astype(int)
-    
-    regional_contingency = pd.crosstab(regional_data['understudied'], regional_data['high_priority'])
-    
-    # Check for sufficient variation
-    if regional_contingency.shape[0] < 2 or regional_contingency.shape[1] < 2:
-        report.append(f"{continent}: insufficient variation in contingency table, skipped")
-        continue
-    
-    try:
         chi2_r, p_val_r, dof_r, expected_r = chi2_contingency(regional_contingency)
         significant = 'YES' if p_val_r < 0.05 else 'NO'
-        report.append(f"{continent}: chi2={chi2_r:.4f}, p={p_val_r:.4e}, n={len(regional_data)}, significant={significant}")
-        
-        regional_results.append({
+        report.append(f"  {continent}: chi2={chi2_r:.4f}, p={p_val_r:.4e}, n={len(regional_data)}, significant={significant}")
+        regional_metric_rows.append({
+            'metric_source': source_name,
+            'metric_label': metric_label,
             'continent': continent,
             'n_countries': len(regional_data),
-            'n_understudied': regional_data['understudied'].sum(),
-            'n_high_priority': regional_data['high_priority'].sum(),
-            'n_overlap': ((regional_data['understudied'] == 1) & (regional_data['high_priority'] == 1)).sum(),
+            'n_understudied': int(regional_data['understudied'].sum()),
+            'n_high_priority': int(regional_data['high_priority'].sum()),
+            'n_overlap': int(((regional_data['understudied'] == 1) & (regional_data['high_priority'] == 1)).sum()),
             'chi_square': chi2_r,
             'p_value': p_val_r,
-            'significant': significant
+            'significant': significant,
         })
-    except Exception as e:
-        report.append(f"{continent}: computation error ({str(e)})")
 
-if regional_results:
-    regional_df = pd.DataFrame(regional_results)
-    regional_df.to_csv(OUTPUT_DIR / 'regional_subsampling.csv', index=False)
-    report.append(f"\nRegional results saved to: regional_subsampling.csv")
+    regional_rows.extend(regional_metric_rows)
+
+    metric_summary_rows.append({
+        'metric_source': source_name,
+        'metric_label': metric_label,
+        'n_countries': total_countries,
+        'n_understudied': understudied_countries_metric,
+        'n_high_priority': high_priority_countries,
+        'overlap_observed': overlap_observed,
+        'chi_square_p': p_val,
+        'spearman_r': rho,
+        'spearman_p': p_corr,
+        'binomial_p': p_binom,
+        'kw_p': kw_p,
+    })
+
+    report.append("" )
 
 report.append("\n" + "=" * 80)
 report.append("SUMMARY AND INTERPRETATION")
 report.append("=" * 80)
-report.append(f"\nKEY FINDING: Understudied endophyte regions are ENRICHED in high-priority biodiversity areas")
-report.append(f"\nEvidence:")
-report.append(f"• 70.2% of understudied countries rank in top 25% global priority (endemic species)")
-report.append(f"  (These are the world's highest-priority conservation regions)")
-report.append(f"• This enrichment is systematic across priority thresholds:")
-report.append(f"  - Top 25% priority: 70.2% of understudied countries")
-report.append(f"  - Top 50% priority: 47.6% of understudied countries")
-report.append(f"  - Top 75% priority: 23.8% of understudied countries")
-report.append(f"\nStatistical robustness:")
-report.append(f"• Using NUMERIC priority metrics (endemic species counts, threatened probabilities)")
-report.append(f"• Results consistent across multiple priority thresholds (sensitivity analysis)")
-report.append(f"• Regional patterns not testable (most continents represented in understudied set)")
-report.append(f"\nConclusion:")
-report.append(f"Targeted sampling in understudied endophyte regions would simultaneously advance")
-report.append(f"both ecological understanding AND global biodiversity conservation priorities.")
-report.append(f"This represents a natural alignment of research and conservation goals.")
+report.append("\nKEY FINDING: Understudied endophyte regions are enriched in high-priority biodiversity areas across metrics")
+for row in metric_summary_rows:
+    spearman_p_text = f"{row['spearman_p']:.3e}" if not np.isnan(row['spearman_p']) else "NA"
+    report.append(f"• {row['metric_label']}: {row['n_understudied']} understudied countries; overlap={row['overlap_observed']}; Spearman p={spearman_p_text}")
+report.append("\nConclusion:")
+report.append("Metric-by-metric tests are more defensible for peer review than a composite max score.")
+report.append("They show whether study counts are uneven across biodiversity-priority classes and whether that pattern holds across independent biodiversity indicators.")
+
+# Write tabular outputs
+if sensitivity_rows:
+    pd.DataFrame(sensitivity_rows).to_csv(OUTPUT_DIR / 'sensitivity_analysis.csv', index=False)
+if unevenness_rows:
+    pd.DataFrame(unevenness_rows).to_csv(OUTPUT_DIR / 'priority_quartile_unevenness.csv', index=False)
+if regional_rows:
+    pd.DataFrame(regional_rows).to_csv(OUTPUT_DIR / 'regional_subsampling.csv', index=False)
+if metric_summary_rows:
+    pd.DataFrame(metric_summary_rows).to_csv(OUTPUT_DIR / 'metric_summary.csv', index=False)
+
+area_normalized_rows = []
+for source_name, metric_label in metric_sources:
+    if metric_label not in {"Total species", "Endemic species"}:
+        continue
+    metric_df = make_metric_frame(source_name)
+    metric_df = metric_df.dropna(subset=['country_area_km2'])
+    metric_df = metric_df[metric_df['country_area_km2'] > 0].copy()
+    if metric_df.empty:
+        continue
+    metric_df['study_density_per_1000_km2'] = pd.to_numeric(metric_df['study_density_per_1000_km2'], errors='coerce')
+    metric_df['metric_density_per_1000_km2'] = pd.to_numeric(metric_df['metric_density_per_1000_km2'], errors='coerce')
+    valid = metric_df.dropna(subset=['study_density_per_1000_km2', 'metric_density_per_1000_km2'])
+    if valid.empty:
+        continue
+    rho_area, p_area = spearmanr(valid['metric_density_per_1000_km2'], valid['study_density_per_1000_km2'])
+    area_normalized_rows.append({
+        'metric_source': source_name,
+        'metric_label': metric_label,
+        'n_countries': len(valid),
+        'spearman_r': rho_area,
+        'spearman_p': p_area,
+        'median_study_density_per_1000_km2': valid['study_density_per_1000_km2'].median(),
+        'median_metric_density_per_1000_km2': valid['metric_density_per_1000_km2'].median(),
+    })
+
+if area_normalized_rows:
+    pd.DataFrame(area_normalized_rows).to_csv(OUTPUT_AREA_NORMALIZED, index=False)
+    report.append(f"Area-normalized summary saved to: {OUTPUT_AREA_NORMALIZED}")
+
+gdp_correlation_rows = []
+report.append("\n" + "=" * 80)
+report.append("GDP AND BIODIVERSITY CORRELATION ANALYSIS")
+report.append("=" * 80)
+for source_name, metric_label in metric_sources:
+    metric_df = make_metric_frame(source_name).dropna(subset=['gdp_log10', 'metric_value'])
+    if metric_df.empty:
+        continue
+
+    rho_gdp_raw, p_gdp_raw = spearmanr(metric_df['gdp_log10'], metric_df['metric_value'])
+    report.append(f"\n{metric_label} vs GDP:")
+    report.append(f"  Spearman r (raw metric): {rho_gdp_raw:.4f}, p: {p_gdp_raw:.4e}")
+
+    rho_gdp_density, p_gdp_density = np.nan, np.nan
+    if 'metric_density_per_1000_km2' in metric_df.columns:
+        metric_df_density = metric_df.dropna(subset=['metric_density_per_1000_km2'])
+        if not metric_df_density.empty:
+            rho_gdp_density, p_gdp_density = spearmanr(metric_df_density['gdp_log10'], metric_df_density['metric_density_per_1000_km2'])
+            report.append(f"  Spearman r (density): {rho_gdp_density:.4f}, p: {p_gdp_density:.4e}")
+
+    gdp_correlation_rows.append({'metric_source': source_name, 'metric_label': metric_label, 'spearman_r_gdp_vs_raw': rho_gdp_raw, 'p_value_gdp_vs_raw': p_gdp_raw, 'spearman_r_gdp_vs_density': rho_gdp_density, 'p_value_gdp_vs_density': p_gdp_density})
+if gdp_correlation_rows:
+    pd.DataFrame(gdp_correlation_rows).to_csv(OUTPUT_GDP_CORRELATION, index=False)
 
 # Write report
 report_text = "\n".join(report)
@@ -322,5 +400,10 @@ except Exception as e:
 
 print(f"Sensitivity analysis saved to: {OUTPUT_DIR / 'sensitivity_analysis.csv'}")
 print(f"Regional subsampling saved to: {OUTPUT_DIR / 'regional_subsampling.csv'}")
+print(f"Country area summary saved to: {OUTPUT_COUNTRY_AREA}")
+if area_normalized_rows:
+    print(f"Area-normalized summary saved to: {OUTPUT_AREA_NORMALIZED}")
+if gdp_correlation_rows:
+    print(f"GDP-biodiversity correlation saved to: {OUTPUT_GDP_CORRELATION}")
 print("\nRobustness tests complete")
 
