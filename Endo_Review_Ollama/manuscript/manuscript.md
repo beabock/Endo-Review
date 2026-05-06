@@ -134,14 +134,11 @@ New Phytologist
 
 ### Overlap with biodiversity conservation priorities
 
-- **Definition of "understudied" countries**: Countries with zero publications in the analysis corpus (study_count = 0). This is derived from filtering the world country universe against studied countries.
-- Compare the **80 understudied endophyte countries** to World Bank biodiversity metrics (total species richness, endemic species counts, and threatened species probabilities).
-- Key finding: Overall, there is a significant **positive correlation** between biodiversity and endophyte research effort. Countries with higher biodiversity tend to have more studies (Spearman p < 0.001 for all three metrics). This general trend is visible in the scatter plots, where study counts rise with increasing biodiversity.
-- However, this trend does not mean high-biodiversity regions are all well-studied. A large number of countries (80) remain completely unstudied. These unstudied countries are not randomly distributed. They are disproportionately found in lower-biodiversity regions. For instance, only 5% of unstudied countries are in the top 25% of nations by total species richness.
-- The most critical finding for future research is the presence of **high-biodiversity, low-study countries**. These are visible as points in the upper-right of the scatter plots with low y-values. These countries represent a misalignment between conservation priority and research effort, and are prime candidates for future sampling campaigns.
-- Economic factors also play a role. GDP is positively correlated with both study count and total biodiversity (Spearman p < 0.001 for both). However, GDP is *negatively* correlated with biodiversity density (biodiversity per km²), suggesting that while larger economies have more species, they are not necessarily the most concentrated biodiversity hotspots. This highlights the importance of considering both absolute biodiversity and biodiversity density when prioritizing future research.
-- **Implication**: While research has tended to follow biodiversity, significant gaps remain. Targeting high-biodiversity countries that are currently under-studied would efficiently advance both ecological knowledge and conservation priorities.
-- Figures: `priority_overlap_scatter.png`, `priority_overlap_hotspot_scatter.png`, `priority_overlap_unevenness.png`
+- A country's economic status is the primary predictor of endophyte research effort. Multiple regression models show that a country's GDP is the strongest, most consistent predictor of its study count, far outweighing the influence of biodiversity.
+- While biodiversity is also a statistically significant predictor, its effect is much smaller than that of GDP. This indicates that while there is a tendency for research to occur in more biodiverse countries, this effort is overwhelmingly concentrated in high-GDP nations.
+- This creates a critical knowledge gap: high-biodiversity, low-GDP countries are systematically under-represented in the current body of endophyte research. These regions are likely to harbor a vast, undiscovered diversity of endophytic fungi.
+- **Implication**: The global distribution of endophyte research is more a map of economic privilege than it is a map of biodiversity. To achieve a truly global understanding of endophyte diversity and ecology, future research must prioritize sampling in these high-biodiversity, low-GDP regions.
+- Figures: `modeling_results.png`, `gdp_biodiversity_correlation.png`
 
 ## Discussion (Outline)
 1. Main interpretation
@@ -172,7 +169,7 @@ New Phytologist
 	- Propose targeted sampling design: underrepresented countries x underrepresented host lineages x under-sampled biomes.
 	- Suggest minimum metadata standards for future synthesis-ready studies.
 	- Keep the roadmap concrete and table-driven so it reads as a contribution, not just a critique.
-	- **Key advantage**: While endophyte research generally follows biodiversity gradients (higher biodiversity countries have more studies; Spearman p < 0.001), there are critical gaps. High-biodiversity countries with few or no studies represent a misalignment of research effort and conservation priority. Targeting these specific regions directly advances conservation goals alongside ecological knowledge production.
+	- **Key advantage**: The drivers of sampling bias are not random. Our models show that a country's GDP is the strongest predictor of endophyte research effort, far outweighing the influence of biodiversity. This means that our current understanding of endophyte diversity is strongly biased towards the fungi of high-GDP nations. Targeted sampling in high-biodiversity, low-GDP countries is therefore essential for a truly global understanding of endophyte ecology and for discovering novel fungal biodiversity.
 	- Frame as conservation-research synergy: strategic endophyte field efforts can simultaneously address research gaps and protect global biodiversity hotspots.
 	- Keep the bioprospecting angle only if it is tied to concrete under-sampled biodiversity and not used as a separate claim [@newman_natural_2012; @bertini_biodiversity_2022].
 

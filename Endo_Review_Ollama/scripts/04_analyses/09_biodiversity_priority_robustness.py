@@ -21,6 +21,7 @@ Outputs: results/biodiversity_priority_overlap/robustness_report.txt
          results/biodiversity_priority_overlap/country_land_area_summary.csv
          results/biodiversity_priority_overlap/area_normalized_summary.csv
          results/biodiversity_priority_overlap/gdp_biodiversity_correlation.csv
+         results/biodiversity_priority_overlap/modeling_results.csv
 """
 from pathlib import Path
 import pandas as pd
@@ -52,6 +53,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_COUNTRY_AREA = OUTPUT_DIR / 'country_land_area_summary.csv'
 OUTPUT_AREA_NORMALIZED = OUTPUT_DIR / 'area_normalized_summary.csv'
 OUTPUT_GDP_CORRELATION = OUTPUT_DIR / 'gdp_biodiversity_correlation.csv'
+OUTPUT_MODELING_RESULTS = OUTPUT_DIR / 'modeling_results.csv'
 
 print("=" * 80)
 print("ROBUSTNESS AND STATISTICAL TESTS FOR BIODIVERSITY PRIORITY OVERLAP")
@@ -387,6 +389,36 @@ for source_name, metric_label in metric_sources:
 if gdp_correlation_rows:
     pd.DataFrame(gdp_correlation_rows).to_csv(OUTPUT_GDP_CORRELATION, index=False)
 
+# ===== STATISTICAL MODELING =====
+try:
+    import statsmodels.formula.api as smf
+
+    modeling_results = []
+    report.append("\n" + "=" * 80)
+    report.append("STATISTICAL MODELING OF STUDY COUNT")
+    report.append("=" * 80)
+
+    for source_name, metric_label in metric_sources:
+        model_df = make_metric_frame(source_name).dropna(subset=['gdp_log10', 'metric_value', 'study_count'])
+        model_df['study_count_log'] = np.log10(model_df['study_count'] + 1)
+
+        # Model for raw study count
+        model_raw = smf.ols('study_count_log ~ gdp_log10 + metric_value', data=model_df).fit()
+        report.append(f"\n--- Model for {metric_label} (raw counts) ---")
+        report.append(str(model_raw.summary()))
+        
+        for var, params in model_raw.params.items():
+            modeling_results.append({'metric': metric_label, 'model': 'raw', 'variable': var, 'coefficient': params, 'p_value': model_raw.pvalues[var]})
+
+    if modeling_results:
+        pd.DataFrame(modeling_results).to_csv(OUTPUT_MODELING_RESULTS, index=False)
+
+except ImportError:
+    report.append("\n" + "=" * 80)
+    report.append("Statsmodels library not found. Skipping statistical modeling.")
+    report.append("To install: pip install statsmodels")
+    report.append("=" * 80)
+
 # Write report
 report_text = "\n".join(report)
 try:
@@ -405,5 +437,7 @@ if area_normalized_rows:
     print(f"Area-normalized summary saved to: {OUTPUT_AREA_NORMALIZED}")
 if gdp_correlation_rows:
     print(f"GDP-biodiversity correlation saved to: {OUTPUT_GDP_CORRELATION}")
+if modeling_results:
+    print(f"Modeling results saved to: {OUTPUT_MODELING_RESULTS}")
 print("\nRobustness tests complete")
 

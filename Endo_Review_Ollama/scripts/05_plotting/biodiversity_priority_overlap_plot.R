@@ -8,6 +8,7 @@ library(ggplot2)
 library(tidyr)
 library(stringr)
 library(gridExtra)
+library(ggpubr)
 
 library(scales)
 source("scripts/05_plotting/theme_utils.R")
@@ -36,6 +37,8 @@ OUTPUT_Unevenness_TOTAL <- file.path(OUTPUT_DIR, "priority_overlap_unevenness_to
 OUTPUT_Unevenness_ENDEMIC <- file.path(OUTPUT_DIR, "priority_overlap_unevenness_endemic.png")
 OUTPUT_Unevenness_THREATENED <- file.path(OUTPUT_DIR, "priority_overlap_unevenness_threatened.png")
 OUTPUT_GDP_CORR_PLOT <- file.path(OUTPUT_DIR, "gdp_biodiversity_correlation.png")
+OUTPUT_UNDERSTUDIED_DIST_PLOT <- file.path(OUTPUT_DIR, "understudied_biodiversity_distribution.png")
+OUTPUT_MODELING_PLOT <- file.path(OUTPUT_DIR, "modeling_results.png")
 # Load data
 sensitivity <- read_csv(INPUT_SENSITIVITY, show_col_types = FALSE)
 country_summary <- read_csv(INPUT_COUNTRY_SUMMARY, show_col_types = FALSE)
@@ -650,7 +653,7 @@ gdp_corr_data <- plot_data %>%
     measure = factor(measure, levels = c("study_count_log", "metric_value", "metric_density_per_1000_km2"),
                      labels = c("log10(Study Count + 1)", "Raw Biodiversity Metric", "Biodiversity Density (per 1000 km²)"))
   ) %>%
-  filter(!(metric_label != "Total species" & measure == "Biodiversity Density (per 1000 km²)"))
+  filter(!(measure == "Biodiversity Density (per 1000 km²)" & metric_label == "Threatened species probability"))
 
 gdp_corr_plot <- ggplot(gdp_corr_data, aes(x = gdp_log10, y = value)) +
   geom_point(alpha = 0.5) +
@@ -672,6 +675,81 @@ gdp_corr_plot <- ggplot(gdp_corr_data, aes(x = gdp_log10, y = value)) +
 
 ggsave(OUTPUT_GDP_CORR_PLOT, gdp_corr_plot, width = 12, height = 8, dpi = 300, bg = "white")
 cat("GDP correlation plot saved to:", OUTPUT_GDP_CORR_PLOT, "\n")
+
+# ===== PLOT 6: Biodiversity Distribution of Studied vs. Understudied Countries =====
+
+plot_data_dist <- plot_data %>%
+  mutate(
+    understudied_cat = case_when(
+      study_count < 10 ~ "Low (0-9)",
+      study_count < 100 ~ "Medium (10-99)",
+      TRUE ~ "High (>=100)"
+    ),
+    understudied_cat = factor(understudied_cat, levels = c("High (>=100)", "Medium (10-99)", "Low (0-9)"))
+  )
+
+dist_plot <- ggplot(plot_data_dist, aes(x = understudied_cat, y = log10(metric_value + 1), fill = understudied_cat)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.8) +
+  geom_jitter(width = 0.15, alpha = 0.2, size=0.7) +
+  facet_wrap(~ metric_label, scales = "free_y") +
+  stat_compare_means(comparisons = list(c("High (>=100)", "Low (0-9)"), c("High (>=100)", "Medium (10-99)")),
+                     method = "wilcox.test", label = "p.signif") +
+  scale_fill_brewer(palette = "RdYlBu", direction = -1) +
+  labs(
+    title = "Biodiversity Distribution by Study Effort",
+    subtitle = "Comparison of biodiversity metrics for countries with different levels of endophyte research",
+    x = "Study Effort Category",
+    y = "log10(Biodiversity Metric Value + 1)"
+  ) +
+  theme_endo_bw(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "gray40"),
+    axis.title = element_text(face = "bold"),
+    strip.text = element_text(face = "bold"),
+    legend.position = "none",
+    axis.text.x = element_text(angle = 15, hjust = 1)
+  )
+
+ggsave(OUTPUT_UNDERSTUDIED_DIST_PLOT, dist_plot, width = 12, height = 6, dpi = 300, bg = "white")
+cat("Understudied distribution plot saved to:", OUTPUT_UNDERSTUDIED_DIST_PLOT, "\n")
+
+# ===== PLOT 7: Modeling Results =====
+
+modeling_results <- read_csv("results/biodiversity_priority_overlap/modeling_results.csv", show_col_types = FALSE)
+
+modeling_plot_data <- modeling_results %>%
+  filter(variable != "Intercept", model == "raw") %>%
+  mutate(
+    variable = recode(variable,
+                      "gdp_log10" = "log10(GDP)",
+                      "metric_value" = "Biodiversity Metric (Raw)"
+    )
+  )
+
+modeling_plot <- ggplot(modeling_plot_data, aes(x = coefficient, y = variable, color = p_value < 0.05)) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = coefficient - 1.96 * p_value, xmax = coefficient + 1.96 * p_value), height = 0.2) +
+  facet_wrap(~ metric, nrow = 1) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Predictors of Endophyte Study Effort (Raw Counts)",
+    subtitle = "Coefficients from multiple regression models. Error bars represent 95% confidence intervals.",
+    x = "Coefficient",
+    y = ""
+  ) +
+  scale_color_manual(values = c("gray50", "firebrick"), name = "Significant (p < 0.05)") +
+  theme_endo_bw(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "gray40"),
+    axis.title = element_text(face = "bold"),
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom"
+  )
+
+ggsave(OUTPUT_MODELING_PLOT, modeling_plot, width = 10, height = 8, dpi = 300, bg = "white")
+cat("Modeling results plot saved to:", OUTPUT_MODELING_PLOT, "\n")
 
 
 cat("\nPlots complete\n")

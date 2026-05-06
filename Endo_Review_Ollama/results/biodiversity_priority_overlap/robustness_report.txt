@@ -162,3 +162,97 @@ Endemic species vs GDP:
 Threatened species probability vs GDP:
   Spearman r (raw metric): 0.5947, p: 1.8019e-21
   Spearman r (density): -0.3303, p: 1.3224e-06
+
+================================================================================
+STATISTICAL MODELING OF STUDY COUNT
+================================================================================
+
+--- Model for Total species (raw counts) ---
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:        study_count_log   R-squared:                       0.704
+Model:                            OLS   Adj. R-squared:                  0.701
+Method:                 Least Squares   F-statistic:                     245.6
+Date:                Tue, 05 May 2026   Prob (F-statistic):           2.23e-55
+Time:                        18:03:07   Log-Likelihood:                -116.05
+No. Observations:                 210   AIC:                             238.1
+Df Residuals:                     207   BIC:                             248.1
+Df Model:                           2                                         
+Covariance Type:            nonrobust                                         
+================================================================================
+                   coef    std err          t      P>|t|      [0.025      0.975]
+--------------------------------------------------------------------------------
+Intercept       -5.2070      0.374    -13.915      0.000      -5.945      -4.469
+gdp_log10        0.5568      0.037     14.851      0.000       0.483       0.631
+metric_value  7.611e-06   2.52e-06      3.025      0.003    2.65e-06    1.26e-05
+==============================================================================
+Omnibus:                        5.875   Durbin-Watson:                   1.504
+Prob(Omnibus):                  0.053   Jarque-Bera (JB):                6.272
+Skew:                           0.268   Prob(JB):                       0.0435
+Kurtosis:                       3.656   Cond. No.                     2.78e+05
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 2.78e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+--- Model for Endemic species (raw counts) ---
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:        study_count_log   R-squared:                       0.719
+Model:                            OLS   Adj. R-squared:                  0.716
+Method:                 Least Squares   F-statistic:                     264.5
+Date:                Tue, 05 May 2026   Prob (F-statistic):           9.54e-58
+Time:                        18:03:07   Log-Likelihood:                -110.51
+No. Observations:                 210   AIC:                             227.0
+Df Residuals:                     207   BIC:                             237.1
+Df Model:                           2                                         
+Covariance Type:            nonrobust                                         
+================================================================================
+                   coef    std err          t      P>|t|      [0.025      0.975]
+--------------------------------------------------------------------------------
+Intercept       -5.3105      0.321    -16.557      0.000      -5.943      -4.678
+gdp_log10        0.5729      0.031     18.728      0.000       0.513       0.633
+metric_value     0.0001   2.58e-05      4.566      0.000     6.7e-05       0.000
+==============================================================================
+Omnibus:                        5.346   Durbin-Watson:                   1.521
+Prob(Omnibus):                  0.069   Jarque-Bera (JB):                6.547
+Skew:                           0.173   Prob(JB):                       0.0379
+Kurtosis:                       3.793   Cond. No.                     1.45e+04
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 1.45e+04. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+--- Model for Threatened species probability (raw counts) ---
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:        study_count_log   R-squared:                       0.722
+Model:                            OLS   Adj. R-squared:                  0.719
+Method:                 Least Squares   F-statistic:                     268.5
+Date:                Tue, 05 May 2026   Prob (F-statistic):           3.15e-58
+Time:                        18:03:08   Log-Likelihood:                -109.39
+No. Observations:                 210   AIC:                             224.8
+Df Residuals:                     207   BIC:                             234.8
+Df Model:                           2                                         
+Covariance Type:            nonrobust                                         
+================================================================================
+                   coef    std err          t      P>|t|      [0.025      0.975]
+--------------------------------------------------------------------------------
+Intercept       -5.0639      0.339    -14.953      0.000      -5.732      -4.396
+gdp_log10        0.5459      0.033     16.653      0.000       0.481       0.611
+metric_value     0.0002   4.29e-05      4.827      0.000       0.000       0.000
+==============================================================================
+Omnibus:                        7.793   Durbin-Watson:                   1.534
+Prob(Omnibus):                  0.020   Jarque-Bera (JB):                9.720
+Skew:                           0.279   Prob(JB):                      0.00775
+Kurtosis:                       3.894   Cond. No.                     1.07e+04
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 1.07e+04. This might indicate that there are
+strong multicollinearity or other numerical problems.
