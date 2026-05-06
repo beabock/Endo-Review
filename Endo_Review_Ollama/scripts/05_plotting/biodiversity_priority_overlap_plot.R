@@ -9,6 +9,7 @@ library(tidyr)
 library(stringr)
 library(gridExtra)
 library(ggpubr)
+library(reshape2)
 
 library(scales)
 source("scripts/05_plotting/theme_utils.R")
@@ -750,6 +751,44 @@ modeling_plot <- ggplot(modeling_plot_data, aes(x = coefficient, y = variable, c
 
 ggsave(OUTPUT_MODELING_PLOT, modeling_plot, width = 10, height = 8, dpi = 300, bg = "white")
 cat("Modeling results plot saved to:", OUTPUT_MODELING_PLOT, "\n")
+
+# ===== PLOT 8: Correlation Heatmap =====
+
+corr_data <- plot_data %>%
+  select(study_count_log, gdp_log10, metric_value, metric_density_per_1000_km2, metric_label) %>%
+  rename(
+    `log10(Study Count)` = study_count_log,
+    `log10(GDP)` = gdp_log10,
+    `Biodiversity (Raw)` = metric_value,
+    `Biodiversity (Density)` = metric_density_per_1000_km2
+  )
+
+corr_matrix <- corr_data %>%
+  group_by(metric_label) %>%
+  summarise(
+    cor = list(cor(across(`log10(Study Count)`:`Biodiversity (Density)`), method = "spearman", use = "pairwise.complete.obs"))
+  )
+
+corr_plots <- lapply(setNames(nm = unique(corr_data$metric_label)), function(metric) {
+  cormat <- corr_matrix$cor[[which(corr_matrix$metric_label == metric)]]
+  melted_cormat <- melt(cormat)
+  
+  ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) +
+    geom_tile() +
+    geom_text(aes(label = round(value, 2)), color = "white", size = 4) +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                         midpoint = 0, limit = c(-1,1), space = "Lab",
+                         name="Spearman\nCorrelation") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1)) +
+    coord_fixed() +
+    labs(title = metric, x = "", y = "")
+})
+
+corr_heatmap <- ggarrange(plotlist = corr_plots, ncol = 3, common.legend = TRUE, legend = "right")
+
+ggsave(file.path(OUTPUT_DIR, "correlation_heatmap.png"), corr_heatmap, width = 14, height = 5, dpi = 300, bg = "white")
+cat("Correlation heatmap saved to:", file.path(OUTPUT_DIR, "correlation_heatmap.png"), "\n")
 
 
 cat("\nPlots complete\n")
