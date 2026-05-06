@@ -138,7 +138,7 @@ New Phytologist
 - While biodiversity is also a statistically significant predictor, its effect is much smaller than that of GDP. This indicates that while there is a tendency for research to occur in more biodiverse countries, this effort is overwhelmingly concentrated in high-GDP nations.
 - This creates a critical knowledge gap: high-biodiversity, low-GDP countries are systematically under-represented in the current body of endophyte research. These regions are likely to harbor a vast, undiscovered diversity of endophytic fungi.
 - **Implication**: The global distribution of endophyte research is more a map of economic privilege than it is a map of biodiversity. To achieve a truly global understanding of endophyte diversity and ecology, future research must prioritize sampling in these high-biodiversity, low-GDP regions.
-- Figures: `modeling_results.png`, `gdp_biodiversity_correlation.png`
+- Figures: `modeling_results.png`, `correlation_heatmap.png`
 
 ## Discussion (Outline)
 1. Main interpretation
@@ -188,15 +188,32 @@ New Phytologist
 	- Role: Shows host lineage concentration and missing taxonomic space.
 
 ## Figure Plan (Supplementary)
-- `priority_overlap_scatter.png`: Endophyte study counts versus World Bank biodiversity metrics.
-- `priority_overlap_hotspot_scatter.png`: Endophyte study density versus area-normalized biodiversity metrics.
-- `priority_overlap_unevenness.png`: Boxplots showing uneven study counts across biodiversity quartiles.
+- `correlation_heatmap.png`: Correlation heatmap of GDP, biodiversity, and study count.
 - `biome_trends_over_time.png`: temporal shifts in biome focus.
 - `biome_family_heatmap.png`: family-level concentration within biomes.
 - `14_family_trends_over_time.png`: temporal taxonomic dynamics.
 - `tissue_trends_over_time.png`: changing tissue emphasis through time.
 - `top_tissue_parts_by_study.png`: dominant tissue categories.
 - `top_countries_ranked.png`: ranked concentration summary.
+
+## Figure Captions
+
+**Figure 1: `study_count_by_country_robinson.png`**
+**Caption:** Global distribution of fungal endophyte research effort. The map shows the number of studies per country from a corpus of 18,750 publications. Of the 234 countries and territories in our analysis, 80 had zero studies. The concentration of studies in a few high-GDP countries is evident, with large regions of the world, particularly in Africa and Central Asia, showing little to no research effort.
+
+**Figure 2: `biome_country_heatmap.png`**
+**Caption:** Heatmap of study counts by biome and country. This figure reveals that research effort is not only geographically clustered, but also heavily skewed towards certain biomes within those countries. For example, temperate forests and agricultural biomes are heavily overrepresented, while other biomes, such as tropical and subtropical grasslands, savannas, and shrublands, are underrepresented, even in well-studied countries.
+
+**Figure 3: `country_study_count_vs_gdp.png`**
+**Caption:** Relationship between a country's economic status (GDP) and its endophyte research effort. There is a strong, positive correlation between a country's log10(GDP) and its log10(study count) (Spearman's ρ = 0.56, p < 0.001), indicating that wealthier countries are studied more. The line represents a loess-smoothed fit, with the shaded area showing the 95% confidence interval.
+
+**Figure 4: `13_compound_taxonomy_heatmap.png`**
+**Caption:** Heatmap showing the distribution of studies across host plant families and orders. The color intensity represents the number of studies. This figure highlights the strong taxonomic bias in endophyte research, with a few host families (e.g., Poaceae, Fabaceae) receiving a disproportionate amount of research attention, while many others are completely unstudied.
+
+## Supplementary Figure Captions
+
+**Figure S1: `correlation_heatmap.png`**
+**Caption:** Correlation heatmap of GDP, biodiversity, and study count. This figure shows the Spearman correlation coefficients between log10(GDP), log10(study count), and the three raw biodiversity metrics from the World Bank. The strong positive correlation between GDP and study count is clearly visible across all three biodiversity metrics, and is consistently stronger than the correlation between biodiversity and study count.
 
 ## Optional Web Supplement
 - `interactive_study_density.html`
@@ -207,7 +224,7 @@ New Phytologist
 - Explicitly state that this is a bias-and-prioritization synthesis, not a full ecological mechanism paper.
 - Emphasize conservative interpretation: outputs identify evidence distribution and missingness.
 - Add a short paragraph on how future full-text and non-English expansion can refine estimates.
-- Acknowledge the reviewer concern that abstract-only mining likely misses geographic and taxonomic information, and make that limitation part of the paper's framing rather than a buried caveat (CITATION).
+- Acknowledge the reviewer concern that abstract-only mining likely misses geographic and taxonomic information, and make that limitation part of the paper's framing rather than a buried caveat.
 
 ## Writing Guardrails for Drafting
 - Avoid overclaims such as "global ubiquity is proven" from sparse host coverage.
