@@ -1,9 +1,8 @@
 # Manuscript Outline (Structure Only)
 
 ## Working Title Options
-1. Global Sampling Bias in Fungal Endophyte Research
+1. Global Sampling Biases in Fungal Endophyte Research
 2. Mapping the Unexplored Spots of Endophyte Ecology Across Biomes, Hosts, and Economies
-3. Fungal Endophyte Research Is Global in Claim but Local in Coverage
 
 ## Target Journal
 New Phytologist
@@ -18,7 +17,7 @@ New Phytologist
 1. Where are studies concentrated geographically, and where are the major spatial knowledge gaps globally?
 2. How is sampling distributed across biomes and host plant lineages?
 3. How strongly is research effort associated with national economic capacity?
-4. How frequently does the literature rely on the assumption of endophyte "ubiquity", underscoring the necessity of mapping true sampling coverage?
+4. How frequently does the literature rely on the assumption of endophyte ubiquity, underscoring the necessity of mapping true sampling coverage?
 5. Which host taxa and regions should be prioritized to maximize ecological discovery?
 
 ## Novelty Claims to Make Explicit
@@ -228,5 +227,10 @@ New Phytologist
 - Avoid overclaims such as "global ubiquity is proven" from sparse host coverage.
 - Prefer language like "evidence-supported in sampled domains" and "currently untested domains."
 - Tie each major claim to one figure and one concrete quantitative result.
+- Ensure citations are used for any statement requiring one. Use the specific citations provided in the outline text whenever possible. If a statement requires a citation that is not explicitly provided in the outline or attached data, you must not invent one. Instead, insert a descriptive, uppercase placeholder so I can add it manually later (e.g., [CITE: NEED REFERENCE FOR ENDOPHYTE DEFINITION])
 - Do not use em-dashes (--)
 - Do not randomly quote or bold things.
+- Strictly adhere to accepted biological nomenclature. Always italicize genus and species names (e.g., *Lolium perenne*). Do not refer to bacteria (e.g., Streptomyces) or oomycetes (e.g., *Phytophthora*) as fungi. Rely on the cleaned taxonomic data standard.
+- Maintain strict distinctions between ecological guilds. When discussing the ubiquity of endophytes, do not use examples or data that explicitly refer to transient pathogens or obligate mycorrhizae unless specifically drawing a contrast.
+- When discussing ubiquity claims, clearly distinguish between primary empirical findings and inherited statements. Attribute foundational claims to their original authors rather than treating them as undisputed scientific consensus.
+- Use the active voice where possible to improve clarity. Use the past tense when describing the methods and results of our data extraction pipeline (e.g., 'we extracted,' 'the model identified'), and use the present tense when discussing established scientific facts or the contents of a cited paper.
