@@ -1,8 +1,10 @@
 library(rnaturalearth)
 library(sf)
 library(ggplot2)
+library(readr)
 library(ggrepel)
 library(dplyr)
+library(forcats)
 library(grid)
 library(ggnewscale)
 library(viridisLite)
@@ -51,30 +53,18 @@ world_robinson <- st_transform(world_data, robinson_proj)
 legend_breaks <- c(0, 1, 2, 5, 10, 25, 50, 100, 250, 500, 1000)
 legend_breaks <- legend_breaks[legend_breaks <= max(world_robinson$study_count, na.rm = TRUE)]
 
-# Prepare separate layers so zero-study countries get a distinct solid fill
-zeros_sf <- world_robinson %>% filter(study_count == 0)
-nonzeros_sf <- world_robinson %>% filter(study_count > 0)
-
 map <- ggplot() +
-  # discrete legend key for zero-study countries using a separate fill scale
-  geom_sf(data = zeros_sf, aes(fill = "0 studies"), color = "white", linewidth = 0.2, show.legend = TRUE) +
-  scale_fill_manual(
-    name = NULL,
-    values = c("0 studies" = "#E69F00"),
-    guide = guide_legend(order = 1)
-  ) +
-  ggnewscale::new_scale_fill() +
-  # draw non-zero countries with continuous gradient (viridisLite palette)
-  geom_sf(data = nonzeros_sf, aes(fill = study_count_plot), color = "white", linewidth = 0.2) +
+  # draw all countries with continuous gradient (viridisLite palette)
+  geom_sf(data = world_robinson, aes(fill = study_count_plot), color = "white", linewidth = 0.2) +
   scale_fill_gradientn(
     colours = viridisLite::viridis(256, option = "mako", direction = -1),
     name = "Studies per country",
-    breaks = log10(legend_breaks[legend_breaks > 0] + 1),
-    labels = scales::label_number(accuracy = 1)(legend_breaks[legend_breaks > 0]),
+    breaks = log10(legend_breaks + 1),
+    labels = scales::label_number(accuracy = 1)(legend_breaks),
     na.value = "#EEEEEE",
     oob = scales::squish
   ) +
-  guides(fill = guide_colorbar(barwidth = unit(12, "cm"), barheight = unit(0.45, "cm"), title.position = "top", label.position = "bottom", order = 2)) +
+  guides(fill = guide_colorbar(barwidth = unit(12, "cm"), barheight = unit(0.45, "cm"), title.position = "top", label.position = "bottom", order = 1)) +
   theme_endo_bw(base_size = 12) +
   theme(
     axis.title = element_blank(),
@@ -92,9 +82,7 @@ map <- ggplot() +
     plot.margin = margin(10, 10, 10, 10)
   ) +
   labs(
-    title = "Number of Endophyte Studies by Country",
-    subtitle = "Orange = 0 studies | Color gradient = 1 to 1000+ studies"
-    
+    title = "Number of Endophyte Studies by Country"
   )
 
 # Save the continuous map
