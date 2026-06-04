@@ -25,7 +25,7 @@ endo_palette_map <- c(
 	"#8c2d04"
 )
 
-theme_endo_bw <- function(base_size = 12, base_family = "") {
+theme_endo_bw <- function(base_size = 14, base_family = "") {
 	theme_bw(base_size = base_size, base_family = base_family) +
 		theme(
 			panel.grid.minor = element_blank(),
@@ -39,7 +39,7 @@ theme_endo_bw <- function(base_size = 12, base_family = "") {
 		)
 }
 
-set_endo_theme <- function(base_size = 12, base_family = "") {
+set_endo_theme <- function(base_size = 14, base_family = "") {
 	theme_set(theme_endo_bw(base_size = base_size, base_family = base_family))
 }
 

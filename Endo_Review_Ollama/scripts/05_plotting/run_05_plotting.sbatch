@@ -64,4 +64,11 @@ else
     echo "Skipping Step 5 (START_STEP=${START_STEP})"
 fi
 
+echo "Step 6: Abstract vs Full-Text Comparison Plots"
+if [ "$START_STEP" -le 6 ]; then
+    Rscript scripts/05_plotting/abs_fulltext_comparison_plots.R
+else
+    echo "Skipping Step 6 (START_STEP=${START_STEP})"
+fi
+
 echo "--- Stage 05: Plotting complete ---"

@@ -85,7 +85,7 @@ if (nrow(by_interaction) > 0) {
     ) +
     theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "none")
 
-  ggsave(OUT_INTERACTION, p_interaction, width = 10, height = 6.5, dpi = 300)
+  ggsave(OUT_INTERACTION, p_interaction, width = 6.5, height = 5, dpi = 300)
 }
 
 # -----------------------------------------------------------------------------
@@ -117,7 +117,7 @@ if (nrow(by_study) > 0) {
     ) +
     theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "none")
 
-  ggsave(OUT_STUDY, p_study, width = 10, height = 6.5, dpi = 300)
+  ggsave(OUT_STUDY, p_study, width = 6.5, height = 5, dpi = 300)
 }
 
 # -----------------------------------------------------------------------------
@@ -158,7 +158,7 @@ if (nrow(by_country) > 0) {
     ) +
     theme(axis.text.x = element_text(angle = 35, hjust = 1))
 
-  ggsave(OUT_COUNTRY, p_country, width = 12, height = 8.5, dpi = 300)
+  ggsave(OUT_COUNTRY, p_country, width = 6.5, height = 6, dpi = 300)
 }
 
 # -----------------------------------------------------------------------------
@@ -194,7 +194,7 @@ if (file.exists(BY_YEAR_FILE)) {
       ) +
       theme(legend.position = "none")
 
-    ggsave(OUT_YEAR, p_year, width = 12, height = 9, dpi = 300)
+    ggsave(OUT_YEAR, p_year, width = 6.5, height = 6, dpi = 300)
   }
 }
 

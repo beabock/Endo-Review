@@ -441,3 +441,66 @@ if modeling_results:
     print(f"Modeling results saved to: {OUTPUT_MODELING_RESULTS}")
 print("\nRobustness tests complete")
 
+# ==============================================================================
+# BRYOPHYTE-SPECIFIC ANALYSIS
+# ==============================================================================
+
+print("\n" + "="*80)
+print("BRYOPHYTE-SPECIFIC ANALYSIS")
+print("="*80)
+
+# Load the raw World Bank biodiversity data
+try:
+    wb_biodiv_raw = pd.read_csv("data/biodiversity/World_Bank/WB_Pre-processed/WB_BIODIVERSITY_2021.csv")
+except FileNotFoundError:
+    print("\n[!] World Bank raw biodiversity file not found. Skipping Bryophyte analysis.")
+    print("    Expected file: data/biodiversity/World_Bank/WB_Pre-processed/WB_BIODIVERSITY_2021.csv")
+    exit()
+
+# Filter for Bryophytes
+bryophytes = wb_biodiv_raw[wb_biodiv_raw['phylum'] == 'BRYOPHYTA'].copy()
+
+if bryophytes.empty:
+    print("\n[!] No Bryophyte species found in the World Bank dataset. Skipping analysis.")
+else:
+    print(f"\nFound {len(bryophytes)} Bryophyte species records across all countries.")
+
+    # --- Metric 1: Total Species ---
+    print("\n--- Ranking by Total Bryophyte Species ---")
+    total_species = bryophytes.groupby('country_iso3').size().reset_index(name='bryophyte_total_species')
+    total_species = total_species.sort_values('bryophyte_total_species', ascending=False)
+    print("Top 10 countries by total Bryophyte species:")
+    print(total_species.head(10).to_string(index=False))
+    
+    output_total_path = os.path.join(OUTPUT_DIR, 'country_rankings_bryophyte_total.csv')
+    total_species.to_csv(output_total_path, index=False)
+    print(f"Full ranked list saved to: {output_total_path}")
+
+    # --- Metric 2: Endemic Species ---
+    # The 'small_range_50km' column is used as the proxy for endemism in the main analysis
+    print("\n--- Ranking by Endemic Bryophyte Species (small_range_50km) ---")
+    endemic_species = bryophytes[bryophytes['small_range_50km'] == 1]
+    endemic_counts = endemic_species.groupby('country_iso3').size().reset_index(name='bryophyte_endemic_species')
+    endemic_counts = endemic_counts.sort_values('bryophyte_endemic_species', ascending=False)
+    print("Top 10 countries by endemic Bryophyte species:")
+    print(endemic_counts.head(10).to_string(index=False))
+
+    output_endemic_path = os.path.join(OUTPUT_DIR, 'country_rankings_bryophyte_endemic.csv')
+    endemic_counts.to_csv(output_endemic_path, index=False)
+    print(f"Full ranked list saved to: {output_endemic_path}")
+
+    # --- Metric 3: Threatened Species ---
+    # The 'threat_status_prob_80' is used as the proxy for threat status
+    print("\n--- Ranking by Threatened Bryophyte Species (threat_status_prob_80) ---")
+    threatened_species = bryophytes[bryophytes['threat_status_prob_80'] == 1]
+    threatened_counts = threatened_species.groupby('country_iso3').size().reset_index(name='bryophyte_threatened_species')
+    threatened_counts = threatened_counts.sort_values('bryophyte_threatened_species', ascending=False)
+    print("Top 10 countries by threatened Bryophyte species:")
+    print(threatened_counts.head(10).to_string(index=False))
+
+    output_threatened_path = os.path.join(OUTPUT_DIR, 'country_rankings_bryophyte_threatened.csv')
+    threatened_counts.to_csv(output_threatened_path, index=False)
+    print(f"Full ranked list saved to: {output_threatened_path}")
+
+print("\nBryophyte analysis complete.")
+

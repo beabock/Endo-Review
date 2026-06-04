@@ -114,11 +114,9 @@ biome_counts <- paper_biome %>%
 country_col_to_use <- if ("country_name" %in% names(paper_biome)) "country_name" else "country"
 y_axis_label <- if (country_col_to_use == "country_name") "Country" else "Country (ISO Code)"
 
-top_countries <- paper_biome %>%
-  filter(!is.na(.data[[country_col_to_use]]), .data[[country_col_to_use]] != "") %>%
-  count(.data[[country_col_to_use]], sort = TRUE) %>%
+top_biomes <- biome_counts %>%
   slice_head(n = 10) %>%
-  pull(.data[[country_col_to_use]])
+  pull(biome_clean)
 
 biome_country <- paper_biome %>%
   filter(biome_clean %in% top_biomes[1:10], .data[[country_col_to_use]] %in% top_countries) %>%
@@ -137,6 +135,6 @@ p4 <- ggplot(biome_country, aes(x = biome_clean, y = fct_reorder(.data[[country_
     y = y_axis_label
   )
 
-ggsave(file.path(OUTPUT_DIR, "biome_country_heatmap.png"), p4, width = 11, height = 8, dpi = 300)
+ggsave(file.path(OUTPUT_DIR, "biome_country_heatmap.png"), p4, width = 6.5, height = 5, dpi = 300)
 
 cat("Biome analysis complete. Plots saved to:", OUTPUT_DIR, "\n")

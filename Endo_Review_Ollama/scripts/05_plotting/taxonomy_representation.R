@@ -166,7 +166,7 @@ plot_coverage_bar <- function(summary_data, title, taxon_label) {
     geom_text(
       aes(label = paste0(round(coverage_percent, 1), "%")),
       hjust = -0.12,
-      size = 3
+      size = 3.5
     ) +
     scale_x_continuous(
       labels = function(x) paste0(x, "%"),
@@ -179,12 +179,18 @@ plot_coverage_bar <- function(summary_data, title, taxon_label) {
       y = "Phylum",
       subtitle = paste("Simple coverage view for known plant", tolower(taxon_label), "represented in the literature")
     ) +
-    theme_endo_bw(base_size = 11) +
+    scale_y_discrete(labels = scales::label_wrap(25)) +
+    theme_endo_bw(base_size = 14) +
     theme(
-      axis.text.y = element_text(size = 9),
+      plot.title.position = "plot",
+      plot.title = element_text(hjust = 0, size = 15, face = "bold"),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(size = 13, face = "bold"),
+      axis.text = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
       panel.grid.major.y = element_blank(),
       legend.position = "none",
-      plot.margin = margin(5.5, 24, 5.5, 5.5)
+      plot.margin = margin(15, 10, 5, 5, "pt")
     )
 }
 
@@ -203,7 +209,7 @@ plot_studied_count_bar <- function(summary_data, title, taxon_label) {
     geom_text(
       aes(label = comma(studied_count)),
       hjust = -0.12,
-      size = 3
+      size = 3.5
     ) +
     scale_x_continuous(
       labels = comma,
@@ -216,12 +222,18 @@ plot_studied_count_bar <- function(summary_data, title, taxon_label) {
       y = "Phylum",
       subtitle = paste("Absolute number of studied plant", tolower(taxon_label), "by phylum")
     ) +
-    theme_endo_bw(base_size = 11) +
+    scale_y_discrete(labels = scales::label_wrap(25)) +
+    theme_endo_bw(base_size = 14) +
     theme(
-      axis.text.y = element_text(size = 9),
+      plot.title.position = "plot",
+      plot.title = element_text(hjust = 0, size = 15, face = "bold"),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(size = 13, face = "bold"),
+      axis.text = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
       panel.grid.major.y = element_blank(),
       legend.position = "none",
-      plot.margin = margin(5.5, 24, 5.5, 5.5)
+      plot.margin = margin(15, 10, 5, 5, "pt")
     )
 }
 
@@ -245,7 +257,7 @@ plot_coverage_lollipop <- function(summary_data, title, taxon_label) {
     geom_text(
       aes(label = paste0(round(coverage_percent, 1), "%")),
       hjust = -0.12,
-      size = 3
+      size = 3.5
     ) +
     scale_x_continuous(
       labels = function(x) paste0(x, "%"),
@@ -258,12 +270,19 @@ plot_coverage_lollipop <- function(summary_data, title, taxon_label) {
       y = "Phylum",
       subtitle = paste("Lollipop view of coverage for plant", tolower(taxon_label), "by phylum")
     ) +
-    theme_endo_bw(base_size = 11) +
+    scale_y_discrete(labels = scales::label_wrap(25)) +
+    theme_endo_bw(base_size = 14) +
     theme(
-      axis.text.y = element_text(size = 9),
-      panel.grid.major.y = element_blank(),
+      plot.title.position = "plot",
+      plot.title = element_text(hjust = 0, size = 15, face = "bold"),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(size = 13, face = "bold"),
+      axis.text = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      axis.text.x = element_text(size = 12, face = "bold"),
+      panel.grid = element_blank(),
       legend.position = "none",
-      plot.margin = margin(5.5, 24, 5.5, 5.5)
+      plot.margin = margin(15, 10, 5, 5, "pt")
     )
 }
 
@@ -307,7 +326,7 @@ plot_taxonomy_heatmap <- function(summary_data, title, taxon_label) {
 
   ggplot(long_data, aes(x = metric, y = phylum_label, fill = value_scaled)) +
     geom_tile(color = "white", width = 0.92, height = 0.9) +
-    geom_text(aes(label = label, color = text_color), size = 3, show.legend = FALSE) +
+    geom_text(aes(label = label, color = text_color), size = 3.8, show.legend = FALSE) +
     scale_fill_gradient(low = "#F7F7F7", high = "#2C7FB8", limits = c(0, 1), na.value = "#F0F0F0", guide = "none") +
     scale_color_identity() +
     labs(
@@ -316,12 +335,19 @@ plot_taxonomy_heatmap <- function(summary_data, title, taxon_label) {
       y = "Phylum",
       subtitle = paste("Compact summary table for plant", tolower(taxon_label), "known, studied, and coverage")
     ) +
-    theme_endo_bw(base_size = 11) +
+    scale_y_discrete(labels = scales::label_wrap(20)) +
+    theme_endo_bw(base_size = 14) +
     theme(
-      axis.text.y = element_text(size = 9),
-      axis.text.x = element_text(size = 10, face = "bold"),
+      plot.title.position = "plot",
+      plot.title = element_text(hjust = 0, size = 15, face = "bold"),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(size = 13, face = "bold"),
+      axis.text = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      axis.text.x = element_text(size = 12, face = "bold"),
       panel.grid = element_blank(),
-      legend.position = "none"
+      legend.position = "none",
+      plot.margin = margin(15, 10, 5, 5, "pt")
     )
 }
 
@@ -337,7 +363,8 @@ plot_compound_taxonomy_heatmap <- function(species_summary, genus_summary, famil
   # Strip the total n from labels for the phyla
   combined_data <- combined_data %>%
     mutate(phylum_label = sub("\n.*$", "", phylum_label)) %>%
-    mutate(phylum_label = factor(phylum_label, levels = rev(unique(phylum_label))))
+    # Note: Use phylum_order here for proper sorting (left-to-right)
+    mutate(phylum_label = factor(phylum_label, levels = unique(phylum_label)))
 
   # Reshape for metrics
   long_data <- combined_data %>%
@@ -350,8 +377,8 @@ plot_compound_taxonomy_heatmap <- function(species_summary, genus_summary, famil
     mutate(
       metric = factor(
         metric,
-        levels = c("known_count", "studied_count", "coverage_percent"),
-        labels = c("Known", "Studied", "Coverage %")
+        levels = rev(c("known_count", "studied_count", "coverage_percent")),
+        labels = rev(c("Known Taxa", "Studied Taxa", "Coverage (%)"))
       )
     ) %>%
     group_by(level, metric) %>%
@@ -364,7 +391,7 @@ plot_compound_taxonomy_heatmap <- function(species_summary, genus_summary, famil
         scales::rescale(value, to = c(0, 1), na.rm = TRUE)
       },
       label = case_when(
-        metric == "Coverage %" ~ paste0(round(value, 1), "%"),
+        metric == "Coverage (%)" ~ paste0(round(value, 1), "%"),
         TRUE ~ comma(value)
       ),
       text_color = if_else(is.na(value_scaled) | value_scaled < 0.65, "#222222", "white")
@@ -372,28 +399,34 @@ plot_compound_taxonomy_heatmap <- function(species_summary, genus_summary, famil
     ungroup()
 
   ggplot(long_data, aes(x = metric, y = phylum_label, fill = value_scaled)) +
-    geom_tile(color = "white", width = 0.95, height = 0.9) +
-    geom_text(aes(label = label, color = text_color), size = 2.8, show.legend = FALSE) +
-    facet_wrap(~level, scales = "free_x") +
+    geom_tile(color = "white", linewidth = 1, width = 0.95, height = 0.85) +
+    geom_text(aes(label = label, color = text_color), size = 3, show.legend = FALSE) +
+    facet_grid(. ~ level) +
     scale_fill_gradient(low = "#F7F7F7", high = "#2C7FB8", limits = c(0, 1), na.value = "#F0F0F0", guide = "none") +
     scale_color_identity() +
     labs(
       title = title,
-      x = NULL,
-      y = "Phylum",
-      subtitle = "Comparison of research effort and taxonomic coverage across plant Species, Genera, and Families"
+      x = "Metric",
+      y = "Phylum"
     ) +
-    theme_endo_bw(base_size = 11) +
+    scale_y_discrete(labels = scales::label_wrap(20)) +
+    theme_endo_bw(base_size = 12) +
     theme(
-      axis.text.y = element_text(size = 9),
-      axis.text.x = element_text(size = 9, face = "bold"),
+      plot.title.position = "plot",
+      plot.title = element_text(hjust = 0, size = 14, face = "bold", margin = margin(b = 15)),
+      axis.title = element_text(size = 12, face = "bold"),
+      axis.text = element_text(size = 11),
+      axis.text.y = element_text(size = 11, lineheight = 0.85),
+      axis.ticks.y = element_line(color = "gray50"),
+      axis.text.x = element_text(size = 11, angle = 45, hjust = 1, vjust = 1),
       panel.grid = element_blank(),
       strip.text = element_text(size = 12, face = "bold"),
-      legend.position = "none"
+      legend.position = "none",
+      plot.margin = margin(15, 10, 5, 5, "pt")
     )
 }
 
-save_plot <- function(plot, filename, width = 11, height = 7) {
+save_plot <- function(plot, filename, width = 6.5, height = 5) {
   filepath <- file.path(PLOTS_OUTPUT_DIR, filename)
   ggsave(
     filepath,
@@ -449,24 +482,33 @@ family_views <- build_taxonomy_views(family_data, "Families", "known_families", 
 
 cat("Saving plots to", PLOTS_OUTPUT_DIR, "\n")
 
-save_plot(species_views$coverage_bar, "01_species_coverage_bar.png", width = 10, height = 7)
-save_plot(species_views$studied_bar, "02_species_studied_bar.png", width = 10, height = 7)
-save_plot(species_views$lollipop, "03_species_coverage_lollipop.png", width = 10, height = 7)
-save_plot(species_views$heatmap, "04_species_summary_heatmap.png", width = 10, height = 7)
+save_plot(species_views$coverage_bar, "01_species_coverage_bar.png", width = 6.5, height = 5)
+save_plot(species_views$studied_bar, "02_species_studied_bar.png", width = 6.5, height = 5)
+save_plot(species_views$lollipop, "03_species_coverage_lollipop.png", width = 6.5, height = 5)
+save_plot(species_views$heatmap, "04_species_summary_heatmap.png", width = 6.5, height = 5)
 
-save_plot(genus_views$coverage_bar, "05_genera_coverage_bar.png", width = 10, height = 7)
-save_plot(genus_views$studied_bar, "06_genera_studied_bar.png", width = 10, height = 7)
-save_plot(genus_views$lollipop, "07_genera_coverage_lollipop.png", width = 10, height = 7)
-save_plot(genus_views$heatmap, "08_genera_summary_heatmap.png", width = 10, height = 7)
+save_plot(genus_views$coverage_bar, "05_genera_coverage_bar.png", width = 6.5, height = 5)
+save_plot(genus_views$studied_bar, "06_genera_studied_bar.png", width = 6.5, height = 5)
+save_plot(genus_views$lollipop, "07_genera_coverage_lollipop.png", width = 6.5, height = 5)
+save_plot(genus_views$heatmap, "08_genera_summary_heatmap.png", width = 6.5, height = 5)
 
-save_plot(family_views$coverage_bar, "09_families_coverage_bar.png", width = 10, height = 7)
-save_plot(family_views$studied_bar, "10_families_studied_bar.png", width = 10, height = 7)
-save_plot(family_views$lollipop, "11_families_coverage_lollipop.png", width = 10, height = 7)
-save_plot(family_views$heatmap, "12_families_summary_heatmap.png", width = 10, height = 7)
+save_plot(family_views$coverage_bar, "09_families_coverage_bar.png", width = 6.5, height = 5)
+save_plot(family_views$studied_bar, "10_families_studied_bar.png", width = 6.5, height = 5)
+save_plot(family_views$lollipop, "11_families_coverage_lollipop.png", width = 6.5, height = 5)
+save_plot(family_views$heatmap, "12_families_summary_heatmap.png", width = 6.5, height = 5)
 
 # 13. Compound Heatmap (Species, Genus, Family comparison)
-# ... (existing code for compound heatmap) ...
-save_plot(compound_heatmap, "13_compound_taxonomy_heatmap.png", width = 14, height = 8)
+species_summary <- prepare_taxonomy_summary(species_data, "known_species", "studied_species")
+genus_summary <- prepare_taxonomy_summary(genus_data, "known_genera", "studied_genera")
+family_summary <- prepare_taxonomy_summary(family_data, "known_families", "studied_families")
+
+compound_heatmap <- plot_compound_taxonomy_heatmap(
+  species_summary,
+  genus_summary,
+  family_summary,
+  "Taxonomic Coverage Comparison Across Levels"
+)
+save_plot(compound_heatmap, "13_compound_taxonomy_heatmap.png", width = 6.5, height = 7.5)
 
 # =================================================================================
 # VISUALIZATION 14: Plant Family Research Over Time
@@ -517,7 +559,7 @@ if (!is.null(time_df)) {
     geom_line(linewidth = 1, alpha = 0.8) +
     geom_point(size = 1.5) +
     scale_color_manual(values = endo_palette_discrete, name = "Plant Family") +
-    theme_endo_bw(base_size = 11) +
+    theme_endo_bw(base_size = 12) +
     labs(
       title = "Trends in Plant Family Research Over Time",
       subtitle = "Annual study counts for the top 8 most-studied plant families (1990-2024)",
@@ -525,7 +567,7 @@ if (!is.null(time_df)) {
       y = "Number of Studies"
     )
     
-  save_plot(p_family_time, "14_family_trends_over_time.png", width = 12, height = 7)
+  save_plot(p_family_time, "14_family_trends_over_time.png", width = 6.5, height = 5)
 
 } else {
   cat("Skipping family time-series plot: year-enriched data file not found.\n")

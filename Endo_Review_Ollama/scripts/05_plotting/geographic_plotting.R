@@ -73,20 +73,20 @@ map <- ggplot() +
     panel.grid = element_blank(),
     panel.border = element_blank(),
     legend.position = "bottom",
-    legend.title = element_text(size = 10, face = "bold"),
-    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 10),
     legend.key.width = unit(3, "cm"),
     legend.key.height = unit(0.45, "cm"),
-    plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(size = 11, hjust = 0.5),
+    plot.title = element_text(size = 12, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
     plot.margin = margin(10, 10, 10, 10)
   ) +
   labs(
-    title = "Number of Endophyte Studies by Country"
+    title = "Number of Fungal Endophyte Studies by Country"
   )
 
 # Save the continuous map
-ggsave("results/study_count_by_country_robinson.png", map, width = 14, height = 8, dpi = 300)
+ggsave("results/study_count_by_country_robinson.png", map, width = 6.5, height = 5, dpi = 300)
 
 # Create ranked bar chart of top countries
 top_countries <- country_papers %>%
@@ -102,13 +102,13 @@ ranked_bar <- ggplot(top_countries, aes(x = study_count, y = fct_rev(country_nam
     aes(label = paste0(study_count, " studies")),
     hjust = -0.1,
     size = 3,
-    color = "#333333"
+    color = "#000000", face = "bold"
   ) +
   scale_x_continuous(
     expand = expansion(mult = c(0, 0.1)),
     labels = scales::comma
   ) +
-  theme_endo_bw(base_size = 11) +
+  theme_endo_bw() +
   theme(
     axis.title.y = element_blank(),
     plot.title = element_text(size = 13, hjust = 0.5, face = "bold")
@@ -118,7 +118,7 @@ ranked_bar <- ggplot(top_countries, aes(x = study_count, y = fct_rev(country_nam
     x = "Number of Studies"
   )
 
-ggsave("results/top_countries_ranked.png", ranked_bar, width = 10, height = 7, dpi = 300)
+ggsave("results/top_countries_ranked.png", ranked_bar, width = 6.5, height = 5, dpi = 300)
 
 
 # Print summary stats
@@ -202,7 +202,7 @@ if (file.exists(TIME_SERIES_INPUT_FILE)) {
     geom_line(linewidth = 1, alpha = 0.8) +
     geom_point(size = 1.5) +
     scale_color_manual(values = endo_palette_discrete, name = "Country") +
-    theme_endo_bw(base_size = 11) +
+    theme_endo_bw() +
     labs(
       title = "Trends in Endophyte Research Over Time by Country",
       subtitle = "Annual study counts for the top 8 countries (1990-2024)",
@@ -210,7 +210,7 @@ if (file.exists(TIME_SERIES_INPUT_FILE)) {
       y = "Number of Studies"
     )
 
-  ggsave("results/country_trends_over_time.png", p_country_time, width = 11, height = 7, dpi = 300)
+  ggsave("results/country_trends_over_time.png", p_country_time, width = 6.5, height = 4.5, dpi = 300)
   cat("Saved country time series plot to results/country_trends_over_time.png\n")
 
 } else {
@@ -285,7 +285,7 @@ scatter_plot_gdp <- ggplot(gdp_data, aes(x = x_value, y = y_value)) +
     data = top_countries_gdp,
     mapping = aes(x = x_value, y = y_value, label = iso_a3),
     size = 3,
-    color = "#333333",
+    color = "#000000",
     max.overlaps = 15,
     inherit.aes = FALSE
   ) +
@@ -297,7 +297,7 @@ scatter_plot_gdp <- ggplot(gdp_data, aes(x = x_value, y = y_value)) +
     ),
     aes(x = x, y = y, label = label),
     hjust = 0, vjust = 1,
-    size = 3, color = "#555555",
+    size = 3, color = "#000000",
     inherit.aes = FALSE
   ) +
   theme_endo_bw(base_size = 12) +
@@ -324,7 +324,7 @@ scatter_plot_lat <- ggplot(lat_data, aes(x = x_value, y = y_value)) +
     data = top_countries_lat,
     mapping = aes(x = x_value, y = y_value, label = iso_a3),
     size = 3,
-    color = "#333333",
+    color = "#000000",
     max.overlaps = 15,
     inherit.aes = FALSE
   ) +
@@ -350,8 +350,8 @@ scatter_plot_lat <- ggplot(lat_data, aes(x = x_value, y = y_value)) +
     y = "log10(Study count + 1)"
   )
 
-ggsave("results/country_analysis/country_study_count_vs_gdp.png", scatter_plot_gdp, width = 8, height = 6.5, dpi = 300)
-ggsave("results/country_analysis/country_study_count_vs_latitude.png", scatter_plot_lat, width = 8, height = 6.5, dpi = 300)
+ggsave("results/country_analysis/country_study_count_vs_gdp.png", scatter_plot_gdp, width = 4.5, height = 4.5, dpi = 300)
+ggsave("results/country_analysis/country_study_count_vs_latitude.png", scatter_plot_lat, width = 6.5, height = 5.5, dpi = 300)
 
 cat("\nGeographic plots saved to:\n")
 cat("  - results/study_count_by_country_robinson.png (continuous scale)\n")

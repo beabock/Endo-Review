@@ -168,7 +168,7 @@ make_scatter <- function(df, metric_name, output_path, plot_title, plot_subtitle
       legend.position = "top"
     )
 
-  ggsave(output_path, p, width = 8, height = 5.5, dpi = 300, bg = "white")
+  ggsave(output_path, p, width = 6.5, height = 4.5, dpi = 300, bg = "white")
   return(p)
 }
 
@@ -210,7 +210,7 @@ p1 <- ggplot(sensitivity, aes(x = priority_label, group = 1)) +
     legend.position = "top"
   )
 
-ggsave(OUTPUT_PLOT, p1, width = 10, height = 6, dpi = 300, bg = "white")
+ggsave(OUTPUT_PLOT, p1, width = 6.5, height = 5, dpi = 300, bg = "white")
 cat("Main plot saved to:", OUTPUT_PLOT, "\n")
 
 # ===== PLOT 2: Observed vs expected counts =====
@@ -258,7 +258,7 @@ p2_combined <- grid.arrange(
   )
 )
 
-ggsave(OUTPUT_PLOT_DETAILED, p2_combined, width = 12, height = 9, dpi = 300, bg = "white")
+ggsave(OUTPUT_PLOT_DETAILED, p2_combined, width = 6.5, height = 8, dpi = 300, bg = "white")
 cat("Detailed plot saved to:", OUTPUT_PLOT_DETAILED, "\n")
 
 # ===== PLOT 3: Metric scatter plots (combined + standalone) =====
@@ -350,7 +350,7 @@ make_hotspot_scatter <- function(df, metric_name, output_path, plot_title, plot_
       legend.position = "top"
     )
 
-  ggsave(output_path, p, width = 8, height = 5.5, dpi = 300, bg = "white")
+  ggsave(output_path, p, width = 6.5, height = 4.5, dpi = 300, bg = "white")
   return(p)
 }
 
@@ -399,7 +399,7 @@ hotspot_combined <- plot_data_hotspot %>%
     legend.position = "top"
   )
 
-ggsave(OUTPUT_SCATTER_HOTSPOT, hotspot_combined, width = 13, height = 5.5, dpi = 300, bg = "white")
+ggsave(OUTPUT_SCATTER_HOTSPOT, hotspot_combined, width = 6.5, height = 4, dpi = 300, bg = "white")
 cat("Combined hotspot-density plot saved to:", OUTPUT_SCATTER_HOTSPOT, "\n")
 
 if (!is.null(hotspot_total)) cat("Standalone hotspot total-species plot saved to:", OUTPUT_SCATTER_HOTSPOT_TOTAL, "\n")
@@ -457,7 +457,7 @@ facet_plot <- plot_data %>%
     legend.position = "top"
   )
 
-ggsave(OUTPUT_SCATTER_COMBINED, facet_plot, width = 14, height = 5.5, dpi = 300, bg = "white")
+ggsave(OUTPUT_SCATTER_COMBINED, facet_plot, width = 6.5, height = 4.5, dpi = 300, bg = "white")
 cat("Combined scatter plot saved to:", OUTPUT_SCATTER_COMBINED, "\n")
 
 if (!is.null(scatter_total)) cat("Standalone total-species scatter saved to:", OUTPUT_SCATTER_TOTAL, "\n")
@@ -542,13 +542,13 @@ unevenness_plot <- unevenness_data %>%
     legend.position = "top"
   )
 
-ggsave(OUTPUT_Unevenness_COMBINED, unevenness_plot, width = 13.5, height = 5.5, dpi = 300, bg = "white")
+ggsave(OUTPUT_Unevenness_COMBINED, unevenness_plot, width = 6.5, height = 4.5, dpi = 300, bg = "white")
 cat("Combined unevenness plot saved to:", OUTPUT_Unevenness_COMBINED, "\n")
 
 unevenness_detailed <- unevenness_plot +
   theme(strip.text = element_text(face = "bold"))
 
-ggsave(OUTPUT_Unevenness_DETAILED, unevenness_detailed, width = 13.5, height = 5.5, dpi = 300, bg = "white")
+ggsave(OUTPUT_Unevenness_DETAILED, unevenness_detailed, width = 6.5, height = 4.5, dpi = 300, bg = "white")
 cat("Detailed unevenness plot saved to:", OUTPUT_Unevenness_DETAILED, "\n")
 
 make_unevenness_plot <- function(df, metric_name, output_path, plot_title) {
@@ -629,7 +629,7 @@ make_unevenness_plot <- function(df, metric_name, output_path, plot_title) {
       legend.position = "top"
     )
 
-  ggsave(output_path, p, width = 8.5, height = 5.5, dpi = 300, bg = "white")
+  ggsave(output_path, p, width = 6.5, height = 4.5, dpi = 300, bg = "white")
   return(p)
 }
 
@@ -674,7 +674,7 @@ gdp_corr_plot <- ggplot(gdp_corr_data, aes(x = gdp_log10, y = value)) +
     strip.text = element_text(face = "bold")
   )
 
-ggsave(OUTPUT_GDP_CORR_PLOT, gdp_corr_plot, width = 12, height = 8, dpi = 300, bg = "white")
+ggsave(OUTPUT_GDP_CORR_PLOT, gdp_corr_plot, width = 6.5, height = 5, dpi = 300, bg = "white")
 cat("GDP correlation plot saved to:", OUTPUT_GDP_CORR_PLOT, "\n")
 
 # ===== PLOT 6: Biodiversity Distribution of Studied vs. Understudied Countries =====
@@ -712,7 +712,7 @@ dist_plot <- ggplot(plot_data_dist, aes(x = understudied_cat, y = log10(metric_v
     axis.text.x = element_text(angle = 15, hjust = 1)
   )
 
-ggsave(OUTPUT_UNDERSTUDIED_DIST_PLOT, dist_plot, width = 12, height = 6, dpi = 300, bg = "white")
+ggsave(OUTPUT_UNDERSTUDIED_DIST_PLOT, dist_plot, width = 6.5, height = 5, dpi = 300, bg = "white")
 cat("Understudied distribution plot saved to:", OUTPUT_UNDERSTUDIED_DIST_PLOT, "\n")
 
 # ===== PLOT 7: Modeling Results =====
@@ -749,7 +749,7 @@ modeling_plot <- ggplot(modeling_plot_data, aes(x = coefficient, y = variable, c
     legend.position = "bottom"
   )
 
-ggsave(OUTPUT_MODELING_PLOT, modeling_plot, width = 10, height = 8, dpi = 300, bg = "white")
+ggsave(OUTPUT_MODELING_PLOT, modeling_plot, width = 6.5, height = 6, dpi = 300, bg = "white")
 cat("Modeling results plot saved to:", OUTPUT_MODELING_PLOT, "\n")
 
 # ===== PLOT 8: Correlation Heatmap =====
@@ -787,7 +787,7 @@ corr_plots <- lapply(setNames(nm = unique(corr_data$metric_label)), function(met
 
 corr_heatmap <- ggarrange(plotlist = corr_plots, ncol = 3, common.legend = TRUE, legend = "right")
 
-ggsave(file.path(OUTPUT_DIR, "correlation_heatmap.png"), corr_heatmap, width = 14, height = 5, dpi = 300, bg = "white")
+ggsave(file.path(OUTPUT_DIR, "correlation_heatmap.png"), corr_heatmap, width = 6.5, height = 3, dpi = 300, bg = "white")
 cat("Correlation heatmap saved to:", file.path(OUTPUT_DIR, "correlation_heatmap.png"), "\n")
 
 

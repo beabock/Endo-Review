@@ -173,8 +173,8 @@ STATISTICAL MODELING OF STUDY COUNT
 Dep. Variable:        study_count_log   R-squared:                       0.704
 Model:                            OLS   Adj. R-squared:                  0.701
 Method:                 Least Squares   F-statistic:                     245.6
-Date:                Tue, 05 May 2026   Prob (F-statistic):           2.23e-55
-Time:                        18:03:07   Log-Likelihood:                -116.05
+Date:                Thu, 04 Jun 2026   Prob (F-statistic):           2.23e-55
+Time:                        10:25:15   Log-Likelihood:                -116.05
 No. Observations:                 210   AIC:                             238.1
 Df Residuals:                     207   BIC:                             248.1
 Df Model:                           2                                         
@@ -203,8 +203,8 @@ strong multicollinearity or other numerical problems.
 Dep. Variable:        study_count_log   R-squared:                       0.719
 Model:                            OLS   Adj. R-squared:                  0.716
 Method:                 Least Squares   F-statistic:                     264.5
-Date:                Tue, 05 May 2026   Prob (F-statistic):           9.54e-58
-Time:                        18:03:07   Log-Likelihood:                -110.51
+Date:                Thu, 04 Jun 2026   Prob (F-statistic):           9.54e-58
+Time:                        10:25:15   Log-Likelihood:                -110.51
 No. Observations:                 210   AIC:                             227.0
 Df Residuals:                     207   BIC:                             237.1
 Df Model:                           2                                         
@@ -233,8 +233,8 @@ strong multicollinearity or other numerical problems.
 Dep. Variable:        study_count_log   R-squared:                       0.722
 Model:                            OLS   Adj. R-squared:                  0.719
 Method:                 Least Squares   F-statistic:                     268.5
-Date:                Tue, 05 May 2026   Prob (F-statistic):           3.15e-58
-Time:                        18:03:08   Log-Likelihood:                -109.39
+Date:                Thu, 04 Jun 2026   Prob (F-statistic):           3.15e-58
+Time:                        10:25:15   Log-Likelihood:                -109.39
 No. Observations:                 210   AIC:                             224.8
 Df Residuals:                     207   BIC:                             234.8
 Df Model:                           2                                         
