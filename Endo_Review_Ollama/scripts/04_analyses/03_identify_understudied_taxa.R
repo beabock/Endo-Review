@@ -179,38 +179,21 @@ cat("Saved unstudied families to:", file.path(OUTPUT_DIR, "unstudied_plant_famil
 cat("Saved unstudied genera to:", file.path(OUTPUT_DIR, "unstudied_plant_genera.csv"), "\n")
 cat("Saved unstudied species to:", file.path(OUTPUT_DIR, "unstudied_plant_species.csv"), "\n")
 
-# --- 2. Identify Unstudied Countries ---
-# This logic is also in geographic_plotting.R, but consolidating here for a dedicated output.
+# --- 2. Identify Understudied Countries ---
 
-cat("\n--- Identifying unstudied countries ---\n")
+cat("\n--- Identifying understudied countries (< 5 studies) ---\n")
 
-# Prefer reusing existing zero-study output from geographic analysis if present.
-if (file.exists(COUNTRIES_ZERO_FILE)) {
-  cat("Reusing existing zero-study countries output from geographic analysis...\n")
-  zero_countries <- read_csv(COUNTRIES_ZERO_FILE, show_col_types = FALSE)
-  unstudied_countries <- zero_countries %>%
-    select(any_of(c("iso_a3", "name", "data_status"))) %>%
-    distinct()
-} else {
-  # Fallback: recompute from country_enriched_data and world country universe.
-  world <- ne_countries(scale = 110, returnclass = "sf") %>%
-    select(iso_a3, name) %>%
-    apply_disputed_parent_iso_world() %>%
-    st_drop_geometry() %>%
-    filter(iso_a3 != "-99") %>%
-    distinct(iso_a3, name)
+# Load country study counts
+studied_countries_data <- read_csv(COUNTRY_DATA_FILE, show_col_types = FALSE)
 
-  studied_countries_data <- read_csv(COUNTRY_DATA_FILE, show_col_types = FALSE)
-  studied_countries_iso <- studied_countries_data %>%
-    filter(study_count > 0) %>%
-    distinct(iso_a3) %>%
-    pull(iso_a3)
+# Identify countries with < 5 studies (including 0 studies) and drop the count column
+understudied_countries <- studied_countries_data %>%
+  mutate(study_count = ifelse(is.na(study_count), 0, study_count)) %>%
+  filter(study_count < 5) %>%
+  select(iso_a3, name = country_name) %>%
+  arrange(name)
 
-  unstudied_countries <- world %>%
-    filter(!iso_a3 %in% studied_countries_iso)
-}
-
-write_csv(unstudied_countries, file.path(OUTPUT_DIR, "unstudied_countries.csv"))
-cat("Saved unstudied countries to:", file.path(OUTPUT_DIR, "unstudied_countries.csv"), "\n")
+write_csv(understudied_countries, file.path(OUTPUT_DIR, "unstudied_countries.csv"))
+cat("Saved understudied countries (< 5 studies) to:", file.path(OUTPUT_DIR, "unstudied_countries.csv"), "\n")
 
 cat("\nAnalysis of understudied entities complete.\n")

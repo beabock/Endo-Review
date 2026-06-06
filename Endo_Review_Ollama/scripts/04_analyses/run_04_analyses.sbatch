@@ -144,4 +144,11 @@ else
     echo "Skipping Step 6 (START_STEP=${START_STEP})"
 fi
 
-echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, results/interaction_analysis, results/manuscript_dataset_summary.*, and results/understudied_analysis"
+echo "Step 7: Crop Analyses"
+if [ "$START_STEP" -le 7 ]; then
+    Rscript scripts/04_analyses/crop_analyses.R
+else
+    echo "Skipping Step 7 (START_STEP=${START_STEP})"
+fi
+
+echo "Stage 04 complete. Check results/country_analysis, results/taxonomy_analysis, results/interaction_analysis, results/manuscript_dataset_summary.*, results/understudied_analysis, and results/crop_analysis"

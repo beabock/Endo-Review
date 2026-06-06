@@ -1,85 +1,134 @@
-iso_a3,name,data_status
-ALA,Aland,0
-ASM,American Samoa,0
-AND,Andorra,0
-AGO,Angola,0
-AIA,Anguilla,0
-ATG,Antigua and Barb.,0
-ARM,Armenia,0
-ABW,Aruba,0
-BHS,Bahamas,0
-BHR,Bahrain,0
-BLZ,Belize,0
-IOT,Br. Indian Ocean Ter.,0
-VGB,British Virgin Is.,0
-KHM,Cambodia,0
-CPV,Cape Verde,0
-CYM,Cayman Is.,0
-CAF,Central African Rep.,0
-COM,Comoros,0
-COK,Cook Is.,0
-CUW,Curaçao,0
-PRK,Dem. Rep. Korea,0
-DJI,Djibouti,0
-SLV,El Salvador,0
-GNQ,Eq. Guinea,0
-FRO,Faeroe Is.,0
-FLK,Falkland Is.,0
-FJI,Fiji,0
-ATF,Fr. S. Antarctic Lands,0
-GAB,Gabon,0
-GMB,Gambia,0
-GRD,Grenada,0
-GUM,Guam,0
-GGY,Guernsey,0
-HTI,Haiti,0
-HMD,Heard I. and McDonald Is.,0
-KIR,Kiribati,0
-KWT,Kuwait,0
-KGZ,Kyrgyzstan,0
-LSO,Lesotho,0
-LBR,Liberia,0
-LIE,Liechtenstein,0
-MAC,Macao,0
-MKD,Macedonia,0
-MDV,Maldives,0
-MHL,Marshall Is.,0
-MRT,Mauritania,0
-FSM,Micronesia,0
-MCO,Monaco,0
-MSR,Montserrat,0
-CYP,N. Cyprus,0
-MNP,N. Mariana Is.,0
-NRU,Nauru,0
-NIU,Niue,0
-NFK,Norfolk Island,0
-PLW,Palau,0
-PSE,Palestine,0
-PCN,Pitcairn Is.,0
-RWA,Rwanda,0
-SSD,S. Sudan,0
-SHN,Saint Helena,0
-LCA,Saint Lucia,0
-WSM,Samoa,0
-SMR,San Marino,0
-SYC,Seychelles,0
-SLE,Sierra Leone,0
-SXM,Sint Maarten,0
-SLB,Solomon Is.,0
-SOM,Somaliland,0
-BLM,St-Barthélemy,0
-MAF,St-Martin,0
-KNA,St. Kitts and Nevis,0
-SPM,St. Pierre and Miquelon,0
-VCT,St. Vin. and Gren.,0
-SUR,Suriname,0
-SWZ,Swaziland,0
-STP,São Tomé and Principe,0
-TJK,Tajikistan,0
-TON,Tonga,0
-TKM,Turkmenistan,0
-TCA,Turks and Caicos Is.,0
-VIR,U.S. Virgin Is.,0
-VAT,Vatican,0
-ESH,W. Sahara,0
-WLF,Wallis and Futuna Is.,0
+iso_a3,name
+AFG,Afghanistan
+ALB,Albania
+ASM,American Samoa
+AND,Andorra
+AGO,Angola
+AIA,Anguilla
+ATG,Antigua and Barb.
+ARM,Armenia
+ABW,Aruba
+AZE,Azerbaijan
+BHS,Bahamas
+BHR,Bahrain
+BRB,Barbados
+BLR,Belarus
+BLZ,Belize
+BEN,Benin
+BMU,Bermuda
+BTN,Bhutan
+BIH,Bosnia and Herz.
+BWA,Botswana
+IOT,Br. Indian Ocean Ter.
+VGB,British Virgin Is.
+BRN,Brunei
+BDI,Burundi
+CPV,Cabo Verde
+KHM,Cambodia
+CYM,Cayman Is.
+CAF,Central African Rep.
+TCD,Chad
+COM,Comoros
+COG,Congo
+COK,Cook Is.
+CUW,Curaçao
+CYP,Cyprus
+CIV,Côte d'Ivoire
+COD,Dem. Rep. Congo
+DJI,Djibouti
+DMA,Dominica
+DOM,Dominican Rep.
+SLV,El Salvador
+GNQ,Eq. Guinea
+ERI,Eritrea
+FRO,Faeroe Is.
+FLK,Falkland Is.
+FJI,Fiji
+PYF,Fr. Polynesia
+ATF,Fr. S. Antarctic Lands
+GAB,Gabon
+GMB,Gambia
+GRL,Greenland
+GRD,Grenada
+GUM,Guam
+GTM,Guatemala
+GGY,Guernsey
+GNB,Guinea-Bissau
+GUY,Guyana
+HTI,Haiti
+HMD,Heard I. and McDonald Is.
+ISL,Iceland
+IMN,Isle of Man
+JAM,Jamaica
+KIR,Kiribati
+KWT,Kuwait
+KGZ,Kyrgyzstan
+LAO,Laos
+LVA,Latvia
+LBN,Lebanon
+LSO,Lesotho
+LBR,Liberia
+LBY,Libya
+LIE,Liechtenstein
+LUX,Luxembourg
+MAC,Macao
+MWI,Malawi
+MDV,Maldives
+MLT,Malta
+MHL,Marshall Is.
+MRT,Mauritania
+MUS,Mauritius
+FSM,Micronesia
+MDA,Moldova
+MCO,Monaco
+MSR,Montserrat
+MOZ,Mozambique
+MNP,N. Mariana Is.
+NRU,Nauru
+NCL,New Caledonia
+NIC,Nicaragua
+NIU,Niue
+NFK,Norfolk Island
+PRK,North Korea
+MKD,North Macedonia
+PLW,Palau
+PSE,Palestine
+PCN,Pitcairn Is.
+QAT,Qatar
+RWA,Rwanda
+SSD,S. Sudan
+SHN,Saint Helena
+LCA,Saint Lucia
+WSM,Samoa
+SMR,San Marino
+SEN,Senegal
+SYC,Seychelles
+SLE,Sierra Leone
+SXM,Sint Maarten
+SLB,Solomon Is.
+SOM,Somalia
+BLM,St-Barthélemy
+MAF,St-Martin
+KNA,St. Kitts and Nevis
+SPM,St. Pierre and Miquelon
+VCT,St. Vin. and Gren.
+SUR,Suriname
+STP,São Tomé and Principe
+TJK,Tajikistan
+TLS,Timor-Leste
+TGO,Togo
+TON,Tonga
+TTO,Trinidad and Tobago
+TKM,Turkmenistan
+TCA,Turks and Caicos Is.
+TUV,Tuvalu
+VIR,U.S. Virgin Is.
+VUT,Vanuatu
+VAT,Vatican
+ESH,W. Sahara
+WLF,Wallis and Futuna Is.
+YEM,Yemen
+ZMB,Zambia
+ZWE,Zimbabwe
+SWZ,eSwatini
+ALA,Åland
