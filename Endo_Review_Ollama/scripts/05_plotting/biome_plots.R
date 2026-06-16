@@ -100,7 +100,10 @@ if (!is.null(country_lookup)) {
 # 1. Overall Biome Distribution
 biome_counts <- paper_biome %>%
   count(biome_clean, name = "study_count", sort = TRUE)
-  
+
+biome_counts_pct <- biome_counts %>%
+  mutate(percent = study_count / sum(study_count) * 100)
+
 # ... (existing code for p1 and ggsave) ...
 
 # 2. Biome x Plant Family Heatmap (Top 10 of each)
@@ -117,6 +120,12 @@ y_axis_label <- if (country_col_to_use == "country_name") "Country" else "Countr
 top_biomes <- biome_counts %>%
   slice_head(n = 10) %>%
   pull(biome_clean)
+
+top_countries <- paper_biome %>%
+  filter(!is.na(.data[[country_col_to_use]])) %>%
+  count(.data[[country_col_to_use]], sort = TRUE) %>%
+  slice_head(n = 10) %>%
+  pull(1)
 
 biome_country <- paper_biome %>%
   filter(biome_clean %in% top_biomes[1:10], .data[[country_col_to_use]] %in% top_countries) %>%
