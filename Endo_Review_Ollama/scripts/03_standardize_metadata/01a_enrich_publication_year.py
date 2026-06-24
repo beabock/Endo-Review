@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
-# =================================================================================
-# 01a_enrich_publication_year.py
-# =================================================================================
-# Purpose: Enrich the dataset with publication year by querying the CrossRef API
-#          using the DOI column.
-#
-# Usage: python3 scripts/03_standardize_metadata/01a_enrich_publication_year.py
-# =================================================================================
+# BMB 2026-06-24
+# Looks up missing publication years via CrossRef using DOIs.
 
 import pandas as pd
 import json
@@ -50,6 +44,8 @@ def get_publication_year(doi, cache):
     
     try:
         url = f"https://api.crossref.org/works/{doi}"
+        # Placeholder email keeps this script in the CrossRef polite pool without
+        # exposing the authors' address in a public repository.
         req = urllib.request.Request(url, headers={'User-Agent': 'EndophyteReview/1.0 (mailto:endo-research@example.com)'})
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode('utf-8'))
