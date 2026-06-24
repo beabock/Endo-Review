@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # BMB 2026-06-05
-# Robustness and statistical tests for the biodiversity priority overlap —
+# Robustness and statistical tests for the biodiversity priority overlap -
 # chi-square, Spearman, binomial, sensitivity analysis, and regional subsampling.
          results/biodiversity_priority_overlap/country_land_area_summary.csv
          results/biodiversity_priority_overlap/area_normalized_summary.csv
@@ -373,7 +373,6 @@ for source_name, metric_label in metric_sources:
 if gdp_correlation_rows:
     pd.DataFrame(gdp_correlation_rows).to_csv(OUTPUT_GDP_CORRELATION, index=False)
 
-# ===== STATISTICAL MODELING =====
 try:
     import statsmodels.formula.api as smf
 
@@ -425,9 +424,7 @@ if modeling_results:
     print(f"Modeling results saved to: {OUTPUT_MODELING_RESULTS}")
 print("\nRobustness tests complete")
 
-# ==============================================================================
 # BRYOPHYTE-SPECIFIC ANALYSIS
-# ==============================================================================
 
 print("\n" + "="*80)
 print("BRYOPHYTE-SPECIFIC ANALYSIS")
@@ -449,7 +446,7 @@ if bryophytes.empty:
 else:
     print(f"\nFound {len(bryophytes)} Bryophyte species records across all countries.")
 
-    # --- Metric 1: Total Species ---
+    # Total Species
     print("\n--- Ranking by Total Bryophyte Species ---")
     total_species = bryophytes.groupby('country_iso3').size().reset_index(name='bryophyte_total_species')
     total_species = total_species.sort_values('bryophyte_total_species', ascending=False)
@@ -460,7 +457,7 @@ else:
     total_species.to_csv(output_total_path, index=False)
     print(f"Full ranked list saved to: {output_total_path}")
 
-    # --- Metric 2: Endemic Species ---
+    # Endemic Species
     # The 'small_range_50km' column is used as the proxy for endemism in the main analysis
     print("\n--- Ranking by Endemic Bryophyte Species (small_range_50km) ---")
     endemic_species = bryophytes[bryophytes['small_range_50km'] == 1]
@@ -473,7 +470,7 @@ else:
     endemic_counts.to_csv(output_endemic_path, index=False)
     print(f"Full ranked list saved to: {output_endemic_path}")
 
-    # --- Metric 3: Threatened Species ---
+    # Threatened Species
     # The 'threat_status_prob_80' is used as the proxy for threat status
     print("\n--- Ranking by Threatened Bryophyte Species (threat_status_prob_80) ---")
     threatened_species = bryophytes[bryophytes['threat_status_prob_80'] == 1]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # BMB 2026-06-05
-# Filters out low-quality records — irrelevant papers, bad taxon entries,
+# Filters out low-quality records - irrelevant papers, bad taxon entries,
 # and clear non-endophyte studies.
 
 import csv
@@ -84,7 +84,7 @@ def filter_dataset():
                 guild = str(row.get('primary_guild', '')).lower()
                 relevance = str(row.get('relevance', '')).lower()
 
-                # --- FILTERING LOGIC ---
+                # apply filters in order
 
                 # Rule 1: Relevance Check
                 if relevance != 'relevant':

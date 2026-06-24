@@ -1,5 +1,5 @@
 # BMB 2026-06-05
-# Fixes malformed rows in the raw Ollama extraction — handles cases where the model
+# Fixes malformed rows in the raw Ollama extraction - handles cases where the model
 # added extra commas or skipped columns, and locks output into a clean 15-column schema.
 
 import re
@@ -9,7 +9,7 @@ import sys
 input_file = "data/Ollama_extraction_all.csv"
 output_file = "data/Ollama_python_healed.csv"
 
-# The exact 15 columns we need to lock in
+# The 15 columns we need to lock in
 HEADERS = [
     "relevance", "doc_type_ai", "doc_type_pages", "page_count", "doi", 
     "plant_host", "fungal_taxon", "tissue", "presence_absence", 
@@ -89,7 +89,7 @@ def heal_and_align():
         # Initialize an empty 15-slot row
         row = ["NA"] * 15
         
-        # --- LEFT ANCHORS (Cols 0 to 4) ---
+        # left anchors (cols 0-4)
         # We know Relevance and Doc Types are at the start. 
         # We look for the DOI to anchor column 4.
         doi_index = -1
@@ -112,7 +112,7 @@ def heal_and_align():
                 row[i] = parts[i]
             parts = parts[5:] if len(parts) > 5 else []
 
-        # --- RIGHT ANCHORS (Cols 13 & 14) ---
+        # right anchors (cols 13-14)
         # The last columns are always data_source (e.g. abstract-csv) and source_file (e.g. doi_...)
         if len(parts) >= 2:
             row[14] = parts[-1]
@@ -122,7 +122,7 @@ def heal_and_align():
             row[14] = parts[-1]
             parts = []
 
-        # --- MIDDLE MESS (Cols 5 to 12) ---
+        # middle columns (5-12)
         # We now have the remaining parts that belong in Host, Taxon, Tissue, etc.
         # If there are exactly 8 parts left, perfect! 1-to-1 mapping.
         if len(parts) == 8:

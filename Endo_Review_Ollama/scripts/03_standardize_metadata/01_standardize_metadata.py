@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # BMB 2026-06-05
-# Standardizes columns and values across the dataset — expands multi-value cells
+# Standardizes columns and values across the dataset - expands multi-value cells
 # and fixes values displaced during LLM extraction.
 
 import argparse
@@ -298,21 +298,7 @@ def expand_taxonomy_recovery_rows(rows, headers):
     return expanded_rows
 
 def expand_multi_value_rows(rows, headers):
-    """
-    Expand rows when multiple unique values detected across columns.
-    Handles: country, tissue, primary_guild, biome.
-    
-    Creates separate rows for each unique value found (handles displaced values from LLM).
-    Example: Paper with Canada in country column + Mexico in plant_host -> 2 rows
-             Paper with leaf in tissue + stem in interaction_notes -> 2 rows
-    
-    Args:
-        rows: list of row lists
-        headers: list of column headers
-    
-    Returns:
-        Expanded list of rows with duplicates for multi-value papers
-    """
+    """Expand rows when multiple unique values are detected across country, tissue, guild, or biome columns."""
     print(f"  [expand_multi_value_rows] Starting with {len(rows)} rows", flush=True)
     expanded_rows = []
     col_indices = {name: idx for idx, name in enumerate(headers)}
