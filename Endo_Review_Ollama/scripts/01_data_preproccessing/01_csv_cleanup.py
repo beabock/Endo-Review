@@ -4,12 +4,11 @@
 
 import re
 import csv
-import sys
 
 input_file = "data/Ollama_extraction_all.csv"
 output_file = "data/Ollama_python_healed.csv"
 
-# The 15 columns we need to lock in
+# Expected 15-column schema
 HEADERS = [
     "relevance", "doc_type_ai", "doc_type_pages", "page_count", "doi", 
     "plant_host", "fungal_taxon", "tissue", "presence_absence", 
@@ -123,15 +122,15 @@ def heal_and_align():
             parts = []
 
         # middle columns (5-12)
-        # We now have the remaining parts that belong in Host, Taxon, Tissue, etc.
-        # If there are exactly 8 parts left, perfect! 1-to-1 mapping.
+        # Remaining parts map to middle columns (Host, Taxon, Tissue, etc.)
+        # Exactly 8 parts: direct 1-to-1 mapping.
         if len(parts) == 8:
             middle_exact += 1
             for i in range(8):
                 row[5+i] = parts[i]
         
-        # If there are MORE than 8 parts, the AI hallucinated commas.
-        # We glue the "extra" parts into the interaction_notes (Col 10)
+        # More than 8 parts: extra commas inserted by the model.
+        # Glue the overflow parts into interaction_notes (Col 10).
         elif len(parts) > 8:
             middle_overflow += 1
             overflow_extra_parts += len(parts) - 8
@@ -150,8 +149,8 @@ def heal_and_align():
             row[11] = parts[-2]
             row[12] = parts[-1]
             
-        # If there are FEWER than 8 parts, the AI skipped columns. 
-        # Just map them left-to-right until we run out.
+        # Fewer than 8 parts: some columns were omitted.
+        # Map left-to-right until exhausted.
         else:
             middle_short += 1
             for i in range(len(parts)):
@@ -172,7 +171,6 @@ def heal_and_align():
         writer.writerow(HEADERS)
         writer.writerows(clean_rows)
         
-    print("Done! The dataset is structurally perfect.")
     print("Repair report:")
     print(f"  Raw lines (non-empty): {raw_line_count}")
     print(f"  Assembled rows: {len(data_lines)}")

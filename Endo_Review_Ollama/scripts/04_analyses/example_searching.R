@@ -37,8 +37,7 @@ undersampled_countries <- country_counts %>%
 cat("Found", length(undersampled_countries), "undersampled countries (<5 studies).\n")
 
 # 3. Find unique taxa
-# To find taxa ONLY in undersampled countries, we group by taxa, 
-# list all countries they appear in, and check if ALL those countries are in our undersampled list.
+# Taxa exclusive to undersampled countries: group by taxon, keep only those where every country is undersampled.
 
 cat("Finding unique plant hosts...\n")
 unique_plants <- df %>%
@@ -80,5 +79,5 @@ unique_fungi <- df %>%
 write_csv(unique_plants %>% select(-countries), OUTPUT_PLANTS)
 write_csv(unique_fungi %>% select(-countries), OUTPUT_FUNGI)
 
-cat("Done! Found", nrow(unique_plants), "plant taxa and", nrow(unique_fungi), "fungal taxa unique to undersampled countries.\n")
+cat("Found", nrow(unique_plants), "plant taxa and", nrow(unique_fungi), "fungal taxa unique to undersampled countries.\n")
 cat("Results saved to:\n  ", OUTPUT_PLANTS, "\n  ", OUTPUT_FUNGI, "\n")

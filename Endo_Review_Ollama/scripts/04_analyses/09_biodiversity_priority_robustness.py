@@ -2,11 +2,6 @@
 # BMB 2026-06-05
 # Robustness and statistical tests for the biodiversity priority overlap -
 # chi-square, Spearman, binomial, sensitivity analysis, and regional subsampling.
-         results/biodiversity_priority_overlap/country_land_area_summary.csv
-         results/biodiversity_priority_overlap/area_normalized_summary.csv
-         results/biodiversity_priority_overlap/gdp_biodiversity_correlation.csv
-         results/biodiversity_priority_overlap/modeling_results.csv
-"""
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -21,7 +16,7 @@ except ImportError:
         return result.pvalue
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / 'utils'))
-from country_mapping import CONTINENT_MAP, find_country_in_text, get_continent
+from country_mapping import find_country_in_text, get_continent
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -39,10 +34,7 @@ OUTPUT_AREA_NORMALIZED = OUTPUT_DIR / 'area_normalized_summary.csv'
 OUTPUT_GDP_CORRELATION = OUTPUT_DIR / 'gdp_biodiversity_correlation.csv'
 OUTPUT_MODELING_RESULTS = OUTPUT_DIR / 'modeling_results.csv'
 
-print("=" * 80)
-print("ROBUSTNESS AND STATISTICAL TESTS FOR BIODIVERSITY PRIORITY OVERLAP")
-print("(Using actual numeric metrics: endemic species count, threatened probability, etc.)")
-print("=" * 80)
+print("Robustness and statistical tests for biodiversity priority overlap")
 
 # Load data
 print("\nLoading data...")
@@ -305,7 +297,7 @@ report.append("=" * 80)
 report.append("\nKEY FINDING: Understudied endophyte regions are enriched in high-priority biodiversity areas across metrics")
 for row in metric_summary_rows:
     spearman_p_text = f"{row['spearman_p']:.3e}" if not np.isnan(row['spearman_p']) else "NA"
-    report.append(f"• {row['metric_label']}: {row['n_understudied']} understudied countries; overlap={row['overlap_observed']}; Spearman p={spearman_p_text}")
+    report.append(f"- {row['metric_label']}: {row['n_understudied']} understudied countries; overlap={row['overlap_observed']}; Spearman p={spearman_p_text}")
 report.append("\nConclusion:")
 report.append("Metric-by-metric tests are more defensible for peer review than a composite max score.")
 report.append("They show whether study counts are uneven across biodiversity-priority classes and whether that pattern holds across independent biodiversity indicators.")
@@ -387,7 +379,7 @@ try:
 
         # Model for raw study count
         model_raw = smf.ols('study_count_log ~ gdp_log10 + metric_value', data=model_df).fit()
-        report.append(f"\n--- Model for {metric_label} (raw counts) ---")
+        report.append(f"\nModel for {metric_label} (raw counts):")
         report.append(str(model_raw.summary()))
         
         for var, params in model_raw.params.items():
@@ -426,15 +418,13 @@ print("\nRobustness tests complete")
 
 # BRYOPHYTE-SPECIFIC ANALYSIS
 
-print("\n" + "="*80)
-print("BRYOPHYTE-SPECIFIC ANALYSIS")
-print("="*80)
+print("\nBryophyte-specific analysis:")
 
 # Load the raw World Bank biodiversity data
 try:
     wb_biodiv_raw = pd.read_csv("data/biodiversity/World_Bank/WB_Pre-processed/WB_BIODIVERSITY_2021.csv")
 except FileNotFoundError:
-    print("\n[!] World Bank raw biodiversity file not found. Skipping Bryophyte analysis.")
+    print("\nWorld Bank raw biodiversity file not found. Skipping Bryophyte analysis.")
     print("    Expected file: data/biodiversity/World_Bank/WB_Pre-processed/WB_BIODIVERSITY_2021.csv")
     exit()
 
@@ -442,12 +432,12 @@ except FileNotFoundError:
 bryophytes = wb_biodiv_raw[wb_biodiv_raw['phylum'] == 'BRYOPHYTA'].copy()
 
 if bryophytes.empty:
-    print("\n[!] No Bryophyte species found in the World Bank dataset. Skipping analysis.")
+    print("\nNo Bryophyte species found in the World Bank dataset. Skipping analysis.")
 else:
     print(f"\nFound {len(bryophytes)} Bryophyte species records across all countries.")
 
     # Total Species
-    print("\n--- Ranking by Total Bryophyte Species ---")
+    print("\nRanking by total bryophyte species:")
     total_species = bryophytes.groupby('country_iso3').size().reset_index(name='bryophyte_total_species')
     total_species = total_species.sort_values('bryophyte_total_species', ascending=False)
     print("Top 10 countries by total Bryophyte species:")
@@ -459,7 +449,7 @@ else:
 
     # Endemic Species
     # The 'small_range_50km' column is used as the proxy for endemism in the main analysis
-    print("\n--- Ranking by Endemic Bryophyte Species (small_range_50km) ---")
+    print("\nRanking by endemic bryophyte species (small_range_50km):")
     endemic_species = bryophytes[bryophytes['small_range_50km'] == 1]
     endemic_counts = endemic_species.groupby('country_iso3').size().reset_index(name='bryophyte_endemic_species')
     endemic_counts = endemic_counts.sort_values('bryophyte_endemic_species', ascending=False)
@@ -472,7 +462,7 @@ else:
 
     # Threatened Species
     # The 'threat_status_prob_80' is used as the proxy for threat status
-    print("\n--- Ranking by Threatened Bryophyte Species (threat_status_prob_80) ---")
+    print("\nRanking by threatened bryophyte species (threat_status_prob_80):")
     threatened_species = bryophytes[bryophytes['threat_status_prob_80'] == 1]
     threatened_counts = threatened_species.groupby('country_iso3').size().reset_index(name='bryophyte_threatened_species')
     threatened_counts = threatened_counts.sort_values('bryophyte_threatened_species', ascending=False)

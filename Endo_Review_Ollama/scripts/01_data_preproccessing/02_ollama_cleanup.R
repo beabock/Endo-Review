@@ -1,12 +1,12 @@
 # BMB 2026-06-05
-# Cleans up taxon names in the Ollama extraction output - strips AI-generated
-# prefixes, filters non-plant hosts, and standardizes values for the rest of the pipeline.
+# Cleans taxon names in the Ollama extraction output: strips label prefixes,
+# filters non-plant hosts, and standardizes values for downstream steps.
 
 library(tidyverse)
 library(stringr)
 library(jsonlite)
 
-message("Loading perfectly structured Python dataset...")
+message("Loading Python-cleaned dataset...")
 # 1. Load the Python-healed file natively
 ds <- read_csv("data/Ollama_python_healed.csv", show_col_types = FALSE)
 
@@ -37,7 +37,7 @@ clean_taxon <- function(x) {
         str_remove_all("[\\{\\}\\[\\]\\']") %>%
         # Strip parenthetical content 
         str_remove_all("\\(.*?\\)") %>%
-        # Strip AI prefixes
+        # Strip label prefixes (e.g. "taxon:", "genus:")
         str_remove_all("^(taxon|phylum|class|order|family|genus|species|name|role)\\s*:?\\s*") %>%
         str_squish() %>%
         str_to_lower()
@@ -53,7 +53,7 @@ clean_taxon <- function(x) {
     return(x)
 }
 
-message("Scrubbing AI prefixes and non-plant hosts...")
+message("Cleaning taxon strings...")
 # 3. Apply the cleaning
 ds_final <- ds %>%
     mutate(across(where(is.character), ~ str_squish(str_to_lower(.x)))) %>%
@@ -70,4 +70,4 @@ ds_final <- ds %>%
 
 # 4. Save the final dataset
 write.csv(ds_final, "data/Ollama_cleaned.csv", row.names = FALSE)
-message(sprintf("Complete! %d rows ready for GBIF.", nrow(ds_final)))
+message(sprintf("%d rows written to data/Ollama_cleaned.csv.", nrow(ds_final)))

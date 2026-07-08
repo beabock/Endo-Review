@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # BMB 2026-06-05
 # Summarizes fungal taxon representation at species, genus, and family level by phylum.
-#
 
 import pandas as pd
 import csv
@@ -400,9 +399,7 @@ if len(mycorrhizal_summary) > 0:
 else:
     print(f"  No mycorrhizal records found.")
 
-print("\n" + "="*70)
-print("Fungal Taxonomic Bias Analysis Complete")
-print("="*70)
+print("\nFungal taxonomic bias analysis complete.")
 print(f"Total papers analyzed: {len(study_data)}")
 print(f"Papers with fungal records: {len(df_links['paper_id'].unique())}")
 print(f"Unique fungal species studied: {len(unique_studied)}")
@@ -423,4 +420,3 @@ print(f"  - {OUTPUT_FAMILY}")
 print(f"  - {OUTPUT_TOP_GENERA}")
 print(f"  - {OUTPUT_COMPARISON}")
 print(f"  - {OUTPUT_MYCORRHIZAL}")
-print("="*70)

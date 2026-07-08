@@ -22,7 +22,7 @@ if (!dir.exists(OUTPUT_DIR)) {
 # Major crop genera/families based on top global agricultural commodities
 MAJOR_CROP_FAMILIES <- c("Poaceae", "Fabaceae", "Solanaceae")
 
-# We include common crops, forage, and models that dominate agricultural research
+# Crops, forage, and model species dominating agricultural research
 MAJOR_CROP_GENERA <- c(
   "Triticum", "Zea", "Oryza", "Hordeum", "Saccharum", "Sorghum", "Avena", "Secale", # Poaceae staples
   "Glycine", "Phaseolus", "Arachis", "Medicago", "Trifolium", "Vigna", "Cicer", "Lens", "Pisum", # Fabaceae staples
@@ -149,8 +149,7 @@ message("Total papers with resolved fungal host: ", total_fungal_papers)
 if (file.exists(FUNGAL_GENERA_FILE)) {
   fungal_genera <- read_csv(FUNGAL_GENERA_FILE, show_col_types = FALSE)
   
-  # The Python script calculates study_count per genus. Let's add percentages
-  # relative to the total number of papers with a resolved fungal host.
+  # study_count per genus comes from 03_fungal_taxonomic_bias.py; add percentage relative to total fungal papers.
   fungal_genera <- fungal_genera %>%
     mutate(percent_of_fungal_studies = (study_count / total_fungal_papers) * 100)
     
@@ -178,15 +177,6 @@ if (file.exists(FUNGAL_GENERA_FILE)) {
               value = fungal_interest$percent_of_fungal_studies[i])
   }
   
-  # Also calculate overall Phylum level dominance
-  ascomycota_studies <- df %>%
-    filter(!is.na(fungal_taxon_accepted_ids), fungal_taxon_accepted_ids != "") %>%
-    # We use the Python output that already mapped all IDs to phyla for us, 
-    # but we can get it straight from the FUNGAL_GENERA_FILE
-    # Wait, FUNGAL_GENERA_FILE only has top genera.
-    # We should pull it directly from the python phylum output.
-    invisible()
-
 } else {
   message("Warning: Fungal genera file not found: ", FUNGAL_GENERA_FILE)
 }

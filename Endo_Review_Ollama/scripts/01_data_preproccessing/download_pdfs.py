@@ -3,7 +3,6 @@
 
 import pandas as pd
 import requests
-import os
 import time
 from pathlib import Path
 
@@ -25,7 +24,7 @@ def get_oa_pdf_link(doi):
                 if best_location:
                     return best_location.get('url_for_pdf')
     except Exception as e:
-        print(f"   [!] Error querying DOI {doi}: {e}")
+        print(f"   Error querying DOI {doi}: {e}")
     return None
 
 def download_pdf(url, filename):
@@ -37,7 +36,7 @@ def download_pdf(url, filename):
                 f.write(r.content)
             return True
     except Exception as e:
-        print(f"   [!] Error downloading {url}: {e}")
+        print(f"   Error downloading {url}: {e}")
     return False
 
 def main():
@@ -63,19 +62,19 @@ def main():
         
         if pdf_url:
             if download_pdf(pdf_url, filename):
-                print(f"   [+] Downloaded: {filename}")
+                print(f"   Downloaded: {filename}")
                 downloaded_count += 1
             else:
                 missing_count += 1
         else:
-            print(f"   [-] No OA PDF found for {doi}")
+            print(f"   No OA PDF found for {doi}")
             missing_count += 1
         
         # Respect API etiquette (wait briefly)
         time.sleep(0.2)
 
-    print(f"\n--- DONE ---")
-    print(f"Successfully downloaded: {downloaded_count}")
+    print(f"\nDone.")
+    print(f"Downloaded: {downloaded_count}")
     print(f"Missing/No OA: {missing_count}")
 
 if __name__ == "__main__":
